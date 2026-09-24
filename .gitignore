@@ -1,0 +1,68 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.sw?
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+logs/
+*.log
+
+# Node / web frontend
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# Rust / Tauri
+target/
+
+# Swift / Xcode
+xcuserdata/
+DerivedData/
+.build/
+build/
+.swiftpm/
+*.xcuserstate
+*.hmap
+*.dSYM
+*.dSYM.zip
+
+# Release artifacts
+*.dmg
+*.app/
+*.ipa
+*.zip
+*.tar.gz
+
+# Local models and data (downloaded, never committed)
+models/
+*.bin
+*.gguf
+*.safetensors
+*.onnx
+*.db
+*.sqlite
+
+# Scratch
+/output/
+.worktrees/
+
+# Claude Code agent worktrees
+.claude/
+
+# Local-only agent notes
+CLAUDE.local.md
