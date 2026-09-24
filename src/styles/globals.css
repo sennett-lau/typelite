@@ -1,0 +1,773 @@
+@import 'tailwindcss';
+
+/*
+ * Theme: plan 0006 (UI revamp). Light values live in @theme; `.dark` (set on <html> by
+ * src/hooks/useTheme.ts) switches to the "Aurora" dark mode. Components use these tokens through
+ * Tailwind utilities (`bg-bg-elevated`, `text-text-secondary`, ...) or the component classes below.
+ */
+@theme {
+  /* Surfaces */
+  /* Opaque surface for dialogs, menus and toasts. */
+  --color-bg-primary: #ffffff;
+  /* Field fill and quiet buttons (a hairline tint over whatever is below). */
+  --color-bg-secondary: rgba(0, 0, 0, 0.06);
+  --color-bg-tertiary: rgba(0, 0, 0, 0.09);
+  --color-bg-hover: rgba(0, 0, 0, 0.045);
+  /* Card / grouped rows. */
+  --color-bg-elevated: #ffffff;
+  /* Window glass (whole window, over the native blur) and the content area on top of it. */
+  --color-glass: rgba(246, 246, 248, 0.62);
+  --color-content: rgba(255, 255, 255, 0.72);
+
+  /* Text */
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #6e6e73;
+  --color-text-tertiary: #8e8e93;
+
+  /* Accent */
+  --color-accent: #0a84ff;
+  --color-accent-hover: #0071e3;
+  --color-accent-light: rgba(10, 132, 255, 0.12);
+  /* Text and icons drawn on an accent fill. */
+  --color-on-accent: #ffffff;
+
+  --color-success: #30d158;
+  --color-warning: #ff9f0a;
+  --color-error: #ff453a;
+
+  /* Lines */
+  --color-border: rgba(0, 0, 0, 0.09);
+  --color-hairline: rgba(0, 0, 0, 0.06);
+  --color-border-focus: #0a84ff;
+
+  /* Home tile icons: one colour per feature */
+  --color-feature-dictate: #0a84ff;
+  --color-feature-translate: #30b0c7;
+  --color-feature-ask: #af52de;
+
+  /* Key caps */
+  --color-key: #ffffff;
+  --color-key-line: #d2d2d7;
+
+  /* Aurora corner glows (dark mode only) */
+  --color-glow-teal: transparent;
+  --color-glow-violet: transparent;
+
+  /* Font: the macOS system font (SF Pro) and SF Mono */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, monospace;
+
+  /* Font sizes */
+  --text-caption: 11px;
+  --text-footnote: 13px;
+  --text-body: 15px;
+  --text-headline: 17px;
+  --text-title: 22px;
+
+  /* Border radius */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* Shadows - neutral */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+
+  /* Easing */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/*
+ * Pill (capsule) tokens. The pill is dark glass in both light and dark mode; these are the
+ * documented pill colours. `static` makes Tailwind always emit these variables, because TSX
+ * reads them through `var(--color-wave)` etc. in inline styles, which Tailwind cannot see.
+ */
+@theme static {
+  --color-pill-bg: rgba(30, 30, 32, 0.72);
+  --color-pill-line: rgba(255, 255, 255, 0.14);
+  --color-pill-error-bg: rgba(60, 24, 24, 0.78);
+  --color-pill-error-line: rgba(255, 69, 58, 0.35);
+  --color-pill-menu: rgba(30, 30, 32, 0.86);
+  --color-pill-text: #ffffff;
+  --color-polish: #64d2ff;
+  --color-recording: #ff453a;
+  /* Waveform bars and the active translation chip. */
+  --color-wave: #ffffff;
+  --color-wave-dim: rgba(255, 255, 255, 0.3);
+  --color-pill-chip: #0a84ff;
+  --color-pill-chip-text: #ffffff;
+}
+
+/*
+ * Glass blur for `backdrop-filter`. Kept out of @theme on purpose: in the `--blur-*`
+ * namespace Tailwind would wrap it in another blur() for a `blur-glass` utility.
+ * In a transparent Tauri window this only blurs pixels inside the webview. The main window's
+ * real frosting comes from macOS (`windowEffects` in tauri.conf.json, an NSVisualEffectView).
+ */
+:root {
+  --blur-glass: blur(18px) saturate(1.6);
+}
+
+/* ─── Dark mode: "Aurora" ─── */
+.dark {
+  --color-bg-primary: #182030;
+  --color-bg-secondary: rgba(255, 255, 255, 0.08);
+  --color-bg-tertiary: rgba(255, 255, 255, 0.12);
+  --color-bg-hover: rgba(255, 255, 255, 0.06);
+  --color-bg-elevated: rgba(36, 44, 60, 0.66);
+  --color-glass: rgba(18, 24, 34, 0.5);
+  --color-content: rgba(14, 20, 30, 0.55);
+
+  --color-text-primary: #f1f6ff;
+  --color-text-secondary: #a6b3c8;
+  --color-text-tertiary: #6f7d94;
+
+  --color-accent: #3fd8c2;
+  --color-accent-hover: #62e2cf;
+  --color-accent-light: rgba(63, 216, 194, 0.18);
+  /* White on the teal accent is hard to read; use a deep teal ink instead. */
+  --color-on-accent: #04241f;
+
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-hairline: rgba(255, 255, 255, 0.08);
+  --color-border-focus: #3fd8c2;
+
+  --color-feature-dictate: #3fd8c2;
+  --color-feature-translate: #7aa7ff;
+  --color-feature-ask: #d77bff;
+
+  --color-key: #2c3646;
+  --color-key-line: #445066;
+
+  --color-glow-teal: rgba(63, 216, 194, 0.26);
+  --color-glow-violet: rgba(175, 82, 222, 0.26);
+
+  /* The pill stays dark glass; its waveform and active chip take the Aurora accent. */
+  --color-wave: #3fd8c2;
+  --color-pill-chip: #3fd8c2;
+  --color-pill-chip-text: #04241f;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+  --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+}
+
+/* Base styles */
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/*
+ * Every window is transparent: the capsule and Ask windows draw their own glass, and the main
+ * window lets the macOS window effect show through (see `.app-window`).
+ */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  background: transparent;
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  user-select: none;
+}
+
+/*
+ * Component classes. They live in the components layer, so a Tailwind utility on the same
+ * element still wins when a screen needs a one-off change.
+ */
+@layer components {
+  /* ─── Main window ─── */
+
+  /* The whole main window: glass tint over the native blur. */
+  .app-window {
+    position: relative;
+    background: var(--color-glass);
+    color: var(--color-text-primary);
+  }
+
+  /* 28 pt strip along the top edge; drags the window (there is no title bar). */
+  .drag-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    z-index: 40;
+  }
+
+  /* Sidebar: transparent glass, lit from the top left in dark mode. */
+  .sidebar {
+    background: radial-gradient(120% 60% at 0% 0%, var(--color-glow-teal), transparent 60%);
+  }
+
+  /* Content area: a light tint for readability, plus the Aurora glows in dark mode. */
+  .content-surface {
+    background:
+      radial-gradient(60% 50% at 90% 0%, var(--color-glow-teal), transparent 70%),
+      radial-gradient(50% 45% at 10% 100%, var(--color-glow-violet), transparent 70%),
+      var(--color-content);
+    border-left: 1px solid var(--color-hairline);
+  }
+
+  /* Sidebar navigation item. */
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 6px 9px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .nav-item svg {
+    color: var(--color-text-secondary);
+    flex: none;
+  }
+  .nav-item:hover {
+    background: var(--color-bg-hover);
+  }
+  .nav-item[aria-current='page'] {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .nav-item[aria-current='page'] svg {
+    color: var(--color-accent);
+  }
+  .nav-item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  /* Connection status dot in the sidebar. */
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    flex: none;
+    background: var(--color-text-tertiary);
+  }
+  .status-dot[data-state='ok'] {
+    background: var(--color-success);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 18%, transparent);
+  }
+  .status-dot[data-state='error'] {
+    background: var(--color-error);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 18%, transparent);
+  }
+
+  /* ─── Page type ─── */
+  .page-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+  }
+  .page-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .group-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 4px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+  }
+  .mono-value {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+
+  /* ─── Grouped rows (macOS System Settings style) ─── */
+  .row-group {
+    background: var(--color-bg-elevated);
+    border-radius: 10px;
+    box-shadow: 0 0 0 0.5px var(--color-border);
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+  .row + .row {
+    border-top: 1px solid var(--color-hairline);
+  }
+  .row-label {
+    display: flex;
+    flex: 1 1 160px;
+    min-width: 0;
+    flex-direction: column;
+    font-size: 13px;
+    color: var(--color-text-primary);
+  }
+  .row-help {
+    margin-top: 1px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--color-text-secondary);
+  }
+
+  /* Home shortcut tile: no coloured border or shadow, only the hairline ring. */
+  .tile {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 0 0 0.5px var(--color-border);
+    color: var(--color-text-primary);
+    text-align: left;
+    cursor: pointer;
+  }
+  .tile:hover {
+    background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-text-primary));
+  }
+  .tile:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  .tile-icon {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--tile-color);
+    background: color-mix(in srgb, var(--tile-color) 18%, transparent);
+  }
+
+  /* Key cap */
+  .kbd {
+    min-width: 22px;
+    padding: 2px 7px;
+    border: 1px solid var(--color-key-line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--color-key);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  /* ─── Controls ─── */
+
+  /* Text inputs and text areas. */
+  .field {
+    min-width: 0;
+    padding: 6px 9px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .field::placeholder {
+    color: var(--color-text-tertiary);
+  }
+  .field:focus {
+    border-color: var(--color-border-focus);
+  }
+
+  /* Pop-up menu: a native <select> drawn as a small raised button with a chevron. */
+  .popup {
+    min-width: 0;
+    max-width: 100%;
+    padding: 4px 26px 4px 10px;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--color-bg-elevated);
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--color-text-secondary) 50%),
+      linear-gradient(135deg, var(--color-text-secondary) 50%, transparent 50%);
+    background-position:
+      calc(100% - 13px) 55%,
+      calc(100% - 9px) 55%;
+    background-size:
+      4px 4px,
+      4px 4px;
+    background-repeat: no-repeat;
+    box-shadow:
+      0 0 0 0.5px var(--color-border),
+      0 1px 2px rgba(0, 0, 0, 0.08);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 12.5px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+  .dark .popup {
+    background-color: var(--color-bg-tertiary);
+  }
+  .popup:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-border-focus);
+  }
+
+  /* Buttons: accent fill for the main action, hairline tint for the rest. */
+  .btn-accent,
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border: none;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .btn-accent {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  .btn-accent:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+  .btn-secondary {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-bg-tertiary);
+  }
+  .btn-accent:disabled,
+  .btn-secondary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-accent:focus-visible,
+  .btn-secondary:focus-visible,
+  .btn-icon:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  /* Small square icon button. */
+  .btn-icon {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    place-items: center;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+  }
+  .btn-icon:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+  }
+  .btn-icon:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* Segmented control / tabs (Settings sections, Dictionary, Prompt Presets). */
+  .segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--color-bg-secondary);
+  }
+  .segmented-item {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .segmented-item[aria-pressed='true'],
+  .segmented-item[aria-selected='true'] {
+    background: var(--color-bg-elevated);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.12),
+      0 0 0 0.5px var(--color-border);
+    font-weight: 600;
+  }
+  .dark .segmented-item[aria-pressed='true'],
+  .dark .segmented-item[aria-selected='true'] {
+    background: var(--color-bg-tertiary);
+  }
+  .segmented-item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  /* macOS switch, 32 × 19 pt. */
+  .switch {
+    position: relative;
+    width: 32px;
+    height: 19px;
+    flex: none;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--color-key-line);
+    cursor: pointer;
+    transition:
+      background-color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 15px;
+    height: 15px;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.18s ease;
+  }
+  .switch[aria-checked='true'] {
+    background: var(--color-accent);
+  }
+  .switch[aria-checked='true']::after {
+    transform: translateX(13px);
+  }
+  .dark .switch[aria-checked='true'] {
+    box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+  .switch:disabled {
+    cursor: not-allowed;
+  }
+  .switch:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Dropdown menus and dialogs in the main window. */
+  .menu {
+    border-radius: 8px;
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-float);
+  }
+  .menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .menu-item:hover {
+    background: var(--color-bg-hover);
+  }
+  .dialog {
+    border-radius: 12px;
+    background: var(--color-bg-primary);
+    box-shadow: var(--shadow-float);
+  }
+
+  /* ─── Capsule — the glass pill (dark glass in both modes) ─── */
+  .pill {
+    position: relative;
+    background: var(--color-pill-bg);
+    border: 1px solid var(--color-pill-line);
+    border-radius: 9999px;
+    -webkit-backdrop-filter: var(--blur-glass);
+    backdrop-filter: var(--blur-glass);
+    box-shadow: 0 10px 30px rgba(20, 20, 40, 0.22);
+    color: var(--color-pill-text);
+    overflow: hidden;
+  }
+  .pill-error {
+    background: var(--color-pill-error-bg);
+    border-color: var(--color-pill-error-line);
+  }
+  /* The capsule's right-click menu: the same dark glass as the pill. */
+  .pill-menu {
+    border: 1px solid var(--color-pill-line);
+    border-radius: 12px;
+    background: var(--color-pill-menu);
+    -webkit-backdrop-filter: var(--blur-glass);
+    backdrop-filter: var(--blur-glass);
+    box-shadow: 0 10px 30px rgba(20, 20, 40, 0.28);
+    color: var(--color-pill-text);
+  }
+}
+
+/* Dark-only: page titles fade from the text colour into the accent. */
+.dark .page-title {
+  background: linear-gradient(
+    90deg,
+    var(--color-text-primary),
+    color-mix(in srgb, var(--color-accent) 70%, var(--color-text-primary))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ─── Shimmer sweep — left-to-right loading bar ─── */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.capsule-shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+.capsule-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-polish) 25%, transparent) 40%,
+    color-mix(in srgb, var(--color-polish) 60%, transparent) 50%,
+    color-mix(in srgb, var(--color-polish) 25%, transparent) 60%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.5s ease-in-out infinite;
+}
+
+/* ─── Polishing progress bar — bottom sweep ─── */
+@keyframes progress-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+.capsule-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 0 0 9999px 9999px;
+  pointer-events: none;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.08);
+}
+.capsule-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-polish) 80%, transparent) 50%,
+    transparent 100%
+  );
+  animation: progress-sweep 1.2s ease-in-out infinite;
+}
+
+.context-app-count--compact {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .context-app--compact-duplicate,
+  .context-app-count--full {
+    display: none;
+  }
+
+  .context-app-count--compact {
+    display: inline;
+  }
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* macOS-style scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-tertiary);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
