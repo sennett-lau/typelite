@@ -1,0 +1,502 @@
+<title>Typelite Revamp</title>
+<style>
+  :root {
+    --page-bg: #f2f3f6; --page-ink: #1b1d22; --page-muted: #5d6270; --page-line: #dcdfe6; --page-card: #fff;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  * { box-sizing: border-box; }
+  body { background: var(--page-bg); color: var(--page-ink); font-family: var(--ui); font-size: 15px; line-height: 1.5; padding-inline: 20px; padding-block: 36px 64px; }
+  .wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); }
+  h1 { margin: 6px 0 8px; font-size: clamp(26px, 4vw, 36px); line-height: 1.1; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.005em; }
+  p.lead { margin: 0; color: var(--page-muted); max-width: 70ch; }
+  section { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Icon section */
+  .icon-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .icon-stage { border-radius: 14px; border: 1px solid var(--page-line); padding: 24px; display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; }
+  .icon-stage.light { background: #ececf1; }
+  .icon-stage.dark { background: #1c1c1f; }
+  .icon-stage figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .icon-stage figcaption { font-family: var(--mono); font-size: 11px; color: #8a8f99; }
+  .menubar { display: flex; align-items: center; gap: 14px; height: 26px; padding: 0 12px; border-radius: 8px; font-size: 13px; width: 100%; }
+  .menubar.light { background: rgba(255,255,255,.75); color: #000; }
+  .menubar.dark { background: rgba(40,40,44,.85); color: #fff; }
+  .menubar .sp { flex: 1; }
+  .tray { width: 18px; height: 18px; display: block; }
+  .notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .note { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; padding: 14px 16px; font-size: 14px; }
+  .note b { display: block; margin-bottom: 4px; }
+  .note span { color: var(--page-muted); }
+
+
+
+  /* App mock */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--page-line); border-radius: 9px; overflow: hidden; background: var(--page-card); }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 14px; border: 0; background: transparent; color: var(--page-ink); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #0a84ff; color: #fff; }
+  .seg button:focus-visible { outline: 2px solid #0a84ff; outline-offset: -2px; }
+  .desk { border-radius: 16px; padding: 36px 28px; overflow: hidden; border: 1px solid var(--page-line);
+    background: radial-gradient(90% 90% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%); }
+  .desk.dk { background: radial-gradient(90% 90% at 15% 10%, #1d3a6e 0%, #2a1f4d 50%, #3d2330 100%); }
+
+  .app {
+    --glass: rgba(246,246,248,.62); --content: rgba(255,255,255,.72); --card: #ffffff; --ink: #1d1d1f; --muted: #6e6e73; --faint: #8e8e93;
+    --line: rgba(0,0,0,.09); --hair: rgba(0,0,0,.06); --accent: #0a84ff; --accent-soft: rgba(10,132,255,.12); --ok: #30d158; --warn: #ff9f0a;
+    --key: #ffffff; --key-line: #d2d2d7; --shadow: 0 30px 60px rgba(20,20,50,.28), 0 0 0 .5px rgba(0,0,0,.18);
+    max-width: 920px; margin: 0 auto; height: 600px; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 208px minmax(0, 1fr);
+    background: var(--glass); backdrop-filter: blur(30px) saturate(1.8); -webkit-backdrop-filter: blur(30px) saturate(1.8); box-shadow: var(--shadow);
+    color: var(--ink); font-family: var(--ui); font-size: 13px;
+  }
+  .app.dk {
+    --glass: rgba(40,40,44,.55); --content: rgba(30,30,32,.62); --card: #2a2a2d; --ink: #f5f5f7; --muted: #a1a1a6; --faint: #6e6e73;
+    --line: rgba(255,255,255,.1); --hair: rgba(255,255,255,.07); --accent-soft: rgba(10,132,255,.22); --key: #3a3a3d; --key-line: #4a4a4e;
+    --shadow: 0 30px 60px rgba(0,0,0,.5), 0 0 0 .5px rgba(255,255,255,.12);
+  }
+
+  /* Dark variants: colour comes from tinted glass, ambient light and per-feature hues */
+  .app { --tint-a: transparent; --tint-b: transparent; --f-dict: #0a84ff; --f-tr: #30b0c7; --f-ask: #af52de; }
+  .app.dk.v-graphite { }
+  .app.dk.v-navy {
+    --glass: rgba(22,32,68,.58); --content: rgba(16,24,52,.62); --card: rgba(38,52,98,.72); --ink: #eef2ff; --muted: #a9b4d6; --faint: #7482ad;
+    --line: rgba(160,180,255,.16); --hair: rgba(160,180,255,.1); --accent: #5ea8ff; --accent-soft: rgba(94,168,255,.2);
+    --key: #2c3c74; --key-line: #43549a; --tint-a: rgba(64,120,255,.28); --tint-b: rgba(120,90,255,.2);
+    --f-dict: #5ea8ff; --f-tr: #4fd1e8; --f-ask: #c490ff;
+  }
+  .app.dk.v-aurora {
+    --glass: rgba(18,24,34,.5); --content: rgba(14,20,30,.55); --card: rgba(36,44,60,.66); --ink: #f1f6ff; --muted: #a6b3c8; --faint: #6f7d94;
+    --line: rgba(255,255,255,.12); --hair: rgba(255,255,255,.08); --accent: #3fd8c2; --accent-soft: rgba(63,216,194,.18);
+    --key: #2c3646; --key-line: #445066; --tint-a: rgba(63,216,194,.26); --tint-b: rgba(175,82,222,.26);
+    --f-dict: #3fd8c2; --f-tr: #7aa7ff; --f-ask: #d77bff;
+  }
+  .app.dk.v-plum {
+    --glass: rgba(44,24,56,.56); --content: rgba(34,18,44,.6); --card: rgba(66,38,82,.7); --ink: #fbf1ff; --muted: #cdb3d9; --faint: #9a7ea8;
+    --line: rgba(255,190,255,.14); --hair: rgba(255,190,255,.09); --accent: #ff7ab8; --accent-soft: rgba(255,122,184,.2);
+    --key: #55306a; --key-line: #724590; --tint-a: rgba(255,110,170,.24); --tint-b: rgba(255,170,90,.18);
+    --f-dict: #ff7ab8; --f-tr: #ffb45e; --f-ask: #b98cff;
+  }
+  .content { background:
+      radial-gradient(60% 50% at 90% 0%, var(--tint-a), transparent 70%),
+      radial-gradient(50% 45% at 10% 100%, var(--tint-b), transparent 70%),
+      var(--content); }
+  .sidebar { background: radial-gradient(120% 60% at 0% 0%, var(--tint-a), transparent 60%); }
+  .tile:nth-child(1) .ic { color: var(--f-dict); background: color-mix(in srgb, var(--f-dict) 18%, transparent); }
+  .tile:nth-child(2) .ic { color: var(--f-tr); background: color-mix(in srgb, var(--f-tr) 18%, transparent); }
+  .tile:nth-child(3) .ic { color: var(--f-ask); background: color-mix(in srgb, var(--f-ask) 18%, transparent); }
+  .app.dk .switch { box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .app.dk .page-title { background: linear-gradient(90deg, var(--ink), color-mix(in srgb, var(--accent) 70%, var(--ink))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .variants[hidden] { display: none !important; }
+
+  .sidebar { padding: 12px 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .lights { display: flex; gap: 8px; padding: 2px 6px 18px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px 14px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .brand svg { width: 22px; height: 22px; color: var(--accent); }
+  .nav { all: unset; display: flex; align-items: center; gap: 9px; padding: 6px 9px; border-radius: 7px; cursor: pointer; color: var(--ink); font-size: 13px; }
+  .nav svg { width: 15px; height: 15px; color: var(--muted); flex: none; }
+  .nav[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav[aria-current="page"] svg { color: var(--accent); }
+  .nav:focus-visible { outline: 2px solid var(--accent); }
+  .grow { flex: 1; }
+  .status { border-top: 1px solid var(--hair); margin: 8px 4px 6px; padding: 10px 6px 4px; display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--muted); }
+  .status div { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .status div span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .led { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(48,209,88,.18); flex: none; }
+
+  .content { border-left: 1px solid var(--hair); overflow-y: auto; padding: 38px 32px 32px; min-width: 0; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 4px; }
+  .page-sub { color: var(--muted); margin: 0 0 22px; font-size: 13px; }
+  .glabel { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin: 22px 4px 7px; }
+  .group { background: var(--card); border-radius: 10px; box-shadow: 0 0 0 .5px var(--line); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-height: 44px; flex-wrap: wrap; }
+  .row + .row { border-top: 1px solid var(--hair); }
+  .row .l { flex: 1; min-width: 160px; display: flex; flex-direction: column; }
+  .row .l small { color: var(--muted); font-size: 11.5px; }
+  kbd { font-family: var(--ui); font-size: 11.5px; font-weight: 500; padding: 2px 7px; min-width: 22px; text-align: center; border-radius: 5px; background: var(--key); border: 1px solid var(--key-line); border-bottom-width: 2px; color: var(--ink); }
+  .keys { display: inline-flex; gap: 4px; }
+  .pop { font-size: 12.5px; padding: 4px 10px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line), 0 1px 2px rgba(0,0,0,.08); color: var(--ink); display: inline-flex; gap: 6px; max-width: 100%; }
+  .pop::after { content: "⌄"; color: var(--muted); }
+  .switch { width: 32px; height: 19px; border-radius: 10px; background: var(--accent); position: relative; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 15px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .switch.off { background: var(--key-line); }
+  .switch.off::after { left: 2px; }
+  .meter { width: 120px; height: 5px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 40%; background: var(--accent); transition: width 90ms linear; }
+  .chipbtn { font: inherit; font-size: 12px; padding: 4px 11px; border-radius: 6px; border: 0; background: var(--accent); color: #fff; }
+  .ghost { background: var(--hair); color: var(--ink); }
+
+  /* Home */
+  .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+  .hero-pill { display: inline-flex; align-items: center; gap: 9px; height: 34px; padding: 0 14px 0 11px; border-radius: 999px; background: rgba(30,30,32,.78); color: #fff; box-shadow: 0 8px 22px rgba(20,20,40,.25); flex: none; }
+  .hero-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff453a; }
+  .wave { display: flex; align-items: center; gap: 2px; height: 16px; }
+  .wave b { display: block; width: 2px; border-radius: 2px; background: #fff; height: 3px; transition: height 70ms linear; }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .tile { background: var(--card); border-radius: 12px; box-shadow: 0 0 0 .5px var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .tile h4 { margin: 0; font-size: 13.5px; font-weight: 600; }
+  .tile p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+  .tile .keys { margin-top: auto; }
+  .tile .ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+  .tile .ic svg { width: 15px; height: 15px; }
+  .two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; }
+  .news li { margin: 0 0 6px; color: var(--muted); font-size: 12.5px; }
+  .news ul { margin: 0; padding: 10px 14px 6px 30px; }
+  .news .ver { padding: 10px 14px 0; font-weight: 600; font-size: 12.5px; }
+  .ver span { color: var(--faint); font-weight: 400; margin-left: 6px; }
+  .link { color: var(--accent); font-size: 12px; }
+
+  /* Settings sub tabs */
+  .subtabs { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--hair); gap: 2px; margin-bottom: 4px; flex-wrap: wrap; }
+  .subtabs button { all: unset; font-size: 12.5px; padding: 4px 12px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+  .subtabs button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 .5px var(--line); font-weight: 600; }
+  .subtabs button:focus-visible { outline: 2px solid var(--accent); }
+
+  /* Dictionary */
+  .dict-add { display: flex; gap: 8px; padding: 10px 14px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 120px; font: inherit; font-size: 12.5px; padding: 6px 9px; border-radius: 6px; border: 0; background: var(--hair); color: var(--ink); }
+  .mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .changes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; overflow-x: auto; }
+  .changes table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+  .changes th, .changes td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--page-line); vertical-align: top; }
+  .changes th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--page-muted); font-weight: 500; }
+  .changes tr:last-child td { border-bottom: 0; }
+  .changes td:first-child { font-weight: 600; white-space: nowrap; }
+
+  @media (max-width: 820px) {
+    .icon-row, .notes { grid-template-columns: minmax(0, 1fr); }
+    .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+    .sidebar { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .lights, .brand { padding-bottom: 6px; }
+    .grow, .status { display: none; }
+    .tiles, .two { grid-template-columns: minmax(0, 1fr); }
+    .content { padding: 22px 16px; border-left: 0; }
+    .desk { padding: 16px; }
+  }
+  @media (max-width: 480px) { body { padding-inline: 16px; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="ibg" x1="0.15" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#EEF7FF"/><stop offset="0.55" stop-color="#D3E6FF"/><stop offset="1" stop-color="#AFC6FF"/></linearGradient>
+    <linearGradient id="isheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="ibar" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#8CCBFF"/><stop offset="1" stop-color="#2F8CFF"/></linearGradient>
+    <filter id="ishadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#1A2A5C" flood-opacity=".28"/></filter>
+    <symbol id="icon" viewBox="0 0 1024 1024">
+      <g filter="url(#ishadow)"><rect x="100" y="100" width="824" height="824" rx="185" fill="url(#ibg)"/></g>
+      <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#isheen)"/>
+      <g fill="#13203B"><rect x="315" y="292" width="210" height="72" rx="36"/><rect x="384" y="292" width="72" height="440" rx="10"/><rect x="315" y="660" width="210" height="72" rx="36"/></g>
+      <rect x="546" y="292" width="168" height="440" rx="30" fill="url(#ibar)"/>
+    </symbol>
+    <symbol id="tray" viewBox="0 0 22 22"><g fill="currentColor"><rect x="4" y="3" width="7" height="2.4" rx="1.2"/><rect x="6.3" y="3" width="2.4" height="16" rx=".6"/><rect x="4" y="16.6" width="7" height="2.4" rx="1.2"/><rect x="12.4" y="3" width="5.6" height="16" rx="1.4"/></g></symbol>
+    <symbol id="mark" viewBox="0 0 64 64"><g fill="currentColor"><rect x="13" y="10" width="20" height="6.5" rx="3.25"/><rect x="19.7" y="10" width="6.6" height="44" rx="1.5"/><rect x="13" y="47.5" width="20" height="6.5" rx="3.25"/><rect x="35.5" y="10" width="15.5" height="44" rx="3.5" opacity=".55"/></g></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-ask" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · icon and UI revamp</div>
+    <h1>New icon and a fresh main window</h1>
+    <p class="lead">Your icon, redrawn to the macOS spec, and a mock of the revamped window: glass background, no title bar, and a new layout. Click the sidebar and the Settings tabs; the theme buttons switch light and dark.</p>
+  </header>
+
+
+
+  <section>
+    <h2>Icon</h2>
+    <div class="icon-row">
+      <div class="icon-stage light">
+        <figure><svg width="128" height="128"><use href="#icon"/></svg><figcaption>128</figcaption></figure>
+        <figure><svg width="64" height="64"><use href="#icon"/></svg><figcaption>64</figcaption></figure>
+        <figure><svg width="32" height="32"><use href="#icon"/></svg><figcaption>32</figcaption></figure>
+        <figure><svg width="16" height="16"><use href="#icon"/></svg><figcaption>16</figcaption></figure>
+        <div class="menubar light"><span></span>Finder&nbsp;&nbsp;File&nbsp;&nbsp;Edit<span class="sp"></span><svg class="tray"><use href="#tray"/></svg><span>Thu 11:42</span></div>
+      </div>
+      <div class="icon-stage dark">
+        <figure><svg width="128" height="128"><use href="#icon"/></svg><figcaption>128</figcaption></figure>
+        <figure><svg width="64" height="64"><use href="#icon"/></svg><figcaption>64</figcaption></figure>
+        <figure><svg width="32" height="32"><use href="#icon"/></svg><figcaption>32</figcaption></figure>
+        <figure><svg width="16" height="16"><use href="#icon"/></svg><figcaption>16</figcaption></figure>
+        <div class="menubar dark"><span></span>Finder&nbsp;&nbsp;File&nbsp;&nbsp;Edit<span class="sp"></span><svg class="tray"><use href="#tray"/></svg><span>Thu 11:42</span></div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="note"><b>Size and format fixed</b><span>1024 × 1024 with a transparent background. The body is 824 px with a 100 px margin, per Apple's grid. The black background and jagged glow are gone.</span></div>
+      <div class="note"><b>Colours pulled toward the app</b><span>The lavender bottom is now a cool blue (#AFC6FF), and the right bar runs from #8CCBFF to #2F8CFF, next to the app's #0A84FF. The I-beam stays navy #13203B.</span></div>
+      <div class="note"><b>Menu-bar icon and sidebar mark</b><span>A black template version for the menu bar (macOS tints it for light and dark), and a one-colour mark for the sidebar. Both are vector.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Main window</h2>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Theme">
+        <button type="button" id="th-light" aria-pressed="true">Light</button>
+        <button type="button" id="th-dark" aria-pressed="false">Dark</button>
+      </div>
+      <div class="seg variants" id="variants" role="group" aria-label="Dark mode style" hidden>
+        <button type="button" data-v="aurora" aria-pressed="true">Aurora</button>
+        <button type="button" data-v="navy" aria-pressed="false">Midnight Blue</button>
+        <button type="button" data-v="plum" aria-pressed="false">Plum</button>
+        <button type="button" data-v="graphite" aria-pressed="false">Graphite (current)</button>
+      </div>
+    </div>
+    <div class="desk" id="desk">
+      <div class="app" id="app">
+        <nav class="sidebar" aria-label="Typelite">
+          <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <div class="brand"><svg><use href="#mark"/></svg>Typelite</div>
+          <button class="nav" data-page="home" aria-current="page"><svg><use href="#i-home"/></svg>Home</button>
+          <button class="nav" data-page="settings"><svg><use href="#i-gear"/></svg>Settings</button>
+          <button class="nav" data-page="dictionary"><svg><use href="#i-book"/></svg>Dictionary</button>
+          <div class="grow"></div>
+          <div class="status" aria-label="Connection status">
+            <div><span class="led"></span><span>Speech · Local whisper.cpp</span></div>
+            <div><span class="led"></span><span>AI · PC Ollama</span></div>
+          </div>
+          <button class="nav" data-page="about"><svg><use href="#i-info"/></svg>About</button>
+        </nav>
+
+        <main class="content">
+          <!-- HOME -->
+          <div data-view="home">
+            <div class="hero">
+              <div>
+                <h3 class="page-title">Welcome to Typelite</h3>
+                <p class="page-sub" style="margin:0">Press a shortcut anywhere, speak, and polished text is typed for you.</p>
+              </div>
+            </div>
+            <div class="tiles">
+              <div class="tile"><div class="ic"><svg><use href="#i-mic"/></svg></div><h4>Dictate</h4><p>Speak and paste polished text.</p><span class="keys"><kbd>Fn</kbd></span></div>
+              <div class="tile"><div class="ic"><svg><use href="#i-globe"/></svg></div><h4>Translate</h4><p>Speak and paste it in English. Press again to switch language.</p><span class="keys"><kbd>Fn</kbd><kbd>⇧</kbd></span></div>
+              <div class="tile"><div class="ic"><svg><use href="#i-ask"/></svg></div><h4>Ask anything</h4><p>Ask a question and get a short answer.</p><span class="keys"><kbd>Fn</kbd><kbd>Space</kbd></span></div>
+            </div>
+            <div class="two">
+              <div>
+                <div class="glabel">Your setup</div>
+                <div class="group">
+                  <div class="row"><div class="l">Microphone</div><span class="mono">MacBook Pro Microphone</span></div>
+                  <div class="row"><div class="l">Speech</div><span class="mono">large-v3-turbo</span></div>
+                  <div class="row"><div class="l">AI</div><span class="mono">qwen3:4b-instruct</span></div>
+                  <div class="row"><div class="l">AI polish</div><span class="mono">On · Clean</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="glabel">What's new</div>
+                <div class="group news">
+                  <div class="ver">0.1.0<span>First Typelite release</span></div>
+                  <ul>
+                    <li>Speech and AI presets for your own servers</li>
+                    <li>Press-keys shortcut recording</li>
+                    <li>Three translation languages in the pill</li>
+                    <li>Live waveform, glass window, no history</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SETTINGS -->
+          <div data-view="settings" hidden>
+            <h3 class="page-title">Settings</h3>
+            <div class="subtabs" role="group" aria-label="Settings sections">
+              <button type="button" data-sub="general" aria-pressed="true">General</button>
+              <button type="button" data-sub="speech" aria-pressed="false">Speech</button>
+              <button type="button" data-sub="ai" aria-pressed="false">AI</button>
+              <button type="button" data-sub="prompts" aria-pressed="false">Prompt Presets</button>
+              <button type="button" data-sub="system" aria-pressed="false">System</button>
+            </div>
+
+            <div data-subview="general">
+              <div class="glabel">Shortcuts</div>
+              <div class="group">
+                <div class="row"><div class="l">Dictate<small>Tap to start, tap to stop</small></div><span class="keys"><kbd>Fn</kbd></span></div>
+                <div class="row"><div class="l">Translate</div><span class="keys"><kbd>Fn</kbd><kbd>⇧</kbd></span></div>
+                <div class="row"><div class="l">Ask anything</div><span class="keys"><kbd>Fn</kbd><kbd>Space</kbd></span></div>
+              </div>
+              <div class="glabel">Audio</div>
+              <div class="group">
+                <div class="row"><div class="l">Microphone</div><span class="pop">MacBook Pro Microphone</span></div>
+                <div class="row"><div class="l">Input level</div><span class="meter"><i></i></span></div>
+                <div class="row"><div class="l">Mute other audio while recording<small>Mutes the Mac's sound output, then restores it</small></div><span class="switch off"></span></div>
+              </div>
+              <div class="glabel">Dictation</div>
+              <div class="group">
+                <div class="row"><div class="l">Mode</div><span class="pop">Press to start/stop</span></div>
+                <div class="row"><div class="l">Text output</div><span class="pop">Paste from clipboard</span></div>
+              </div>
+            </div>
+
+            <div data-subview="speech" hidden>
+              <div class="glabel">Preset</div>
+              <div class="group">
+                <div class="row"><div class="l">Speech preset</div><span class="pop">Local whisper.cpp (Mac)</span></div>
+                <div class="row"><div class="l">Base URL</div><span class="mono">http://127.0.0.1:8178/v1</span></div>
+                <div class="row"><div class="l">Model</div><span class="mono">large-v3-turbo</span></div>
+                <div class="row"><div class="l">Language</div><span class="pop">Auto detect</span></div>
+                <div class="row"><div class="l">Connection<small>Last test 2,040 ms</small></div><button class="chipbtn" type="button">Test</button></div>
+              </div>
+            </div>
+
+            <div data-subview="ai" hidden>
+              <div class="glabel">Preset</div>
+              <div class="group">
+                <div class="row"><div class="l">AI preset</div><span class="pop">PC Ollama — Qwen3 4B</span></div>
+                <div class="row"><div class="l">Base URL</div><span class="mono">http://100.90.208.26:11434/v1</span></div>
+                <div class="row"><div class="l">Connection<small>Last test 152 ms</small></div><button class="chipbtn" type="button">Test</button></div>
+              </div>
+              <div class="glabel">Polish</div>
+              <div class="group">
+                <div class="row"><div class="l">AI cleanup for dictation</div><span class="switch"></span></div>
+                <div class="row"><div class="l">Style</div><span class="pop">Clean</span></div>
+                <div class="row"><div class="l">Adapt writing to the current app</div><span class="switch"></span></div>
+              </div>
+              <div class="glabel">Translation</div>
+              <div class="group">
+                <div class="row"><div class="l">Languages<small>Press Translate again while recording to switch</small></div><span class="keys"><kbd>English</kbd><kbd>中文</kbd><kbd>日本語</kbd></span></div>
+              </div>
+            </div>
+
+            <div data-subview="prompts" hidden>
+              <div class="subtabs" style="margin-top:14px" role="group" aria-label="Prompt presets">
+                <button type="button" aria-pressed="true">Prompts</button><button type="button" aria-pressed="false">Apps</button>
+              </div>
+              <div class="glabel">Built-in</div>
+              <div class="group">
+                <div class="row"><div class="l">Clean Dictation<small>Lightly clean transcription, keep meaning</small></div><span class="mono">Active</span></div>
+                <div class="row"><div class="l">Meeting Notes<small>Bullets, decisions, action items</small></div><button class="chipbtn ghost" type="button">Use</button></div>
+              </div>
+              <div class="glabel">Yours</div>
+              <div class="group"><div class="row"><div class="l" style="color:var(--muted)">No custom prompt presets yet</div><button class="chipbtn" type="button">New</button></div></div>
+            </div>
+
+            <div data-subview="system" hidden>
+              <div class="glabel">App</div>
+              <div class="group">
+                <div class="row"><div class="l">Launch at login</div><span class="switch"></span></div>
+                <div class="row"><div class="l">Show in Dock<small>Off keeps Typelite in the menu bar only</small></div><span class="switch"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DICTIONARY -->
+          <div data-view="dictionary" hidden>
+            <h3 class="page-title">Dictionary</h3>
+            <p class="page-sub">Words that speech recognition should know, and fixes applied after it.</p>
+            <div class="subtabs" role="group" aria-label="Dictionary sections">
+              <button type="button" aria-pressed="true">Words</button><button type="button" aria-pressed="false">Corrections</button>
+            </div>
+            <div class="glabel">Add a word</div>
+            <div class="group"><div class="dict-add"><input class="field" id="dict-word" placeholder="Word, e.g. Tailscale" aria-label="Word"><input class="field" id="dict-pron" placeholder="Pronunciation (optional)" aria-label="Pronunciation"><button class="chipbtn" type="button">Add</button></div></div>
+            <div class="glabel">3 words</div>
+            <div class="group">
+              <div class="row"><div class="l">Typelite</div><span class="mono">type-light</span></div>
+              <div class="row"><div class="l">Tailscale</div><span class="mono">—</span></div>
+              <div class="row"><div class="l">Qwen</div><span class="mono">chwen</span></div>
+            </div>
+          </div>
+
+          <!-- ABOUT -->
+          <div data-view="about" hidden>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><svg width="64" height="64"><use href="#icon"/></svg><div><h3 class="page-title" style="margin:0">Typelite</h3><span class="mono">Version 0.1.0 · MIT</span></div></div>
+            <div class="group">
+              <div class="row"><div class="l">Language</div><span class="pop">English</span></div>
+              <div class="row"><div class="l">Source code</div><span class="link">github.com/sennett-lau/typelite</span></div>
+              <div class="row"><div class="l">Built with</div><span class="mono">Tauri 2 · React · Rust</span></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dark mode styles</h2>
+    <div class="notes">
+      <div class="note"><b>Midnight Blue</b><span>Navy-tinted glass, a soft blue glow in the corners, brighter blue accent #5EA8FF. Calm and matches the icon.</span></div>
+      <div class="note"><b>Aurora</b><span>Near-black glass lit by teal and violet light from the corners, teal accent #3FD8C2. The most striking of the three.</span></div>
+      <div class="note"><b>Plum</b><span>Warm purple glass with pink and amber glows, pink accent #FF7AB8. Friendly and very unlike other dictation apps.</span></div>
+    </div>
+    <p class="lead">In every style, each feature gets its own colour (Dictate, Translate, Ask) on its tile icon, switches glow softly, and page titles pick up a hint of the accent. Light mode keeps the current look plus the per-feature colours.</p>
+  </section>
+
+  <section>
+    <h2>What changes from the old look</h2>
+    <div class="changes">
+      <table>
+        <thead><tr><th>Area</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Window</td><td>Grey title bar, solid panels</td><td>No title bar, window buttons over a glass sidebar, blurred desktop behind</td></tr>
+          <tr><td>Sidebar</td><td>Logo, nav, account at the bottom</td><td>Logo mark, three tabs, live connection status for speech and AI, About at the bottom</td></tr>
+          <tr><td>Settings</td><td>A second sidebar inside the page</td><td>Tabs across the top, each section as grouped rows like macOS System Settings</td></tr>
+          <tr><td>Home</td><td>Welcome line, counters, config list</td><td>Welcome, three shortcut tiles with key caps, setup summary, What's new</td></tr>
+          <tr><td>Typography</td><td>Medium-weight text everywhere, card titles</td><td>Bold 22 pt page titles, small uppercase group labels, 13 pt rows, SF Pro</td></tr>
+          <tr><td>Controls</td><td>Custom rounded buttons and cards</td><td>macOS-style switches, pop-up menus and key caps; blue only for the active item and main buttons</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var app = document.getElementById('app'), desk = document.getElementById('desk');
+  var variant = 'navy';
+  function setVariant(v) {
+    variant = v;
+    ['navy', 'aurora', 'plum', 'graphite'].forEach(function (x) { app.classList.toggle('v-' + x, x === v); });
+    document.querySelectorAll('#variants [data-v]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === v)); });
+  }
+  document.querySelectorAll('#variants [data-v]').forEach(function (b) { b.addEventListener('click', function () { setVariant(b.getAttribute('data-v')); }); });
+  setVariant('aurora');
+  function setTheme(dark) {
+    document.getElementById('variants').hidden = !dark;
+    app.classList.toggle('dk', dark); desk.classList.toggle('dk', dark);
+    document.getElementById('th-light').setAttribute('aria-pressed', String(!dark));
+    document.getElementById('th-dark').setAttribute('aria-pressed', String(dark));
+  }
+  document.getElementById('th-light').addEventListener('click', function () { setTheme(false); });
+  document.getElementById('th-dark').addEventListener('click', function () { setTheme(true); });
+  try { if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme(true); } catch (e) {}
+
+  var navs = app.querySelectorAll('.nav');
+  navs.forEach(function (n) {
+    n.addEventListener('click', function () {
+      navs.forEach(function (m) { m.removeAttribute('aria-current'); });
+      n.setAttribute('aria-current', 'page');
+      app.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.getAttribute('data-view') !== n.getAttribute('data-page'); });
+    });
+  });
+  var subs = app.querySelectorAll('[data-sub]');
+  subs.forEach(function (b) {
+    b.addEventListener('click', function () {
+      subs.forEach(function (c) { c.setAttribute('aria-pressed', String(c === b)); });
+      app.querySelectorAll('[data-subview]').forEach(function (v) { v.hidden = v.getAttribute('data-subview') !== b.getAttribute('data-sub'); });
+    });
+  });
+
+
+
+  var meter = app.querySelector('.meter i'), t = 0;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) setInterval(function () {
+    t += 0.08;
+    var v = Math.max(0, Math.sin(t * 9)) * (0.6 + 0.4 * Math.sin(t * 2)) * (Math.sin(t * 1.3) > -0.5 ? 1 : 0.1);
+    meter.style.width = (8 + v * 80).toFixed(0) + '%';
+  }, 80);
+})();
+</script>
