@@ -1,5 +1,8 @@
+pub mod builtin;
 pub mod capabilities;
 pub mod config;
+pub mod models;
+pub mod silence;
 pub mod whisper_compat;
 
 use async_trait::async_trait;
@@ -51,7 +54,24 @@ pub trait SttProvider: Send + Sync {
     fn set_upload_probe(&mut self, _probe: crate::timing::UploadProbe) {}
 }
 
-/// Creates the one speech provider type: an OpenAI-compatible transcription upload.
+/// Creates the provider for a speech preset: whisper.cpp in the app for built-in presets
+/// (plan 0012), otherwise an OpenAI-compatible transcription upload.
+pub fn provider_for_preset(
+    preset: &crate::storage::SpeechPreset,
+    client: Option<reqwest::Client>,
+) -> Result<Box<dyn SttProvider>, String> {
+    if preset.is_builtin_whisper() {
+        return Ok(Box::new(builtin::BuiltinProvider::new(
+            config::build_builtin_config(preset)?,
+        )));
+    }
+    Ok(create_provider(
+        config::build_whisper_config(preset)?,
+        client,
+    ))
+}
+
+/// Creates an OpenAI-compatible transcription upload provider.
 pub fn create_provider(
     config: WhisperCompatConfig,
     client: Option<reqwest::Client>,
@@ -74,12 +94,26 @@ mod tests {
             base_url: "http://localhost:8000/v1".to_string(),
             model: "large-v3-turbo".to_string(),
             language: "auto".to_string(),
-            builtin: false,
-            verified_at: None,
+            ..Default::default()
         };
         let cfg = config::build_whisper_config(&preset).unwrap();
 
         let provider = create_provider(cfg, None);
         assert_eq!(provider.name(), "My whisper");
+        assert_eq!(
+            provider_for_preset(&preset, None).unwrap().name(),
+            "My whisper"
+        );
+    }
+
+    #[test]
+    fn built_in_presets_get_the_in_process_provider() {
+        let preset = crate::storage::SpeechPreset::builtin_whisper("small", "ggml-small-q5_1.bin");
+        let provider = provider_for_preset(&preset, None).unwrap();
+        assert_eq!(provider.name(), "Built-in (this Mac)");
+
+        let mut no_file = preset.clone();
+        no_file.model_file.clear();
+        assert!(provider_for_preset(&no_file, None).is_err());
     }
 }

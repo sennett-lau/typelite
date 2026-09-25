@@ -405,16 +405,38 @@ pub fn now_unix_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// A saved speech-to-text endpoint: an OpenAI-compatible
-/// `POST {base_url}/audio/transcriptions` server. The optional API key is not stored here;
-/// it lives in the macOS Keychain under the preset id (see `credentials.rs`).
+/// Id of the "Built-in (this Mac)" speech preset that Quick setup creates (plan 0012).
+pub const BUILTIN_WHISPER_PRESET_ID: &str = "builtin-speech-this-mac";
+
+/// How a speech preset turns audio into text.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SpeechProviderKind {
+    /// Upload a WAV file to an OpenAI-compatible `/audio/transcriptions` server. Configs
+    /// written before plan 0012 have no `kind`, so this is the default.
+    #[default]
+    OpenaiCompatible,
+    /// Run whisper.cpp inside the app with a downloaded model file (plan 0012).
+    Builtin,
+}
+
+/// A saved speech-to-text setup. Usually an OpenAI-compatible
+/// `POST {base_url}/audio/transcriptions` server; with `kind: builtin` a model file that
+/// whisper.cpp runs inside the app. The optional API key is not stored here; it lives in the
+/// macOS Keychain under the preset id (see `credentials.rs`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(default)]
 pub struct SpeechPreset {
     pub id: String,
     pub name: String,
+    pub kind: SpeechProviderKind,
+    /// Server presets only. Empty for built-in presets.
     pub base_url: String,
+    /// Model name sent to the server. For built-in presets the id of the known model
+    /// (`large-v3-turbo`), shown in the UI and the Speed board.
     pub model: String,
+    /// Built-in presets only: the model file name inside the app's `models` folder.
+    pub model_file: String,
     /// `"auto"` or an ISO language code such as `"en"`.
     pub language: String,
     /// True for presets that ship with the app. They can still be edited.
@@ -434,8 +456,28 @@ impl SpeechPreset {
             model: model.to_string(),
             language: SPEECH_LANGUAGE_AUTO.to_string(),
             builtin: true,
-            verified_at: None,
+            ..Self::default()
         }
+    }
+
+    /// The "Built-in (this Mac)" preset for an installed model (plan 0012). Not a template:
+    /// Quick setup adds it once the model file is in place.
+    pub fn builtin_whisper(model_id: &str, model_file: &str) -> Self {
+        Self {
+            id: BUILTIN_WHISPER_PRESET_ID.to_string(),
+            name: "Built-in (this Mac)".to_string(),
+            kind: SpeechProviderKind::Builtin,
+            model: model_id.to_string(),
+            model_file: model_file.to_string(),
+            language: SPEECH_LANGUAGE_AUTO.to_string(),
+            builtin: true,
+            ..Self::default()
+        }
+    }
+
+    /// True when whisper.cpp runs this preset inside the app.
+    pub fn is_builtin_whisper(&self) -> bool {
+        self.kind == SpeechProviderKind::Builtin
     }
 
     /// whisper.cpp on this Mac: the first built-in and the fallback.
@@ -475,8 +517,10 @@ impl SpeechPreset {
 
     /// Same endpoint: the fields that decide whether a passed Test still holds.
     pub fn same_connection(&self, other: &Self) -> bool {
-        self.base_url == other.base_url
+        self.kind == other.kind
+            && self.base_url == other.base_url
             && self.model == other.model
+            && self.model_file == other.model_file
             && self.language == other.language
     }
 }
@@ -585,6 +629,7 @@ pub fn invalidate_changed_presets(previous: &AppConfig, next: &mut AppConfig) {
 /// What the readiness and migration code needs from both preset types.
 trait VerifiablePreset: Clone {
     fn id(&self) -> &str;
+    /// True for a shipped template that a template migration may replace or remove.
     fn is_builtin(&self) -> bool;
     fn base_url(&self) -> &str;
     fn model(&self) -> &str;
@@ -598,7 +643,9 @@ impl VerifiablePreset for SpeechPreset {
         &self.id
     }
     fn is_builtin(&self) -> bool {
-        self.builtin
+        // The "Built-in (this Mac)" preset is made by Quick setup, not from a template, so a
+        // template migration must keep it.
+        self.builtin && !self.is_builtin_whisper()
     }
     fn base_url(&self) -> &str {
         &self.base_url
@@ -1032,6 +1079,71 @@ impl AppConfig {
         mark_verified(&mut self.speech_presets, tested, at)
     }
 
+    /// Plan 0012: adds (or updates) the "Built-in (this Mac)" preset for an installed model and
+    /// makes it the active speech preset. The preset starts unverified; the automatic test
+    /// after setup marks it ready.
+    pub fn install_builtin_whisper(&mut self, model_id: &str, model_file: &str) -> SpeechPreset {
+        let fresh = SpeechPreset::builtin_whisper(model_id, model_file);
+        let preset = match self
+            .speech_presets
+            .iter_mut()
+            .find(|preset| preset.id == BUILTIN_WHISPER_PRESET_ID)
+        {
+            Some(existing) => {
+                existing.kind = SpeechProviderKind::Builtin;
+                existing.base_url.clear();
+                if existing.model_file != fresh.model_file {
+                    existing.model = fresh.model.clone();
+                    existing.model_file = fresh.model_file.clone();
+                    existing.verified_at = None;
+                }
+                existing.clone()
+            }
+            None => {
+                self.speech_presets.insert(0, fresh.clone());
+                fresh
+            }
+        };
+        self.active_speech_preset_id = preset.id.clone();
+        preset
+    }
+
+    /// Plan 0012: keeps built-in presets in step with the model files on disk. A preset whose
+    /// model file is gone moves to another installed model (and must pass a test again), or is
+    /// removed when no model is left; an active preset that is removed falls back to the first
+    /// preset, which is then not ready. Returns true when anything changed.
+    pub fn reconcile_builtin_models(&mut self, installed: &[(String, String)]) -> bool {
+        let mut changed = false;
+        let mut removed = Vec::new();
+        for preset in &mut self.speech_presets {
+            if !preset.is_builtin_whisper()
+                || installed.iter().any(|(_, file)| *file == preset.model_file)
+            {
+                continue;
+            }
+            changed = true;
+            match installed.first() {
+                Some((model_id, file)) => {
+                    preset.model = model_id.clone();
+                    preset.model_file = file.clone();
+                    preset.verified_at = None;
+                }
+                None => removed.push(preset.id.clone()),
+            }
+        }
+        if !removed.is_empty() {
+            self.speech_presets
+                .retain(|preset| !removed.contains(&preset.id));
+            if self.speech_presets.is_empty() {
+                self.speech_presets = SpeechPreset::builtin_templates();
+            }
+            if removed.contains(&self.active_speech_preset_id) {
+                self.active_speech_preset_id = self.speech_presets[0].id.clone();
+            }
+        }
+        changed
+    }
+
     /// Same as `mark_speech_verified`, for AI presets.
     pub fn mark_ai_verified(&mut self, tested: &AiPreset, at: u64) -> bool {
         mark_verified(&mut self.ai_presets, tested, at)
@@ -1085,7 +1197,13 @@ impl AppConfig {
         for preset in &mut self.speech_presets {
             preset.id = unique_preset_id(&preset.id, &mut seen_ids);
             preset.name = preset_name_or_default(&preset.name, &preset.model);
-            preset.base_url = normalize_preset_base_url(&preset.base_url);
+            if preset.is_builtin_whisper() {
+                preset.base_url.clear();
+                preset.model_file = preset.model_file.trim().to_string();
+            } else {
+                preset.base_url = normalize_preset_base_url(&preset.base_url);
+                preset.model_file.clear();
+            }
             preset.model = preset.model.trim().to_string();
             preset.language = preset.language.trim().to_string();
             if preset.language.is_empty() || preset.language == "multi" {
@@ -2152,6 +2270,158 @@ fn correction_identity_exists(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ─── Plan 0012: built-in (in-process) speech presets ───
+
+    #[test]
+    fn speech_presets_without_a_kind_parse_as_openai_compatible() {
+        let config = AppConfig::from_stored_value(serde_json::json!({
+            "speech_presets": [{
+                "id": "my-speech",
+                "name": "Mine",
+                "base_url": "http://10.0.0.2:8000/v1",
+                "model": "whisper",
+                "language": "auto",
+                "verified_at": 7
+            }],
+            "active_speech_preset_id": "my-speech",
+            "builtin_presets_version": BUILTIN_PRESETS_VERSION
+        }))
+        .unwrap();
+        let preset = config.active_speech_preset();
+        assert_eq!(preset.kind, SpeechProviderKind::OpenaiCompatible);
+        assert_eq!(preset.model_file, "");
+        assert!(config.speech_ready());
+    }
+
+    #[test]
+    fn built_in_speech_presets_round_trip_and_survive_the_template_migration() {
+        let mut stored = AppConfig::default();
+        let preset = stored.install_builtin_whisper("small", "ggml-small-q5_1.bin");
+        stored.mark_speech_verified(&preset, 9);
+        let mut value = serde_json::to_value(&stored).unwrap();
+        assert_eq!(value["speech_presets"][0]["kind"], "builtin");
+        assert_eq!(
+            value["speech_presets"][0]["model_file"],
+            "ggml-small-q5_1.bin"
+        );
+        // An old template version makes the migration run; it must keep this preset.
+        value["builtin_presets_version"] = serde_json::json!(0);
+
+        let config = AppConfig::from_stored_value_with_onboarding(value, false).unwrap();
+        let active = config.active_speech_preset();
+        assert_eq!(active.id, BUILTIN_WHISPER_PRESET_ID);
+        assert!(active.is_builtin_whisper());
+        assert_eq!(active.model, "small");
+        assert_eq!(active.base_url, "");
+        assert!(config.speech_ready());
+    }
+
+    #[test]
+    fn install_adds_and_selects_one_built_in_preset() {
+        let mut config = AppConfig::default();
+        let count = config.speech_presets.len();
+        let first =
+            config.install_builtin_whisper("large-v3-turbo", "ggml-large-v3-turbo-q5_0.bin");
+        assert_eq!(config.speech_presets.len(), count + 1);
+        assert_eq!(config.speech_presets[0], first);
+        assert_eq!(config.active_speech_preset_id, BUILTIN_WHISPER_PRESET_ID);
+        assert_eq!(first.name, "Built-in (this Mac)");
+        assert!(
+            !config.speech_ready(),
+            "ready only after the automatic test"
+        );
+        assert!(config.mark_speech_verified(&first, 5));
+        assert!(config.speech_ready());
+
+        // The same model again keeps the result; another model replaces it and needs a test.
+        config.install_builtin_whisper("large-v3-turbo", "ggml-large-v3-turbo-q5_0.bin");
+        assert!(config.speech_ready());
+        config.install_builtin_whisper("small", "ggml-small-q5_1.bin");
+        assert_eq!(config.speech_presets.len(), count + 1);
+        assert_eq!(config.active_speech_preset().model, "small");
+        assert!(!config.speech_ready());
+    }
+
+    #[test]
+    fn a_built_in_preset_changes_connection_with_its_model_file_or_kind() {
+        let a = SpeechPreset::builtin_whisper("small", "ggml-small-q5_1.bin");
+        let mut b = a.clone();
+        assert!(a.same_connection(&b));
+        b.model_file = "ggml-large-v3-turbo-q5_0.bin".into();
+        assert!(!a.same_connection(&b));
+        let mut c = a.clone();
+        c.kind = SpeechProviderKind::OpenaiCompatible;
+        assert!(!a.same_connection(&c));
+
+        let mut previous = AppConfig::default();
+        let preset = previous.install_builtin_whisper("small", "ggml-small-q5_1.bin");
+        previous.mark_speech_verified(&preset, 3);
+        let mut next = previous.clone();
+        next.speech_presets[0].language = "en".into();
+        invalidate_changed_presets(&previous, &mut next);
+        assert!(!next.speech_ready());
+    }
+
+    #[test]
+    fn normalising_a_built_in_preset_clears_server_fields() {
+        let mut config = AppConfig::default();
+        config.install_builtin_whisper("small", " ggml-small-q5_1.bin ");
+        config.speech_presets[0].base_url = "http://leftover".into();
+        config.speech_presets[1].model_file = "stray.bin".into();
+        config.normalize_values();
+        assert_eq!(config.speech_presets[0].base_url, "");
+        assert_eq!(config.speech_presets[0].model_file, "ggml-small-q5_1.bin");
+        assert_eq!(config.speech_presets[1].model_file, "");
+    }
+
+    #[test]
+    fn reconcile_follows_the_model_files_on_disk() {
+        let installed = |pairs: &[(&str, &str)]| -> Vec<(String, String)> {
+            pairs
+                .iter()
+                .map(|(id, file)| (id.to_string(), file.to_string()))
+                .collect()
+        };
+        let mut config = AppConfig::default();
+        let preset =
+            config.install_builtin_whisper("large-v3-turbo", "ggml-large-v3-turbo-q5_0.bin");
+        config.mark_speech_verified(&preset, 1);
+
+        // File present: nothing changes.
+        let both = installed(&[
+            ("large-v3-turbo", "ggml-large-v3-turbo-q5_0.bin"),
+            ("small", "ggml-small-q5_1.bin"),
+        ]);
+        assert!(!config.reconcile_builtin_models(&both));
+        assert!(config.speech_ready());
+
+        // Its file is gone but another model is installed: switch, and test again.
+        assert!(config.reconcile_builtin_models(&installed(&[("small", "ggml-small-q5_1.bin")])));
+        assert_eq!(
+            config.active_speech_preset().model_file,
+            "ggml-small-q5_1.bin"
+        );
+        assert!(!config.speech_ready());
+
+        // No model left: the preset goes and the first template becomes active (not ready).
+        assert!(config.reconcile_builtin_models(&[]));
+        assert!(config
+            .speech_presets
+            .iter()
+            .all(|preset| !preset.is_builtin_whisper()));
+        assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
+        assert!(!config.speech_ready());
+    }
+
+    #[test]
+    fn reconcile_keeps_another_active_preset() {
+        let mut config = AppConfig::default();
+        config.install_builtin_whisper("small", "ggml-small-q5_1.bin");
+        config.active_speech_preset_id = "builtin-speech-openai".into();
+        assert!(config.reconcile_builtin_models(&[]));
+        assert_eq!(config.active_speech_preset_id, "builtin-speech-openai");
+    }
 
     #[test]
     fn app_config_seeds_builtin_presets_and_ignores_old_provider_keys() {
