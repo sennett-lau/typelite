@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react'
 import {
   bindingFromHotkey,
   DEFAULT_SWITCH_LANGUAGE_HOTKEY,
+  displayBinding,
   hotkeyBindingIdentity,
 } from '../../stores/appStore'
 import type { ShortcutBinding } from '../../stores/appStore'
@@ -47,7 +48,10 @@ export function SwitchLanguageShortcut({
   }
 
   return (
-    <Row label={t('settings.switchLanguageHotkey')} help={t('settings.switchLanguageHint')}>
+    <Row
+      label={t('settings.switchLanguageHotkey')}
+      help={t('settings.generalPane.switchLanguageDesc')}
+    >
       <div
         data-hotkey-role="switchLanguage"
         className="flex w-[280px] max-w-full min-w-0 items-start gap-1"
@@ -55,6 +59,7 @@ export function SwitchLanguageShortcut({
         <div className="min-w-0 flex-1">
           <HotkeyRecorder
             value={switchLanguageLabel(binding, t)}
+            keycaps={binding ? displayBinding(binding).split(' + ') : undefined}
             validateHotkey={validate}
             onSaved={(hotkey) => {
               const next = bindingFromHotkey(hotkey)
