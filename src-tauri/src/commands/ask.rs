@@ -875,10 +875,10 @@ pub(crate) async fn start_reserved_ask_dictation(
 
         let stt_api_key =
             resolve_stt_config_secret(&config, &SystemCredentialVault).map_err(|e| e.to_string())?;
-        let whisper_config = stt::config::build_whisper_config(config.active_speech_preset())?;
         let operation_id = synthetic_operation_id();
         let stt_config = build_ask_stt_config(&config, stt_api_key);
-        let mut provider = stt::create_provider(whisper_config, Some(client.inner().clone()));
+        let mut provider =
+            stt::provider_for_preset(config.active_speech_preset(), Some(client.inner().clone()))?;
         let upload_probe = crate::timing::UploadProbe::default();
         provider.set_upload_probe(upload_probe.clone());
         let (mut handle, mut audio_rx) = AudioCaptureHandle::start(AudioConfig {

@@ -45,6 +45,11 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = "0.4"
 url = "2"
 tauri-plugin-process = "2"
+# Plan 0012: in-process whisper.cpp for the "Built-in (this Mac)" speech provider (Unlicense).
+# Builds whisper.cpp from source with cmake; logs go through `tracing`.
+whisper-rs = { version = "0.16", features = ["tracing_backend"] }
+sha2 = "0.10"
+fs4 = { version = "0.13", features = ["sync"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
@@ -64,6 +69,8 @@ objc2 = "0.6"
 block2 = "0.6"
 # Already in the tree through cpal; used directly to mute the output device while recording.
 coreaudio-sys = { version = "0.2", default-features = false, features = ["core_audio"] }
+# GPU (Metal) for the built-in speech provider.
+whisper-rs = { version = "0.16", features = ["tracing_backend", "metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["linux-native-sync-persistent", "crypto-rust"] }
@@ -78,3 +85,12 @@ codegen-units = 1
 opt-level = "s"
 lto = "thin"
 strip = true
+
+# whisper.cpp (built by cmake from whisper-rs-sys) follows the package's opt-level: 0 would
+# make a Debug build and "s" a MinSizeRel build, both much slower at transcribing. Build it
+# fully optimised in every profile.
+[profile.dev.package.whisper-rs-sys]
+opt-level = 3
+
+[profile.release.package.whisper-rs-sys]
+opt-level = 3

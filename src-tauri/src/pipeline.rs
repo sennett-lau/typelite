@@ -1231,30 +1231,31 @@ impl PipelineHandle {
             speech_preset.language
         );
 
-        let whisper_config = match stt::config::build_whisper_config(speech_preset) {
-            Ok(cfg) => cfg,
-            Err(e) => {
-                let _ = self.app_handle.emit("pipeline:error", e);
-                *self
-                    .preloaded_config
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()) = None;
-                *self
-                    .preloaded_app_ctx
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()) = None;
-                *self
-                    .preloaded_dictionary
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()) = None;
-                *self
-                    .preloaded_correction_rules
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner()) = None;
-                self.set_state(PipelineState::Idle);
-                return Ok(());
-            }
-        };
+        let mut provider =
+            match stt::provider_for_preset(speech_preset, Some(self.shared_client.clone())) {
+                Ok(provider) => provider,
+                Err(e) => {
+                    let _ = self.app_handle.emit("pipeline:error", e);
+                    *self
+                        .preloaded_config
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) = None;
+                    *self
+                        .preloaded_app_ctx
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) = None;
+                    *self
+                        .preloaded_dictionary
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) = None;
+                    *self
+                        .preloaded_correction_rules
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner()) = None;
+                    self.set_state(PipelineState::Idle);
+                    return Ok(());
+                }
+            };
 
         // Prepare STT configuration before starting the shared audio/STT readiness phase.
         let stt_config = SttConfig {
@@ -1263,7 +1264,6 @@ impl PipelineHandle {
             sample_rate: 16000,
         };
 
-        let mut provider = stt::create_provider(whisper_config, Some(self.shared_client.clone()));
         // Plan 0008: the provider notes when its upload starts and ends, for the Speed board.
         let upload_probe = crate::timing::UploadProbe::default();
         provider.set_upload_probe(upload_probe.clone());

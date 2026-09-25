@@ -128,6 +128,26 @@ mod tests {
     }
 
     #[test]
+    fn a_built_in_preset_is_ready_only_after_its_test() {
+        let mut config = config(false, true);
+        let preset = config.install_builtin_whisper("small", "ggml-small-q5_1.bin");
+        assert_eq!(
+            start_error(&config, Feature::Dictate).unwrap().code,
+            SPEECH_NOT_READY
+        );
+        assert!(config.mark_speech_verified(&preset, 10));
+        for feature in [Feature::Dictate, Feature::Translate, Feature::Ask] {
+            assert!(start_error(&config, feature).is_none());
+        }
+        // Deleting its model file makes it not ready again.
+        config.reconcile_builtin_models(&[]);
+        assert_eq!(
+            start_error(&config, Feature::Dictate).unwrap().code,
+            SPEECH_NOT_READY
+        );
+    }
+
+    #[test]
     fn readiness_follows_the_active_preset() {
         let mut config = config(true, true);
         config.active_speech_preset_id = config.speech_presets[2].id.clone();

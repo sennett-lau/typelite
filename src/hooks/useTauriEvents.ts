@@ -19,6 +19,8 @@ import {
 } from '../lib/capsuleError'
 import { applyVerificationEvent, type PresetVerificationEvent } from '../lib/readiness'
 import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/connectionStatus'
+import { useSpeechSetupStore } from '../stores/speechSetupStore'
+import type { SpeechSetupStatus } from '../lib/tauri'
 
 type Unlisten = () => void | Promise<void>
 
@@ -171,6 +173,10 @@ export function useTauriEvents() {
     })
 
     addListener<PresetVerificationEvent>('preset:verification', applyVerificationEvent)
+    // Plan 0012: Quick speech setup progress, kept in a store so it survives leaving the step.
+    addListener<SpeechSetupStatus>('speech-setup:status', (status) =>
+      useSpeechSetupStore.getState().applyStatus(status),
+    )
 
     addListener<void>('tray:settings', () => {
       window.location.hash = '#/settings'

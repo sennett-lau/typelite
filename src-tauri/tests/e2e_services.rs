@@ -11,6 +11,10 @@
 //! - `TYPELITE_E2E_SPEECH_URL` [`http://127.0.0.1:8178/v1`], `TYPELITE_E2E_SPEECH_MODEL` [`large-v3-turbo`]
 //! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL` [`qwen3:4b-instruct-2507-q4_K_M`]
 //!
+//! - `TYPELITE_E2E_BUILTIN_MODEL` [`~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin`]: model
+//!   file for the in-process (built-in) speech test; the test is skipped when it is missing.
+//! - `TYPELITE_E2E_DOWNLOAD=1`: also run the Quick setup download test (190 MB from Hugging Face).
+//!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
 
 use std::path::PathBuf;
@@ -345,4 +349,160 @@ async fn selection_translation_into_hong_kong_chinese_uses_traditional_character
         !text.to_lowercase().contains("meeting"),
         "not translated: {text:?}"
     );
+}
+
+/// Plan 0012: the model file for the in-process test. Defaults to the developer's copy used by
+/// the local whisper.cpp server.
+fn builtin_model_path() -> Option<PathBuf> {
+    let path = std::env::var("TYPELITE_E2E_BUILTIN_MODEL")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| {
+                PathBuf::from(home).join(".local/share/whisper/ggml-large-v3-turbo-q5_0.bin")
+            })
+        })?;
+    path.is_file().then_some(path)
+}
+
+/// Runs a recording through the built-in (in-process whisper.cpp) provider, the way the
+/// pipeline does: connect (which starts loading the model), stream chunks, disconnect.
+async fn transcribe_builtin(model: &std::path::Path, pcm: &[u8]) -> (Option<String>, Duration) {
+    stt::builtin::engine().set_models_dir(model.parent().unwrap().to_path_buf());
+    let preset = SpeechPreset::builtin_whisper(
+        "large-v3-turbo",
+        model.file_name().unwrap().to_str().unwrap(),
+    );
+    let mut provider = stt::provider_for_preset(&preset, None).expect("built-in provider");
+    let stt_config = SttConfig {
+        api_key: String::new(),
+        language: None,
+        sample_rate: SAMPLE_RATE,
+    };
+    provider.connect(&stt_config).await.expect("connect");
+    for chunk in pcm.chunks(CHUNK_BYTES) {
+        provider.send_audio(chunk).await.expect("send audio");
+    }
+    let started = Instant::now();
+    let text = provider
+        .disconnect()
+        .await
+        .expect("in-process transcription");
+    (text, started.elapsed())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a Whisper model file: TYPELITE_E2E_BUILTIN_MODEL, default ~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin"]
+async fn builtin_speech_transcribes_an_english_sentence_in_process() {
+    let Some(model) = builtin_model_path() else {
+        println!("builtin speech: no model file found, skipping");
+        return;
+    };
+    let pcm = synthesise(
+        "Please send the design review notes to the team by Friday.",
+        None,
+    );
+    let audio_secs = pcm.len() as f64 / 32_000.0;
+
+    // Load first so the load time is measured on its own.
+    let load_started = Instant::now();
+    stt::builtin::engine()
+        .preload(&model)
+        .expect("model should load");
+    let load = load_started.elapsed();
+    let (text, first) = transcribe_builtin(&model, &pcm).await;
+    let text = text.expect("transcript should not be empty");
+    // Again with the model in memory, the normal case while dictating.
+    let (_, warm) = transcribe_builtin(&model, &pcm).await;
+    println!(
+        "builtin speech: load {load:?}, first {first:?}, warm {warm:?} for {audio_secs:.1}s of audio -> {text:?}"
+    );
+    let words = normalised(&text);
+    for expected in ["design", "review", "notes", "friday"] {
+        assert!(words.contains(expected), "missing {expected:?} in {text:?}");
+    }
+
+    // Silence is skipped before whisper.cpp runs, as with the server provider.
+    let (silent, _) = transcribe_builtin(&model, &vec![0u8; SAMPLE_RATE as usize * 2]).await;
+    assert_eq!(silent, None);
+
+    // Free the model before the process exits (GGML's Metal cleanup aborts otherwise).
+    stt::builtin::engine().unload();
+}
+
+/// Plan 0012: Quick setup's download against the real Hugging Face file (190 MB): stop part
+/// way, resume with a Range request through the CDN redirect, then check the SHA-256.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "downloads 190 MB from Hugging Face"]
+async fn quick_setup_downloads_and_resumes_the_small_model() {
+    use stt::models::{self, DownloadError, DownloadRequest};
+
+    if std::env::var("TYPELITE_E2E_DOWNLOAD").ok().as_deref() != Some("1") {
+        println!("quick setup: set TYPELITE_E2E_DOWNLOAD=1 to run the 190 MB download");
+        return;
+    }
+    let model = *models::known_model("small").unwrap();
+    let dir = std::env::temp_dir().join(format!("typelite-e2e-models-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let client = reqwest::Client::new();
+    let url = format!("{}/{}", models::MODEL_BASE_URL, model.file_name);
+
+    // First try: cancel once 20 MB have arrived.
+    let (cancel_tx, cancel_rx) = tokio::sync::watch::channel(false);
+    let started = Instant::now();
+    let first = models::download_model(
+        DownloadRequest {
+            client: &client,
+            url: url.clone(),
+            dir: &dir,
+            model,
+            cancel: cancel_rx,
+            available_space: &models::disk_available_space,
+        },
+        |progress| {
+            if progress.downloaded_bytes > 20_000_000 {
+                let _ = cancel_tx.send(true);
+            }
+        },
+    )
+    .await;
+    assert_eq!(first.unwrap_err(), DownloadError::Cancelled);
+    let part = std::fs::metadata(dir.join(format!("{}.part", model.file_name)))
+        .unwrap()
+        .len();
+    println!("quick setup: cancelled after {part} bytes");
+
+    // Second try resumes from the part file.
+    let (_tx, rx) = tokio::sync::watch::channel(false);
+    let mut first_progress = None;
+    let mut last_speed = 0;
+    let path = models::download_model(
+        DownloadRequest {
+            client: &client,
+            url,
+            dir: &dir,
+            model,
+            cancel: rx,
+            available_space: &models::disk_available_space,
+        },
+        |progress| {
+            first_progress.get_or_insert(progress.downloaded_bytes);
+            last_speed = progress.bytes_per_second;
+        },
+    )
+    .await
+    .expect("resumed download");
+    let took = started.elapsed();
+    println!(
+        "quick setup: done in {took:?}, resumed at {:?} bytes, last speed {:.1} MB/s",
+        first_progress,
+        last_speed as f64 / 1e6
+    );
+    assert!(
+        first_progress.unwrap() >= part,
+        "the download did not resume"
+    );
+    assert_eq!(std::fs::metadata(&path).unwrap().len(), model.size_bytes);
+    let _ = std::fs::remove_dir_all(&dir);
 }

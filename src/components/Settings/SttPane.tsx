@@ -4,6 +4,7 @@ import { useAppStore } from '../../stores/appStore'
 import { getSttRecordingCapability, type ResolvedSttRecordingLimit } from '../../lib/tauri'
 import { Group, Row } from '../ui/Group'
 import { SpeechPresetEditor } from './SpeechPresetEditor'
+import { BuiltinModels } from './BuiltinModels'
 
 const RECORDING_LIMIT_PRESETS = [30, 60, 120, 300, 600, 1800, 3600]
 const MIN_CUSTOM_RECORDING_SECONDS = 30
@@ -113,7 +114,8 @@ export function SttPane() {
 
   return (
     <div>
-      <SpeechPresetEditor />
+      <SpeechPresetEditor context="settings" />
+      <BuiltinModels />
 
       <Group label={t('settings.groupRecording')}>
         <Row

@@ -676,8 +676,11 @@ describe('Settings tab 切换', () => {
   it('点击 Speech Recognition 后显示 speech preset 字段', () => {
     renderSettings()
     clickSettingsTab('settings.speechRecognition')
-    expect(screen.getByLabelText('presets.preset')).toBeDefined()
-    // STT pane 含语言选择
+    // Plan 0014: first the type, then that type's fields.
+    expect(screen.getByRole('group', { name: 'presets.type' })).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'presets.types.local' }))
+    expect(screen.getByLabelText('presets.address')).toBeDefined()
+    // Settings (not onboarding) shows the language
     expect(screen.getByText('settings.sttLanguage')).toBeDefined()
   })
 
@@ -1407,11 +1410,14 @@ describe('DirtyBar 行为', () => {
     })
   })
 
-  it('Save as new preset 后 DirtyBar 出现，保存时把 preset 列表写入后端', async () => {
+  it('Add new preset 后 DirtyBar 出现，保存时把 preset 列表写入后端', async () => {
     renderSettings()
     clickSettingsTab('settings.speechRecognition')
 
-    fireEvent.click(screen.getByRole('button', { name: /presets.saveAsNew/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'presets.types.local' }))
+    fireEvent.change(screen.getByLabelText('presets.savedPresets'), {
+      target: { value: '__add__' },
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Unsaved changes')).toBeDefined()

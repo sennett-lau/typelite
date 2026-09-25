@@ -88,8 +88,10 @@ describe('appStore', () => {
       expect(config.speech_presets[0]).toEqual({
         id: 'builtin-speech-local',
         name: 'whisper.cpp on this Mac',
+        kind: 'openai_compatible',
         base_url: 'http://127.0.0.1:8178/v1',
         model: 'large-v3-turbo',
+        model_file: '',
         language: 'auto',
         builtin: true,
         verified_at: null,

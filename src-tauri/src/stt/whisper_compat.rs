@@ -2,6 +2,8 @@ use async_trait::async_trait;
 
 use crate::error::AppError;
 
+use super::silence::{peak_window_level_db, SILENCE_THRESHOLD_DB};
+use super::transcript::normalize_transcript;
 use super::{SttConfig, SttProvider, TranscriptEvent};
 
 /// Configuration for a Whisper-compatible HTTP file-upload STT provider.
@@ -285,98 +287,10 @@ impl WhisperCompatProvider {
     }
 }
 
-/// Whisper returns its transcript as segments separated by line breaks, which are pauses, not
-/// paragraphs. Join them into one line so they are never pasted as random line breaks; the AI
-/// polish step adds structure where it belongs.
-pub fn normalize_transcript(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    for piece in text.split_whitespace() {
-        let joins_without_space = match (out.chars().last(), piece.chars().next()) {
-            (Some(prev), Some(next)) => is_cjk(prev) && is_cjk(next),
-            _ => true,
-        };
-        if !out.is_empty() && !joins_without_space {
-            out.push(' ');
-        }
-        out.push_str(piece);
-    }
-    out
-}
-
-/// Chinese, Japanese and Korean characters and their punctuation, which are written without
-/// spaces between them.
-fn is_cjk(c: char) -> bool {
-    matches!(c as u32,
-        0x3000..=0x303F     // CJK punctuation
-        | 0x3040..=0x30FF   // Hiragana, Katakana
-        | 0x3400..=0x4DBF   // CJK Extension A
-        | 0x4E00..=0x9FFF   // CJK Unified Ideographs
-        | 0xAC00..=0xD7AF   // Hangul
-        | 0xF900..=0xFAFF   // CJK Compatibility Ideographs
-        | 0xFF00..=0xFFEF) // Full-width forms
-}
-
-/// Recordings whose loudest 50 ms window stays below this level are treated as silence.
-/// Whisper tends to invent text ("Thank you.") for silent audio, so we never send it.
-const SILENCE_THRESHOLD_DB: f64 = -45.0;
-
-/// Loudest RMS level of any 50 ms window of 16-bit little-endian PCM, in dBFS.
-fn peak_window_level_db(pcm: &[u8], sample_rate: u32) -> f64 {
-    let window = (sample_rate as usize / 20).max(1);
-    let samples: Vec<f64> = pcm
-        .chunks_exact(2)
-        .map(|b| i16::from_le_bytes([b[0], b[1]]) as f64 / 32768.0)
-        .collect();
-    let peak_rms = samples
-        .chunks(window)
-        .map(|w| (w.iter().map(|s| s * s).sum::<f64>() / w.len() as f64).sqrt())
-        .fold(0.0_f64, f64::max);
-    20.0 * peak_rms.max(1e-9).log10()
-}
-
 #[cfg(test)]
 mod tests {
 
-    #[test]
-    fn transcript_segments_are_joined_into_one_line() {
-        assert_eq!(
-            normalize_transcript(" Um, so let's meet on Monday.\n No wait, Tuesday at 3pm.\n"),
-            "Um, so let's meet on Monday. No wait, Tuesday at 3pm."
-        );
-        assert_eq!(
-            normalize_transcript("我们明天\n下午三点开会。"),
-            "我们明天下午三点开会。"
-        );
-        assert_eq!(
-            normalize_transcript("开会 at 3pm\n好的"),
-            "开会 at 3pm 好的"
-        );
-    }
-
-    fn pcm_tone(amplitude: f64, seconds: f64, sample_rate: u32) -> Vec<u8> {
-        (0..(seconds * sample_rate as f64) as usize)
-            .flat_map(|n| {
-                let v = amplitude
-                    * (n as f64 * 440.0 * std::f64::consts::TAU / sample_rate as f64).sin();
-                ((v * 32767.0) as i16).to_le_bytes()
-            })
-            .collect()
-    }
-
-    #[test]
-    fn silence_is_below_the_speech_threshold() {
-        let silence = vec![0u8; 32_000];
-        assert!(peak_window_level_db(&silence, 16_000) < SILENCE_THRESHOLD_DB);
-        let room_hiss = pcm_tone(0.002, 1.0, 16_000);
-        assert!(peak_window_level_db(&room_hiss, 16_000) < SILENCE_THRESHOLD_DB);
-    }
-
-    #[test]
-    fn quiet_speech_is_above_the_speech_threshold() {
-        let quiet = pcm_tone(0.03, 1.0, 16_000);
-        assert!(peak_window_level_db(&quiet, 16_000) > SILENCE_THRESHOLD_DB);
-    }
-
+    use super::super::silence::pcm_tone;
     use super::*;
 
     #[tokio::test]

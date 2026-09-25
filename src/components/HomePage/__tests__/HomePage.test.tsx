@@ -2,10 +2,14 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { translate } from '../../../test-utils/i18nMock'
 import { useAppStore } from '../../../stores/appStore'
+import { IDLE_SETUP_STATUS, useSpeechSetupStore } from '../../../stores/speechSetupStore'
+import * as tauri from '../../../lib/tauri'
 import { WHATS_NEW } from '../../../lib/whatsNew'
 import en from '../../../i18n/locales/en.json'
 import zh from '../../../i18n/locales/zh.json'
 import { HomePage } from '../index'
+
+vi.mock('../../../lib/tauri')
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: translate }),
@@ -36,6 +40,13 @@ function setHotkeys(
 
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState())
+  useSpeechSetupStore.setState({ status: IDLE_SETUP_STATUS, models: null })
+  vi.clearAllMocks()
+  vi.mocked(tauri.getSpeechSetupStatus).mockResolvedValue(IDLE_SETUP_STATUS)
+  vi.mocked(tauri.listSpeechModels).mockResolvedValue([])
+  vi.mocked(tauri.startSpeechSetup).mockResolvedValue(undefined)
+  vi.mocked(tauri.cancelSpeechSetup).mockResolvedValue(true)
+  vi.mocked(tauri.getRunTimings).mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -54,10 +65,34 @@ describe('HomePage', () => {
         'Dictate pastes the raw transcript',
       )
 
+      // Speech: "Set up" starts Quick setup here (plan 0012); "Other options" opens Settings.
       fireEvent.click(within(card).getByRole('button', { name: 'Set up: Speech recognition' }))
+      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('large-v3-turbo')
+      expect(window.location.hash).toBe('')
+      fireEvent.click(within(card).getByRole('button', { name: 'Other options' }))
       expect(window.location.hash).toBe('#/settings?pane=stt')
       fireEvent.click(within(card).getByRole('button', { name: 'Set up: AI polish service' }))
       expect(window.location.hash).toBe('#/settings?pane=llm')
+    })
+
+    it('shows the Quick setup progress under the speech row until it is done', async () => {
+      vi.mocked(tauri.getSpeechSetupStatus).mockResolvedValue({
+        ...IDLE_SETUP_STATUS,
+        modelId: 'large-v3-turbo',
+        phase: 'downloading',
+        downloadedBytes: 287_000_000,
+        totalBytes: 574_041_195,
+        bytesPerSecond: 10_000_000,
+      })
+      render(<HomePage />)
+
+      const bar = await screen.findByRole('progressbar', { name: 'Speech model download' })
+      expect(bar).toHaveAttribute('aria-valuenow', '49')
+      expect(screen.getByText('287 MB of 574 MB · 10 MB/s · 29 s left')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Set up: Speech recognition' })).toBeDisabled()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+      expect(tauri.cancelSpeechSetup).toHaveBeenCalled()
     })
 
     it('shows only the missing service and says when its last test failed', () => {

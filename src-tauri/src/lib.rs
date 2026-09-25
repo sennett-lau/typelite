@@ -884,7 +884,9 @@ fn init_logging() {
     use tracing_subscriber::util::SubscriberInitExt;
 
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        EnvFilter::new("info,typelite_lib=debug,hyper_util=warn,reqwest=warn,tao=warn")
+        EnvFilter::new(
+            "info,typelite_lib=debug,hyper_util=warn,reqwest=warn,tao=warn,whisper_rs=warn",
+        )
     });
     let file_layer = log_file_path()
         .and_then(|path| open_log_file(&path))
@@ -1003,6 +1005,10 @@ pub fn run() {
             app.manage(context_detector);
             app.manage(pipeline_handle);
             app.manage(timing::RunTimingBuffer::default());
+            app.manage(commands::speech_setup::SpeechSetupState::default());
+            // Plan 0012: tell the built-in speech engine where models live, and drop presets
+            // whose model file is gone.
+            tauri::async_runtime::block_on(commands::speech_setup::init(&app_handle));
             app.manage(commands::ask::AskDictationState::default());
             app.manage(commands::audio::MicMonitorState::default());
             app.manage(HotkeyModeCache(Arc::new(Mutex::new(
@@ -1270,6 +1276,11 @@ pub fn run() {
             commands::credentials::clear_credential,
             commands::stt::get_stt_recording_capability,
             commands::stt::test_speech_preset,
+            commands::speech_setup::get_speech_setup_status,
+            commands::speech_setup::start_speech_setup,
+            commands::speech_setup::cancel_speech_setup,
+            commands::speech_setup::list_speech_models,
+            commands::speech_setup::delete_speech_model,
             commands::llm::test_ai_preset,
             commands::llm::fetch_ai_models,
             commands::dictionary::get_dictionary,
@@ -1309,6 +1320,9 @@ pub fn run() {
                 if let Some(buffer) = _app.try_state::<timing::RunTimingBuffer>() {
                     buffer.clear();
                 }
+                // Plan 0012: free the built-in speech model before exit, or GGML's Metal
+                // cleanup aborts the process.
+                stt::builtin::engine().unload();
             }
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen {

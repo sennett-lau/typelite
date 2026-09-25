@@ -51,6 +51,13 @@ pub async fn test_speech_preset(
     api_key: String,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<u32, String> {
+    if preset.is_builtin_whisper() {
+        // Plan 0012: load the model and run it on a short synthetic clip.
+        let config = stt::config::build_builtin_config(&preset)?;
+        let elapsed = stt::builtin::self_test(&config.model_file).await?;
+        crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;
+        return Ok(elapsed);
+    }
     if storage::base_url_has_placeholder(&preset.base_url) {
         return Err(storage::PLACEHOLDER_URL_ERROR.to_string());
     }

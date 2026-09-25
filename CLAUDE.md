@@ -85,8 +85,12 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
 
 - CoreAudio can keep an input stream's callback alive after the stream is dropped. Never rely on
   that drop to close a channel; close it explicitly (see `audio/capture.rs`).
-- Whisper invents text ("Thank you.") for silent audio; silent recordings are skipped before the
-  request (`SILENCE_THRESHOLD_DB` in `stt/whisper_compat.rs`).
+- Whisper invents text ("Thank you.") for silent audio; silent recordings are skipped before
+  recognition by every speech provider (`SILENCE_THRESHOLD_DB` in `stt/silence.rs`).
+- Built-in speech (in-process whisper.cpp, `stt/builtin.rs`): GGML's Metal backend aborts the
+  process in its exit-time cleanup if a model is still loaded, so the model is freed on
+  `RunEvent::Exit` (and at the end of tests). whisper.cpp is built by cmake at the crate's
+  opt-level, so `Cargo.toml` forces `opt-level = 3` for `whisper-rs-sys` in every profile.
 
 - **macOS permissions and rebuilds:** an ad-hoc-signed app gets a new cdhash on every build, so
   macOS silently ignores the old Accessibility grant (it still shows "on"). Check the grant's

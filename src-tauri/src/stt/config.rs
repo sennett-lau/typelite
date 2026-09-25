@@ -54,8 +54,25 @@ pub fn transcription_endpoint(base_url: &str) -> Result<String, String> {
     Ok(parsed.to_string())
 }
 
+/// Builds the in-process provider settings for a built-in preset (plan 0012).
+pub fn build_builtin_config(
+    preset: &SpeechPreset,
+) -> Result<super::builtin::BuiltinConfig, String> {
+    let model_file = preset.model_file.trim();
+    if model_file.is_empty() {
+        return Err(super::builtin::MODEL_MISSING_MESSAGE.to_string());
+    }
+    Ok(super::builtin::BuiltinConfig {
+        provider_name: preset.name.clone(),
+        model_file: model_file.to_string(),
+    })
+}
+
 /// Builds the uploader settings for a speech preset.
 pub fn build_whisper_config(preset: &SpeechPreset) -> Result<WhisperCompatConfig, String> {
+    if preset.is_builtin_whisper() {
+        return Err("This preset runs on this Mac and has no server".to_string());
+    }
     let model = preset.model.trim();
     if model.is_empty() {
         return Err("Model is required for the speech preset".to_string());
@@ -79,8 +96,7 @@ mod tests {
             base_url: base_url.to_string(),
             model: model.to_string(),
             language: "auto".to_string(),
-            builtin: false,
-            verified_at: None,
+            ..Default::default()
         }
     }
 
