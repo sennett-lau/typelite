@@ -174,11 +174,26 @@ impl LlmProvider for OpenAiProvider {
 
         let response = response.ok_or_else(|| last_error.unwrap())?;
 
+        // Prompt rule 7 (no final period), applied again to the answer because small models
+        // ignore it. See `prompt::strip_unspoken_final_period`.
+        let strip_final_period =
+            prompt::final_period_rule_applies(req.voice_intent.kind, has_selected_text);
+        let finish = |text: &str| {
+            if strip_final_period {
+                prompt::strip_unspoken_final_period(text, &req.raw_text, req.context.family)
+            } else {
+                text.to_string()
+            }
+        };
+
         if let Some(callback) = on_chunk {
             // Streaming mode
             let mut full_text = String::new();
             let mut reasoning_text = String::new();
             let mut stream = response.bytes_stream();
+            // With the final-period rule, a trailing period is held back from the callback
+            // until more text shows it is not the end.
+            let mut held_back = prompt::FinalPeriodStream::default();
 
             let mut buffer = String::new();
             let mut stream_done = false;
@@ -207,7 +222,14 @@ impl LlmProvider for OpenAiProvider {
                             if let Some(content) = event.text {
                                 if !content.is_empty() {
                                     full_text.push_str(&content);
-                                    callback(&content);
+                                    if strip_final_period {
+                                        let visible = held_back.visible(&full_text);
+                                        if !visible.is_empty() {
+                                            callback(visible);
+                                        }
+                                    } else {
+                                        callback(&content);
+                                    }
                                 }
                             }
 
@@ -231,10 +253,19 @@ impl LlmProvider for OpenAiProvider {
                     "LLM content empty, using reasoning_content ({} chars) as output",
                     reasoning_text.len()
                 );
-                callback(&reasoning_text);
+                if !strip_final_period {
+                    callback(&reasoning_text);
+                }
                 full_text = reasoning_text;
             } else if full_text.is_empty() {
                 tracing::error!("LLM streaming returned no content and no reasoning_content");
+            }
+            if strip_final_period {
+                full_text = finish(&full_text);
+                let rest = held_back.rest(&full_text);
+                if !rest.is_empty() {
+                    callback(rest);
+                }
             }
 
             Ok(PolishResponse {
@@ -254,7 +285,7 @@ impl LlmProvider for OpenAiProvider {
             }
 
             Ok(PolishResponse {
-                polished_text: text,
+                polished_text: finish(&text),
             })
         }
     }
