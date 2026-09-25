@@ -21,13 +21,13 @@ export function CapsulePreparing() {
   }
 
   return (
-    <motion.div className="relative z-10 flex items-center gap-2 h-9 px-3">
+    <motion.div className="relative z-10 flex items-center gap-2 h-full px-3">
       <motion.span
         className="w-2 h-2 rounded-full bg-white/75 flex-shrink-0"
         animate={reduced ? undefined : { opacity: [0.45, 1, 0.45], scale: [0.92, 1, 0.92] }}
         transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
       />
-      <p className="text-[11px] text-white/90 leading-snug truncate flex-1 min-w-0">
+      <p className="text-[11px] text-white/90 leading-4 truncate flex-1 min-w-0">
         {t('capsule.preparing')}
       </p>
       <button

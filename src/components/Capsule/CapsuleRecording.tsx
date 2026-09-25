@@ -23,7 +23,7 @@ export function CapsuleRecording() {
   }
 
   return (
-    <motion.div className="relative z-10 flex items-center gap-2 h-9 px-3">
+    <motion.div className="relative z-10 flex items-center gap-2 h-full px-3">
       {/* Recording dot — gentle opacity loop */}
       <motion.div
         className="w-2 h-2 rounded-full bg-recording flex-shrink-0"

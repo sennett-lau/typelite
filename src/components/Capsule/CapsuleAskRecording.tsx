@@ -20,7 +20,7 @@ export function CapsuleAskRecording() {
   }
 
   return (
-    <div className="relative z-10 flex h-9 items-center gap-2 px-3">
+    <div className="relative z-10 flex h-full items-center gap-2 px-3">
       <MessageCircle size={13} className="shrink-0 text-white/90" aria-hidden="true" />
       <span className="sr-only">{t('ask.title')}</span>
       <Waveform />
