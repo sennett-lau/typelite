@@ -51,6 +51,12 @@ afterEach(() => {
   useAppStore.setState(useAppStore.getInitialState())
 })
 
+function insertedResult() {
+  return { status: 'inserted', chars_inserted: 12 } as unknown as NonNullable<
+    ReturnType<typeof useAppStore.getState>['lastInsertResult']
+  >
+}
+
 describe('Capsule flow states', () => {
   beforeEach(() => {
     useAppStore.setState({
@@ -98,6 +104,7 @@ describe('Capsule flow states', () => {
     try {
       useAppStore.setState({ pipelineState: 'outputting' })
       const { rerender } = render(<Capsule />)
+      act(() => useAppStore.setState({ lastInsertResult: insertedResult() }))
 
       act(() => useAppStore.setState({ pipelineState: 'idle' }))
       rerender(<Capsule />)
@@ -112,6 +119,23 @@ describe('Capsule flow states', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('flashes done when streaming output goes straight from polishing to idle', () => {
+    useAppStore.setState({ pipelineState: 'polishing' })
+    render(<Capsule />)
+    act(() => useAppStore.setState({ lastInsertResult: insertedResult() }))
+    act(() => useAppStore.setState({ pipelineState: 'idle' }))
+    expect(screen.getByText('capsule.done')).toBeInTheDocument()
+  })
+
+  it('never shows the idle icon, and a cancelled run hides without done', () => {
+    useAppStore.setState({ pipelineState: 'recording', activeVoiceMode: 'dictate' })
+    const { container } = render(<Capsule />)
+    act(() => useAppStore.setState({ pipelineState: 'transcribing' }))
+    act(() => useAppStore.setState({ pipelineState: 'idle' }))
+    expect(screen.queryByText('capsule.done')).toBeNull()
+    expect(container.querySelector('svg circle, svg rect[x="8.5"]')).toBeNull()
   })
 
   it('shows no timer while recording or working', () => {

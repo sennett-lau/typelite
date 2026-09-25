@@ -4,7 +4,6 @@ import { useAppStore, type PipelineState } from '../../stores/appStore'
 import { useRecording } from '../../hooks/useRecording'
 import { getPillSize, useCapsuleResize } from '../../hooks/useCapsuleResize'
 import { stopAskFlow } from '../../lib/tauri'
-import { CapsuleIdle } from './CapsuleIdle'
 import { CapsulePreparing } from './CapsulePreparing'
 import { CapsuleRecording } from './CapsuleRecording'
 import { CapsuleProcessing } from './CapsuleProcessing'
@@ -43,16 +42,33 @@ function auroraModeFor(capsuleState: string): AuroraMode | null {
   }
 }
 
+/** States after which reaching idle means the run produced its result. */
+const RESULT_STATES = new Set<string>(['transcribing', 'polishing', 'outputting'])
+
 /**
- * True for a moment after a paste finished (outputting -> idle without an error), so the
- * pill can show its done flash before it hides.
+ * True for a moment after a run finished (transcribing, polishing or pasting -> idle without an
+ * error), so the pill can show its done flash before it hides. Streaming output can go straight
+ * from polishing to idle, so any of those states counts. The first idle render already returns
+ * true (from the previous state), so the idle icon never flashes before the done state.
  */
 function useDoneFlash(pipelineState: PipelineState, hasError: boolean): boolean {
   const [flash, setFlash] = useState(false)
   const previous = useRef(pipelineState)
+  // Only runs that inserted text flash "done"; a cancelled run just hides.
+  const lastInsertResult = useAppStore((s) => s.lastInsertResult)
+  const inserted = useRef(false)
+  const seenInsert = useRef(lastInsertResult)
+  if (lastInsertResult !== seenInsert.current) {
+    seenInsert.current = lastInsertResult
+    inserted.current = lastInsertResult !== null
+  }
+  if (pipelineState === 'preparing' || pipelineState === 'recording') inserted.current = false
+  const finishingNow =
+    pipelineState === 'idle' && !hasError && inserted.current && RESULT_STATES.has(previous.current)
 
   useEffect(() => {
-    const finishedPaste = previous.current === 'outputting' && pipelineState === 'idle'
+    const finishedPaste =
+      RESULT_STATES.has(previous.current) && pipelineState === 'idle' && inserted.current
     previous.current = pipelineState
     if (pipelineState !== 'idle' || hasError) {
       setFlash(false)
@@ -64,7 +80,7 @@ function useDoneFlash(pipelineState: PipelineState, hasError: boolean): boolean 
     return () => clearTimeout(timer)
   }, [pipelineState, hasError])
 
-  return flash
+  return flash || finishingNow
 }
 
 export function Capsule() {
@@ -179,7 +195,6 @@ export function Capsule() {
             exit={{ opacity: 0, filter: 'blur(2px)' }}
             transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
           >
-            {capsuleState === 'idle' && <CapsuleIdle />}
             {capsuleState === 'preparing' && <CapsulePreparing />}
             {capsuleState === 'recording' && <CapsuleRecording />}
             {capsuleState === 'transcribing' && <CapsuleProcessing />}
