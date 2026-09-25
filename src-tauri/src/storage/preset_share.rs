@@ -39,9 +39,22 @@ const MAX_ENTRIES: usize = 200;
 const MAX_FIELD_CHARS: usize = 2048;
 const MAX_API_KEY_CHARS: usize = 4096;
 const MAX_LANGUAGE_CHARS: usize = 16;
-/// The only kind that is shared today: an OpenAI-compatible server. Other kinds (the Built-in
-/// model, or kinds added later) are left out of an export and skipped on import.
+/// The kind an entry has when the file does not say: an OpenAI-compatible server. It is also
+/// the only kind shared for AI presets.
 pub const SHAREABLE_KIND: &str = "openai_compatible";
+/// Speech kinds that are shared: an OpenAI-compatible server, or Qwen Cloud's own API (plan
+/// `qwen-cloud-speech`). Other kinds (the Built-in model, or kinds added later) are left out of
+/// an export and skipped on import.
+pub const SHAREABLE_SPEECH_KINDS: [&str; 2] = [SHAREABLE_KIND, QWEN_CLOUD_KIND];
+const QWEN_CLOUD_KIND: &str = "qwen_cloud";
+
+/// True when entries of `kind` are shared for `service`.
+fn is_shareable_kind(service: ServiceKind, kind: &str) -> bool {
+    match service {
+        ServiceKind::Speech => SHAREABLE_SPEECH_KINDS.contains(&kind),
+        ServiceKind::Ai => kind == SHAREABLE_KIND,
+    }
+}
 
 /// Why an export or import failed. Sent to the frontend as `{ "code": ..., ...fields }`, which
 /// shows a translated message for each code.
@@ -254,7 +267,7 @@ fn is_unchanged_ai_template(preset: &AiPreset) -> bool {
 }
 
 fn speech_exportable(preset: &SpeechPreset) -> bool {
-    stored_kind(preset) == SHAREABLE_KIND
+    is_shareable_kind(ServiceKind::Speech, &stored_kind(preset))
         && !preset.is_builtin_whisper()
         && shareable_address(&preset.base_url).is_some()
         && !is_unchanged_speech_template(preset)
@@ -330,7 +343,7 @@ pub fn build_export<V: CredentialSecretReader>(
                 .filter(|preset| chosen(&preset.id) && speech_exportable(preset))
             {
                 entries.push(SharedPreset {
-                    kind: SHAREABLE_KIND.to_string(),
+                    kind: stored_kind(preset),
                     name: preset.name.clone(),
                     base_url: preset.base_url.clone(),
                     model: preset.model.clone(),
@@ -438,10 +451,11 @@ fn parse_list(
             Some(Value::String(kind)) => kind.as_str(),
             Some(_) => return Err(invalid(index)),
         };
-        if kind != SHAREABLE_KIND {
+        if !is_shareable_kind(service, kind) {
             skipped += 1;
             continue;
         }
+        let kind = kind.to_string();
         let raw: RawEntry = serde_json::from_value(item.clone()).map_err(|_| invalid(index))?;
         if raw.base_url.chars().count() > MAX_FIELD_CHARS
             || raw.model.chars().count() > MAX_FIELD_CHARS
@@ -454,6 +468,13 @@ fn parse_list(
             name: name.clone(),
             address: raw.base_url.trim().chars().take(200).collect(),
         })?;
+        // Qwen's compatible-mode address does not work for speech; store the native one, as the
+        // setup form does (plan `qwen-cloud-speech`).
+        let base_url = if kind == QWEN_CLOUD_KIND {
+            crate::stt::qwen_cloud::native_base_url(&base_url)
+        } else {
+            base_url
+        };
         let api_key = match raw.api_key.map(|key| key.trim().to_string()) {
             Some(key) if key.chars().count() > MAX_API_KEY_CHARS => return Err(invalid(index)),
             Some(key) if !key.is_empty() => Some(key),
@@ -467,7 +488,7 @@ fn parse_list(
             ServiceKind::Ai => (None, raw.extra_request_fields),
         };
         entries.push(SharedPreset {
-            kind: SHAREABLE_KIND.to_string(),
+            kind,
             name,
             base_url,
             model,
@@ -588,7 +609,11 @@ pub fn merge_import(
         let name = unique_name(&entry.name, &mut taken);
         match service {
             ServiceKind::Speech => {
-                let mut preset = SpeechPreset::server(&id, &name, &entry.base_url, &entry.model);
+                let mut preset = if entry.kind == QWEN_CLOUD_KIND {
+                    SpeechPreset::qwen_cloud(&id, &name, &entry.base_url, &entry.model)
+                } else {
+                    SpeechPreset::server(&id, &name, &entry.base_url, &entry.model)
+                };
                 preset.language = normalize_language(entry.language.as_deref());
                 config.speech_presets.push(preset.clone());
                 outcome.speech.push(preset);
@@ -955,6 +980,80 @@ mod tests {
         assert_eq!(parsed.ai.len(), 1);
         assert_eq!(parsed.skipped_ai, 1);
         assert_eq!(parsed.ai[0].api_key, None, "a blank key is no key");
+    }
+
+    #[test]
+    fn a_qwen_cloud_preset_round_trips_with_its_kind() {
+        let mut config = config_with_user_presets();
+        config.speech_presets.push(SpeechPreset::qwen_cloud(
+            "speech-qwen",
+            "Qwen Cloud",
+            crate::stt::qwen_cloud::DEFAULT_BASE_URL,
+            crate::stt::qwen_cloud::DEFAULT_MODEL,
+        ));
+        let offered: Vec<String> = export_candidates(&config, ServiceKind::Speech)
+            .into_iter()
+            .map(|candidate| candidate.id)
+            .collect();
+        assert_eq!(offered, vec!["speech-groq", "speech-qwen"]);
+
+        let ids = vec!["speech-qwen".to_string()];
+        let (text, count) =
+            build_export(&config, ServiceKind::Speech, &ids, false, &NoReadVault).unwrap();
+        assert_eq!(count, 1);
+        let value: Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(value["speech"][0]["kind"], "qwen_cloud");
+
+        let parsed = parse_file(&text).unwrap();
+        assert_eq!(parsed.skipped_speech, 0);
+        let outcome = merge_import(&mut config, &parsed, ServiceKind::Speech, &[0]).unwrap();
+        config.normalize_values();
+        let stored = config
+            .speech_presets
+            .iter()
+            .find(|preset| preset.id == outcome.speech[0].id)
+            .unwrap();
+        assert!(stored.is_qwen_cloud());
+        assert_eq!(stored.base_url, crate::stt::qwen_cloud::DEFAULT_BASE_URL);
+        assert_eq!(stored.name, "Qwen Cloud (2)");
+        assert_eq!(stored.verified_at, None);
+        assert!(!stored.builtin);
+    }
+
+    #[test]
+    fn an_imported_qwen_compatible_mode_address_becomes_the_native_one() {
+        let text = r#"{"format":"typelite-presets","version":1,"speech":[
+            {"kind":"qwen_cloud","name":"Qwen","model":"qwen-audio-3.0-asr-flash",
+             "base_url":"https://token-plan.maas.qwencloudapi.com/compatible-mode/v1/"},
+            {"kind":"openai_compatible","name":"Other","model":"m",
+             "base_url":"https://speech.example/compatible-mode/v1"}
+        ]}"#;
+        let parsed = parse_file(text).unwrap();
+        assert_eq!(parsed.speech[0].kind, "qwen_cloud");
+        assert_eq!(
+            parsed.speech[0].base_url,
+            "https://token-plan.maas.qwencloudapi.com/api/v1"
+        );
+        // Only Qwen Cloud entries are rewritten.
+        assert_eq!(
+            parsed.speech[1].base_url,
+            "https://speech.example/compatible-mode/v1"
+        );
+
+        let mut config = AppConfig::default();
+        let outcome = merge_import(&mut config, &parsed, ServiceKind::Speech, &[0, 1]).unwrap();
+        assert!(outcome.speech[0].is_qwen_cloud());
+        assert!(!outcome.speech[1].is_qwen_cloud());
+    }
+
+    #[test]
+    fn qwen_cloud_is_a_speech_kind_only() {
+        let text = r#"{"format":"typelite-presets","version":1,"ai":[
+            {"kind":"qwen_cloud","name":"Qwen","base_url":"https://a.example/v1","model":"m"}
+        ]}"#;
+        let parsed = parse_file(text).unwrap();
+        assert!(parsed.ai.is_empty());
+        assert_eq!(parsed.skipped_ai, 1);
     }
 
     #[test]

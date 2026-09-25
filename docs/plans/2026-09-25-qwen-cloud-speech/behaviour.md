@@ -19,6 +19,8 @@ There is no template and no service picker.
 - The saved presets list and the Settings picker show the preset like any other (its name, the
   host by default). From then on everything follows the saved kind.
 - The language row (Settings → Speech) is passed to Qwen as a hint; auto sends none.
+- Plan `preset-sharing` exports and imports Qwen Cloud presets with their kind
+  (`qwen_cloud`). An imported compatible-mode address becomes `.../api/v1`, as in the form.
 
 ## Provider
 

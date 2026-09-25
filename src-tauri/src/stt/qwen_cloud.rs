@@ -52,6 +52,16 @@ pub struct QwenCloudConfig {
     pub model: String,
 }
 
+/// The base URL with a trailing `.../compatible-mode/v1` (the address Qwen shows next to a key)
+/// replaced by the native `.../api/v1`; any other address is returned unchanged.
+pub fn native_base_url(base_url: &str) -> String {
+    let trimmed = base_url.trim().trim_end_matches('/');
+    match trimmed.strip_suffix(COMPATIBLE_MODE_PATH) {
+        Some(root) => format!("{root}{NATIVE_API_PATH}"),
+        None => trimmed.to_string(),
+    }
+}
+
 /// Full generation URL for a base URL. Accepts the host alone, `.../api/v1`, the full
 /// endpoint, or the `.../compatible-mode/v1` address that Qwen shows for the key.
 pub fn generation_endpoint(base_url: &str) -> Result<String, String> {
@@ -408,6 +418,15 @@ mod tests {
             assert_eq!(generation_endpoint(input).unwrap(), full, "{input}");
         }
         assert!(generation_endpoint("ftp://example.com").is_err());
+    }
+
+    #[test]
+    fn native_base_url_rewrites_only_the_compatible_mode_address() {
+        assert_eq!(
+            native_base_url("https://token-plan.maas.qwencloudapi.com/compatible-mode/v1/"),
+            "https://token-plan.maas.qwencloudapi.com/api/v1"
+        );
+        assert_eq!(native_base_url(DEFAULT_BASE_URL), DEFAULT_BASE_URL);
     }
 
     #[test]
