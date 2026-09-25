@@ -146,6 +146,8 @@ pub struct AskDictationSession {
     transcript: Arc<Mutex<String>>,
     error: Arc<Mutex<Option<String>>>,
     done: Arc<Notify>,
+    /// Plan 0008: where the speech provider notes its upload moments.
+    upload_probe: crate::timing::UploadProbe,
 }
 
 #[derive(Clone, Debug, Default, serde::Serialize)]
@@ -784,6 +786,8 @@ pub(crate) async fn start_reserved_ask_dictation(
         let operation_id = synthetic_operation_id();
         let stt_config = build_ask_stt_config(&config, stt_api_key);
         let mut provider = stt::create_provider(whisper_config, Some(client.inner().clone()));
+        let upload_probe = crate::timing::UploadProbe::default();
+        provider.set_upload_probe(upload_probe.clone());
         let (mut handle, mut audio_rx) = AudioCaptureHandle::start(AudioConfig {
             input_device: crate::audio::input_device_from_config(&config.input_device),
             mute_output_while_recording: config.mute_output_while_recording,
@@ -852,6 +856,7 @@ pub(crate) async fn start_reserved_ask_dictation(
                     transcript: transcript.clone(),
                     error: error.clone(),
                     done: done.clone(),
+                    upload_probe,
                 });
                 false
             }
@@ -1027,6 +1032,8 @@ pub async fn stop_ask_dictation(
     config_state: tauri::State<'_, storage::ConfigManager>,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<AskDictationResult, String> {
+    // Plan 0008: Speed board timing starts when stop is pressed.
+    let stop_at = std::time::Instant::now();
     let mut session = {
         let mut guard = state.0.lock().unwrap_or_else(|e| e.into_inner());
         if guard.processing {
@@ -1040,6 +1047,12 @@ pub async fn stop_ask_dictation(
         guard.processing = true;
         session
     };
+    let upload_probe = session.upload_probe.clone();
+    let mut transcript_at: Option<std::time::Instant> = None;
+    let mut ai_elapsed: Option<std::time::Duration> = None;
+    let mut pastes = false;
+    let mut failure_code = "stt_failed";
+    let mut run_config: Option<storage::AppConfig> = None;
 
     let result = async {
         session.handle.stop();
@@ -1067,6 +1080,7 @@ pub async fn stop_ask_dictation(
                 return Err(message);
             }
             if transcript.trim().is_empty() {
+                failure_code = "stt_no_speech_detected";
                 return Err("No speech detected. Please try again.".to_string());
             }
             tracing::warn!(
@@ -1083,13 +1097,19 @@ pub async fn stop_ask_dictation(
             return Err(message);
         }
 
-        let question = validate_ask_question(
-            &session
-                .transcript
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .clone(),
-        )?;
+        let transcript = session
+            .transcript
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+        failure_code = if transcript.trim().is_empty() {
+            "stt_no_speech_detected"
+        } else {
+            "ask_invalid_question"
+        };
+        let question = validate_ask_question(&transcript)?;
+        transcript_at = Some(std::time::Instant::now());
+        failure_code = "ask_failed";
         let selected_text_metadata = session
             .selected_text
             .as_deref()
@@ -1100,6 +1120,7 @@ pub async fn stop_ask_dictation(
             .is_some_and(|selected_text| selected_text.truncated);
 
         let config = config_state.load().await.map_err(|e| e.to_string())?;
+        run_config = Some(config.clone());
         let voice_intent = route_ask_intent(
             &question,
             used_selected_text,
@@ -1127,6 +1148,7 @@ pub async fn stop_ask_dictation(
             if execution.status
                 != crate::voice_intent::executor::VoiceExecutionStatus::Completed
             {
+                failure_code = "search_failed";
                 return Err("Search could not be opened safely".to_string());
             }
             return Ok(AskDictationResult::new(
@@ -1138,6 +1160,9 @@ pub async fn stop_ask_dictation(
         }
 
         if voice_intent.kind == VoiceIntentKind::DraftInsert {
+            failure_code = "llm_failed";
+            pastes = true;
+            let draft_started = std::time::Instant::now();
             let draft = app
                 .state::<crate::pipeline::PipelineHandle>()
                 .run_ask_draft(
@@ -1146,7 +1171,13 @@ pub async fn stop_ask_dictation(
                     &question,
                     voice_intent.clone(),
                 )
-                .await?;
+                .await;
+            ai_elapsed = Some(
+                draft
+                    .as_ref()
+                    .map_or_else(|_| draft_started.elapsed(), |draft| draft.llm_elapsed),
+            );
+            let draft = draft?;
             return Ok(AskDictationResult::new(
                 question,
                 draft.text,
@@ -1155,14 +1186,17 @@ pub async fn stop_ask_dictation(
             ));
         }
 
+        failure_code = "llm_failed";
+        let answer_started = std::time::Instant::now();
         let answer = answer_question(
             &config,
             &client,
             &question,
             session.selected_text.as_deref(),
         )
-        .await
-        .map_err(ask_app_error_message)?;
+        .await;
+        ai_elapsed = Some(answer_started.elapsed());
+        let answer = answer.map_err(ask_app_error_message)?;
 
         Ok(AskDictationResult::new(
             question,
@@ -1172,9 +1206,33 @@ pub async fn stop_ask_dictation(
         ))
     }
     .await;
+    let end_at = std::time::Instant::now();
 
     state.set_processing(false);
     emit_capsule_state(&app, PipelineState::Idle);
+
+    let run_config = match run_config {
+        Some(config) => config,
+        None => config_state.load().await.unwrap_or_default(),
+    };
+    crate::timing::record_run(
+        &app,
+        &crate::timing::RunMarks {
+            mode: crate::timing::RunMode::Ask,
+            stop_at,
+            upload: upload_probe.snapshot(),
+            transcript_at,
+            ai: ai_elapsed,
+            pastes,
+            end_at,
+            outcome: if result.is_ok() {
+                crate::timing::OUTCOME_OK.to_string()
+            } else {
+                failure_code.to_string()
+            },
+        },
+        &run_config,
+    );
 
     result
 }

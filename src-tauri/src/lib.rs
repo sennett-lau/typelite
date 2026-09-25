@@ -18,6 +18,7 @@ pub mod recording_deadline;
 pub mod selection;
 pub mod storage;
 pub mod stt;
+pub mod timing;
 pub mod tray;
 pub mod voice_intent;
 
@@ -1001,6 +1002,7 @@ pub fn run() {
             app.manage(shared_client);
             app.manage(context_detector);
             app.manage(pipeline_handle);
+            app.manage(timing::RunTimingBuffer::default());
             app.manage(commands::ask::AskDictationState::default());
             app.manage(commands::audio::MicMonitorState::default());
             app.manage(HotkeyModeCache(Arc::new(Mutex::new(
@@ -1296,10 +1298,17 @@ pub fn run() {
             commands::config::set_auto_start,
             commands::config::set_shortcut_tour_state,
             readiness::open_settings_pane,
+            timing::get_run_timings,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
+            // Plan 0008: the Speed board's run timings never outlive the app.
+            if let tauri::RunEvent::Exit = _event {
+                if let Some(buffer) = _app.try_state::<timing::RunTimingBuffer>() {
+                    buffer.clear();
+                }
+            }
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen {
                 has_visible_windows,

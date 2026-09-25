@@ -46,6 +46,9 @@ pub trait SttProvider: Send + Sync {
     /// Disconnect and optionally return a final transcript (for file-based providers).
     async fn disconnect(&mut self) -> Result<Option<String>, AppError>;
     fn name(&self) -> &str;
+    /// Plan 0008: gives the provider a slot to note when its upload starts and ends, for the
+    /// Speed board. Providers that do not upload a file can ignore it.
+    fn set_upload_probe(&mut self, _probe: crate::timing::UploadProbe) {}
 }
 
 /// Creates the one speech provider type: an OpenAI-compatible transcription upload.

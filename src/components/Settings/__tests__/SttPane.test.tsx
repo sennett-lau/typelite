@@ -89,6 +89,15 @@ describe('SttPane', () => {
       expect(screen.getByText(/Built-in preset/)).toBeInTheDocument()
     })
 
+    it('says what the Test time includes', () => {
+      render(<SttPane />)
+      expect(
+        screen.getByText(
+          'The time includes the upload, recognition of a short test clip, and the reply.',
+        ),
+      ).toBeInTheDocument()
+    })
+
     it('edits only the active preset', () => {
       addSecondPreset()
       render(<SttPane />)

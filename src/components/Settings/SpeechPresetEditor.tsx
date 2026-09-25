@@ -164,13 +164,16 @@ export function SpeechPresetEditor() {
         <Row
           label={t('settings.connection')}
           help={
-            sttTestStatus === 'success' || sttTestStatus === 'error' ? (
-              <TestFeedback
-                status={sttTestStatus}
-                latencyMs={sttLatencyMs}
-                errorMessage={testErrorMessage}
-              />
-            ) : undefined
+            <>
+              <span className="block">{t('presets.speechTestHelp')}</span>
+              {(sttTestStatus === 'success' || sttTestStatus === 'error') && (
+                <TestFeedback
+                  status={sttTestStatus}
+                  latencyMs={sttLatencyMs}
+                  errorMessage={testErrorMessage}
+                />
+              )}
+            </>
           }
         >
           <button

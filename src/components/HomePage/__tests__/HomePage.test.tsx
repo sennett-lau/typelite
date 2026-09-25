@@ -193,6 +193,12 @@ describe('HomePage', () => {
     expect(card.querySelectorAll('kbd')).toHaveLength(0)
   })
 
+  it('shows the Speed board, empty until the first run', () => {
+    render(<HomePage />)
+    const board = screen.getByRole('region', { name: 'Speed' })
+    expect(board).toHaveTextContent('Dictate once to see where the time goes.')
+  })
+
   it('shows the system default microphone when none is chosen', () => {
     render(<HomePage />)
     expect(screen.getByTestId('config-row-microphone')).toHaveTextContent('System default')
