@@ -371,7 +371,10 @@ impl TranslationConfig {
             let instructions = settings
                 .instructions
                 .map(|text| sanitize_translation_instructions(&text))
-                .filter(|text| !text.is_empty());
+                .filter(|text| {
+                    !text.is_empty()
+                        && *text != crate::llm::prompt::default_translation_instructions(&code)
+                });
             let ai_preset_id = settings
                 .ai_preset_id
                 .map(|id| id.trim().to_string())
@@ -3682,6 +3685,16 @@ mod tests {
         );
         // Saving drops the stale id.
         config.normalize_values();
+        assert!(config.translation.languages.is_empty());
+    }
+
+    #[test]
+    fn translation_instructions_equal_to_the_default_are_not_custom() {
+        let default = crate::llm::prompt::default_translation_instructions("zh-Hant-HK");
+        let config = config_with_languages(serde_json::json!({
+            "zh-Hant-HK": {"instructions": format!("  {default}\n")},
+            "ja": {"instructions": crate::llm::prompt::default_translation_instructions("ja")}
+        }));
         assert!(config.translation.languages.is_empty());
     }
 

@@ -2263,6 +2263,11 @@ impl PipelineHandle {
             polish_custom_prompt: config.polish_custom_prompt.clone(),
             polish_chinese_script: config.polish_chinese_script.clone(),
             translate_enabled,
+            translation_instructions: config
+                .translation
+                .custom_instructions(&target_lang)
+                .unwrap_or_default()
+                .to_string(),
             target_lang,
             selected_text,
             voice_intent: voice_intent.clone(),
