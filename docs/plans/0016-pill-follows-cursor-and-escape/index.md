@@ -4,7 +4,7 @@ Two Typeless behaviours: while the pill is showing, it moves to whichever screen
 pointer is on; and pressing **Escape** cancels the current recording or processing, like the
 pill's cancel button.
 
-Status: agreed — 2026-09-25
+Status: done — 2026-09-25
 
 ## Goals
 

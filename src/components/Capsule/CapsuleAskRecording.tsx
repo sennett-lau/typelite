@@ -30,6 +30,7 @@ export function CapsuleAskRecording() {
         onPointerUp={stopPointerPropagation}
         onClick={handleCancel}
         aria-label={t('capsule.cancelRecording')}
+        title={t('capsule.cancelHint')}
         className="shrink-0 rounded-full border-none bg-transparent p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
       >
         <X size={12} />

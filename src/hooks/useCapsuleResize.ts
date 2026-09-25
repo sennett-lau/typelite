@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { useAppStore, type PipelineState, type VoiceMode } from '../stores/appStore'
 
 export interface CapsuleSize {
@@ -129,6 +129,58 @@ export function pickMonitorForPoint<T extends MonitorGeometry>(
   })
 }
 
+/** Identifies a monitor by its logical rectangle (stable while the layout does not change). */
+export function monitorKey(monitor: MonitorGeometry): string {
+  const rect = monitorLogicalRect(monitor)
+  return `${rect.x},${rect.y},${rect.width},${rect.height}`
+}
+
+/**
+ * The cursor in global logical points. Tauri's `cursorPosition()` is scaled by the primary
+ * monitor's factor, whatever monitor the cursor is on.
+ */
+export function cursorLogicalPoint(
+  cursor: { x: number; y: number },
+  primaryScale: number | undefined,
+): { x: number; y: number } {
+  const scale = primaryScale || 1
+  return { x: cursor.x / scale, y: cursor.y / scale }
+}
+
+/**
+ * While the pill is up it follows the cursor's screen. Returns the monitor to move to, or
+ * `undefined` to stay: the cursor is still on the anchored monitor, or on no monitor at all
+ * (for example in a gap between screens).
+ */
+export function pickFollowTarget<T extends MonitorGeometry>(
+  monitors: T[],
+  cursor: { x: number; y: number },
+  anchoredMonitorKey: string | null,
+): T | undefined {
+  const target = pickMonitorForPoint(monitors, cursor)
+  if (!target || monitorKey(target) === anchoredMonitorKey) return undefined
+  return target
+}
+
+/** How often the visible pill checks which screen the cursor is on. */
+export const FOLLOW_POLL_MS = 250
+/** Each half of the fade when the pill moves to another screen. */
+export const FOLLOW_FADE_MS = 120
+
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  } catch {
+    return false
+  }
+}
+
+function fadeTo(element: HTMLElement, opacity: number): Promise<void> {
+  element.style.transition = `opacity ${FOLLOW_FADE_MS}ms ease`
+  element.style.opacity = String(opacity)
+  return new Promise((resolve) => setTimeout(resolve, FOLLOW_FADE_MS))
+}
+
 export function capsuleAnchorForMonitor(
   monitor: MonitorGeometry,
   windowWidth: number,
@@ -162,8 +214,12 @@ export function getSizeForState(
   return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount)
 }
 
-/** Sizes, places and shows the capsule window. `doneFlash` is true during the done flash. */
-export function useCapsuleResize(doneFlash = false) {
+/**
+ * Sizes, places and shows the capsule window. `doneFlash` is true during the done flash.
+ * While the pill is visible it follows the cursor to another screen, fading `fadeTarget`
+ * out and in around the move.
+ */
+export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLElement | null>) {
   const pipelineState = useAppStore((s) => s.pipelineState)
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const pipelineError = useAppStore((s) => s.pipelineError)
@@ -173,10 +229,22 @@ export function useCapsuleResize(doneFlash = false) {
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
   const anchor = useRef<CapsuleAnchor | null>(null)
+  /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
+  const anchorMonitor = useRef<string | null>(null)
+  const anchorSize = useRef<CapsuleSize>({ width: 0, height: 0 })
+  const windowHeightNow = useRef(0)
   const visible = useRef(false)
   const queue = useRef<Promise<void>>(Promise.resolve())
+  const followQueued = useRef(false)
 
   const hasError = pipelineError !== null
+  const shouldShow = getCapsuleVisibility({
+    contextMenuOpen,
+    capsuleExpanded,
+    hasError,
+    pipelineState,
+    doneFlash,
+  })
 
   useEffect(() => {
     const size = getSizeForState(
@@ -191,13 +259,6 @@ export function useCapsuleResize(doneFlash = false) {
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
-    const shouldShow = getCapsuleVisibility({
-      contextMenuOpen,
-      capsuleExpanded,
-      hasError,
-      pipelineState,
-      doneFlash,
-    })
 
     const run = async () => {
       const {
@@ -217,21 +278,19 @@ export function useCapsuleResize(doneFlash = false) {
         const monitors = await availableMonitors().catch(() => [])
         const primary = await primaryMonitor().catch(() => null)
         const cursor = await cursorPosition().catch(() => null)
-        // cursorPosition() is scaled by the primary monitor's factor.
-        const primaryScale = primary?.scaleFactor || 1
         const target =
           (cursor &&
-            pickMonitorForPoint(monitors, {
-              x: cursor.x / primaryScale,
-              y: cursor.y / primaryScale,
-            })) ||
+            pickMonitorForPoint(monitors, cursorLogicalPoint(cursor, primary?.scaleFactor))) ||
           primary ||
           monitors[0]
         if (target) {
           anchor.current = capsuleAnchorForMonitor(target, windowWidth, windowHeight)
+          anchorMonitor.current = monitorKey(target)
+          anchorSize.current = { width: windowWidth, height: windowHeight }
         }
       }
 
+      windowHeightNow.current = windowHeight
       await win.setSize(new LogicalSize(windowWidth, windowHeight)).catch(() => {})
       if (anchor.current) {
         // Left edge and vertical centre stay fixed. Content is padded 12px each side,
@@ -264,8 +323,64 @@ export function useCapsuleResize(doneFlash = false) {
     errorHasAction,
     translateTargetCount,
     doneFlash,
+    shouldShow,
     setContextMenuReady,
   ])
+
+  // While visible, follow the cursor to another screen. Moves go through the same queue as
+  // resizes, and the new position comes from the anchor maths only (never read back).
+  useEffect(() => {
+    if (!shouldShow) return
+
+    const follow = async () => {
+      followQueued.current = false
+      if (!visible.current || !anchor.current) return
+      const {
+        getCurrentWindow,
+        LogicalPosition,
+        availableMonitors,
+        primaryMonitor,
+        cursorPosition,
+      } = await import('@tauri-apps/api/window')
+      const cursor = await cursorPosition().catch(() => null)
+      if (!cursor) return
+      const monitors = await availableMonitors().catch(() => [])
+      const primary = await primaryMonitor().catch(() => null)
+      const target = pickFollowTarget(
+        monitors,
+        cursorLogicalPoint(cursor, primary?.scaleFactor),
+        anchorMonitor.current,
+      )
+      if (!target || !visible.current) return
+
+      const element = fadeTarget?.current ?? null
+      const fade = element !== null && !prefersReducedMotion()
+      if (fade) await fadeTo(element, 0)
+      anchor.current = capsuleAnchorForMonitor(
+        target,
+        anchorSize.current.width,
+        anchorSize.current.height,
+      )
+      anchorMonitor.current = monitorKey(target)
+      const origin = capsuleOrigin(anchor.current, windowHeightNow.current)
+      await getCurrentWindow()
+        .setPosition(new LogicalPosition(origin.x, origin.y))
+        .catch(() => {})
+      if (fade) {
+        await fadeTo(element, 1)
+        element.style.transition = ''
+        element.style.opacity = ''
+      }
+    }
+
+    const timer = setInterval(() => {
+      // One check at a time; skip a tick while the previous one is still waiting.
+      if (followQueued.current) return
+      followQueued.current = true
+      queue.current = queue.current.then(follow).catch(() => {})
+    }, FOLLOW_POLL_MS)
+    return () => clearInterval(timer)
+  }, [shouldShow, fadeTarget])
 
   return getSizeForState(
     pipelineState,

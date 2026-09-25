@@ -40,7 +40,7 @@ export function CapsuleWorking({ label, cancelLabel, icon }: CapsuleWorkingProps
           onPointerUp={stopPointerPropagation}
           onClick={handleCancel}
           aria-label={cancelLabel}
-          title={t('common.cancel')}
+          title={t('capsule.cancelHint')}
           className="flex-shrink-0 cursor-pointer rounded-full border-none bg-transparent p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
         >
           <X size={12} />

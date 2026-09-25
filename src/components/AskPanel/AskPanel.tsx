@@ -3,6 +3,7 @@ import { Check, Copy, Loader2, Mic, Square, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
+  ASK_CANCELLED_ERROR,
   abortAskDictation,
   answerAskAnyway,
   startAskDictation,
@@ -142,10 +143,12 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
         applyResult(result)
       }
     } catch (e) {
-      if (ignoreNextLocalResultRef.current) {
+      const message = e instanceof Error ? e.message : String(e)
+      if (ignoreNextLocalResultRef.current || message === ASK_CANCELLED_ERROR) {
+        // Dismissed, or cancelled with Escape: show nothing.
         ignoreNextLocalResultRef.current = false
       } else {
-        applyError(e instanceof Error ? e.message : String(e))
+        applyError(message)
       }
     } finally {
       ownsDictationRef.current = false

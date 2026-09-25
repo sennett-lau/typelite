@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   capsuleAnchorForMonitor,
   capsuleOrigin,
+  cursorLogicalPoint,
   getCapsuleFocusable,
   getCapsuleVisibility,
   getSizeForState,
+  monitorKey,
+  pickFollowTarget,
   pickMonitorForPoint,
 } from '../useCapsuleResize'
 
@@ -174,5 +177,45 @@ describe('capsule placement', () => {
     const origins = sizes.map((height) => capsuleOrigin(anchor, height))
     expect(new Set(origins.map((origin) => origin.x)).size).toBe(1)
     expect(origins.every((origin) => Number.isFinite(origin.y) && origin.y < 982)).toBe(true)
+  })
+})
+
+describe('pill follows the cursor screen', () => {
+  const onRetina = monitorKey(retina)
+
+  it('stays put while the cursor is on the anchored monitor', () => {
+    expect(pickFollowTarget(monitors, { x: 700, y: 400 }, onRetina)).toBeUndefined()
+    expect(pickFollowTarget(monitors, { x: 1511, y: 981 }, onRetina)).toBeUndefined()
+  })
+
+  it('moves to the monitor under the cursor when it differs', () => {
+    expect(pickFollowTarget(monitors, { x: -1000, y: 1500 }, onRetina)).toBe(leftExternal)
+    expect(pickFollowTarget(monitors, { x: 2000, y: 2000 }, onRetina)).toBe(rightExternal)
+    expect(pickFollowTarget(monitors, { x: 700, y: 400 }, monitorKey(rightExternal))).toBe(retina)
+  })
+
+  it('stays put when the cursor is on no monitor', () => {
+    expect(pickFollowTarget(monitors, { x: 99999, y: 99999 }, onRetina)).toBeUndefined()
+    // The gap right of the Retina display, above the right external.
+    expect(pickFollowTarget(monitors, { x: 2000, y: 500 }, onRetina)).toBeUndefined()
+  })
+
+  it('moves when nothing is anchored yet', () => {
+    expect(pickFollowTarget(monitors, { x: 700, y: 400 }, null)).toBe(retina)
+  })
+
+  it('reads the cursor in logical points using the primary scale', () => {
+    // Physical cursor on the Retina primary (2x) lands on the right external once converted.
+    const point = cursorLogicalPoint({ x: 4000, y: 4000 }, 2)
+    expect(point).toEqual({ x: 2000, y: 2000 })
+    expect(pickFollowTarget(monitors, point, onRetina)).toBe(rightExternal)
+    expect(cursorLogicalPoint({ x: 10, y: 20 }, undefined)).toEqual({ x: 10, y: 20 })
+  })
+
+  it('re-anchors bottom-centre of the new monitor with the original window size', () => {
+    const moved = capsuleAnchorForMonitor(rightExternal, 174, 60)
+    // Right external: logical x 726..3286, y 982..2422.
+    expect(moved.left).toBe(Math.round(726 + 1280 - 87))
+    expect(capsuleOrigin(moved, 60).y).toBe(2422 - 80 - 60)
   })
 })

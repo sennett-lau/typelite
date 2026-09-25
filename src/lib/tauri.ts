@@ -471,6 +471,9 @@ export async function startAskDictation(): Promise<AskDictationStartResult> {
   return invoke('start_ask_dictation')
 }
 
+/** `stopAskDictation` rejects with this when Escape cancelled Ask while it was thinking. */
+export const ASK_CANCELLED_ERROR = 'ask_cancelled'
+
 export async function stopAskDictation(): Promise<AskDictationResult> {
   return invoke('stop_ask_dictation')
 }

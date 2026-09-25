@@ -200,6 +200,9 @@ fn register_configured_shortcuts_guarded(
             .collect();
         let handle = app.clone();
         let gate_handle = app.clone();
+        let cancel_handle = app.clone();
+        // True when no configured shortcut needs the key listener (none, or only Switch
+        // language); the listener then only serves Switch language and Escape to cancel.
         let only_switch_language = plan
             .native
             .iter()
@@ -212,6 +215,8 @@ fn register_configured_shortcuts_guarded(
                     .try_state::<crate::pipeline::PipelineHandle>()
                     .is_some_and(|pipeline| pipeline.is_translate_recording())
             }),
+            // Escape cancels only while a run is active; otherwise it is left alone.
+            Some(Arc::new(move || crate::hotkey::escape_gate(&cancel_handle))),
             Arc::new(move |event| {
                 crate::hotkey::handle_hotkey_role_event(handle.clone(), event.role, event.state);
             }),
@@ -227,10 +232,13 @@ fn register_configured_shortcuts_guarded(
                     );
                 }
             }
-            // When only the Switch language key needs the key listener, a failed listener
+            // When only Switch language and Escape need the key listener, a failed listener
             // (no Accessibility permission yet) must not take the other shortcuts down.
             Err(error) if only_switch_language => {
-                tracing::warn!("Switch language shortcut is not active: {}", error);
+                tracing::warn!(
+                    "Switch language shortcut and Escape to cancel are not active: {}",
+                    error
+                );
             }
             Err(error) => return Err(error),
         }

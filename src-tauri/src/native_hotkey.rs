@@ -114,6 +114,11 @@ pub struct KeyInput {
 /// quick and must not wait on anything that waits on the listener.
 pub type SwitchGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 
+/// Tells the matcher whether a run (recording or processing) is active right now, so the cancel
+/// key (Escape) should stop it. Same rules as [`SwitchGate`]: quick, and never waits on the
+/// listener.
+pub type CancelGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
+
 /// Matches held keys against the configured chords.
 ///
 /// Rules:
@@ -131,6 +136,9 @@ pub type SwitchGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 ///   already held when the recording started (part of the Translate chord) never counts.
 ///   While they are live, a key press they win is swallowed, even a modifier; its release is
 ///   swallowed too, so the focused app never sees half of the key.
+/// - The cancel key (Escape, see [`ChordMatcher::with_cancel_key`]) counts only while the
+///   [`CancelGate`] says a run is active. Then its press fires a `Cancel` event and is
+///   swallowed together with its repeats and its release. At other times it is not touched.
 pub struct ChordMatcher {
     bindings: Vec<NativeHotkeyBinding>,
     /// Per binding: another binding has a larger chord that contains it, with the Switch
@@ -144,6 +152,9 @@ pub struct ChordMatcher {
     deferred: Vec<usize>,
     swallowed: BTreeSet<u16>,
     switch_gate: Option<SwitchGate>,
+    cancel_key: Option<(u16, CancelGate)>,
+    /// The cancel key's press was swallowed, so its repeats and release are swallowed too.
+    cancel_key_down: bool,
 }
 
 fn is_switch_role(binding: &NativeHotkeyBinding) -> bool {
@@ -181,6 +192,8 @@ impl ChordMatcher {
             deferred: Vec::new(),
             swallowed: BTreeSet::new(),
             switch_gate: None,
+            cancel_key: None,
+            cancel_key_down: false,
         }
     }
 
@@ -189,6 +202,43 @@ impl ChordMatcher {
     pub fn with_switch_gate(mut self, gate: SwitchGate) -> Self {
         self.switch_gate = Some(gate);
         self
+    }
+
+    /// Make `code` the cancel key: while `gate` says a run is active, pressing it fires a
+    /// [`crate::hotkey::HotkeyRole::Cancel`] event and the key is swallowed.
+    pub fn with_cancel_key(mut self, code: u16, gate: CancelGate) -> Self {
+        self.cancel_key = Some((code, gate));
+        self
+    }
+
+    /// Handles the cancel key. Returns the swallow decision, or `None` when the key is not the
+    /// cancel key or no run is active (then the event is handled as usual).
+    fn handle_cancel_key(
+        &mut self,
+        input: KeyInput,
+        events: &mut Vec<NativeHotkeyEvent>,
+    ) -> Option<bool> {
+        let (code, gate) = self.cancel_key.as_ref()?;
+        if input.code != *code {
+            return None;
+        }
+        if !input.pressed {
+            return std::mem::take(&mut self.cancel_key_down).then_some(true);
+        }
+        if self.cancel_key_down {
+            // Autorepeat (or a doubled key-down) of a press that already cancelled.
+            return Some(true);
+        }
+        if input.autorepeat || !gate() {
+            return None;
+        }
+        self.cancel_key_down = true;
+        events.push(NativeHotkeyEvent {
+            role: crate::hotkey::HotkeyRole::Cancel,
+            index: 0,
+            state: ShortcutState::Pressed,
+        });
+        Some(true)
     }
 
     fn switch_armed(&self) -> bool {
@@ -204,6 +254,9 @@ impl ChordMatcher {
     /// Feed one key edge. Pushes the resulting events and returns true when the platform
     /// event should be swallowed.
     pub fn handle(&mut self, input: KeyInput, events: &mut Vec<NativeHotkeyEvent>) -> bool {
+        if let Some(swallow) = self.handle_cancel_key(input, events) {
+            return swallow;
+        }
         if input.pressed {
             self.press(input, events)
         } else {
@@ -220,6 +273,7 @@ impl ChordMatcher {
         self.deferred.clear();
         self.held.clear();
         self.swallowed.clear();
+        self.cancel_key_down = false;
     }
 
     fn event(&self, index: usize, state: ShortcutState) -> NativeHotkeyEvent {
@@ -597,21 +651,28 @@ struct NativeHotkeyRuntimeInner {
 
 impl NativeHotkeyRuntime {
     /// Replace the running listener with one that matches `bindings`. `switch_gate` says when
-    /// the Switch language bindings are live.
+    /// the Switch language bindings are live. `cancel_gate` says when Escape cancels the
+    /// current run (macOS only; with a gate the listener runs even without native bindings).
     pub fn install(
         &self,
         bindings: Vec<NativeHotkeyBinding>,
         switch_gate: SwitchGate,
+        cancel_gate: Option<CancelGate>,
         handler: NativeHotkeyHandler,
     ) -> Result<(), String> {
         let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         let _ = inner.monitor.take();
 
-        if bindings.is_empty() {
+        // Escape's keycode is a macOS one; other platforms do not get the cancel key.
+        let cancel_gate = cancel_gate.filter(|_| cfg!(target_os = "macos"));
+        if bindings.is_empty() && cancel_gate.is_none() {
             return Ok(());
         }
 
-        let matcher = ChordMatcher::new(bindings).with_switch_gate(switch_gate);
+        let mut matcher = ChordMatcher::new(bindings).with_switch_gate(switch_gate);
+        if let Some(gate) = cancel_gate {
+            matcher = matcher.with_cancel_key(native_keys::ESCAPE_KEYCODE, gate);
+        }
         inner.monitor = Some(platform::PlatformNativeMonitor::start(matcher, handler)?);
         Ok(())
     }
@@ -1449,7 +1510,7 @@ mod tests {
         let handler: NativeHotkeyHandler = Arc::new(|_| {});
 
         assert!(runtime
-            .install(Vec::new(), Arc::new(|| false), handler)
+            .install(Vec::new(), Arc::new(|| false), None, handler)
             .is_ok());
     }
 
@@ -1976,5 +2037,132 @@ mod tests {
         let unknown = logic.process_mac_event(mac(MacEventKind::KeyDown, 200, 0));
         assert!(unknown.swallow);
         assert!(unknown.capture_events.is_empty());
+    }
+
+    /// The user's bindings plus Escape as the cancel key, with a run gate the test controls.
+    fn cancel_matcher() -> (ChordMatcher, Arc<std::sync::atomic::AtomicBool>) {
+        let active = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let gate_flag = Arc::clone(&active);
+        let matcher = user_matcher().with_cancel_key(
+            ESCAPE,
+            Arc::new(move || gate_flag.load(std::sync::atomic::Ordering::SeqCst)),
+        );
+        (matcher, active)
+    }
+
+    #[test]
+    fn escape_passes_through_when_no_run_is_active() {
+        let (mut matcher, _active) = cancel_matcher();
+        let (events, swallows) = run(&mut matcher, &[down(ESCAPE), repeat(ESCAPE), up(ESCAPE)]);
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![false, false, false]);
+    }
+
+    #[test]
+    fn escape_cancels_and_is_swallowed_during_a_run() {
+        let (mut matcher, active) = cancel_matcher();
+        set(&active, true);
+        let (events, swallows) = run(
+            &mut matcher,
+            &[down(ESCAPE), repeat(ESCAPE), repeat(ESCAPE), up(ESCAPE)],
+        );
+        assert_eq!(
+            events,
+            vec![(HotkeyRole::Cancel, Pressed)],
+            "repeats do not re-fire"
+        );
+        assert_eq!(swallows, vec![true, true, true, true]);
+    }
+
+    #[test]
+    fn escape_release_after_the_run_ended_is_still_swallowed() {
+        let (mut matcher, active) = cancel_matcher();
+        set(&active, true);
+        let (_, swallows) = run(&mut matcher, &[down(ESCAPE)]);
+        assert_eq!(swallows, vec![true]);
+        // The cancel ends the run before the key goes up.
+        set(&active, false);
+        let (events, swallows) = run(&mut matcher, &[repeat(ESCAPE), up(ESCAPE)]);
+        assert!(events.is_empty());
+        assert_eq!(
+            swallows,
+            vec![true, true],
+            "the app never sees half of the key"
+        );
+        // The next press is untouched again.
+        let (_, swallows) = run(&mut matcher, &[down(ESCAPE), up(ESCAPE)]);
+        assert_eq!(swallows, vec![false, false]);
+    }
+
+    #[test]
+    fn escape_held_before_the_run_does_not_cancel_on_autorepeat() {
+        let (mut matcher, active) = cancel_matcher();
+        let (_, swallows) = run(&mut matcher, &[down(ESCAPE)]);
+        assert_eq!(swallows, vec![false]);
+        set(&active, true);
+        let (events, swallows) = run(&mut matcher, &[repeat(ESCAPE), up(ESCAPE)]);
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![false, false]);
+    }
+
+    #[test]
+    fn escape_cancel_does_not_disturb_the_shortcuts() {
+        let (mut matcher, active) = cancel_matcher();
+        let (events, _) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::Dictation, Pressed),
+                (HotkeyRole::Dictation, Released)
+            ]
+        );
+        set(&active, true);
+        // Bare End waits for its release (End + Right Shift is also bound).
+        let (events, swallows) = run(
+            &mut matcher,
+            &[down(ESCAPE), up(ESCAPE), down(END), up(END)],
+        );
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::Cancel, Pressed),
+                (HotkeyRole::Dictation, Pressed),
+                (HotkeyRole::Dictation, Released)
+            ]
+        );
+        assert_eq!(swallows, vec![true, true, true, true]);
+    }
+
+    #[test]
+    fn mac_escape_is_swallowed_only_during_a_run_and_capture_keeps_its_meaning() {
+        let (matcher, active) = cancel_matcher();
+        let mut logic = TapLogic::Hotkeys(matcher);
+        let idle = logic.process_mac_event(mac(MacEventKind::KeyDown, ESCAPE, 0));
+        assert!(!idle.swallow);
+        assert!(idle.hotkey_events.is_empty());
+        assert!(
+            !logic
+                .process_mac_event(mac(MacEventKind::KeyUp, ESCAPE, 0))
+                .swallow
+        );
+
+        set(&active, true);
+        let running = logic.process_mac_event(mac(MacEventKind::KeyDown, ESCAPE, 0));
+        assert!(running.swallow);
+        assert_eq!(running.hotkey_events.len(), 1);
+        assert_eq!(running.hotkey_events[0].role, HotkeyRole::Cancel);
+        assert!(
+            logic
+                .process_mac_event(mac(MacEventKind::KeyUp, ESCAPE, 0))
+                .swallow
+        );
+
+        // Shortcut capture has no cancel key: Escape still cancels the capture.
+        let mut capture = TapLogic::Capture(CaptureState::default());
+        let output = capture.process_mac_event(mac(MacEventKind::KeyDown, ESCAPE, 0));
+        assert!(output.swallow);
+        assert!(output.hotkey_events.is_empty());
+        assert_eq!(output.capture_events.len(), 1);
+        assert!(output.capture_events[0].cancelled);
     }
 }
