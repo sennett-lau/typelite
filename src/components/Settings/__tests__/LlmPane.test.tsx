@@ -738,10 +738,8 @@ describe('LlmPane', () => {
 
       render(<LlmPane />)
       expect(screen.getByRole('radiogroup', { name: 'translate.targetsLabel' })).toBeInTheDocument()
-      // The single stored target is padded to three once.
-      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
-        translation: { targets: ['en', 'zh', 'ja'], active_target: 'en' },
-      })
+      // A single language stays single: no padding with other languages.
+      expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
     })
 
     it('shows the translation languages even when always-translate is off', () => {

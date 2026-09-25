@@ -3,7 +3,6 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { abortRecording } from '../../lib/tauri'
 import { Waveform } from './Waveform'
-import { DurationTimer } from './DurationTimer'
 import { TranslateTargetChips } from './TranslateTargetChips'
 
 export function CapsuleRecording() {
@@ -34,7 +33,6 @@ export function CapsuleRecording() {
       <Waveform />
       <TranslateTargetChips />
       <div className="flex-1" />
-      <DurationTimer />
       <button
         onPointerDown={stopPointerPropagation}
         onPointerUp={stopPointerPropagation}

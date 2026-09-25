@@ -199,19 +199,40 @@ fn register_configured_shortcuts_guarded(
             })
             .collect();
         let handle = app.clone();
-        native_runtime.install(
+        let gate_handle = app.clone();
+        let only_switch_language = plan
+            .native
+            .iter()
+            .all(|registered| registered.role == crate::hotkey::HotkeyRole::SwitchLanguage);
+        let installed = native_runtime.install(
             native_bindings,
+            // The Switch language shortcut only listens while a Translate recording runs.
+            Arc::new(move || {
+                gate_handle
+                    .try_state::<crate::pipeline::PipelineHandle>()
+                    .is_some_and(|pipeline| pipeline.is_translate_recording())
+            }),
             Arc::new(move |event| {
                 crate::hotkey::handle_hotkey_role_event(handle.clone(), event.role, event.state);
             }),
-        )?;
-        for registered in &plan.native {
-            tracing::info!(
-                "registered native chord {} for {} hotkey at index {}",
-                registered.display,
-                registered.role.as_str(),
-                registered.index
-            );
+        );
+        match installed {
+            Ok(()) => {
+                for registered in &plan.native {
+                    tracing::info!(
+                        "registered native chord {} for {} hotkey at index {}",
+                        registered.display,
+                        registered.role.as_str(),
+                        registered.index
+                    );
+                }
+            }
+            // When only the Switch language key needs the key listener, a failed listener
+            // (no Accessibility permission yet) must not take the other shortcuts down.
+            Err(error) if only_switch_language => {
+                tracing::warn!("Switch language shortcut is not active: {}", error);
+            }
+            Err(error) => return Err(error),
         }
     }
 
@@ -238,11 +259,13 @@ fn effective_hotkey_config(config: &storage::AppConfig) -> storage::HotkeyConfig
         || !ask_matches
         || config.hotkeys.dictation_mode != config.hotkey_mode
     {
-        return storage::HotkeyConfig::from_legacy(
+        let mut hotkeys = storage::HotkeyConfig::from_legacy(
             &config.hotkey,
             &config.ask_hotkey,
             &config.hotkey_mode,
         );
+        hotkeys.switch_language = config.hotkeys.switch_language.clone();
+        return hotkeys;
     }
 
     let mut hotkeys = config.hotkeys.clone();

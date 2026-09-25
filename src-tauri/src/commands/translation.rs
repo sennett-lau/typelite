@@ -36,8 +36,8 @@ pub async fn set_active_translation_target(
 }
 
 /// Switches a running Translate recording to its next target language (1 -> 2 -> 3 -> 1),
-/// saves it as the active target and tells the windows. Pressing the Translate shortcut
-/// again while recording calls this.
+/// saves it as the active target and tells the windows. The Switch language shortcut calls
+/// this. With one language it changes nothing.
 #[tauri::command]
 pub async fn cycle_translation_target(
     app: tauri::AppHandle,
@@ -51,6 +51,9 @@ pub async fn cycle_translation_target(
         .map_err(|error| error.to_string())?;
 
     let (previous_operation_target, code) = pipeline.cycle_active_translation_target()?;
+    if code == previous_operation_target {
+        return Ok(config.translation);
+    }
     if !config.translation.targets.contains(&code) {
         // Settings changed the list during this recording; keep the run on its old target.
         let _ = pipeline.switch_active_translation_target(previous_operation_target);
@@ -111,66 +114,54 @@ async fn persist_active_target(
     Ok(config.translation)
 }
 
-/// Whether a Translate-shortcut event should cycle the target language instead of the usual
-/// start/stop. Only a press in toggle mode during a Translate recording cycles; in hold mode
-/// the press started the recording and the release stops it, so only the pill chips switch.
-pub fn translate_shortcut_cycles_target(
-    hotkey_mode: &str,
+/// Whether a Switch language shortcut event should move to the next language: only a press
+/// while a Translate recording is capturing audio. The key listener already ignores the
+/// shortcut at other times; this check covers a press whose release arrives late (a key that
+/// is also part of a longer chord fires on release) after the recording has ended.
+pub fn switch_language_press_cycles_target(
     event_state: tauri_plugin_global_shortcut::ShortcutState,
     pipeline_state: crate::pipeline::PipelineState,
     is_translate_run: bool,
 ) -> bool {
-    hotkey_mode == "toggle"
-        && event_state == tauri_plugin_global_shortcut::ShortcutState::Pressed
+    event_state == tauri_plugin_global_shortcut::ShortcutState::Pressed
         && pipeline_state == crate::pipeline::PipelineState::Recording
         && is_translate_run
 }
 
 #[cfg(test)]
 mod tests {
-    use super::translate_shortcut_cycles_target;
+    use super::switch_language_press_cycles_target;
     use crate::pipeline::PipelineState;
     use tauri_plugin_global_shortcut::ShortcutState;
 
     #[test]
-    fn translation_shortcut_cycles_only_on_toggle_press_during_translate_recording() {
+    fn switch_language_cycles_only_on_a_press_during_a_translate_recording() {
         let pressed = ShortcutState::Pressed;
-        assert!(translate_shortcut_cycles_target(
-            "toggle",
+        assert!(switch_language_press_cycles_target(
             pressed,
             PipelineState::Recording,
             true
         ));
-        // A plain dictation recording is stopped by the Translate shortcut as before.
-        assert!(!translate_shortcut_cycles_target(
-            "toggle",
+        // A Dictate recording has no languages to switch.
+        assert!(!switch_language_press_cycles_target(
             pressed,
             PipelineState::Recording,
             false
         ));
-        // Starting from idle and pressing during later stages keep the old behaviour.
-        assert!(!translate_shortcut_cycles_target(
-            "toggle",
+        // Idle, or after the recording has moved on to transcribing.
+        assert!(!switch_language_press_cycles_target(
             pressed,
             PipelineState::Idle,
             false
         ));
-        assert!(!translate_shortcut_cycles_target(
-            "toggle",
+        assert!(!switch_language_press_cycles_target(
             pressed,
             PipelineState::Transcribing,
             true
         ));
-        assert!(!translate_shortcut_cycles_target(
-            "toggle",
+        // Releases never switch.
+        assert!(!switch_language_press_cycles_target(
             ShortcutState::Released,
-            PipelineState::Recording,
-            true
-        ));
-        // Hold mode: the release stops the recording, so a press never cycles.
-        assert!(!translate_shortcut_cycles_target(
-            "hold",
-            pressed,
             PipelineState::Recording,
             true
         ));

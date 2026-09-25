@@ -131,6 +131,9 @@ pub struct HotkeyConfig {
     pub switch_scene: Option<ShortcutBinding>,
     pub open_app: Option<ShortcutBinding>,
     pub dictation_mode: String,
+    /// Switches the target language of a running Translate recording. Only listened to while
+    /// a Translate recording runs (plan 0010). Default: Shift on either side.
+    pub switch_language: Option<ShortcutBinding>,
 }
 
 impl Default for HotkeyConfig {
@@ -169,6 +172,7 @@ impl HotkeyConfig {
             switch_scene: None,
             open_app: None,
             dictation_mode,
+            switch_language: default_switch_language_binding(),
         }
     }
 
@@ -211,8 +215,14 @@ impl HotkeyConfig {
         normalize_optional_binding(&mut self.edit_selection);
         normalize_optional_binding(&mut self.switch_scene);
         normalize_optional_binding(&mut self.open_app);
+        normalize_optional_binding(&mut self.switch_language);
         self.dictation_mode = normalize_hotkey_mode(&self.dictation_mode).to_string();
     }
+}
+
+/// The default Switch language key: Shift on either side (`Shift` as a bare key).
+pub fn default_switch_language_binding() -> Option<ShortcutBinding> {
+    ShortcutBinding::from_hotkey("Shift")
 }
 
 fn normalize_binding_list(bindings: &mut Vec<ShortcutBinding>) {
@@ -253,10 +263,36 @@ pub(crate) fn shortcut_binding_identity(binding: &ShortcutBinding) -> String {
     parts.join("+")
 }
 
+/// Translation target codes, in the order the Settings list offers them. Chinese has three
+/// variants (Simplified, Traditional as written in Hong Kong, Traditional as written in
+/// Taiwan); the old single `zh` code is read as `zh-Hans`.
 pub const SUPPORTED_TRANSLATION_LANGUAGES: &[&str] = &[
-    "en", "zh", "ja", "ko", "fr", "de", "es", "pt", "ru", "ar", "hi", "th", "vi", "it", "nl", "tr",
-    "pl", "uk", "id", "ms",
+    "en",
+    "zh-Hans",
+    "zh-Hant-HK",
+    "zh-Hant-TW",
+    "ja",
+    "ko",
+    "fr",
+    "de",
+    "es",
+    "pt",
+    "ru",
+    "ar",
+    "hi",
+    "th",
+    "vi",
+    "it",
+    "nl",
+    "tr",
+    "pl",
+    "uk",
+    "id",
+    "ms",
 ];
+
+/// Most translation targets a user can choose (the pill shows one chip per target).
+pub const MAX_TRANSLATION_TARGETS: usize = 3;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
@@ -266,10 +302,10 @@ pub struct TranslationConfig {
 }
 
 impl Default for TranslationConfig {
-    /// Three targets so the pill shows three language chips from the first run.
+    /// English only: users add up to two more languages themselves.
     fn default() -> Self {
         Self {
-            targets: vec!["en".to_string(), "zh".to_string(), "ja".to_string()],
+            targets: vec!["en".to_string()],
             active_target: "en".to_string(),
         }
     }
@@ -293,7 +329,7 @@ impl TranslationConfig {
             if !normalized.contains(&target) {
                 normalized.push(target);
             }
-            if normalized.len() == 5 {
+            if normalized.len() == MAX_TRANSLATION_TARGETS {
                 break;
             }
         }
@@ -303,7 +339,7 @@ impl TranslationConfig {
             normalized.push(legacy.clone().unwrap_or_else(|| "en".to_string()));
         }
         if let Some(legacy) = legacy.as_ref() {
-            if !normalized.contains(legacy) && normalized.len() < 5 {
+            if !normalized.contains(legacy) && normalized.len() < MAX_TRANSLATION_TARGETS {
                 normalized.push(legacy.clone());
             }
         }
@@ -319,11 +355,18 @@ impl TranslationConfig {
     }
 }
 
-fn normalize_translation_code(value: &str) -> Option<String> {
-    let normalized = value.trim().to_ascii_lowercase();
+/// The canonical spelling of a supported translation code, matched case-insensitively
+/// (`ZH-hant-hk` gives `zh-Hant-HK`). Older configs stored plain `zh`, which becomes
+/// Simplified Chinese.
+pub fn normalize_translation_code(value: &str) -> Option<String> {
+    let lower = value.trim().to_ascii_lowercase();
+    if lower == "zh" {
+        return Some("zh-Hans".to_string());
+    }
     SUPPORTED_TRANSLATION_LANGUAGES
-        .contains(&normalized.as_str())
-        .then_some(normalized)
+        .iter()
+        .find(|code| code.to_ascii_lowercase() == lower)
+        .map(|code| code.to_string())
 }
 
 // ─── Speech and AI presets ───
@@ -1427,6 +1470,8 @@ fn normalize_hotkey_primary(value: &str) -> Option<String> {
         "arrowleft" | "left" => "Left".to_string(),
         "arrowright" | "right" => "Right".to_string(),
         "fn" | "function" => "Fn".to_string(),
+        // Bare generic Shift (either side); only the Switch language shortcut can use it.
+        "shift" => "Shift".to_string(),
         "rightalt" | "right_alt" | "right-alt" | "altright" | "alt_right" | "alt-right" => {
             "RightAlt".to_string()
         }
@@ -2557,10 +2602,8 @@ mod tests {
             }
         }))
         .unwrap();
-        assert_eq!(
-            normalized.translation.targets,
-            ["fr", "ja", "de", "es", "pt"]
-        );
+        // Trimmed to three; the legacy target wins as the active one.
+        assert_eq!(normalized.translation.targets, ["fr", "ja", "de"]);
         assert_eq!(normalized.translation.active_target, "de");
         assert_eq!(normalized.target_lang, "de");
 
@@ -2578,15 +2621,101 @@ mod tests {
     }
 
     #[test]
-    fn translation_config_defaults_to_three_targets_with_english_active() {
+    fn translation_config_defaults_to_english_only() {
         let config = AppConfig::default();
-        assert_eq!(config.translation.targets, ["en", "zh", "ja"]);
+        assert_eq!(config.translation.targets, ["en"]);
         assert_eq!(config.translation.active_target, "en");
 
         let round_trip =
             AppConfig::from_stored_value(serde_json::to_value(&config).unwrap()).unwrap();
         assert_eq!(round_trip.translation, config.translation);
         assert_eq!(round_trip.target_lang, "en");
+    }
+
+    #[test]
+    fn translation_config_keeps_at_most_three_targets() {
+        let config = AppConfig::from_stored_value(serde_json::json!({
+            "translation": {
+                "targets": ["en", "ja", "ko", "fr", "de"],
+                "active_target": "ko"
+            }
+        }))
+        .unwrap();
+        assert_eq!(config.translation.targets, ["en", "ja", "ko"]);
+        assert_eq!(config.translation.active_target, "ko");
+    }
+
+    #[test]
+    fn translation_config_migrates_plain_chinese_to_simplified_keeping_order() {
+        let config = AppConfig::from_stored_value(serde_json::json!({
+            "target_lang": "zh",
+            "translation": {
+                "targets": ["ja", "zh", "en"],
+                "active_target": "zh"
+            }
+        }))
+        .unwrap();
+        assert_eq!(config.translation.targets, ["ja", "zh-Hans", "en"]);
+        assert_eq!(config.translation.active_target, "zh-Hans");
+        assert_eq!(config.target_lang, "zh-Hans");
+
+        let legacy_only = AppConfig::from_stored_value(serde_json::json!({
+            "target_lang": "zh"
+        }))
+        .unwrap();
+        assert_eq!(legacy_only.translation.targets, ["zh-Hans"]);
+    }
+
+    #[test]
+    fn translation_codes_are_matched_case_insensitively_to_their_canonical_spelling() {
+        assert_eq!(
+            normalize_translation_code(" ZH-hant-hk ").as_deref(),
+            Some("zh-Hant-HK")
+        );
+        assert_eq!(
+            normalize_translation_code("zh-hant-tw").as_deref(),
+            Some("zh-Hant-TW")
+        );
+        assert_eq!(normalize_translation_code("zh").as_deref(), Some("zh-Hans"));
+        assert_eq!(normalize_translation_code("zh-hk"), None);
+        assert_eq!(normalize_translation_code("EN").as_deref(), Some("en"));
+    }
+
+    #[test]
+    fn switch_language_shortcut_defaults_to_shift_and_is_kept() {
+        let config = AppConfig::default();
+        assert_eq!(
+            config.hotkeys.switch_language,
+            Some(ShortcutBinding {
+                primary: "Shift".to_string(),
+                modifiers: Vec::new(),
+            })
+        );
+
+        // Older configs without the field get the default.
+        let mut value = serde_json::to_value(AppConfig::default()).unwrap();
+        value["hotkeys"]
+            .as_object_mut()
+            .unwrap()
+            .remove("switchLanguage");
+        let migrated = AppConfig::from_stored_value(value).unwrap();
+        assert_eq!(
+            migrated.hotkeys.switch_language,
+            default_switch_language_binding()
+        );
+
+        let mut value = serde_json::to_value(AppConfig::default()).unwrap();
+        value["hotkeys"]["switchLanguage"] =
+            serde_json::json!({ "primary": "RightOption", "modifiers": [] });
+        let custom = AppConfig::from_stored_value(value).unwrap();
+        assert_eq!(
+            custom
+                .hotkeys
+                .switch_language
+                .and_then(|binding| binding.to_hotkey_string())
+                .as_deref(),
+            Some("RightOption")
+        );
     }
 
     #[test]

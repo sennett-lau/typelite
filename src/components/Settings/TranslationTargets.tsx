@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { PILL_TRANSLATION_TARGETS, TARGET_LANGUAGES } from '../../lib/constants'
+import { MAX_TRANSLATION_TARGETS, TARGET_LANGUAGES, targetLanguageLabel } from '../../lib/constants'
 import type { TranslationConfig } from '../../stores/appStore'
 
 interface TranslationTargetsProps {
@@ -9,79 +9,50 @@ interface TranslationTargetsProps {
   onChange: (value: TranslationConfig) => void
 }
 
-/** Fills `targets` up to three with the first languages not already picked. */
-function padTranslationTargets(targets: string[]): string[] {
-  const padded = [...targets]
-  for (const language of TARGET_LANGUAGES) {
-    if (padded.length >= PILL_TRANSLATION_TARGETS) break
-    if (!padded.includes(language.value)) padded.push(language.value)
-  }
-  return padded
-}
-
 /**
- * Three translation language slots, side by side. The radio dot marks the language used by
- * default; the pill shows these three as chips while recording in Translate. Slots 4 and 5 only
- * appear for configs that already have them, and can be removed down to three.
+ * The translation languages the user chose (plan 0010): English by default, up to three.
+ * Each row has a "use by default" radio and a remove button; the last language cannot be
+ * removed. "Add language" shows while fewer than three are chosen. The pill shows exactly
+ * these languages, and the Switch language shortcut cycles through them in this order.
  */
 export function TranslationTargets({ value, onChange }: TranslationTargetsProps) {
   const { t } = useTranslation()
-  const padded = useRef(false)
+  const [adding, setAdding] = useState(false)
 
-  // Older configs may hold fewer than three targets: fill them once so three chips show.
-  useEffect(() => {
-    if (padded.current) return
-    padded.current = true
-    if (value.targets.length >= PILL_TRANSLATION_TARGETS) return
-    const targets = padTranslationTargets(value.targets)
-    const activeTarget = targets.includes(value.active_target) ? value.active_target : targets[0]
-    onChange({ targets, active_target: activeTarget })
-  }, [onChange, value])
-
-  const selected = new Set(value.targets)
-  const canRemove = value.targets.length > PILL_TRANSLATION_TARGETS
-
-  const languageLabel = (code: string) => {
-    const language = TARGET_LANGUAGES.find((item) => item.value === code)
-    if (!language) return code
-    return language.labelKey ? t(language.labelKey) : language.label
-  }
-
-  const updateTarget = (index: number, code: string) => {
-    if (selected.has(code) && value.targets[index] !== code) return
-    const previous = value.targets[index]
-    const targets = [...value.targets]
-    targets[index] = code
-    onChange({
-      targets,
-      active_target: value.active_target === previous ? code : value.active_target,
-    })
-  }
+  const targets = value.targets
+  const canRemove = targets.length > 1
+  const canAdd = targets.length < MAX_TRANSLATION_TARGETS
+  const available = TARGET_LANGUAGES.filter((language) => !targets.includes(language.value))
+  const languageLabel = (code: string) => targetLanguageLabel(code, t)
 
   const removeTarget = (index: number) => {
     if (!canRemove) return
-    const removed = value.targets[index]
-    const targets = value.targets.filter((_, targetIndex) => targetIndex !== index)
+    const removed = targets[index]
+    const next = targets.filter((_, targetIndex) => targetIndex !== index)
     const activeTarget =
-      removed === value.active_target
-        ? targets[Math.min(index, targets.length - 1)]
-        : value.active_target
-    onChange({ targets, active_target: activeTarget })
+      removed === value.active_target ? next[Math.min(index, next.length - 1)] : value.active_target
+    onChange({ targets: next, active_target: activeTarget })
+  }
+
+  const addTarget = (code: string) => {
+    setAdding(false)
+    if (!code || targets.includes(code) || !canAdd) return
+    onChange({ ...value, targets: [...targets, code] })
   }
 
   return (
-    <div className="space-y-2">
+    <div className="w-full space-y-2">
       <span className="block text-[13px] text-text-primary">{t('translate.targetsLabel')}</span>
-      <div
+      <ul
         role="radiogroup"
         aria-label={t('translate.targetsLabel')}
-        className="grid grid-cols-3 gap-2"
+        className="m-0 list-none space-y-1 p-0"
       >
-        {value.targets.map((code, index) => (
-          <div
-            key={`${index}-${code}`}
+        {targets.map((code, index) => (
+          <li
+            key={code}
             data-testid={`translation-target-${code}`}
-            className="flex min-w-0 items-center gap-1.5"
+            className="flex min-w-0 items-center gap-2 rounded-[6px] bg-bg-secondary px-2.5 py-1.5"
           >
             <input
               type="radio"
@@ -92,20 +63,14 @@ export function TranslationTargets({ value, onChange }: TranslationTargetsProps)
               title={t('translate.setActive')}
               className="h-3.5 w-3.5 flex-none accent-accent"
             />
-            <select
-              value={code}
-              onChange={(event) => updateTarget(index, event.target.value)}
-              aria-label={t('translate.slot', { number: index + 1 })}
-              className="popup min-w-0 flex-1"
-            >
-              {TARGET_LANGUAGES.filter(
-                (language) => language.value === code || !selected.has(language.value),
-              ).map((language) => (
-                <option key={language.value} value={language.value}>
-                  {language.labelKey ? t(language.labelKey) : language.label}
-                </option>
-              ))}
-            </select>
+            <span className="min-w-0 flex-1 truncate text-[12.5px] text-text-primary">
+              {languageLabel(code)}
+            </span>
+            {value.active_target === code && (
+              <span className="flex-none text-[11px] text-text-tertiary">
+                {t('translate.defaultMark')}
+              </span>
+            )}
             {canRemove && (
               <button
                 type="button"
@@ -117,10 +82,39 @@ export function TranslationTargets({ value, onChange }: TranslationTargetsProps)
                 <X size={12} />
               </button>
             )}
-          </div>
+          </li>
         ))}
-      </div>
-      <p className="row-help">{t('translate.cycleHint')}</p>
+      </ul>
+      {canAdd &&
+        (adding ? (
+          <select
+            autoFocus
+            defaultValue=""
+            aria-label={t('translate.addLanguage')}
+            onChange={(event) => addTarget(event.target.value)}
+            onBlur={() => setAdding(false)}
+            className="popup"
+          >
+            <option value="" disabled>
+              {t('translate.chooseLanguage')}
+            </option>
+            {available.map((language) => (
+              <option key={language.value} value={language.value}>
+                {languageLabel(language.value)}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="btn-secondary inline-flex items-center gap-1"
+          >
+            <Plus size={12} />
+            {t('translate.addLanguage')}
+          </button>
+        ))}
+      <p className="row-help">{t('translate.switchHint')}</p>
     </div>
   )
 }

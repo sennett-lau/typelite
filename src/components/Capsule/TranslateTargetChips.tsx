@@ -1,25 +1,22 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PILL_TRANSLATION_TARGETS,
-  TARGET_LANGUAGES,
+  MAX_TRANSLATION_TARGETS,
   TARGET_LANGUAGE_SHORT_LABELS,
+  targetLanguageLabel,
 } from '../../lib/constants'
 import { setActiveTranslationTarget } from '../../lib/tauri'
 import { useAppStore } from '../../stores/appStore'
-
-function languageName(code: string) {
-  return TARGET_LANGUAGES.find((language) => language.value === code)?.label ?? code
-}
 
 function shortLanguageLabel(code: string) {
   return TARGET_LANGUAGE_SHORT_LABELS[code] ?? code.slice(0, 2).toUpperCase()
 }
 
 /**
- * Language chips shown while recording in Translate. The active chip uses the pill accent
- * (system blue, or the Aurora teal in dark mode).
- * Clicking a chip switches the language of the running recording without stopping it.
+ * The languages of a Translate recording: one chip per chosen language (the active chip uses
+ * the pill accent, system blue or the Aurora teal in dark mode), or just the language name
+ * when only one is chosen. Clicking a chip switches the language of the running recording
+ * without stopping it; the Switch language shortcut does the same.
  */
 export function TranslateTargetChips() {
   const { t } = useTranslation()
@@ -31,6 +28,21 @@ export function TranslateTargetChips() {
   const [pending, setPending] = useState(false)
 
   if (pipelineState !== 'recording' || activeVoiceMode !== 'translate') return null
+
+  const languageName = (code: string) => targetLanguageLabel(code, t)
+
+  if (targets.length <= 1) {
+    const code = targets[0] ?? activeTarget
+    return (
+      <span
+        title={languageName(code)}
+        aria-label={`${t('translate.chipLabel')} ${languageName(code)}`}
+        className="min-w-0 max-w-[72px] flex-shrink truncate whitespace-nowrap text-[11px] font-medium text-white/85"
+      >
+        {languageName(code)}
+      </span>
+    )
+  }
 
   const selectTarget = async (code: string) => {
     if (code === activeTarget || pending) return
@@ -54,7 +66,7 @@ export function TranslateTargetChips() {
       aria-label={t('translate.chipsLabel')}
       className="flex flex-shrink-0 items-center gap-[3px]"
     >
-      {targets.slice(0, PILL_TRANSLATION_TARGETS).map((code) => {
+      {targets.slice(0, MAX_TRANSLATION_TARGETS).map((code) => {
         const active = code === activeTarget
         return (
           <button

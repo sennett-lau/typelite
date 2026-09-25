@@ -2,7 +2,7 @@
 // Kept free of React and the DOM so they can be unit-tested.
 
 /** Number of bars, and so the number of history samples shown. */
-export const WAVEFORM_BARS = 24
+export const WAVEFORM_BARS = 18
 /** A new history sample is pushed every this many milliseconds (about 30 per second). */
 export const WAVEFORM_SAMPLE_MS = 33
 /** Envelope time constant while the level goes up (fast attack). */
@@ -83,4 +83,13 @@ export class LevelHistory {
     this.buf.fill(0)
     this.head = 0
   }
+}
+
+/**
+ * Colour of bar `index`: the aurora gradient from `--color-aurora-a` on the left to
+ * `--color-aurora-b` on the right (teal to violet in dark mode, blue to violet in light mode).
+ */
+export function waveformBarColor(index: number, count: number = WAVEFORM_BARS): string {
+  const towardsB = count > 1 ? Math.round(clamp01(index / (count - 1)) * 100) : 0
+  return `color-mix(in srgb, var(--color-aurora-b) ${towardsB}%, var(--color-aurora-a))`
 }

@@ -4,11 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CapsuleError } from '../CapsuleError'
 import * as tauri from '../../../lib/tauri'
 import { useAppStore } from '../../../stores/appStore'
-import {
-  getSizeForState,
-  SETUP_ERROR_SIZE,
-  DICTATION_PILL_SIZE,
-} from '../../../hooks/useCapsuleResize'
+import { getSizeForState, SETUP_ERROR_SIZE, ERROR_PILL_SIZE } from '../../../hooks/useCapsuleResize'
 
 vi.mock('../../../lib/tauri')
 
@@ -68,6 +64,6 @@ describe('capsule setup messages', () => {
 
   it('makes the pill wide enough for the message and the button', () => {
     expect(getSizeForState('idle', false, true, false, null, true)).toEqual(SETUP_ERROR_SIZE)
-    expect(getSizeForState('idle', false, true, false, null, false)).toEqual(DICTATION_PILL_SIZE)
+    expect(getSizeForState('idle', false, true, false, null, false)).toEqual(ERROR_PILL_SIZE)
   })
 })

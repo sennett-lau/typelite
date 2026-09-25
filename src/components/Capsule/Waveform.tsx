@@ -7,6 +7,7 @@ import {
   WAVEFORM_SAMPLE_MS,
   envelope,
   rmsToLevel,
+  waveformBarColor,
 } from '../../lib/waveform'
 
 const BAR_HEIGHT_PX = 16
@@ -28,7 +29,7 @@ function applyBar(bar: HTMLDivElement, level: number) {
  *
  * The level comes from the `audio:volume` event (raw RMS of the recorded audio, stored in
  * `audioVolume`). One requestAnimationFrame loop smooths it (fast rise, slower fall), pushes
- * a sample into a 24-slot history every 33 ms, and scrolls that history from right (newest)
+ * a sample into an 18-slot history every 33 ms, and scrolls that history from right (newest)
  * to left (oldest). Bars are animated with `transform: scaleY()` only, so React never
  * re-renders per frame and the browser does no layout.
  */
@@ -100,7 +101,7 @@ export function Waveform() {
           className="w-[2px] rounded-full"
           style={{
             height: BAR_HEIGHT_PX,
-            background: 'var(--color-wave)',
+            background: waveformBarColor(i),
             transform: `scaleY(${MIN_SCALE})`,
             transformOrigin: 'center',
             willChange: 'transform',

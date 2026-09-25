@@ -78,7 +78,8 @@
       "switchScene": "Switch prompt preset",
       "switchSceneDesc": "Move to the next prompt preset",
       "openApp": "Open Typelite",
-      "openAppDesc": "Bring up the main window"
+      "openAppDesc": "Bring up the main window",
+      "translateSwitchHint": "{{key}} to switch language"
     },
     "subtitle": "Press a shortcut anywhere, speak, and polished text is typed for you.",
     "takeTour": "Take the shortcut tour",
@@ -198,9 +199,8 @@
   "capsule": {
     "cancelRecording": "Cancel recording",
     "preparing": "Preparing...",
-    "transcribing": "Transcribing...",
+    "transcribing": "Transcribing",
     "cancelProcessing": "Cancel processing",
-    "thinking": "Thinking...",
     "cancelPolishing": "Cancel polishing",
     "done": "Done",
     "errorOccurred": "An error occurred",
@@ -231,7 +231,9 @@
       "settings": "Settings",
       "exit": "Exit"
     },
-    "setUp": "Set up"
+    "setUp": "Set up",
+    "polishing": "Polishing",
+    "pasting": "Pasting"
   },
   "settings": {
     "title": "Settings",
@@ -397,7 +399,12 @@
     "groupTranslation": "Translation",
     "groupAdvanced": "Advanced",
     "connection": "Connection",
-    "versionLine": "Version {{version}}"
+    "versionLine": "Version {{version}}",
+    "switchLanguageHotkey": "Switch language",
+    "switchLanguageHint": "Only while a Translate recording runs: moves to the next translation language.",
+    "switchLanguageReset": "Use Shift (either side)",
+    "eitherShift": "Shift (either side)",
+    "shortcutOff": "Off"
   },
   "contextFamilies": {
     "email": "Email",
@@ -611,12 +618,19 @@
   },
   "translate": {
     "targetsLabel": "Translation languages",
-    "slot": "Language {{number}}",
     "setActive": "Use by default:",
     "remove": "Remove",
-    "cycleHint": "While recording, press the Translate shortcut again to switch language; press Dictate to finish.",
     "chipsLabel": "Translation languages",
-    "chipLabel": "Translate to"
+    "chipLabel": "Translate to",
+    "defaultMark": "Default",
+    "addLanguage": "Add language",
+    "chooseLanguage": "Choose a language",
+    "switchHint": "Up to three languages. While a Translate recording runs, press the Switch language key (Settings → General) to move to the next one. Press Translate again or Dictate to finish and paste.",
+    "languages": {
+      "zhHans": "Chinese (Simplified)",
+      "zhHantHK": "Chinese (Traditional, Hong Kong)",
+      "zhHantTW": "Chinese (Traditional, Taiwan)"
+    }
   },
   "presets": {
     "preset": "Preset",
@@ -650,7 +664,7 @@
     "microphonePicker": "Microphone picker with a live input level.",
     "pressKeysShortcut": "Record a shortcut by pressing the keys.",
     "liveWaveform": "Live waveform in the capsule while you speak.",
-    "translationLanguages": "Up to three translation languages, picked from the capsule.",
+    "translationLanguages": "Up to three translation languages, with a Switch language key while you translate.",
     "setupTutorial": "A new step-by-step setup tutorial.",
     "nativeGlass": "Native Glass look that follows light and dark mode.",
     "noHistory": "No history: Typelite keeps no record of what you say."

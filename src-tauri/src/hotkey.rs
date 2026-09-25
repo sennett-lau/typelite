@@ -245,6 +245,9 @@ pub enum HotkeyRole {
     EditSelection,
     SwitchScene,
     OpenApp,
+    /// Moves a running Translate recording to its next language. Only active while a
+    /// Translate recording runs (see `native_hotkey::ChordMatcher`).
+    SwitchLanguage,
 }
 
 impl HotkeyRole {
@@ -256,6 +259,7 @@ impl HotkeyRole {
             Self::EditSelection => "editSelection",
             Self::SwitchScene => "switchScene",
             Self::OpenApp => "openApp",
+            Self::SwitchLanguage => "switchLanguage",
         }
     }
 }
@@ -548,8 +552,75 @@ pub(crate) fn hotkey_registration_plan_from_config_for_platform(
         config.open_app.as_ref(),
         platform,
     )?;
+    if let Some(binding) = config.switch_language.as_ref() {
+        push_switch_language_hotkey(&mut plan, binding, platform)?;
+    }
 
     Ok(plan)
+}
+
+/// Adds the Switch language shortcut. It always goes through the native listener, because
+/// that listener can ignore it until a Translate recording runs; a global shortcut would take
+/// the key away from every app all the time. Generic modifiers mean either side, so `Shift`
+/// becomes two chords, Left Shift and Right Shift. Only macOS has this listener; elsewhere the
+/// shortcut is left out.
+fn push_switch_language_hotkey(
+    plan: &mut HotkeyRegistrationPlan,
+    binding: &storage::ShortcutBinding,
+    platform: &str,
+) -> Result<(), HotkeyPairError> {
+    if platform != "macos" {
+        return Ok(());
+    }
+    let role = HotkeyRole::SwitchLanguage;
+    let chords = binding_key_names(binding)
+        .and_then(|names| either_side_chords(&names))
+        .ok_or_else(|| invalid_binding_error(role, 0, binding))?;
+    for chord in chords {
+        if let Some(conflict) = native_conflict(plan, &chord) {
+            if conflict.role == role {
+                continue;
+            }
+            return Err(conflict_error(role, 0, conflict.role, conflict.index));
+        }
+        plan.native.push(RegisteredNativeHotkey {
+            role,
+            index: 0,
+            chord,
+            display: binding_display(binding),
+        });
+    }
+    Ok(())
+}
+
+/// All macOS chords a binding stands for when generic modifiers (`Shift`, `Ctrl`, `Option`,
+/// `Command`) may be pressed on either side. `None` when a key is not in the native table.
+fn either_side_chords(names: &[String]) -> Option<Vec<NativeChord>> {
+    let mut combinations: Vec<Vec<u16>> = vec![Vec::new()];
+    for name in names {
+        let sides: Vec<&str> = match name.as_str() {
+            "Shift" => vec!["LeftShift", "RightShift"],
+            "Ctrl" => vec!["LeftControl", "RightControl"],
+            "Option" | "Alt" => vec!["LeftOption", "RightOption"],
+            "Command" | "Super" => vec!["LeftCommand", "RightCommand"],
+            other => vec![other],
+        };
+        let codes = sides
+            .iter()
+            .map(|side| native_keys::key_by_name(side).map(|key| key.code))
+            .collect::<Option<Vec<u16>>>()?;
+        combinations = combinations
+            .iter()
+            .flat_map(|prefix| {
+                codes.iter().map(move |code| {
+                    let mut next = prefix.clone();
+                    next.push(*code);
+                    next
+                })
+            })
+            .collect();
+    }
+    combinations.into_iter().map(NativeChord::new).collect()
 }
 
 pub fn registered_hotkeys_from_config(
@@ -656,6 +727,7 @@ pub fn validate_hotkey_pair(
         switch_scene: None,
         open_app: None,
         dictation_mode: "hold".to_string(),
+        switch_language: None,
     };
 
     hotkey_registration_plan_from_config(&config).map(|_| ())
@@ -932,21 +1004,9 @@ pub fn handle_hotkey_role_event(
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .clone();
-            let pipeline = handle.state::<pipeline::PipelineHandle>();
-            let pipeline_state = pipeline.current_state();
-            // Pressing Translate again while a Translate recording runs switches language
-            // (1 -> 2 -> 3 -> 1). The Dictate key still stops and pastes.
-            if commands::translation::translate_shortcut_cycles_target(
-                &hotkey_mode,
-                event_state,
-                pipeline_state,
-                pipeline.is_translate_run(),
-            ) {
-                tauri::async_runtime::spawn(
-                    commands::translation::cycle_translation_target_from_shortcut(handle.clone()),
-                );
-                return;
-            }
+            // Pressing Translate again (or Dictate) while a Translate recording runs stops it
+            // and pastes; the Switch language shortcut changes the language.
+            let pipeline_state = handle.state::<pipeline::PipelineHandle>().current_state();
             let action = recording_shortcut_action(
                 &hotkey_mode,
                 event_state,
@@ -992,6 +1052,18 @@ pub fn handle_hotkey_role_event(
                 pipeline::PipelineStartOptions::default(),
             );
             handle_recording_shortcut(handle, action);
+        }
+        HotkeyRole::SwitchLanguage => {
+            let pipeline = handle.state::<pipeline::PipelineHandle>();
+            if commands::translation::switch_language_press_cycles_target(
+                event_state,
+                pipeline.current_state(),
+                pipeline.is_translate_run(),
+            ) {
+                tauri::async_runtime::spawn(
+                    commands::translation::cycle_translation_target_from_shortcut(handle.clone()),
+                );
+            }
         }
         role => handle_advanced_role_shortcut(handle, role, event_state),
     }
@@ -1257,6 +1329,7 @@ mod tests {
             switch_scene: None,
             open_app: None,
             dictation_mode: "toggle".to_string(),
+            switch_language: None,
         };
 
         let plan = hotkey_registration_plan_from_config_for_platform(&config, "windows").unwrap();
@@ -1284,6 +1357,7 @@ mod tests {
             switch_scene: None,
             open_app: None,
             dictation_mode: "toggle".to_string(),
+            switch_language: None,
         };
 
         let plan = hotkey_registration_plan_from_config_for_platform(&config, "macos").unwrap();
@@ -1316,6 +1390,7 @@ mod tests {
             switch_scene: None,
             open_app: None,
             dictation_mode: "hold".to_string(),
+            switch_language: None,
         }
     }
 
@@ -1372,6 +1447,7 @@ mod tests {
             switch_scene: None,
             open_app: None,
             dictation_mode: "toggle".to_string(),
+            switch_language: None,
         };
 
         assert_eq!(
@@ -1593,6 +1669,7 @@ mod tests {
             switch_scene: None,
             open_app: None,
             dictation_mode: "toggle".to_string(),
+            switch_language: None,
         }
     }
 
@@ -1747,6 +1824,122 @@ mod tests {
                 },
             ),
             RecordingShortcutAction::Stop
+        );
+    }
+
+    #[test]
+    fn translate_or_dictate_press_finishes_a_translate_recording_in_toggle_mode() {
+        let translate = pipeline::PipelineStartOptions {
+            force_translate: true,
+        };
+        // Pressing Translate again stops and pastes (it no longer switches language).
+        assert_eq!(
+            recording_shortcut_action(
+                "toggle",
+                ShortcutState::Pressed,
+                pipeline::PipelineState::Recording,
+                translate,
+            ),
+            RecordingShortcutAction::Stop
+        );
+        // So does the Dictate shortcut.
+        assert_eq!(
+            recording_shortcut_action(
+                "toggle",
+                ShortcutState::Pressed,
+                pipeline::PipelineState::Recording,
+                pipeline::PipelineStartOptions::default(),
+            ),
+            RecordingShortcutAction::Stop
+        );
+        // Hold mode: releasing either one finishes.
+        assert_eq!(
+            recording_shortcut_action(
+                "hold",
+                ShortcutState::Released,
+                pipeline::PipelineState::Recording,
+                pipeline::PipelineStartOptions::default(),
+            ),
+            RecordingShortcutAction::Stop
+        );
+    }
+
+    #[test]
+    fn switch_language_registers_either_shift_natively_on_macos_only() {
+        let config = storage::AppConfig::new_install_default().hotkeys;
+        let plan = hotkey_registration_plan_for_platform(&config, "macos");
+        let switch: Vec<&NativeChord> = plan
+            .native
+            .iter()
+            .filter(|entry| entry.role == HotkeyRole::SwitchLanguage)
+            .map(|entry| &entry.chord)
+            .collect();
+        assert_eq!(
+            switch,
+            vec![&mac_chord(&["LeftShift"]), &mac_chord(&["RightShift"])]
+        );
+        assert!(!plan
+            .global
+            .iter()
+            .any(|entry| entry.role == HotkeyRole::SwitchLanguage));
+
+        let mut windows = storage::HotkeyConfig::from_legacy("Ctrl+/", "Ctrl+.", "hold");
+        windows.switch_language = storage::default_switch_language_binding();
+        let plan = hotkey_registration_plan_from_config_for_platform(&windows, "windows").unwrap();
+        assert!(!plan
+            .native
+            .iter()
+            .any(|entry| entry.role == HotkeyRole::SwitchLanguage));
+    }
+
+    fn hotkey_registration_plan_for_platform(
+        config: &storage::HotkeyConfig,
+        platform: &str,
+    ) -> HotkeyRegistrationPlan {
+        hotkey_registration_plan_from_config_for_platform(config, platform).unwrap()
+    }
+
+    #[test]
+    fn switch_language_expands_generic_modifiers_and_keeps_side_specific_keys() {
+        let mut config = users_stored_config();
+        config.switch_language = storage::ShortcutBinding::from_hotkey("RightOption");
+        let plan = hotkey_registration_plan_for_platform(&config, "macos");
+        let switch: Vec<&NativeChord> = plan
+            .native
+            .iter()
+            .filter(|entry| entry.role == HotkeyRole::SwitchLanguage)
+            .map(|entry| &entry.chord)
+            .collect();
+        assert_eq!(switch, vec![&mac_chord(&["RightOption"])]);
+
+        config.switch_language = storage::ShortcutBinding::from_hotkey("Ctrl+Shift");
+        let plan = hotkey_registration_plan_for_platform(&config, "macos");
+        assert_eq!(
+            plan.native
+                .iter()
+                .filter(|entry| entry.role == HotkeyRole::SwitchLanguage)
+                .count(),
+            4
+        );
+    }
+
+    #[test]
+    fn switch_language_may_share_keys_with_translate_but_not_repeat_a_shortcut() {
+        // The user's Translate chord (End + Right Shift) contains Right Shift: allowed.
+        let mut config = users_stored_config();
+        config.switch_language = storage::default_switch_language_binding();
+        assert!(hotkey_registration_plan_from_config_for_platform(&config, "macos").is_ok());
+
+        // The same key as Dictate is rejected.
+        config.switch_language = storage::ShortcutBinding::from_hotkey("End");
+        assert_eq!(
+            hotkey_registration_plan_from_config_for_platform(&config, "macos").unwrap_err(),
+            HotkeyPairError::ConflictingRoleHotkeys {
+                role: HotkeyRole::SwitchLanguage,
+                index: 0,
+                conflict_role: HotkeyRole::Dictation,
+                conflict_index: 0,
+            }
         );
     }
 

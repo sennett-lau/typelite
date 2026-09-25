@@ -1,82 +1,68 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { TranslationConfig } from '../../../stores/appStore'
 import { TranslationTargets } from '../TranslationTargets'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown>) =>
-      options?.number !== undefined ? `${key} ${options.number}` : key,
+    t: (key: string) => key,
   }),
 }))
 
 afterEach(cleanup)
 
-function renderTargets(
-  value: TranslationConfig = {
-    targets: ['en', 'zh', 'ja'],
-    active_target: 'en',
-  },
-) {
+function renderTargets(value: TranslationConfig = { targets: ['en'], active_target: 'en' }) {
   const onChange = vi.fn()
   render(<TranslationTargets value={value} onChange={onChange} />)
   return onChange
 }
 
 describe('TranslationTargets', () => {
-  it('shows three slots with the active language marked and the cycling hint', () => {
+  it('shows only the chosen language by default, with no remove button and an Add button', () => {
     const onChange = renderTargets()
 
-    expect(screen.getByRole('combobox', { name: 'translate.slot 1' })).toHaveValue('en')
-    expect(screen.getByRole('combobox', { name: 'translate.slot 2' })).toHaveValue('zh')
-    expect(screen.getByRole('combobox', { name: 'translate.slot 3' })).toHaveValue('ja')
+    expect(screen.getAllByTestId(/^translation-target-/)).toHaveLength(1)
     expect(screen.getByRole('radio', { name: 'translate.setActive English' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'translate.setActive 中文' })).not.toBeChecked()
+    expect(screen.getByText('translate.defaultMark')).toBeInTheDocument()
+    // The last language cannot be removed.
     expect(screen.queryByRole('button', { name: /translate.remove/ })).not.toBeInTheDocument()
-    expect(screen.getByText('translate.cycleHint')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'translate.addLanguage' })).toBeInTheDocument()
+    expect(screen.getByText('translate.switchHint')).toBeInTheDocument()
     expect(onChange).not.toHaveBeenCalled()
   })
 
-  it('pads fewer than three targets once with the first unused languages', () => {
-    const onChange = renderTargets({ targets: ['ja'], active_target: 'ja' })
+  it('adds a language that is not chosen yet', () => {
+    const onChange = renderTargets()
 
-    expect(onChange).toHaveBeenCalledTimes(1)
-    expect(onChange).toHaveBeenCalledWith({ targets: ['ja', 'en', 'zh'], active_target: 'ja' })
+    fireEvent.click(screen.getByRole('button', { name: 'translate.addLanguage' }))
+    const picker = screen.getByRole('combobox', { name: 'translate.addLanguage' })
+    expect(screen.queryByRole('option', { name: 'English' })).not.toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'translate.languages.zhHantHK' })).toBeInTheDocument()
+
+    fireEvent.change(picker, { target: { value: 'zh-Hant-HK' } })
+    expect(onChange).toHaveBeenCalledWith({ targets: ['en', 'zh-Hant-HK'], active_target: 'en' })
   })
 
-  it('marks another slot as the default language', () => {
-    const onChange = renderTargets()
+  it('hides Add language at three languages', () => {
+    renderTargets({ targets: ['en', 'zh-Hans', 'ja'], active_target: 'en' })
+
+    expect(screen.getAllByTestId(/^translation-target-/)).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: 'translate.addLanguage' })).not.toBeInTheDocument()
+  })
+
+  it('marks another language as the default', () => {
+    const onChange = renderTargets({ targets: ['en', 'ja'], active_target: 'en' })
 
     fireEvent.click(screen.getByRole('radio', { name: 'translate.setActive 日本語' }))
 
-    expect(onChange).toHaveBeenCalledWith({ targets: ['en', 'zh', 'ja'], active_target: 'ja' })
+    expect(onChange).toHaveBeenCalledWith({ targets: ['en', 'ja'], active_target: 'ja' })
   })
 
-  it('keeps language choices unique and moves the active mark with its slot', () => {
-    const onChange = renderTargets()
+  it('removes down to one language and moves the default mark off a removed language', () => {
+    const onChange = renderTargets({ targets: ['en', 'ja', 'fr'], active_target: 'ja' })
 
-    const second = screen.getByRole('combobox', { name: 'translate.slot 2' })
-    expect(within(second).queryByRole('option', { name: 'English' })).not.toBeInTheDocument()
-    expect(within(second).getByRole('option', { name: 'Français' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'translate.remove 日本語' }))
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'translate.slot 1' }), {
-      target: { value: 'fr' },
-    })
-    expect(onChange).toHaveBeenCalledWith({ targets: ['fr', 'zh', 'ja'], active_target: 'fr' })
-  })
-
-  it('shows existing slots 4 and 5 and allows removing down to three', () => {
-    const onChange = renderTargets({
-      targets: ['en', 'zh', 'ja', 'fr', 'de'],
-      active_target: 'fr',
-    })
-
-    expect(screen.getAllByTestId(/^translation-target-/)).toHaveLength(5)
-    fireEvent.click(screen.getByRole('button', { name: 'translate.remove Français' }))
-
-    expect(onChange).toHaveBeenCalledWith({
-      targets: ['en', 'zh', 'ja', 'de'],
-      active_target: 'de',
-    })
+    expect(onChange).toHaveBeenCalledWith({ targets: ['en', 'fr'], active_target: 'fr' })
   })
 })

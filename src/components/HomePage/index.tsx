@@ -7,7 +7,8 @@ import {
   type ShortcutBinding,
 } from '../../stores/appStore'
 import { settingsPaneHash } from '../../lib/router'
-import { TARGET_LANGUAGES } from '../../lib/constants'
+import { targetLanguageLabel } from '../../lib/constants'
+import { switchLanguageLabel } from '../../lib/switchLanguage'
 import { WHATS_NEW } from '../../lib/whatsNew'
 import { PageFrame } from '../PageFrame'
 import { Group } from '../ui/Group'
@@ -43,6 +44,8 @@ interface ShortcutItem {
   name: string
   description: string
   binding: ShortcutBinding | null
+  /** An extra line under the description (Translate: how to switch language). */
+  hint?: string
 }
 
 /** Tile icon and its per-feature colour token (icon only; the tile itself stays neutral). */
@@ -58,8 +61,15 @@ function ShortcutTiles() {
   const activeTarget = useAppStore(
     (s) => s.config.translation?.active_target ?? s.config.target_lang,
   )
-  const targetName =
-    TARGET_LANGUAGES.find((language) => language.value === activeTarget)?.label ?? activeTarget
+  const targetName = targetLanguageLabel(activeTarget, t)
+  const targetCount = useAppStore((s) => s.config.translation?.targets.length ?? 1)
+  // Plan 0010: the Switch language key, shown when there is more than one language to switch to.
+  const switchHint =
+    hotkeys.switchLanguage && targetCount > 1
+      ? t('home.shortcuts.translateSwitchHint', {
+          key: switchLanguageLabel(hotkeys.switchLanguage, t),
+        })
+      : undefined
 
   const tiles: ShortcutItem[] = [
     {
@@ -73,6 +83,7 @@ function ShortcutTiles() {
       name: t('home.shortcuts.translate'),
       description: t('home.shortcuts.translateDesc', { language: targetName }),
       binding: hotkeys.translateBindings?.[0] ?? hotkeys.translate ?? null,
+      hint: switchHint,
     },
     {
       id: 'ask',
@@ -131,6 +142,9 @@ function ShortcutTiles() {
               <span className="text-[12px] leading-snug text-text-secondary">
                 {tile.description}
               </span>
+              {tile.hint && (
+                <span className="text-[11.5px] leading-snug text-text-tertiary">{tile.hint}</span>
+              )}
               <span className="mt-auto pt-0.5">
                 <KeyCaps binding={tile.binding} />
               </span>
