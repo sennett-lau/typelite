@@ -5,7 +5,7 @@ line, sees what they said next to what Typelite produced, and learns the key beh
 and self-corrections are cleaned, speech can be translated, highlighted text can be translated,
 and Ask answers questions or edits a selection.
 
-Status: agreed — 2026-09-25
+Status: done — 2026-09-25
 
 Refines the shortcut steps of [0003](../0003-onboarding-tutorial/index.md). Depends on
 [0011](../0011-ask-translate-and-live-questions/index.md) for highlight-and-translate.

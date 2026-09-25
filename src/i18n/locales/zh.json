@@ -182,6 +182,67 @@
       "failed": "没有成功（{{error}}），请再试一次。",
       "pasteFailed": "无法粘贴文字"
     },
+    "exercises": {
+      "list": "练习",
+      "progress": "练习 {{n}}/{{total}}：{{title}}",
+      "scriptLanguage": "zh",
+      "readThis": "请读出这句话",
+      "sayThis": "然后说",
+      "speak": "按 {{key}}，读出下面这句话，再按一次 {{key}}。",
+      "speakHold": "按住 {{key}}，读出下面这句话，然后松开。",
+      "youSaid": "你说的",
+      "typeliteWrote": "Typelite 写的",
+      "nothingSaid": "没有说话",
+      "waiting": "正在等待结果…",
+      "miss": "结果还不太对。再试一次，或跳过这个练习。",
+      "tryAgain": "再试一次",
+      "skip": "跳过这个练习",
+      "next": "下一个练习",
+      "finish": "完成练习",
+      "allDone": "练习都完成了",
+      "practiceAgain": "再练一次",
+      "statusDone": "已完成",
+      "statusSkipped": "已跳过",
+      "sameLanguage": "你正在翻译成{{language}}，和这句话的语言相同。用你会说的另一种语言读，或在上面选择别的语言，才能看到真正的翻译。",
+      "switchHint": "你选了 {{count}} 种语言。录音时按 {{key}} 可以切换到下一种，胶囊会显示当前的语言。",
+      "correction": {
+        "title": "改口",
+        "script": "我们一点去吃午饭吧……哦不对，改成两点吧。",
+        "caption": "Typelite 只保留了你改口后的说法。"
+      },
+      "fillers": {
+        "title": "口头禅",
+        "script": "嗯，那个，我觉得我们，就是，周五发布吧。",
+        "caption": "“嗯”“那个”“就是”这类口头禅会被去掉。"
+      },
+      "speakTranslate": {
+        "title": "说话并翻译",
+        "script": "早上好，我们明天下午可以见面吗？",
+        "caption": "Typelite 把它写成了{{language}}。"
+      },
+      "selectionTranslate": {
+        "title": "选中并翻译",
+        "instruction": "保持框里的文字处于选中状态（如果点到别处，请重新选中）。按 {{key}}，不要说话，再按一次 {{key}}。",
+        "instructionHold": "保持框里的文字处于选中状态（如果点到别处，请重新选中）。按住 {{key}} 一会儿，不要说话，然后松开。",
+        "caption": "选中的文字已替换成{{language}}译文。"
+      },
+      "question": {
+        "title": "提一个问题",
+        "instruction": "按 {{key}}，大声问出下面的问题，再按一次 {{key}}。回答会显示在 Ask 面板里。",
+        "instructionHold": "按 {{key}}，大声问出下面的问题，再按一次 {{key}}。回答会显示在 Ask 面板里。",
+        "script": "二百四十的百分之十五是多少？",
+        "caption": "Typelite 回答了你的问题（准确答案是 36）。",
+        "captionRight": "Typelite 答对了：240 的 15% 是 36。"
+      },
+      "edit": {
+        "title": "修改选中的文字",
+        "instruction": "保持框里的文字处于选中状态（如果点到别处，请重新选中）。按 {{key}}，说出下面这句话，再按一次 {{key}}。",
+        "instructionHold": "保持框里的文字处于选中状态（如果点到别处，请重新选中）。按 {{key}}，说出下面这句话，再按一次 {{key}}。",
+        "script": "把这段改短一点。",
+        "prefill": "嗨，想问一下你有没有空看看我上周发给你的那份草稿，完全不急，有空再看就好。",
+        "caption": "Typelite 把选中的文字改短了。"
+      }
+    },
     "saveFailed": "无法保存：{{error}}",
     "retry": "重试",
     "steps": {

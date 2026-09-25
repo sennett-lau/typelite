@@ -182,6 +182,67 @@
       "failed": "That did not work ({{error}}). Try again.",
       "pasteFailed": "The text could not be pasted"
     },
+    "exercises": {
+      "list": "Exercises",
+      "progress": "Exercise {{n}} of {{total}}: {{title}}",
+      "scriptLanguage": "en",
+      "readThis": "Read this out loud",
+      "sayThis": "Then say",
+      "speak": "Press {{key}}, read the line below, then press {{key}} again.",
+      "speakHold": "Hold {{key}}, read the line below, then let go.",
+      "youSaid": "You said",
+      "typeliteWrote": "Typelite wrote",
+      "nothingSaid": "Nothing (no speech this time)",
+      "waiting": "Waiting for the result…",
+      "miss": "That doesn't look like the expected result yet. Try again, or skip this exercise.",
+      "tryAgain": "Try again",
+      "skip": "Skip this exercise",
+      "next": "Next exercise",
+      "finish": "Finish exercises",
+      "allDone": "All exercises finished",
+      "practiceAgain": "Practise again",
+      "statusDone": "Done",
+      "statusSkipped": "Skipped",
+      "sameLanguage": "You are translating into {{language}}, the language of this line. Read it in another language you speak, or pick another language above, to see a real translation.",
+      "switchHint": "You chose {{count}} languages. While recording, press {{key}} to switch to the next one; the pill shows which one is active.",
+      "correction": {
+        "title": "Change of mind",
+        "script": "Let's have lunch at 1… oh no, let's do it at 2.",
+        "caption": "Typelite kept only your correction."
+      },
+      "fillers": {
+        "title": "Fillers",
+        "script": "Um, so, I think we should, like, ship it on Friday.",
+        "caption": "Fillers like um and like are removed."
+      },
+      "speakTranslate": {
+        "title": "Speak and translate",
+        "script": "Good morning, can we meet tomorrow afternoon?",
+        "caption": "Typelite wrote it in {{language}}."
+      },
+      "selectionTranslate": {
+        "title": "Highlight and translate",
+        "instruction": "Keep the text in the box selected (select it again if you clicked away). Press {{key}}, then press {{key}} again without speaking.",
+        "instructionHold": "Keep the text in the box selected (select it again if you clicked away). Hold {{key}} for a moment without speaking, then let go.",
+        "caption": "The selection was replaced by its {{language}} translation."
+      },
+      "question": {
+        "title": "Ask a question",
+        "instruction": "Press {{key}}, ask the question below out loud, then press {{key}} again. The answer opens in the Ask panel.",
+        "instructionHold": "Press {{key}}, ask the question below out loud, then press {{key}} again. The answer opens in the Ask panel.",
+        "script": "What is fifteen percent of two hundred forty?",
+        "caption": "Typelite answered your question (the exact answer is 36).",
+        "captionRight": "Typelite answered: 15% of 240 is 36."
+      },
+      "edit": {
+        "title": "Edit a selection",
+        "instruction": "Keep the text in the box selected (select it again if you clicked away). Press {{key}}, say the line below, then press {{key}} again.",
+        "instructionHold": "Keep the text in the box selected (select it again if you clicked away). Press {{key}}, say the line below, then press {{key}} again.",
+        "script": "Make this shorter.",
+        "prefill": "Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.",
+        "caption": "Typelite wrote a shorter version of your selection."
+      }
+    },
     "saveFailed": "Could not save: {{error}}",
     "retry": "Retry",
     "steps": {
