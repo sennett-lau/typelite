@@ -18,6 +18,7 @@ Rules:
 4. PARAGRAPHS: When the speech covers multiple distinct topics, separate them with a blank line. Do NOT split a single flowing thought into multiple paragraphs.
    LINE BREAKS: Never put a line break inside a sentence or between sentences about the same topic. Use line breaks only for list items and between clearly separate topics. Most dictations are a single paragraph.
 5. Preserve the user's language (including mixed languages), all substantive content, technical terms, and proper nouns exactly. Do NOT add any words, phrases, or content that were not present in the original speech.
+   CANTONESE: For Cantonese speech, keep its words, particles and meaning (嘅 咗 唔 係 啲 冇 喇 啦 呀, 頭先, 係咪, 可唔可以, 仲未); never turn them into Mandarin. Rule 2 still removes fillers and replaced words, and the [CHINESE_SCRIPT] section decides the characters.
 6. Output ONLY the processed text. No explanations, no quotes around output. Be consistent: do not mix formatting styles or punctuation conventions.
 7. NO FINAL PERIOD: When the output is one sentence, do not put a period (. or 。) at its end, like a typed chat message: "See you at 4", not "See you at 4.". Keep a final question mark or exclamation mark (? ？ ! ！). Output with two or more sentences ends normally. Keep a final period only when the speaker says "period" or "full stop". When editing selected text, end the way the selected text ends.
 8. SPANISH: For Spanish questions, use matching question punctuation (¿...?). Never open a Spanish question with ¿ and close it with ! unless the user clearly dictated an exclamation.
@@ -28,6 +29,9 @@ Examples:
 
 Input: "我觉得这个方案还不错就是价格有点贵"
 Output: 我觉得这个方案还不错，就是价格有点贵
+
+Input: "嗯我頭先已經send咗個file俾你喇你睇下係咪啱啦"
+Output: 我頭先已經send咗個file俾你喇，你睇下係咪啱啦
 
 Input: "我今日要send個report俾老闆但係啲數仲未check完"
 Output: 我今日要send個report俾老闆，但係啲數仲未check完
@@ -1422,7 +1426,7 @@ mod tests {
         assert!(prompt.contains("keep every English word and every Cantonese word"));
         // Last section, after every style section.
         assert!(
-            prompt.find("[CHINESE_SCRIPT]").unwrap()
+            prompt.find("\n\n[CHINESE_SCRIPT]\n").unwrap()
                 > prompt.find("[EXPLICIT_CUSTOM_POLISH]").unwrap()
         );
     }
@@ -1457,6 +1461,21 @@ mod tests {
         }
         let selected = build_system_prompt(AppType::General, &[], "", "preserve", false, "", true);
         assert!(selected.contains("in the script the selected text uses"));
+    }
+
+    #[test]
+    fn test_prompt_keeps_cantonese_words_and_particles() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+
+        assert!(prompt
+            .contains("CANTONESE: For Cantonese speech, keep its words, particles and meaning"));
+        assert!(prompt.contains("嘅 咗 唔 係 啲 冇 喇 啦 呀, 頭先, 係咪, 可唔可以, 仲未"));
+        assert!(prompt.contains("never turn them into Mandarin"));
+        // Cleanup still applies, and the script section owns the characters.
+        assert!(prompt.contains("Rule 2 still removes fillers and replaced words"));
+        assert!(prompt.contains("[CHINESE_SCRIPT] section decides the characters"));
+        // The example drops the filler 嗯 and keeps 頭先, 咗, 喇, 係咪 and 啦.
+        assert!(prompt.contains("Input: \"嗯我頭先已經send咗個file俾你喇你睇下係咪啱啦\"\nOutput: 我頭先已經send咗個file俾你喇，你睇下係咪啱啦\n"));
     }
 
     #[test]
