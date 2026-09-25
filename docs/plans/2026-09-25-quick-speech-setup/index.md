@@ -1,4 +1,4 @@
-# 0012 — Quick speech setup
+# Quick speech setup
 
 A user with no speech server, preset or API key can get speech recognition working with one
 button: Typelite downloads a Whisper model with a progress bar and runs whisper.cpp inside the

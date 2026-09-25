@@ -1,4 +1,4 @@
-# 0009 — Aurora pill
+# Aurora pill
 
 The capsule gets narrower, drops its time counters, and uses an animated aurora glow in the
 app's colours, so it feels alive while listening and working without extra text.

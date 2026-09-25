@@ -1,4 +1,4 @@
-# 0005 — Glass main window
+# Glass main window
 
 The main window loses its title bar and gets a translucent, blurred background, so it looks like
 a native macOS utility (Control Centre, Notes sidebar) and matches the Native Glass pill.
@@ -14,7 +14,7 @@ Status: agreed — 2026-09-24
 
 ## Non-goals
 
-- Blur for the capsule and Ask windows (handled in the theme pass, plan 0002 / P8b).
+- Blur for the capsule and Ask windows (handled in the theme pass, plan `v1-scope` / P8b).
 - Custom window buttons. macOS's own buttons stay.
 
 ## Key decisions

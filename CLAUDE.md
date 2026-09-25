@@ -4,7 +4,7 @@ Open-source, free, self-hosted alternative to [Typeless](https://www.typeless.co
 shortcut, speak, and get polished text pasted into whatever field has focus. macOS first.
 
 Stack: Tauri 2 (React/TypeScript frontend, Rust backend), MIT. Scope and decisions are in
-`docs/plans/0002-v1-scope/` and later plans. The user is new to macOS development, so keep the
+`docs/plans/2026-09-24-v1-scope/` and later plans. The user is new to macOS development, so keep the
 code plain and explain macOS-specific APIs when you use them.
 
 Local-only notes (sibling folders, machine setup) live in `CLAUDE.local.md`, which is not

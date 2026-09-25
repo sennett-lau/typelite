@@ -1,4 +1,4 @@
-# 0003 — Onboarding as a tutorial
+# Onboarding as a tutorial
 
 First-run setup becomes seven short steps. The first four get the machine ready (permissions,
 microphone, speech model, AI model). The last three teach the three shortcuts by having the user
@@ -6,7 +6,7 @@ set each one and use it once. Setup is complete when all three shortcuts have wo
 
 Status: agreed — 2026-09-24
 
-Replaces the six-step onboarding from 0002 (Welcome, Permissions, Speech, AI, Quick test, Done).
+Replaces the six-step onboarding from plan `v1-scope` (Welcome, Permissions, Speech, AI, Quick test, Done).
 
 ## Goals
 

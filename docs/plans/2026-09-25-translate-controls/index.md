@@ -1,11 +1,11 @@
-# 0010 — Translate controls
+# Translate controls
 
 Translate gets its own "switch language" shortcut, and the target languages are exactly the ones
 the user added: English by default, up to three.
 
 Status: agreed — 2026-09-25
 
-Changes decisions in [0002 translation-languages.md](../0002-v1-scope/translation-languages.md)
+Changes decisions in [v1-scope translation-languages.md](../2026-09-24-v1-scope/translation-languages.md)
 (three fixed default languages; cycling by pressing the Translate shortcut again).
 
 ## Goals

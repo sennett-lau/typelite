@@ -1,4 +1,4 @@
-# 0014 — Concise speech setup
+# Concise speech setup
 
 The speech recognition screens (onboarding step and Settings → Speech) fit without scrolling:
 the user picks how they want speech recognition to run, and only the fields for that choice
@@ -6,8 +6,8 @@ appear.
 
 Status: agreed — 2026-09-25
 
-Refines the preset editor from [0007](../0007-setup-without-dead-ends/index.md) and sits with the
-quick setup from [0012](../0012-quick-speech-setup/index.md).
+Refines the preset editor from [setup-without-dead-ends](../2026-09-25-setup-without-dead-ends/index.md) and sits with the
+quick setup from [quick-speech-setup](../2026-09-25-quick-speech-setup/index.md).
 
 ## Key decisions
 

@@ -1,4 +1,4 @@
-# 0002 — v1 scope
+# v1 scope
 
 Typelite v1 is a Tauri 2 app (React/TypeScript frontend, Rust backend) with a Typeless-style
 capsule, the Dictate / Ask / Translate modes, voice-edit and paste. It talks only to
@@ -6,8 +6,8 @@ self-hosted, OpenAI-compatible speech and AI endpoints and has no accounts or cl
 
 Status: done — 2026-09-24
 
-Supersedes the stack and architecture decisions in [0001](../0001-initial-concept/index.md).
-The product targets in 0001's `product.md` and the backend notes in `speech-and-ai.md` still apply.
+Supersedes the stack and architecture decisions in [initial-concept](../2026-09-24-initial-concept/index.md).
+The product targets in plan `initial-concept`'s `product.md` and the backend notes in `speech-and-ai.md` still apply.
 
 ## Goals
 
@@ -21,7 +21,7 @@ The product targets in 0001's `product.md` and the backend notes in `speech-and-
 
 - Windows and Linux work. The code stays cross-platform where it already is, but only macOS is
   tested.
-- A native Swift rewrite (see [0001](../0001-initial-concept/index.md) for that option).
+- A native Swift rewrite (see [initial-concept](../2026-09-24-initial-concept/index.md) for that option).
 
 ## Key decisions
 

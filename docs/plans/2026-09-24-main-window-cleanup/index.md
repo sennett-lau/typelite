@@ -1,4 +1,4 @@
-# 0004 — Main window cleanup
+# Main window cleanup
 
 The main window becomes three tabs: **Home**, **Settings**, **Dictionary**, with **About** pinned
 to the bottom of the sidebar. History is removed

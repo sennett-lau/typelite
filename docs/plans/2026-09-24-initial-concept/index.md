@@ -1,4 +1,4 @@
-# 0001 — Initial concept
+# Initial concept
 
 typelite is a native macOS menu-bar app that copies the Typeless experience: tap a shortcut,
 speak, and polished text is pasted into whatever app has focus. Speech-to-text runs on the Mac,
@@ -7,7 +7,7 @@ plan sets the product shape, the stack and the architecture that later feature p
 
 Status: dropped — 2026-09-24
 
-Superseded by [0002](../0002-v1-scope/index.md): v1 is a Tauri app instead of a native Swift app.
+Superseded by [v1-scope](../2026-09-24-v1-scope/index.md): v1 is a Tauri app instead of a native Swift app.
 
 ## Goals
 

@@ -1,4 +1,4 @@
-# 0019 — Export and import presets
+# Export and import presets
 
 Users can save their speech and AI presets to a file and load a file someone shared, so a
 working setup (for example "Ollama on the office PC") can be passed around.

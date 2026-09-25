@@ -31,7 +31,7 @@ active chips use the Aurora accent.
 
 ## Window and sidebar
 
-- Plan 0005: `titleBarStyle: "Overlay"`, hidden title, transparent window, macOS window effect,
+- Plan `glass-main-window`: `titleBarStyle: "Overlay"`, hidden title, transparent window, macOS window effect,
   28 pt drag strip, traffic lights inside the sidebar's top padding.
 - Sidebar 208 pt: logo mark (the one-colour mark, accent colour) and "Typelite"; nav items
   Home, Settings, Dictionary with 15 pt line icons; active item = accent-soft background and

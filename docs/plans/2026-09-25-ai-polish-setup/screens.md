@@ -1,7 +1,7 @@
 # Screens
 
 Every screen and state in words. Back to [index](index.md). Open [mock.html](mock.html) for the
-exact look; it follows the speech layout in [0015 layout](../0015-two-tab-speech/layout.md).
+exact look; it follows the speech layout in [two-tab-speech layout](../2026-09-25-two-tab-speech/layout.md).
 
 ## Onboarding → AI polish
 

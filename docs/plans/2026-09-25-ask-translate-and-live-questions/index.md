@@ -1,4 +1,4 @@
-# 0011 — Ask: translate selections, and live questions
+# Ask: translate selections, and live questions
 
 Ask anything can translate highlighted text into a language the user picks, and it answers
 honestly when a question needs live information that Typelite cannot fetch yet. Web search

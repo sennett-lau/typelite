@@ -1,4 +1,4 @@
-# 0016 — Pill follows the cursor's screen, and Escape cancels
+# Pill follows the cursor's screen, and Escape cancels
 
 Two Typeless behaviours: while the pill is showing, it moves to whichever screen the mouse
 pointer is on; and pressing **Escape** cancels the current recording or processing, like the

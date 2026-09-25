@@ -1,4 +1,4 @@
-# 0015 — Speech setup, final design
+# Speech setup, final design
 
 Speech recognition runs either **Built-in** (whisper.cpp inside Typelite) or through **your
 server or API key** (any OpenAI-compatible speech service). Onboarding shows one main button and
@@ -7,7 +7,7 @@ with the user after several iterations.
 
 Status: agreed — 2026-09-25
 
-Replaces the three-type picker from [0014](../0014-concise-speech-setup/index.md).
+Replaces the three-type picker from [concise-speech-setup](../2026-09-25-concise-speech-setup/index.md).
 
 ## Key decisions
 

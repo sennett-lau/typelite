@@ -1,4 +1,4 @@
-# 0013 — Guided shortcut tutorial
+# Guided shortcut tutorial
 
 The three shortcut steps of onboarding become short scripted exercises. The user reads a given
 line, sees what they said next to what Typelite produced, and learns the key behaviours: fillers
@@ -7,8 +7,8 @@ and Ask answers questions or edits a selection.
 
 Status: done — 2026-09-25
 
-Refines the shortcut steps of [0003](../0003-onboarding-tutorial/index.md). Depends on
-[0011](../0011-ask-translate-and-live-questions/index.md) for highlight-and-translate.
+Refines the shortcut steps of [onboarding-tutorial](../2026-09-24-onboarding-tutorial/index.md). Depends on
+[ask-translate-and-live-questions](../2026-09-25-ask-translate-and-live-questions/index.md) for highlight-and-translate.
 
 ## Goals
 

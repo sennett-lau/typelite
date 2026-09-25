@@ -10,7 +10,7 @@ Typelite.app/Contents/MacOS/
   llama-server        llama.cpp server, shipped with the app (Tauri externalBin)
 
 ~/Library/Application Support/dev.typelite.mac/models/
-  ggml-*.bin          speech models (plan 0012)
+  ggml-*.bin          speech models (plan `quick-speech-setup`)
   *.gguf              AI models (this plan)
 ```
 

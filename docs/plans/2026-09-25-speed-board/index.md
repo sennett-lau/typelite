@@ -1,4 +1,4 @@
-# 0008 — Speed board
+# Speed board
 
 Home gets a **Speed** board that shows where the wait goes between "I stopped talking" and "the
 text is in my app", step by step, so users can see what to tune (model, server, language,

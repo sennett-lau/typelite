@@ -1,4 +1,4 @@
-# 0007 — Setup without dead ends
+# Setup without dead ends
 
 Nobody should get stuck in setup because they have no speech or AI server yet. Both service
 steps can be skipped; each has an in-app guide; the built-in presets become templates anyone can

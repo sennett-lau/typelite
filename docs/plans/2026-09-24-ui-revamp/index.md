@@ -1,4 +1,4 @@
-# 0006 — UI revamp
+# UI revamp
 
 Typelite gets its own look: a glass main window without a
 title bar, a new sidebar, tabs across the top of Settings, macOS-style grouped rows, shortcut
@@ -6,8 +6,8 @@ tiles on Home, a new icon, and an "Aurora" dark mode. All features and settings 
 
 Status: agreed — 2026-09-24
 
-Builds on [0004](../0004-main-window-cleanup/index.md) (tabs and content) and includes
-[0005](../0005-glass-main-window/index.md) (glass window). The visual reference is
+Builds on [main-window-cleanup](../2026-09-24-main-window-cleanup/index.md) (tabs and content) and includes
+[glass-main-window](../2026-09-24-glass-main-window/index.md) (glass window). The visual reference is
 [mock.html](mock.html): open it in a browser; the "Main window" section is interactive.
 
 ## Goals
@@ -24,7 +24,7 @@ Builds on [0004](../0004-main-window-cleanup/index.md) (tabs and content) and in
 
 | Decision | Reason |
 |---|---|
-| Glass main window without title bar (plan 0005) | Native look; matches the pill. |
+| Glass main window without title bar (plan `glass-main-window`) | Native look; matches the pill. |
 | Settings uses tabs across the top (General, Speech, AI, Prompt Presets, System) instead of a second sidebar | Saves width and matches macOS System Settings. |
 | Every settings page is grouped rows: small uppercase group label, rounded group, hairline between rows, label left and control right | Matches macOS System Settings; clear separation between groups. |
 | Sidebar: logo mark and name, three tabs, live connection status (speech, AI), About at the bottom | Status at a glance, and a distinct identity. |

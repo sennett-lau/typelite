@@ -1,9 +1,9 @@
-# 0017 — AI polish setup, final design
+# AI polish setup, final design
 
 AI polish runs either **Built-in** (llama.cpp's `llama-server`, shipped inside Typelite and
 started on this Mac) or through **your server or API key** (any OpenAI-compatible chat
 service, such as Ollama on another computer). Onboarding and Settings use the same pieces as the
-speech setup from [0015](../0015-two-tab-speech/index.md). The visual reference is
+speech setup from [two-tab-speech](../2026-09-25-two-tab-speech/index.md). The visual reference is
 [mock.html](mock.html), agreed with the user.
 
 Status: building — 2026-09-25
