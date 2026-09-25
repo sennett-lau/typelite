@@ -589,10 +589,18 @@ async fn builtin_ai_server_starts_and_polishes_a_sentence() {
     let preset = AiPreset::builtin_llama("qwen3-4b", model.file_name().unwrap().to_str().unwrap());
 
     let started = Instant::now();
-    let config = builtin::llm_config(&preset, String::new())
+    let endpoint = builtin::endpoint_for(&preset, String::new())
         .await
         .expect("the built-in server should start");
     let startup = started.elapsed();
+    // The automatic test that setup runs ("tested on this Mac in …").
+    let setup_test_ms = builtin::test_request(&endpoint, &preset.model)
+        .await
+        .expect("the setup test request should pass");
+    let config = builtin::llm_config(&preset, String::new())
+        .await
+        .expect("the running server is reused");
+    assert_eq!(config.base_url, endpoint.base_url);
     assert!(config.base_url.starts_with("http://127.0.0.1:"));
 
     let req = dictation_request(
@@ -611,7 +619,9 @@ async fn builtin_ai_server_starts_and_polishes_a_sentence() {
         timings.push(request_started.elapsed());
     }
     builtin::server().stop();
-    println!("builtin AI: start {startup:?}, polish {timings:?} -> {text:?}");
+    println!(
+        "builtin AI: start {startup:?}, setup test {setup_test_ms} ms, polish {timings:?} -> {text:?}"
+    );
     let words = normalised(&text);
     assert!(words.contains("tuesday"), "self-correction lost: {text:?}");
     assert!(!text.contains("<think>"), "thinking was not off: {text:?}");
