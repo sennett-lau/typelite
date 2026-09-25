@@ -955,6 +955,8 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
+        // Plan `preset-sharing`: the save and open dialogs of preset Export and Import (used from Rust only).
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if let Some(action) = parse_cli_action(&args) {
                 dispatch_cli_action(app, action);
@@ -1311,6 +1313,11 @@ pub fn run() {
             commands::ai_setup::list_ai_models,
             commands::ai_setup::delete_ai_model,
             commands::ai_setup::get_ai_hardware,
+            commands::preset_share::list_exportable_presets,
+            commands::preset_share::export_presets,
+            commands::preset_share::pick_preset_import,
+            commands::preset_share::apply_preset_import,
+            commands::preset_share::cancel_preset_import,
             commands::dictionary::get_dictionary,
             commands::dictionary::add_dictionary_entry,
             commands::dictionary::update_dictionary_entry,

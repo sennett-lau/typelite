@@ -9,6 +9,7 @@ pub mod llm;
 pub mod misc;
 pub mod model_setup;
 pub mod permissions;
+pub mod preset_share;
 pub mod speech_setup;
 pub mod stt;
 pub mod translation;

@@ -10,6 +10,7 @@ import {
   serverPresetsOf,
   type EngineService,
 } from './services'
+import { PresetShareButtons } from '../Settings/PresetShareButtons'
 
 const ADD = '__add__'
 
@@ -107,6 +108,9 @@ export function ServerSettings({ service = SPEECH_SERVICE }: { service?: EngineS
         />
         {error && <p className="m-0 mt-2 text-[12px] text-error">{error}</p>}
       </div>
+
+      {/* Plan `preset-sharing`: export and import speech or AI presets. */}
+      <PresetShareButtons service={service.id} />
     </div>
   )
 }
