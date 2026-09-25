@@ -920,6 +920,68 @@ body,
     background: var(--color-pill-error-bg);
     border-color: var(--color-pill-error-line);
   }
+  /* Copy pill (plan 0018): the language tag of a translation. */
+  .pill-lang {
+    flex: none;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.16);
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+  }
+  /* The Copy button; its border is the countdown ring. */
+  .pill-copy-button {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 11px;
+    border: none;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .pill-copy-button:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+  .pill-copy-button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .pill-copy-button-done {
+    background: color-mix(in srgb, var(--color-aurora-a) 60%, transparent);
+  }
+  .pill-copy-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    animation: pill-copy-label-in 0.18s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .pill-copy-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .pill-copy-ring rect {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.85);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+  .pill-copy-ring .pill-copy-ring-track {
+    stroke: rgba(255, 255, 255, 0.12);
+  }
   /* The capsule's right-click menu: the same dark glass as the pill. */
   .pill-menu {
     border: 1px solid var(--color-pill-line);
@@ -1047,6 +1109,18 @@ body,
     opacity: 0;
   }
 }
+@keyframes pill-copy-label-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
 /* Reduced motion: still gradients, no drift, sweep or flash animation; the pill only fades. */
 @media (prefers-reduced-motion: reduce) {
   .pill {
@@ -1055,6 +1129,9 @@ body,
   .pill-gone {
     transform: none;
     filter: none;
+  }
+  .pill-copy-label {
+    animation: none;
   }
   .aurora-blob,
   .aurora-sweep,

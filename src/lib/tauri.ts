@@ -27,6 +27,16 @@ export async function abortRecording(): Promise<void> {
   return invoke('abort_recording')
 }
 
+/** Plan 0018: the Copy pill's Copy button; puts the held result on the clipboard. */
+export async function copyOfferToClipboard(): Promise<void> {
+  return invoke('copy_offer_to_clipboard')
+}
+
+/** Plan 0018: the Copy pill closed; the backend drops the held result. */
+export async function dismissCopyOffer(): Promise<void> {
+  return invoke('dismiss_copy_offer')
+}
+
 /** Plan 0008: the last runs' step timings (memory only), oldest first, for the Speed board. */
 export async function getRunTimings(): Promise<RunTiming[]> {
   return invoke('get_run_timings')

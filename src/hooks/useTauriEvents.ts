@@ -6,6 +6,7 @@ import { useAppStore } from '../stores/appStore'
 import type {
   AppConfig,
   ContextProfileSummary,
+  CopyOffer,
   InsertResult,
   PipelineState,
   RecordingDeadlineSnapshot,
@@ -62,6 +63,7 @@ export function useTauriEvents() {
     setTargetApp,
     setLastInsertResult,
     setLastContext,
+    setCopyOffer,
     setPipelineError,
     setAccessibilityTrusted,
     applyPersistedConfigPatch,
@@ -141,6 +143,8 @@ export function useTauriEvents() {
       if (run.polished && !run.aiFailed) recordAiResult(true)
     })
     addListener<ContextProfileSummary>('pipeline:context', setLastContext)
+    // Plan 0018: the Copy pill opens with a result, or closes (null, for example on Escape).
+    addListener<CopyOffer | null>('pipeline:copy_offer', setCopyOffer)
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
       const capsuleErrorKey = capsuleErrorKeyFromPayload(payload)
       setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), setupPaneForError(capsuleErrorKey))
@@ -203,6 +207,7 @@ export function useTauriEvents() {
     setTargetApp,
     setLastInsertResult,
     setLastContext,
+    setCopyOffer,
     setPipelineError,
     setAccessibilityTrusted,
     applyPersistedConfigPatch,

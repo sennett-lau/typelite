@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { useAppStore, type PipelineState, type VoiceMode } from '../stores/appStore'
+import { useAppStore, type CopyOffer, type PipelineState, type VoiceMode } from '../stores/appStore'
 
 export interface CapsuleSize {
   width: number
@@ -25,7 +25,33 @@ export const WORKING_PILL_SIZE: CapsuleSize = { width: 132, height: 36 }
 export const ERROR_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
 export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
+/** Plan 0018: the Copy pill (language tag, one-line preview, Copy button) for a short result. */
+export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 300, height: 36 }
+/** The Copy pill for a longer result; its preview ends with an ellipsis. */
+export const COPY_PILL_SIZE: CapsuleSize = { width: 360, height: 36 }
 const IDLE_SIZE: CapsuleSize = { width: 36, height: 36 }
+
+/** Up to this visual length (CJK characters count double) a result fits the short Copy pill. */
+const COPY_PILL_SHORT_TEXT = 34
+
+/** Rough visual length of `text`: wide (CJK, Hangul, fullwidth) characters count as two. */
+function visualLength(text: string): number {
+  let length = 0
+  for (const char of text) {
+    length += (char.codePointAt(0) ?? 0) >= 0x2e80 ? 2 : 1
+    if (length > COPY_PILL_SHORT_TEXT * 2) break
+  }
+  return length
+}
+
+/** The Copy pill's size: short results get the narrower pill (the language tag takes room too). */
+export function copyPillSize(offer: CopyOffer | null): CapsuleSize {
+  if (!offer) return COPY_PILL_SIZE
+  const tag = offer.targetLang ? 4 : 0
+  return visualLength(offer.text.trim()) + tag <= COPY_PILL_SHORT_TEXT
+    ? COPY_PILL_SHORT_SIZE
+    : COPY_PILL_SIZE
+}
 
 /**
  * Plan 0018 transitions. The pill's width, height and corners animate for `PILL_RESIZE_MS`
@@ -37,15 +63,19 @@ export const PILL_HIDE_MS = 220
 
 /**
  * The pill's own size (without the context menu or window padding) for a capsule state.
- * `capsuleState` is the pipeline state, `error`, or `done` (the brief flash after pasting).
+ * `capsuleState` is the pipeline state, `error`, `done` (the brief flash after pasting) or
+ * `copy` (the Copy pill, sized by `copyOffer`).
  */
 export function getPillSize(
   capsuleState: string,
   activeVoiceMode: VoiceMode | null,
   errorHasAction: boolean,
   translateTargetCount: number,
+  copyOffer: CopyOffer | null = null,
 ): CapsuleSize {
   switch (capsuleState) {
+    case 'copy':
+      return copyPillSize(copyOffer)
     case 'error':
       return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
     case 'recording':
@@ -72,6 +102,8 @@ export interface CapsuleVisibilityInput {
   pipelineState: PipelineState
   /** The brief done flash after pasting keeps the pill up a moment longer. */
   doneFlash?: boolean
+  /** Plan 0018: the Copy pill offers a result. */
+  copyPill?: boolean
 }
 
 /** The idle capsule is always hidden; it shows only while working, or for an error or menu. */
@@ -81,14 +113,31 @@ export function getCapsuleVisibility({
   hasError,
   pipelineState,
   doneFlash = false,
+  copyPill = false,
 }: CapsuleVisibilityInput): boolean {
-  return contextMenuOpen || capsuleExpanded || hasError || doneFlash || pipelineState !== 'idle'
+  return (
+    contextMenuOpen ||
+    capsuleExpanded ||
+    hasError ||
+    doneFlash ||
+    copyPill ||
+    pipelineState !== 'idle'
+  )
 }
 
-/** The state the pill shows: an error first, then the done flash once idle, else the pipeline state. */
-export function getCapsuleState(pipelineState: string, hasError: boolean, doneFlash: boolean) {
+/**
+ * The state the pill shows: an error first, then the done flash or the Copy pill once the
+ * pipeline is idle, else the pipeline state.
+ */
+export function getCapsuleState(
+  pipelineState: string,
+  hasError: boolean,
+  doneFlash: boolean,
+  copyPill = false,
+): string {
   if (hasError) return 'error'
   if (doneFlash && pipelineState === 'idle') return 'done'
+  if (copyPill && pipelineState === 'idle') return 'copy'
   return pipelineState
 }
 
@@ -221,12 +270,13 @@ export function getSizeForState(
   errorHasAction = false,
   translateTargetCount = 3,
   doneFlash = false,
+  copyOffer: CopyOffer | null = null,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
   if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translateTargetCount)
   if (expanded) return { width: 220, height: 90 }
-  const capsuleState = getCapsuleState(state, false, doneFlash)
-  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount)
+  const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null)
+  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount, copyOffer)
 }
 
 /**
@@ -257,6 +307,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
+  const copyOffer = useAppStore((s) => s.copyOffer)
   const anchor = useRef<CapsuleAnchor | null>(null)
   /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
   const anchorMonitor = useRef<string | null>(null)
@@ -278,6 +329,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     hasError,
     pipelineState,
     doneFlash,
+    copyPill: copyOffer !== null,
   })
 
   useEffect(() => {
@@ -290,6 +342,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       errorHasAction,
       translateTargetCount,
       doneFlash,
+      copyOffer,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
@@ -389,6 +442,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     errorHasAction,
     translateTargetCount,
     doneFlash,
+    copyOffer,
     shouldShow,
     setContextMenuReady,
   ])
@@ -457,5 +511,6 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     errorHasAction,
     translateTargetCount,
     doneFlash,
+    copyOffer,
   )
 }
