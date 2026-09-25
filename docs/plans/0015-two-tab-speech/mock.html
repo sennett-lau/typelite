@@ -1,0 +1,617 @@
+<title>Typelite Speech Setup</title>
+<style>
+  :root {
+    --page-bg: #f2f3f6; --page-ink: #1b1d22; --page-muted: #5d6270; --page-line: #dcdfe6; --page-card: #fff;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  * { box-sizing: border-box; }
+  body { background: var(--page-bg); color: var(--page-ink); font-family: var(--ui); font-size: 15px; line-height: 1.5; padding-inline: 20px; padding-block: 32px 64px; }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); }
+  h1 { margin: 4px 0 6px; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.15; text-wrap: balance; }
+  .lead { margin: 0; color: var(--page-muted); max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--page-line); border-radius: 9px; overflow: hidden; background: var(--page-card); }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: transparent; color: var(--page-ink); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #0a84ff; color: #fff; }
+  .seg button:focus-visible { outline: 2px solid #0a84ff; outline-offset: -2px; }
+  .label { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: .06em; text-transform: uppercase; }
+  .notes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; padding: 14px 18px; font-size: 14px; color: var(--page-muted); }
+  .notes b { color: var(--page-ink); }
+  .notes ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .desk { border-radius: 16px; padding: 34px 24px; border: 1px solid var(--page-line); background: radial-gradient(90% 90% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%); }
+  .desk.dk { background: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%); }
+
+  /* App tokens: light Native Glass / dark Aurora */
+  .app {
+    --glass: rgba(246,246,248,.66); --content: rgba(255,255,255,.76); --card: #fff; --ink: #1d1d1f; --muted: #6e6e73; --faint: #8e8e93;
+    --line: rgba(0,0,0,.09); --hair: rgba(0,0,0,.06); --accent: #0a84ff; --accent-ink: #fff; --accent-soft: rgba(10,132,255,.12);
+    --ok: #30d158; --err: #ff453a; --field: rgba(0,0,0,.045); --key: #fff; --key-line: #d2d2d7; --tint-a: transparent; --tint-b: transparent;
+    color: var(--ink); font-family: var(--ui); font-size: 13px;
+  }
+  .app.dk {
+    color-scheme: dark;
+    --glass: rgba(18,24,34,.52); --content: rgba(14,20,30,.58); --card: rgba(36,44,60,.7); --ink: #f1f6ff; --muted: #a6b3c8; --faint: #6f7d94;
+    --line: rgba(255,255,255,.12); --hair: rgba(255,255,255,.08); --accent: #3fd8c2; --accent-ink: #04241f; --accent-soft: rgba(63,216,194,.18);
+    --field: rgba(255,255,255,.06); --key: #2c3646; --key-line: #445066; --tint-a: rgba(63,216,194,.24); --tint-b: rgba(175,82,222,.24);
+  }
+  .win { max-width: 760px; margin: 0 auto; border-radius: 12px; overflow: hidden; position: relative;
+    background: radial-gradient(60% 50% at 90% 0%, var(--tint-a), transparent 70%), radial-gradient(50% 45% at 10% 100%, var(--tint-b), transparent 70%), var(--content);
+    backdrop-filter: blur(30px) saturate(1.8); -webkit-backdrop-filter: blur(30px) saturate(1.8);
+    box-shadow: 0 30px 60px rgba(20,20,50,.28), 0 0 0 .5px rgba(0,0,0,.2); }
+  .lights { display: flex; gap: 8px; padding: 14px 16px 0; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+
+  /* Onboarding */
+  .ob { padding: 14px 40px 26px; min-height: 470px; display: flex; flex-direction: column; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 26px; }
+  .dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--hair); }
+  .dots span.done { background: var(--muted); opacity: .5; }
+  .dots span.now { width: 18px; background: var(--accent); }
+  .ob h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .ob .sub { margin: 4px 0 22px; color: var(--muted); }
+  .card { background: var(--card); border-radius: 12px; box-shadow: 0 0 0 .5px var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; align-items: flex-start; gap: 12px; }
+  .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .ic svg { width: 18px; height: 18px; }
+  .card h3 { margin: 0; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tag { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em; }
+  .card p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+  .card.fixed { height: 214px; justify-content: space-between; }
+  .card-body { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 0; padding-top: 2px; }
+  .status { display: flex; flex-direction: column; gap: 8px; }
+  .status-line { display: flex; align-items: center; gap: 8px; min-height: 22px; flex-wrap: wrap; }
+  .badge { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .badge.err { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
+  .badge.busy { background: var(--field); color: var(--ink); }
+  .status-detail { font-size: 12px; color: var(--muted); line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .models.one { grid-template-columns: minmax(0, 1fr); }
+  .model { all: unset; box-sizing: border-box; border-radius: 9px; padding: 9px 11px; box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .model b { font-size: 12.5px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .model span { font-size: 11.5px; color: var(--muted); }
+  .model[aria-checked="true"] { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .model:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .models.one .model { cursor: default; }
+  .hw { font-size: 11.5px; color: var(--muted); }
+  .card-foot { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 7px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  .btn.ghost { background: var(--field); color: var(--ink); }
+  .btn:focus-visible, .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .link { font: inherit; font-size: 12.5px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+  .link.muted { color: var(--muted); }
+  .progress { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .track { height: 6px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .25s linear; }
+  .progress-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .ready { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); }
+  .check { width: 18px; height: 18px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; flex: none; }
+  .check::after { content: ""; width: 7px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+  .errline { color: var(--err); font-size: 12.5px; }
+  .below { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 12px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .ob-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 26px; }
+
+  /* Sheet */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); display: flex; align-items: flex-start; justify-content: center; padding: 56px 20px 20px; }
+  .scrim[hidden] { display: none; }
+  .sheet { width: min(460px, 100%); background: var(--card); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 .5px var(--line); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .app.dk .sheet { background: #1f2735; }
+  .sheet h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .sheet .sub { margin: -8px 0 0; color: var(--muted); font-size: 12.5px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .fields { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .fields label { color: var(--muted); font-size: 12.5px; }
+  .fields input { font: inherit; font-size: 12.5px; padding: 6px 9px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields input:focus { outline: none; border-color: var(--accent); }
+  .fields input.mono { font-family: var(--mono); font-size: 12px; }
+  .sheet-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fields select { font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields select:focus { outline: none; border-color: var(--accent); }
+  .fields [hidden] { display: none !important; }
+  .hint { grid-column: 2; font-size: 11.5px; color: var(--muted); margin-top: -3px; line-height: 1.5; }
+  .hint button { all: unset; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: 11px; }
+  .hint button:focus-visible { outline: 2px solid var(--accent); }
+  .result { font-size: 12px; color: var(--muted); }
+  .result.ok { color: var(--ok); }
+  .saved { display: flex; flex-direction: column; border-radius: 9px; box-shadow: 0 0 0 .5px var(--line); overflow: hidden; }
+  .saved button { all: unset; display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 12.5px; }
+  .saved button + button { border-top: 1px solid var(--hair); }
+  .saved button[aria-pressed="true"] { background: var(--accent-soft); }
+  .saved button span:last-child { color: var(--muted); font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Settings */
+  .set { display: grid; grid-template-columns: 180px minmax(0, 1fr); min-height: 500px; }
+  .side { background: var(--glass); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--hair); }
+  .brand { font-weight: 600; font-size: 14px; padding: 10px 8px 12px; }
+  .nav { padding: 6px 9px; border-radius: 7px; font-size: 13px; color: var(--ink); }
+  .nav.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .main { padding: 30px 28px 28px; min-width: 0; }
+  .main h2 { margin: 0 0 12px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .toolbar { display: flex; gap: 4px; margin: -4px 0 18px; border-bottom: 1px solid var(--hair); padding-bottom: 10px; flex-wrap: wrap; }
+  .toolbar button { all: unset; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 8px; font-size: 11px; color: var(--muted); cursor: pointer; min-width: 56px; }
+  .toolbar button svg { width: 20px; height: 20px; }
+  .toolbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .toolbar button:focus-visible { outline: 2px solid var(--accent); }
+  .engine { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .subtabs { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 8px; background: var(--hair); gap: 2px; }
+  .subtabs button { all: unset; font-size: 12.5px; padding: 4px 12px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+  .subtabs button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 .5px var(--line); font-weight: 600; }
+  .subtabs button:focus-visible { outline: 2px solid var(--accent); }
+  .ghead { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin: 20px 4px 7px; flex-wrap: wrap; }
+  .glabel { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .picker { font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line); color: var(--ink); border: 0; }
+  .group { background: var(--card); border-radius: 10px; box-shadow: 0 0 0 .5px var(--line); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; min-height: 42px; flex-wrap: wrap; }
+  .row + .row { border-top: 1px solid var(--hair); }
+  .row .l { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+  .row .l small { color: var(--muted); font-size: 11.5px; }
+  .row .v { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .row input { font: inherit; font-family: var(--mono); font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: min(300px, 100%); }
+  .pop { font-size: 12.5px; padding: 4px 10px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line), 0 1px 2px rgba(0,0,0,.08); }
+  .pop::after { content: " ⌄"; color: var(--muted); }
+  .dim { color: var(--muted); font-size: 12px; }
+
+  [data-screen][hidden] { display: none !important; }
+  @media (max-width: 720px) {
+    .ob { padding: 10px 18px 20px; }
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .side { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--hair); }
+    .main { padding: 20px 16px; }
+    .fields { grid-template-columns: minmax(0, 1fr); }
+    .desk { padding: 16px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .track i { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-mon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · design iteration</div>
+    <h1>Speech recognition setup</h1>
+    <p class="lead">Two ways to run speech recognition: Built-in, or a preset for your own server or API key. Switch screens and states below; everything in the window is clickable.</p>
+  </header>
+
+  <div class="bar">
+    <span class="label">Screen</span>
+    <div class="seg" role="group" aria-label="Screen">
+      <button type="button" data-go="onboarding" aria-pressed="true">Onboarding step</button>
+      <button type="button" data-go="settings" aria-pressed="false">Settings → Speech</button>
+    </div>
+    <span class="label">Theme</span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="true">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+  <div class="bar" id="state-bar">
+    <span class="label">Built-in state</span>
+    <div class="seg" role="group" aria-label="Built-in state">
+      <button type="button" data-state="none" aria-pressed="true">Not set up</button>
+      <button type="button" data-state="downloading" aria-pressed="false">Downloading</button>
+      <button type="button" data-state="ready" aria-pressed="false">Ready</button>
+      <button type="button" data-state="error" aria-pressed="false">Failed</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span class="label">Simulate Mac</span>
+    <div class="seg" role="group" aria-label="Simulated Mac">
+      <button type="button" data-mac="m1pro" aria-pressed="true">M1 Pro · 32 GB</button>
+      <button type="button" data-mac="air8" aria-pressed="false">M2 Air · 8 GB</button>
+      <button type="button" data-mac="air4" aria-pressed="false">Apple Silicon · 4 GB</button>
+      <button type="button" data-mac="intel" aria-pressed="false">Intel · 16 GB</button>
+      <button type="button" data-mac="disk" aria-pressed="false">Low disk (400 MB free)</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <span class="label">Saved presets</span>
+    <div class="seg" role="group" aria-label="Saved presets">
+      <button type="button" data-saved="none" aria-pressed="false">None yet</button>
+      <button type="button" data-saved="two" aria-pressed="true">2 saved</button>
+    </div>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="app" id="app">
+
+      <!-- ONBOARDING -->
+      <div class="win" data-screen="onboarding">
+        <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+        <div class="ob">
+          <div class="dots" aria-label="Step 3 of 7"><span class="done"></span><span class="done"></span><span class="now"></span><span></span><span></span><span></span><span></span></div>
+          <h2>Speech recognition</h2>
+          <p class="sub">Turns your voice into text. It runs on this Mac.</p>
+
+          <div class="card fixed" aria-live="polite">
+            <div class="card-head">
+              <div class="ic"><svg><use href="#i-chip"/></svg></div>
+              <div class="grow">
+                <h3>Built-in <span class="tag">Recommended</span></h3>
+                <p>Runs Whisper inside Typelite on this Mac. No other software needed.</p>
+              </div>
+            </div>
+
+            <div class="card-body" data-when="none">
+              <div class="models" id="models" role="radiogroup" aria-label="Model"></div>
+              <span class="hw" id="hw-note"></span>
+            </div>
+            <div class="card-body" data-when="downloading" hidden>
+              <div class="status">
+                <div class="status-line"><span class="badge busy" id="pct-ob">Downloading 0%</span><span class="status-detail" id="size-ob"></span></div>
+                <div class="track"><i id="bar-ob"></i></div>
+                <span class="status-detail" id="eta-ob"></span>
+              </div>
+            </div>
+            <div class="card-body" data-when="ready" hidden>
+              <div class="status">
+                <div class="status-line"><span class="badge">Ready</span><span class="status-detail" id="ready-name"></span></div>
+                <span class="status-detail" id="ready-text"></span>
+              </div>
+            </div>
+            <div class="card-body" data-when="error" hidden>
+              <div class="status">
+                <div class="status-line"><span class="badge err">Download failed</span><span class="status-detail">Nothing was installed</span></div>
+                <span class="status-detail">The connection was lost at 212 of 574 MB. Try again to resume where it stopped.</span>
+              </div>
+            </div>
+
+            <div class="card-foot">
+              <button class="btn" type="button" data-action="download" data-when="none">Set up</button>
+              <button class="btn ghost" type="button" data-state-go="none" data-when="downloading" hidden>Cancel</button>
+              <button class="btn ghost" type="button" data-state-go="none" data-when="ready" hidden>Change model</button>
+              <button class="btn" type="button" data-action="download" data-when="error" hidden>Try again</button>
+            </div>
+          </div>
+
+          <div class="below">
+            <button class="link" type="button" data-open-sheet>Use your own server or API key…</button>
+            <button class="link muted" type="button">Skip for now</button>
+          </div>
+
+          <div class="ob-foot">
+            <button class="btn ghost" type="button">Back</button>
+            <button class="btn" type="button" id="next-ob" disabled style="opacity:.45">Next</button>
+          </div>
+        </div>
+
+        <!-- Sheet -->
+        <div class="scrim" id="sheet" hidden>
+          <div class="sheet" role="dialog" aria-label="Your own server or API key">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><h3 id="sheet-title">Your own server or API key</h3><a class="link" href="https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md" target="_blank" rel="noopener">Learn more</a></div>
+            <p class="sub" id="sheet-sub" hidden></p>
+
+            <div id="sheet-list">
+              <div class="saved" role="group" aria-label="Saved presets">
+                <button type="button" aria-pressed="true" data-preset="pc"><span>Speech server on my PC</span><span>192.0.2.10:8000</span></button>
+                <button type="button" aria-pressed="false" data-preset="groq"><span>Groq</span><span>api.groq.com</span></button>
+              </div>
+              <div class="sheet-foot" style="margin-top:12px">
+                <button class="link" type="button" id="to-add">+ Add preset</button>
+                <span class="grow"></span>
+                <span class="result" id="use-result"></span>
+                <button class="btn ghost" type="button" data-close-sheet>Cancel</button>
+                <button class="btn" type="button" id="use-preset">Test and use</button>
+              </div>
+            </div>
+
+            <div id="sheet-add" hidden>
+              <div class="fields">
+                <label for="f-url">Address</label><input id="f-url" class="mono" placeholder="https://api.openai.com/v1">
+                <label for="f-model">Model</label><input id="f-model" class="mono" placeholder="whisper-1">
+                <label for="f-key">API key</label><input id="f-key" class="mono" type="password" placeholder="Optional">
+                <label for="f-name">Name</label><input id="f-name" placeholder="Filled in for you">
+              </div>
+              <div class="sheet-foot" style="margin-top:14px">
+                <button class="link muted" type="button" id="to-list">← Saved presets</button>
+                <button class="link muted" type="button" id="add-cancel" data-close-sheet hidden>Cancel</button>
+                <span class="grow"></span>
+                <span class="result" id="add-result"></span>
+                <button class="btn ghost" type="button" id="add-test">Test</button>
+                <button class="btn" type="button" id="add-save">Save and use</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="win" data-screen="settings" hidden>
+        <div class="set">
+          <nav class="side" aria-label="Typelite">
+            <div class="lights" style="padding:6px 6px 0"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+            <div class="brand">Typelite</div>
+            <div class="nav">Home</div><div class="nav on">Settings</div><div class="nav">Dictionary</div>
+          </nav>
+          <div class="main">
+            <nav class="toolbar" aria-label="Settings sections">
+              <button type="button"><svg><use href="#i-gear"/></svg>General</button>
+              <button type="button" aria-current="page"><svg><use href="#i-mic"/></svg>Speech</button>
+              <button type="button"><svg><use href="#i-spark"/></svg>AI</button>
+              <button type="button"><svg><use href="#i-text"/></svg>Prompts</button>
+              <button type="button"><svg><use href="#i-mon"/></svg>System</button>
+            </nav>
+
+            <div class="ghead" style="margin-top:0"><span class="glabel">Speech recognition uses</span></div>
+            <div class="engine" role="radiogroup" aria-label="Speech recognition uses">
+              <button type="button" class="model" role="radio" data-kind="builtin" aria-checked="true"><b>Built-in</b><span>Runs Whisper inside Typelite on this Mac</span></button>
+              <button type="button" class="model" role="radio" data-kind="presets" aria-checked="false"><b>Your server or API key</b><span>OpenAI, Groq, a whisper.cpp server…</span></button>
+            </div>
+
+            <div data-kindview="builtin">
+              <div class="ghead"><span class="glabel">Model</span><span class="hw" id="hw-note-set"></span></div>
+              <div class="group" style="padding:12px 14px">
+                <div class="models" id="models-set" role="radiogroup" aria-label="Model"></div>
+              </div>
+              <div class="group" style="margin-top:10px">
+                <div class="row" data-when="none"><div class="l"><span class="status-line"><span class="badge busy">Not downloaded</span><span class="status-detail" id="set-size"></span></span></div><button class="btn" type="button" data-action="download">Download</button></div>
+                <div class="row" data-when="downloading" hidden><div class="l" style="gap:6px"><span class="status-line"><span class="badge busy" id="set-pct">Downloading 0%</span><span class="status-detail" id="pct-set"></span></span><div class="track"><i id="bar-set"></i></div></div><button class="btn ghost" type="button" data-state-go="none">Cancel</button></div>
+                <div class="row" data-when="ready" hidden><div class="l"><span class="status-line"><span class="badge">In use</span><span class="status-detail" id="set-ready"></span></span></div><button class="btn ghost" type="button" data-state-go="none">Delete</button></div>
+                <div class="row" data-when="error" hidden><div class="l"><span class="status-line"><span class="badge err">Download failed</span><span class="status-detail">The connection was lost. Try again to resume.</span></span></div><button class="btn" type="button" data-action="download">Try again</button></div>
+              </div>
+            </div>
+
+            <div data-kindview="presets" hidden>
+              <div data-saved-view="two">
+                <div class="ghead"><span class="glabel">Preset</span><select class="picker" id="set-picker" aria-label="Saved presets"><option>Speech server on my PC</option><option>Groq</option><option value="add">+ Add preset…</option></select></div>
+              </div>
+              <div data-saved-view="none" hidden>
+                <div class="ghead"><span class="glabel">Add your server or API key</span><a class="link" href="https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md" target="_blank" rel="noopener">Learn more</a></div>
+              </div>
+              <div class="group" style="padding:12px 14px">
+                <div class="fields">
+                  <label for="s-url">Address</label><input id="s-url" class="mono" placeholder="https://api.openai.com/v1">
+                  <label for="s-model">Model</label><input id="s-model" class="mono" placeholder="whisper-1">
+                  <label for="s-key">API key</label><input id="s-key" class="mono" type="password" placeholder="Optional">
+                  <label for="s-name">Name</label><input id="s-name" placeholder="Filled in for you">
+                </div>
+                <div class="sheet-foot" style="margin-top:12px">
+                  <button class="link muted" type="button" id="s-delete" data-saved-view="two">Delete this preset</button>
+                  <span class="grow"></span>
+                  <span class="result" id="s-result"></span>
+                  <button class="btn ghost" type="button" id="s-test">Test</button>
+                  <button class="btn" type="button" id="s-save">Save</button>
+                </div>
+              </div>
+              <p class="dim" style="margin:8px 4px 0" data-saved-view="two"><a class="link" href="https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md" target="_blank" rel="noopener">Learn more</a> about supported services and addresses.</p>
+            </div>
+
+            <div class="ghead"><span class="glabel">Language</span></div>
+            <div class="group"><div class="row"><div class="l">Spoken language<small>Auto-detect handles mixed languages</small></div><span class="pop">Auto-detect</span></div></div>
+            <div class="ghead"><span class="glabel">Recording</span></div>
+            <div class="group"><div class="row"><div class="l">Longest recording</div><span class="pop">Automatic (up to 10 min)</span></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>What to look at</b>
+    <ul>
+      <li>Onboarding has one main button (Set up), one link (your own server or key) and Skip.</li>
+      <li>The Built-in card has a fixed height in every state. It offers only the models this Mac can run well; with one model there is nothing to choose. Try the "Simulate Mac" buttons.</li>
+      <li>The link opens a sheet. With saved presets it lists them first; with none it opens straight on the form: four fields with the OpenAI example as placeholders, and "Learn more" linking to the services guide on GitHub.</li>
+      <li>Settings sections are toolbar tabs (icon + label) across the top, as in macOS Settings windows. "Speech recognition uses" is a choice between two cards, not tabs: the selected card is the engine in use, and its details show below.</li>
+      <li>Settings uses the same pieces as onboarding: Built-in shows the model cards this Mac can run, with a status row (Not downloaded, Downloading, In use, Failed); Presets uses the same four fields, placeholders and Learn more, with the saved-preset picker at the top right, or the Add form when there are none.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var app = document.getElementById('app'), desk = document.getElementById('desk');
+  function press(group, btn) { group.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); }); }
+
+  // theme
+  function theme(dark) {
+    app.classList.toggle('dk', dark); desk.classList.toggle('dk', dark);
+    document.getElementById('t-light').setAttribute('aria-pressed', String(!dark));
+    document.getElementById('t-dark').setAttribute('aria-pressed', String(dark));
+  }
+  document.getElementById('t-light').onclick = function () { theme(false); };
+  document.getElementById('t-dark').onclick = function () { theme(true); };
+  try { if (matchMedia('(prefers-color-scheme: dark)').matches) theme(true); } catch (e) {}
+
+  // screens
+  document.querySelectorAll('[data-go]').forEach(function (b) {
+    b.onclick = function () {
+      press(b.parentNode, b);
+      document.querySelectorAll('[data-screen]').forEach(function (s) { s.hidden = s.getAttribute('data-screen') !== b.getAttribute('data-go'); });
+    };
+  });
+
+  // hardware-aware model list
+  var MODELS = {
+    large: { name: 'Best accuracy', detail: 'Whisper large-v3-turbo · 574 MB', mb: 574 },
+    small: { name: 'Faster', detail: 'Whisper small · 190 MB', mb: 190 }
+  };
+  var MACS = {
+    m1pro: { chip: 'Apple M1 Pro', ram: 32, silicon: true, freeMb: 55000 },
+    air8: { chip: 'Apple M2', ram: 8, silicon: true, freeMb: 20000 },
+    air4: { chip: 'Apple Silicon', ram: 4, silicon: true, freeMb: 20000 },
+    intel: { chip: 'Intel Core i7', ram: 16, silicon: false, freeMb: 90000 },
+    disk: { chip: 'Apple M1', ram: 16, silicon: true, freeMb: 400 }
+  };
+  function capable(mac) {
+    var list = [];
+    if (mac.silicon && mac.ram >= 8 && mac.freeMb >= 574 * 1.1) list.push('large');
+    if (mac.ram >= 4 && mac.freeMb >= 190 * 1.1) list.push('small');
+    return list;
+  }
+  var chosen = 'large', mac = MACS.m1pro;
+  function renderModels() {
+    var list = capable(mac), note = document.getElementById('hw-note');
+    if (list.indexOf(chosen) < 0) chosen = list[0];
+    ['models', 'models-set'].forEach(function (id) {
+      var box = document.getElementById(id);
+      box.className = 'models' + (list.length === 1 ? ' one' : '');
+      box.innerHTML = '';
+      list.forEach(function (key, i) {
+        var m = MODELS[key], b = document.createElement('button');
+        b.type = 'button'; b.className = 'model'; b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(key === chosen));
+        b.innerHTML = '<b>' + m.name + (i === 0 && list.length > 1 ? ' <span class="tag">Recommended</span>' : '') + '</b><span>' + m.detail + '</span>';
+        if (list.length > 1) b.onclick = function () { chosen = key; renderModels(); };
+        box.appendChild(b);
+      });
+    });
+    var reason = '';
+    if (list.length === 1 && list[0] === 'small') {
+      reason = !mac.silicon ? ' The larger model needs an Apple Silicon Mac.' : mac.ram < 8 ? ' The larger model needs 8 GB of memory.' : ' Not enough free space for the larger model.';
+    }
+    note.textContent = 'This Mac: ' + mac.chip + ', ' + mac.ram + ' GB memory.' + reason;
+    if (!list.length) note.textContent = 'Not enough free space for a model (' + mac.freeMb + ' MB free).';
+    document.getElementById('hw-note-set').textContent = mac.chip + ' · ' + mac.ram + ' GB' + (reason ? ' ·' + reason : '');
+    if (chosen) {
+      document.getElementById('set-size').textContent = MODELS[chosen].name + ' · ' + MODELS[chosen].mb + ' MB';
+      document.getElementById('set-ready').textContent = MODELS[chosen].detail + ' · tested in ' + (chosen === 'small' ? '0.9' : '1.9') + ' s';
+    }
+    var m = MODELS[chosen || 'small'];
+    document.getElementById('ready-name').textContent = m.name;
+    document.getElementById('ready-text').textContent = m.detail + ' · tested on this Mac in ' + (chosen === 'small' ? '0.9' : '1.9') + ' s';
+  }
+  document.querySelectorAll('[data-mac]').forEach(function (b) {
+    b.onclick = function () { press(b.parentNode, b); mac = MACS[b.getAttribute('data-mac')]; renderModels(); setState('none'); };
+  });
+
+  // built-in state
+  var timer = null, pct = 0;
+  function setState(state) {
+    clearInterval(timer);
+    document.querySelectorAll('[data-state]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-state') === state)); });
+    app.querySelectorAll('[data-when]').forEach(function (el) { el.hidden = el.getAttribute('data-when').split(' ').indexOf(state) < 0; });
+    var next = document.getElementById('next-ob');
+    next.disabled = state !== 'ready'; next.style.opacity = state === 'ready' ? '1' : '.45';
+    if (state === 'downloading') {
+      pct = 0;
+      timer = setInterval(function () {
+        pct = Math.min(100, pct + 1.6);
+        var total = MODELS[chosen].mb, mb = Math.round(total * pct / 100);
+        document.getElementById('bar-ob').style.width = pct + '%';
+        document.getElementById('pct-ob').textContent = pct >= 100 ? 'Checking the file' : 'Downloading ' + Math.round(pct) + '%';
+        document.getElementById('size-ob').textContent = MODELS[chosen].name + ' · ' + mb + ' of ' + total + ' MB';
+        document.getElementById('eta-ob').textContent = pct >= 100 ? 'Verifying the download…' : '12 MB/s · about ' + Math.max(1, Math.round((100 - pct) * 0.46)) + ' s left';
+        document.getElementById('pct-set').textContent = MODELS[chosen].name + ' · ' + mb + ' of ' + total + ' MB';
+        document.getElementById('set-pct').textContent = pct >= 100 ? 'Checking the file' : 'Downloading ' + Math.round(pct) + '%';
+        document.getElementById('bar-set').style.width = pct + '%';
+        if (pct >= 100) { clearInterval(timer); setTimeout(function () { setState('ready'); }, 700); }
+      }, 120);
+    }
+  }
+  document.querySelectorAll('[data-state]').forEach(function (b) { b.onclick = function () { setState(b.getAttribute('data-state')); }; });
+  app.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-action="download"]'); if (t) setState('downloading');
+    var c = e.target.closest('[data-state-go]'); if (c) setState(c.getAttribute('data-state-go'));
+  });
+  renderModels();
+  setState('none');
+
+  // sheet
+  var sheet = document.getElementById('sheet'), list = document.getElementById('sheet-list'), add = document.getElementById('sheet-add');
+  var hasSaved = true;
+  function showList() {
+    list.hidden = false; add.hidden = true;
+    document.getElementById('sheet-title').textContent = 'Your own server or API key';
+    document.getElementById('sheet-sub').hidden = true;
+  }
+  function showAdd() {
+    list.hidden = true; add.hidden = false;
+    document.getElementById('to-list').hidden = !hasSaved;
+    document.getElementById('add-cancel').hidden = hasSaved;
+    document.getElementById('sheet-title').textContent = hasSaved ? 'Add preset' : 'Add your server or API key';
+    document.getElementById('sheet-sub').hidden = true;
+  }
+  document.querySelector('[data-open-sheet]').onclick = function () { sheet.hidden = false; hasSaved ? showList() : showAdd(); };
+  function renderSavedViews() {
+    document.querySelectorAll('[data-saved-view]').forEach(function (el) { el.hidden = el.getAttribute('data-saved-view') !== (hasSaved ? 'two' : 'none'); });
+    var url = document.getElementById('s-url'), model = document.getElementById('s-model'), name = document.getElementById('s-name');
+    if (hasSaved) { url.value = 'http://192.0.2.10:8000/v1'; model.value = 'Systran/faster-whisper-large-v3'; name.value = 'Speech server on my PC'; }
+    else { url.value = ''; model.value = ''; name.value = ''; }
+    document.getElementById('s-result').textContent = '';
+  }
+  document.querySelectorAll('[data-saved]').forEach(function (b) {
+    b.onclick = function () {
+      press(b.parentNode, b); hasSaved = b.getAttribute('data-saved') === 'two';
+      if (!sheet.hidden) { hasSaved ? showList() : showAdd(); }
+      renderSavedViews();
+    };
+  });
+  document.getElementById('set-picker').onchange = function (e) {
+    var add = e.target.value === 'add';
+    ['s-url', 's-model', 's-name'].forEach(function (id) { document.getElementById(id).value = ''; });
+    if (!add && e.target.selectedIndex === 1) {
+      document.getElementById('s-url').value = 'https://api.groq.com/openai/v1';
+      document.getElementById('s-model').value = 'whisper-large-v3-turbo';
+      document.getElementById('s-name').value = 'Groq';
+    } else if (!add) renderSavedViews();
+    document.getElementById('s-delete').hidden = add;
+    document.getElementById('s-result').textContent = '';
+  };
+  document.getElementById('s-url').addEventListener('input', function (e) {
+    try { document.getElementById('s-name').value = new URL(e.target.value).hostname; } catch (err) {}
+  });
+  document.getElementById('s-test').onclick = function () {
+    var r = document.getElementById('s-result'); r.className = 'result'; r.textContent = 'Testing…';
+    setTimeout(function () { r.className = 'result ok'; r.textContent = 'Works · 0.6 s'; }, 700);
+  };
+  document.getElementById('s-save').onclick = function () {
+    var r = document.getElementById('s-result'); r.className = 'result ok'; r.textContent = 'Saved';
+  };
+  renderSavedViews();
+  sheet.addEventListener('click', function (e) { if (e.target === sheet || e.target.closest('[data-close-sheet]')) sheet.hidden = true; });
+  document.getElementById('to-add').onclick = showAdd;
+  document.getElementById('to-list').onclick = showList;
+  sheet.querySelectorAll('[data-preset]').forEach(function (b) { b.onclick = function () { press(b.parentNode, b); document.getElementById('use-result').textContent = ''; }; });
+  document.getElementById('use-preset').onclick = function () {
+    var r = document.getElementById('use-result'); r.className = 'result'; r.textContent = 'Testing…';
+    setTimeout(function () { r.className = 'result ok'; r.textContent = 'Works · 0.6 s'; }, 700);
+  };
+  var FILL = {
+    mac: ['This Mac', 'http://127.0.0.1:8178/v1', 'large-v3-turbo', false],
+    speaches: ['Speaches', 'http://192.0.2.10:8000/v1', 'Systran/faster-whisper-large-v3', false],
+    openai: ['OpenAI', 'https://api.openai.com/v1', 'whisper-1', true],
+    groq: ['Groq', 'https://api.groq.com/openai/v1', 'whisper-large-v3-turbo', true],
+    mistral: ['Mistral', 'https://api.mistral.ai/v1', 'voxtral-mini-latest', true],
+    together: ['Together', 'https://api.together.xyz/v1', 'openai/whisper-large-v3', true],
+    fireworks: ['Fireworks', 'https://audio-prod.api.fireworks.ai/v1', 'whisper-v3', true],
+    localai: ['LocalAI', 'http://127.0.0.1:8080/v1', 'whisper-1', false]
+  };
+  document.getElementById('f-url').addEventListener('input', function (e) {
+    var name = document.getElementById('f-name');
+    try { name.value = new URL(e.target.value).hostname; } catch (err) {}
+  });
+  document.getElementById('add-test').onclick = function () {
+    var r = document.getElementById('add-result'); r.className = 'result'; r.textContent = 'Testing…';
+    setTimeout(function () { r.className = 'result ok'; r.textContent = 'Works · 1.4 s'; }, 700);
+  };
+  document.getElementById('add-save').onclick = function () { sheet.hidden = true; };
+
+  // settings tabs
+  document.querySelectorAll('[data-kind]').forEach(function (b) {
+    b.onclick = function () {
+      b.parentNode.querySelectorAll('[data-kind]').forEach(function (x) { x.setAttribute('aria-checked', String(x === b)); });
+      document.querySelectorAll('[data-kindview]').forEach(function (v) { v.hidden = v.getAttribute('data-kindview') !== b.getAttribute('data-kind'); });
+    };
+  });
+})();
+</script>

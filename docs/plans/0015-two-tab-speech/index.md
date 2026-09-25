@@ -1,8 +1,9 @@
-# 0015 — Two-tab speech setup
+# 0015 — Speech setup, final design
 
-Speech recognition has two ways to run: **Built-in** (whisper.cpp inside Typelite) and
-**Presets** (any OpenAI-compatible server or API key). Onboarding shows one main button and one
-link; everything else lives in Settings.
+Speech recognition runs either **Built-in** (whisper.cpp inside Typelite) or through **your
+server or API key** (any OpenAI-compatible speech service). Onboarding shows one main button and
+one link; Settings shows the same pieces. The visual reference is [mock.html](mock.html), agreed
+with the user after several iterations.
 
 Status: agreed — 2026-09-25
 
@@ -12,19 +13,20 @@ Replaces the three-type picker from [0014](../0014-concise-speech-setup/index.md
 
 | Decision | Reason |
 |---|---|
-| Two tabs: **Built-in** and **Presets** | A local whisper.cpp server and a cloud API are both OpenAI-compatible; they are the same kind of setup. |
-| Built-in offers one model, `large-v3-turbo` (574 MB), shown as text with no dropdown | One choice needs no selector, and one size avoids confusion. |
-| The smaller 190 MB model is not offered in onboarding or Home; Settings → Speech keeps it as a small "Use a smaller model (190 MB)" link | Keeps setup to one clear option while leaving an escape for slow Macs or small disks. |
-| Onboarding Speech step = the Built-in card (one **Set up** button) + one link "Use your own server or API key…" | Minimum on screen; bring-your-own stays one click away. |
-| That link opens a compact sheet: pick a saved preset, or **Add preset** with quick-fill chips (whisper.cpp server on this Mac, OpenAI, Groq) and four fields (name, address, model, API key — key marked optional) | All custom setups use one form. |
-| Settings → Speech: the same two tabs; Presets shows the saved-preset picker in the group header (upper right, as today) and the selected preset's fields | Same model as onboarding, with room to edit. |
-| Language and recording length stay in Settings only | Unchanged from 0014. |
+| Two engines: Built-in, or your server or API key | Local servers and cloud APIs use the same API; they are one kind of setup. |
+| Built-in offers only the models this Mac runs well: Best accuracy (large-v3-turbo, 574 MB) and Faster (small, 190 MB), detected from chip, memory and free disk | No choice the Mac cannot handle; with one model there is nothing to choose, but it still shows as selected. |
+| The Built-in card has a fixed height; every state uses the same two slots (a status badge line, one action button) | Text stays at the same level in every state. |
+| No green checkmark: "Ready", "Downloading 42%", "Download failed" are pill badges (accent, neutral, red tint) | Matches the app's tags; the user disliked the checkmark. |
+| Your server or API key: one form (Address, Model, API key optional, Name auto-filled) with the OpenAI example as placeholders and a "Learn more" link to `docs/guides/speech-services.md` | Guides live on GitHub, not in the app; no per-service chips or menus. |
+| With no saved presets the sheet opens straight on the form | Nothing to pick from yet. |
+| Settings sections become toolbar tabs (icon + label); "Speech recognition uses" is a choice between two option cards, not tabs | Navigation and a setting no longer look the same. |
 
 ## Parts
 
 | File | Covers |
 |---|---|
-| [layout.md](layout.md) | Screens in detail. |
+| [layout.md](layout.md) | Every screen and state in words. |
+| [mock.html](mock.html) | Interactive reference (open in a browser). |
 
 ## Open questions
 
