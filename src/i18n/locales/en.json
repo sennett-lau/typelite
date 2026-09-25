@@ -303,7 +303,7 @@
       "stt_invalid_key": "Check STT key",
       "stt_failed": "Speech failed",
       "stt_quota_exceeded": "Speech endpoint quota hit",
-      "stt_no_speech_detected": "No speech",
+      "stt_no_speech_detected": "Didn't catch that",
       "output_fallback_clipboard": "Copied",
       "output_wayland_unsupported": "Copied",
       "llm_failed": "AI failed",

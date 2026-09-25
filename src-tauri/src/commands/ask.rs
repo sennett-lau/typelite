@@ -26,6 +26,15 @@ static ASK_RECORDING_SESSION_COUNTER: AtomicU64 = AtomicU64::new(1);
 /// Error returned by `stop_ask_dictation` when the run was cancelled (Escape) while Ask was
 /// thinking. Callers show nothing for it.
 pub const ASK_CANCELLED_ERROR: &str = "ask_cancelled";
+/// Error returned by `stop_ask_dictation` when the recording held no speech. Callers show the
+/// capsule's "Didn't catch that" notice ([`show_no_speech`]) instead of the answer window.
+pub const ASK_NO_SPEECH_ERROR: &str = "ask_no_speech";
+
+/// Shows "Didn't catch that" in the capsule: nothing was heard, so nothing is asked.
+pub(crate) fn show_no_speech(app: &tauri::AppHandle) {
+    tracing::info!("Ask: no speech; nothing is asked");
+    let _ = app.emit("pipeline:error", crate::pipeline::no_speech_user_error());
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1208,7 +1217,7 @@ pub async fn stop_ask_dictation(
             }
             if transcript.trim().is_empty() {
                 failure_code = "stt_no_speech_detected";
-                return Err("No speech detected. Please try again.".to_string());
+                return Err(ASK_NO_SPEECH_ERROR.to_string());
             }
             tracing::warn!("Ask STT finalize timed out; continuing with collected transcript");
         }
@@ -1227,11 +1236,11 @@ pub async fn stop_ask_dictation(
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clone();
-        failure_code = if transcript.trim().is_empty() {
-            "stt_no_speech_detected"
-        } else {
-            "ask_invalid_question"
-        };
+        if transcript.trim().is_empty() {
+            failure_code = "stt_no_speech_detected";
+            return Err(ASK_NO_SPEECH_ERROR.to_string());
+        }
+        failure_code = "ask_invalid_question";
         let question = validate_ask_question(&transcript)?;
         transcript_at = Some(std::time::Instant::now());
         failure_code = "ask_failed";
@@ -1412,6 +1421,10 @@ pub async fn stop_ask_flow(
         Ok(result) if result.should_show_window() => show_answer_window(&app, result),
         Ok(_) => Ok(()),
         Err(message) if message == ASK_CANCELLED_ERROR => Ok(()),
+        Err(message) if message == ASK_NO_SPEECH_ERROR => {
+            show_no_speech(&app);
+            Ok(())
+        }
         Err(message) => show_error_window(&app, message),
     }
 }

@@ -5,6 +5,7 @@ import { CapsuleError } from '../CapsuleError'
 import * as tauri from '../../../lib/tauri'
 import { useAppStore } from '../../../stores/appStore'
 import { getSizeForState, SETUP_ERROR_SIZE, ERROR_PILL_SIZE } from '../../../hooks/useCapsuleResize'
+import { translate } from '../../../test-utils/i18nMock'
 
 vi.mock('../../../lib/tauri')
 
@@ -59,6 +60,19 @@ describe('capsule setup messages', () => {
     act(() => vi.advanceTimersByTime(3000))
     expect(useAppStore.getState().pipelineError).not.toBeNull()
     act(() => vi.advanceTimersByTime(3500))
+    expect(useAppStore.getState().pipelineError).toBeNull()
+  })
+
+  it('shows "Didn\'t catch that" briefly when a run heard no speech', () => {
+    vi.useFakeTimers()
+    useAppStore.getState().setPipelineError(translate('capsule.errors.stt_no_speech_detected'))
+    render(<CapsuleError />)
+
+    expect(screen.getByText("Didn't catch that")).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1400))
+    expect(useAppStore.getState().pipelineError).not.toBeNull()
+    act(() => vi.advanceTimersByTime(200))
     expect(useAppStore.getState().pipelineError).toBeNull()
   })
 

@@ -179,7 +179,22 @@ fn should_finalize_stt_task(
         && active_session_id.load(Ordering::SeqCst) == task_session_id
 }
 
-fn no_speech_user_error() -> crate::error::UserError {
+/// What a finished recognition means for the run. An empty transcript is "no speech": it ends
+/// the run with the no-speech notice, or, with `allow_no_speech` (translate a selection),
+/// continues without speech.
+fn stt_wait_for_transcript(raw_text: &str, allow_no_speech: bool) -> SttWait {
+    let text = raw_text.trim();
+    if !text.is_empty() {
+        SttWait::Text(text.to_string())
+    } else if allow_no_speech {
+        SttWait::NoSpeech
+    } else {
+        SttWait::Failed(no_speech_user_error().code)
+    }
+}
+
+/// "Didn't catch that": the recording held no speech. Nothing is pasted and the AI is not called.
+pub(crate) fn no_speech_user_error() -> crate::error::UserError {
     crate::error::UserError {
         code: "stt_no_speech_detected".to_string(),
         details: None,
@@ -2064,21 +2079,17 @@ impl PipelineHandle {
             .accumulated_text
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .trim()
-            .to_string();
+            .clone();
 
-        if raw_text.is_empty() && allow_no_speech {
-            return Ok(SttWait::NoSpeech);
-        }
-        if raw_text.is_empty() {
-            let user_error = no_speech_user_error();
-            let code = user_error.code.clone();
-            let _ = self.app_handle.emit("pipeline:error", user_error);
+        let wait = stt_wait_for_transcript(&raw_text, allow_no_speech);
+        if matches!(wait, SttWait::Failed(_)) {
+            tracing::info!("No speech: nothing is pasted and the AI is not called");
+            let _ = self
+                .app_handle
+                .emit("pipeline:error", no_speech_user_error());
             self.set_state(PipelineState::Idle);
-            return Ok(SttWait::Failed(code));
         }
-
-        Ok(SttWait::Text(raw_text))
+        Ok(wait)
     }
 
     /// Polish raw text with LLM and output the result.
@@ -3482,6 +3493,25 @@ mod tests {
             latch_stt_task_error_if_active(&abort_flag, &active_session_id, &latch, 6, &error,)
                 .is_none()
         );
+    }
+
+    #[test]
+    fn an_empty_transcript_ends_the_run_as_no_speech() {
+        for empty in ["", "   ", "\n"] {
+            assert!(matches!(
+                stt_wait_for_transcript(empty, false),
+                SttWait::Failed(code) if code == "stt_no_speech_detected"
+            ));
+            // Translate with a selection carries on without speech.
+            assert!(matches!(
+                stt_wait_for_transcript(empty, true),
+                SttWait::NoSpeech
+            ));
+        }
+        assert!(matches!(
+            stt_wait_for_transcript(" Hello there. ", false),
+            SttWait::Text(text) if text == "Hello there."
+        ));
     }
 
     #[test]

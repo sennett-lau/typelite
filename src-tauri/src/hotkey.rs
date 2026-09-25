@@ -889,6 +889,9 @@ async fn stop_ask_shortcut(handle: tauri::AppHandle) {
         Ok(_) => {}
         Err(message) if message == "Ask dictation is not recording" => {}
         Err(message) if message == commands::ask::ASK_CANCELLED_ERROR => {}
+        Err(message) if message == commands::ask::ASK_NO_SPEECH_ERROR => {
+            commands::ask::show_no_speech(&handle)
+        }
         Err(message) => show_ask_error_window(&handle, message),
     }
 }

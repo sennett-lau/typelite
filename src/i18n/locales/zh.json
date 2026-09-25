@@ -303,7 +303,7 @@
       "stt_invalid_key": "检查 STT",
       "stt_failed": "语音识别失败",
       "stt_quota_exceeded": "语音服务额度受限",
-      "stt_no_speech_detected": "未听到语音",
+      "stt_no_speech_detected": "没听清",
       "output_fallback_clipboard": "已复制",
       "output_wayland_unsupported": "已复制",
       "llm_failed": "润色失败",
