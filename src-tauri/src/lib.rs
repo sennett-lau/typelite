@@ -841,18 +841,75 @@ fn dispatch_cli_action(app: &tauri::AppHandle, action: CliAction) {
     }
 }
 
+/// Where the log file lives: `~/Library/Logs/Typelite/typelite.log` on macOS (open it with
+/// Console.app or any editor). The log holds timings, sizes and errors only, never dictated text.
+fn log_file_path() -> Option<std::path::PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        let home = std::env::var_os("HOME")?;
+        Some(
+            std::path::PathBuf::from(home)
+                .join("Library/Logs/Typelite")
+                .join("typelite.log"),
+        )
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Some(std::env::temp_dir().join("typelite").join("typelite.log"))
+    }
+}
+
+/// Keep one previous log: rename the current file to `typelite.log.1` once it passes 5 MB.
+fn open_log_file(path: &std::path::Path) -> Option<std::fs::File> {
+    const MAX_LOG_BYTES: u64 = 5 * 1024 * 1024;
+    std::fs::create_dir_all(path.parent()?).ok()?;
+    if std::fs::metadata(path)
+        .map(|m| m.len() > MAX_LOG_BYTES)
+        .unwrap_or(false)
+    {
+        let _ = std::fs::rename(path, path.with_extension("log.1"));
+    }
+    std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .ok()
+}
+
+/// Log to stderr and to the log file. `RUST_LOG` still overrides the default levels.
+fn init_logging() {
+    use tracing_subscriber::layer::SubscriberExt;
+    use tracing_subscriber::util::SubscriberInitExt;
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        EnvFilter::new("info,typelite_lib=debug,hyper_util=warn,reqwest=warn,tao=warn")
+    });
+    let file_layer = log_file_path()
+        .and_then(|path| open_log_file(&path))
+        .map(|file| {
+            tracing_subscriber::fmt::layer()
+                .with_ansi(false)
+                .with_writer(std::sync::Mutex::new(file))
+        });
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(tracing_subscriber::fmt::layer())
+        .with(file_layer)
+        .init();
+
+    if let Some(path) = log_file_path() {
+        tracing::info!("Logging to {}", path.display());
+    }
+}
+
 pub fn run() {
     #[cfg(target_os = "linux")]
     let xinitthreads_status = linux_x11::init_xlib_threads();
 
     apply_linux_workarounds();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::from_default_env()
-                .add_directive("typelite=debug".parse().expect("static directive is valid")),
-        )
-        .init();
+    init_logging();
 
     #[cfg(target_os = "linux")]
     log_linux_launch_diagnostics(xinitthreads_status);
