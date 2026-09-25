@@ -6,8 +6,6 @@ appear.
 
 Status: agreed — 2026-09-25
 
-Superseded in part by [0015](../0015-qwen-cloud-speech/index.md): the third type is now "Cloud service" and adds Qwen Cloud.
-
 Refines the preset editor from [setup-without-dead-ends](../2026-09-25-setup-without-dead-ends/index.md) and sits with the
 quick setup from [quick-speech-setup](../2026-09-25-quick-speech-setup/index.md).
 

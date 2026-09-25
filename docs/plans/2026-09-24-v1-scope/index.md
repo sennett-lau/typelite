@@ -6,7 +6,8 @@ self-hosted, OpenAI-compatible speech and AI endpoints and has no accounts or cl
 
 Status: done — 2026-09-24
 
-Superseded in part by [0015](../0015-qwen-cloud-speech/index.md): Qwen Cloud is a built-in hosted speech service with its own API.
+Superseded in part by [qwen-cloud-speech](../2026-09-25-qwen-cloud-speech/index.md): Qwen Cloud is a
+hosted speech service with its own API.
 
 Supersedes the stack and architecture decisions in [initial-concept](../2026-09-24-initial-concept/index.md).
 The product targets in plan `initial-concept`'s `product.md` and the backend notes in `speech-and-ai.md` still apply.
