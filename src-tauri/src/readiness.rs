@@ -150,7 +150,15 @@ mod tests {
     #[test]
     fn readiness_follows_the_active_preset() {
         let mut config = config(true, true);
-        config.active_speech_preset_id = config.speech_presets[2].id.clone();
+        config
+            .speech_presets
+            .push(crate::storage::SpeechPreset::server(
+                "other",
+                "Other",
+                "http://192.0.2.3:8000/v1",
+                "m",
+            ));
+        config.active_speech_preset_id = "other".to_string();
         assert!(!config.speech_ready());
         assert_eq!(
             start_error(&config, Feature::Dictate).unwrap().code,

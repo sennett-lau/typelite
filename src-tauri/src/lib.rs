@@ -1281,6 +1281,7 @@ pub fn run() {
             commands::speech_setup::cancel_speech_setup,
             commands::speech_setup::list_speech_models,
             commands::speech_setup::delete_speech_model,
+            commands::speech_setup::get_speech_hardware,
             commands::llm::test_ai_preset,
             commands::llm::fetch_ai_models,
             commands::dictionary::get_dictionary,

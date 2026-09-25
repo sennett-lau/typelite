@@ -102,7 +102,12 @@ mod tests {
 
     #[test]
     fn silent_test_form_builds_for_auto_and_explicit_language() {
-        let mut preset = storage::SpeechPreset::builtin_local();
+        let mut preset = storage::SpeechPreset::server(
+            "test",
+            "Test",
+            "http://127.0.0.1:8178/v1",
+            "large-v3-turbo",
+        );
         assert!(silent_test_form(&preset, "large-v3-turbo").is_ok());
 
         preset.language = "en".to_string();

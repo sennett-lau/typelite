@@ -17,3 +17,16 @@ export function useSpeechSetupStatus() {
   }, [refresh])
   return status
 }
+
+/**
+ * Plan 0015: reads the chip, memory and free disk space when a speech screen opens, and returns
+ * the result (null until it arrives).
+ */
+export function useSpeechHardware() {
+  const hardware = useSpeechSetupStore((s) => s.hardware)
+  const refreshHardware = useSpeechSetupStore((s) => s.refreshHardware)
+  useEffect(() => {
+    void refreshHardware()
+  }, [refreshHardware])
+  return hardware
+}

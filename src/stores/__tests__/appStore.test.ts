@@ -79,24 +79,21 @@ describe('appStore', () => {
       expect(config.translation).toEqual({ targets: ['en'], active_target: 'en' })
       expect(config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
       expect(config.target_lang).toBe('en')
-      expect(config.speech_presets.map((preset) => preset.id)).toEqual([
-        'builtin-speech-local',
-        'builtin-speech-lan',
-        'builtin-speech-openai',
-        'builtin-speech-groq',
+      // Plan 0015: only the Built-in preset, before a model is downloaded.
+      expect(config.speech_presets).toEqual([
+        {
+          id: 'builtin-speech-this-mac',
+          name: 'Built-in (this Mac)',
+          kind: 'builtin',
+          base_url: '',
+          model: 'large-v3-turbo',
+          model_file: '',
+          language: 'auto',
+          builtin: true,
+          verified_at: null,
+        },
       ])
-      expect(config.speech_presets[0]).toEqual({
-        id: 'builtin-speech-local',
-        name: 'whisper.cpp on this Mac',
-        kind: 'openai_compatible',
-        base_url: 'http://127.0.0.1:8178/v1',
-        model: 'large-v3-turbo',
-        model_file: '',
-        language: 'auto',
-        builtin: true,
-        verified_at: null,
-      })
-      expect(config.active_speech_preset_id).toBe('builtin-speech-local')
+      expect(config.active_speech_preset_id).toBe('builtin-speech-this-mac')
       expect(config.ai_presets.map((preset) => preset.id)).toEqual([
         'builtin-ai-ollama-local',
         'builtin-ai-ollama-lan',
@@ -154,7 +151,7 @@ describe('appStore', () => {
         'copy',
       ])
       expect(findActivePreset(config.ai_presets, config.active_ai_preset_id)).toBe(copy)
-      expect(config.speech_presets).toHaveLength(4)
+      expect(config.speech_presets).toHaveLength(1)
     })
 
     it('updateConfig clears the test result of a preset whose connection changed', () => {

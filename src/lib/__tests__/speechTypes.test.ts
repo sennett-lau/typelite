@@ -1,21 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { BUILTIN_SPEECH_PRESETS, type SpeechPreset } from '../../stores/appStore'
 import {
-  addressLabel,
+  addressHost,
+  addressHostname,
+  builtinWhisperPreset,
+  engineOf,
   formatTestTime,
-  isLocalAddress,
-  speechServiceOf,
-  speechTypeOf,
-  withTemplate,
+  serverPresets,
 } from '../speechTypes'
 import {
+  defaultModelChoice,
   formatMegabytes,
   formatSpeed,
   formatTimeLeft,
+  hardwareNote,
   progressPercent,
   secondsLeft,
   setupErrorMessage,
 } from '../speechSetup'
+import type { SpeechHardwareCheck } from '../tauri'
 import { translate } from '../../test-utils/i18nMock'
 import { IDLE_SETUP_STATUS } from '../../stores/speechSetupStore'
 
@@ -32,57 +35,75 @@ function preset(base_url: string, extra: Partial<SpeechPreset> = {}): SpeechPres
   }
 }
 
-describe('speech types (plan 0014)', () => {
-  it('maps every shipped template onto its type and service', () => {
-    const byId = Object.fromEntries(
-      BUILTIN_SPEECH_PRESETS.map((p) => [p.id, [speechTypeOf(p), speechServiceOf(p)]]),
-    )
-    expect(byId['builtin-speech-local'][0]).toBe('local')
-    expect(byId['builtin-speech-lan'][0]).toBe('local')
-    expect(byId['builtin-speech-openai']).toEqual(['openai', 'openai'])
-    expect(byId['builtin-speech-groq']).toEqual(['openai', 'groq'])
+const GB = 1024 ** 3
+
+function check(
+  models: string[],
+  leftOut: SpeechHardwareCheck['offer']['leftOut'] = null,
+  neededBytes: number | null = null,
+): SpeechHardwareCheck {
+  return {
+    hardware: {
+      chipKind: 'apple_silicon',
+      chipName: 'Apple M1 Pro',
+      memoryBytes: 32 * GB,
+      freeBytes: 250_000_000,
+    },
+    offer: {
+      models: models.map((id, index) => ({
+        id,
+        sizeBytes: 1,
+        recommended: index === 0 && models.length > 1,
+      })),
+      leftOut,
+      neededBytes,
+    },
+  }
+}
+
+describe('speech engines (plan 0015)', () => {
+  it('ships only the Built-in preset, and tells the two engines apart', () => {
+    expect(BUILTIN_SPEECH_PRESETS.map((p) => p.id)).toEqual(['builtin-speech-this-mac'])
+    const builtin = BUILTIN_SPEECH_PRESETS[0]
+    expect(engineOf(builtin)).toBe('builtin')
+    expect(engineOf(preset('https://api.openai.com/v1'))).toBe('server')
+
+    const presets = [preset('http://192.0.2.10:8000/v1'), { ...builtin }]
+    expect(builtinWhisperPreset(presets)?.id).toBe('builtin-speech-this-mac')
+    expect(serverPresets(presets).map((p) => p.base_url)).toEqual(['http://192.0.2.10:8000/v1'])
   })
 
-  it('treats this Mac, the local network and Tailscale as local', () => {
-    for (const url of [
-      'http://127.0.0.1:8178/v1',
-      'http://localhost:8000',
-      'http://10.0.0.5:8000/v1',
-      'http://192.168.1.20:8000/v1',
-      'http://172.20.1.1/v1',
-      'http://100.64.0.7:8000/v1',
-      'http://my-pc:8000/v1',
-      'http://studio.local:8000/v1',
-      'https://pc.tail1234.ts.net/v1',
-      'http://<computer-ip>:8000/v1',
-      'http://192.0.2.10:8000/v1',
-    ]) {
-      expect(isLocalAddress(url), url).toBe(true)
-    }
-    for (const url of ['https://api.openai.com/v1', 'https://speech.example.com/v1', '']) {
-      expect(isLocalAddress(url), url).toBe(false)
-    }
-  })
-
-  it('a built-in preset is Built-in whatever its address', () => {
-    expect(speechTypeOf(preset('', { kind: 'builtin' }))).toBe('builtin')
-    expect(speechTypeOf(preset('https://api.openai.com/v1'))).toBe('openai')
-    expect(speechServiceOf(preset('https://speech.example.com/v1'))).toBe('custom')
-  })
-
-  it('adds a missing template back when its type is picked', () => {
-    const without = BUILTIN_SPEECH_PRESETS.filter((p) => p.id !== 'builtin-speech-groq')
-    expect(withTemplate([...without], 'builtin-speech-groq').map((p) => p.id)).toContain(
-      'builtin-speech-groq',
-    )
-    const all = [...BUILTIN_SPEECH_PRESETS]
-    expect(withTemplate(all, 'builtin-speech-groq')).toBe(all)
-  })
-
-  it('formats names and times', () => {
-    expect(addressLabel('http://192.0.2.10:8000/v1')).toBe('192.0.2.10')
+  it('names a preset after its host and formats test times', () => {
+    expect(addressHostname('https://api.openai.com/v1')).toBe('api.openai.com')
+    expect(addressHostname('http://192.0.2.10:8000/v1')).toBe('192.0.2.10')
+    expect(addressHostname('not a url')).toBe('')
+    expect(addressHost('http://192.0.2.10:8000/v1')).toBe('192.0.2.10:8000')
     expect(formatTestTime(850)).toBe('850 ms')
     expect(formatTestTime(1400)).toBe('1.4 s')
+  })
+
+  it('selects the preferred model when offered, otherwise the first', () => {
+    expect(defaultModelChoice(check(['large-v3-turbo', 'small']))).toBe('large-v3-turbo')
+    expect(defaultModelChoice(check(['large-v3-turbo', 'small']), 'small')).toBe('small')
+    expect(defaultModelChoice(check(['small']), 'large-v3-turbo')).toBe('small')
+    expect(defaultModelChoice(check([]))).toBeNull()
+    expect(defaultModelChoice(null)).toBeNull()
+  })
+
+  it('words the hardware note', () => {
+    expect(hardwareNote(check(['large-v3-turbo', 'small']), translate, 'long')).toBe(
+      'This Mac: Apple M1 Pro, 32 GB memory.',
+    )
+    expect(hardwareNote(check(['small'], 'needs_memory'), translate, 'long')).toBe(
+      'This Mac: Apple M1 Pro, 32 GB memory. The larger model needs 8 GB of memory.',
+    )
+    expect(hardwareNote(check(['small'], 'needs_apple_silicon'), translate, 'short')).toBe(
+      'Apple M1 Pro · 32 GB · The larger model needs an Apple Silicon Mac.',
+    )
+    expect(hardwareNote(check([], null, 209_094_035), translate, 'long')).toBe(
+      'Not enough free space for a model: 0.2 GB needed, 0.3 GB free.',
+    )
+    expect(hardwareNote(null, translate, 'long')).toBe('')
   })
 })
 
@@ -105,7 +126,7 @@ describe('Quick setup formatting (plan 0012)', () => {
   it('works out percent and time left', () => {
     expect(progressPercent(downloading)).toBe(17)
     expect(secondsLeft(downloading)).toBe(24)
-    expect(formatTimeLeft(24, translate)).toBe('24 s left')
+    expect(formatTimeLeft(24, translate)).toBe('about 24 s left')
     expect(formatTimeLeft(600, translate)).toBe('about 10 min left')
     expect(secondsLeft({ ...downloading, bytesPerSecond: 0 })).toBeNull()
     expect(formatTimeLeft(null, translate)).toBeNull()

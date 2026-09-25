@@ -8,17 +8,20 @@ import { SttPane } from './SttPane'
 import { LlmPane } from './LlmPane'
 import { ScenesPane } from './ScenesPane'
 import { SystemPane } from './SystemPane'
+import { AlignLeft, Mic, Monitor, Settings as Gear, Sparkles } from 'lucide-react'
 import { DirtyBar } from './shared/DirtyBar'
-import { SegmentedControl } from './shared/SegmentedControl'
 import { useDirtyConfig } from './shared/useDirtyConfig'
 
-/** Settings sections, shown as tabs across the top of the page. */
+/**
+ * Settings sections, shown as toolbar tabs across the top of the page (plan 0015): icon above
+ * label, as in macOS Settings windows.
+ */
 const PANES = [
-  { id: 'general', labelKey: 'settings.general' },
-  { id: 'stt', labelKey: 'settings.speechRecognition' },
-  { id: 'llm', labelKey: 'settings.aiPolish' },
-  { id: 'scenes', labelKey: 'settings.scenes' },
-  { id: 'system', labelKey: 'settings.system' },
+  { id: 'general', labelKey: 'settings.general', Icon: Gear },
+  { id: 'stt', labelKey: 'settings.speechRecognition', Icon: Mic },
+  { id: 'llm', labelKey: 'settings.aiPolish', Icon: Sparkles },
+  { id: 'scenes', labelKey: 'settings.prompts', Icon: AlignLeft },
+  { id: 'system', labelKey: 'settings.system', Icon: Monitor },
 ] as const
 
 export type PaneId = (typeof PANES)[number]['id']
@@ -61,13 +64,21 @@ export function Settings() {
       ref={contentRef}
       title={t('settings.title')}
       toolbar={
-        <SegmentedControl
-          variant="tabs"
-          ariaLabel={t('settings.sections')}
-          options={PANES.map((pane) => ({ value: pane.id, label: t(pane.labelKey) }))}
-          value={activePane}
-          onChange={(value) => setActivePane(value as PaneId)}
-        />
+        <div role="tablist" aria-label={t('settings.sections')} className="toolbar-tabs">
+          {PANES.map(({ id, labelKey, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={activePane === id}
+              onClick={() => setActivePane(id)}
+              className="toolbar-tab"
+            >
+              <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+              {t(labelKey)}
+            </button>
+          ))}
+        </div>
       }
       footer={<AnimatePresence>{isDirty && <DirtyBar />}</AnimatePresence>}
     >

@@ -62,21 +62,7 @@ export interface AiPreset {
   verified_at: number | null
 }
 
-function speechTemplate(id: string, name: string, base_url: string, model: string): SpeechPreset {
-  return {
-    id,
-    name,
-    kind: 'openai_compatible',
-    base_url,
-    model,
-    model_file: '',
-    language: 'auto',
-    builtin: true,
-    verified_at: null,
-  }
-}
-
-/** Id of the "Built-in (this Mac)" preset that Quick setup creates (plan 0012). */
+/** Id of the "Built-in (this Mac)" preset (plan 0012). Every config has it (plan 0015). */
 export const BUILTIN_WHISPER_PRESET_ID = 'builtin-speech-this-mac'
 
 /** True when whisper.cpp runs this preset inside the app. */
@@ -88,32 +74,22 @@ function aiTemplate(id: string, name: string, base_url: string, model: string): 
   return { id, name, base_url, model, extra_request_fields: {}, builtin: true, verified_at: null }
 }
 
-/** Built-in speech templates. Mirrors `SpeechPreset::builtin_templates` in the backend. */
+/**
+ * Speech templates of a new config: only the Built-in preset, before a model is downloaded
+ * (plan 0015). Mirrors `SpeechPreset::builtin_templates` in the backend.
+ */
 export const BUILTIN_SPEECH_PRESETS: readonly SpeechPreset[] = [
-  speechTemplate(
-    'builtin-speech-local',
-    'whisper.cpp on this Mac',
-    'http://127.0.0.1:8178/v1',
-    'large-v3-turbo',
-  ),
-  speechTemplate(
-    'builtin-speech-lan',
-    'Speech server on another computer',
-    'http://<computer-ip>:8000/v1',
-    'Systran/faster-whisper-large-v3',
-  ),
-  speechTemplate(
-    'builtin-speech-openai',
-    'OpenAI (your key)',
-    'https://api.openai.com/v1',
-    'whisper-1',
-  ),
-  speechTemplate(
-    'builtin-speech-groq',
-    'Groq (your key)',
-    'https://api.groq.com/openai/v1',
-    'whisper-large-v3-turbo',
-  ),
+  {
+    id: BUILTIN_WHISPER_PRESET_ID,
+    name: 'Built-in (this Mac)',
+    kind: 'builtin',
+    base_url: '',
+    model: 'large-v3-turbo',
+    model_file: '',
+    language: 'auto',
+    builtin: true,
+    verified_at: null,
+  },
 ]
 
 /** Built-in AI templates. Mirrors `AiPreset::builtin_templates` in the backend. */
@@ -139,7 +115,7 @@ export const BUILTIN_AI_PRESETS: readonly AiPreset[] = [
   ),
 ]
 
-/** The first built-in speech preset (whisper.cpp on this Mac); the fallback. */
+/** The Built-in speech preset without a model; the fallback. */
 export const BUILTIN_SPEECH_PRESET: SpeechPreset = BUILTIN_SPEECH_PRESETS[0]
 
 /** The first built-in AI preset (Ollama on this Mac); the fallback. */
@@ -152,7 +128,8 @@ export function sameSpeechConnection(a: SpeechPreset, b: SpeechPreset): boolean 
     a.base_url === b.base_url &&
     a.model === b.model &&
     (a.model_file ?? '') === (b.model_file ?? '') &&
-    a.language === b.language
+    // The built-in model runs every language, so only a server's language counts (plan 0015).
+    (a.kind === 'builtin' || a.language === b.language)
   )
 }
 

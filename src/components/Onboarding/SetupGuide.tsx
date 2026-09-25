@@ -1,26 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, ChevronDown, Copy, ExternalLink, X } from 'lucide-react'
+import { Check, ChevronDown, Copy, ExternalLink } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { Row } from '../ui/Group'
 
-export type GuideKind = 'speech' | 'ai'
-
-const GUIDE_BASE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides'
-
-/** The full guides in the repository, opened by "Open full guide". */
-const FULL_GUIDE_URL: Record<GuideKind, string> = {
-  speech: `${GUIDE_BASE}/speech-recognition.md`,
-  ai: `${GUIDE_BASE}/ai-polish.md`,
-}
+/** The full AI polish guide in the repository, opened by "Open full guide". */
+const FULL_GUIDE_URL = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md'
 
 /** Commands for "this Mac", shown with copy buttons. They are not translated. */
-const LOCAL_COMMANDS: Record<GuideKind, string[]> = {
-  speech: [
-    'curl -fsSL https://raw.githubusercontent.com/sennett-lau/typelite/main/scripts/setup-local-whisper.sh | bash',
-  ],
-  ai: ['brew install ollama', 'ollama pull qwen3:4b-instruct-2507-q4_K_M', 'ollama serve'],
-}
+const LOCAL_COMMANDS = [
+  'brew install ollama',
+  'ollama pull qwen3:4b-instruct-2507-q4_K_M',
+  'ollama serve',
+]
 
 /** One command in monospace with a copy button. */
 function CommandLine({ command }: { command: string }) {
@@ -55,27 +47,17 @@ function CommandLine({ command }: { command: string }) {
   )
 }
 
-/** The in-app guide card: three ways to get the service, short steps, and the full guide. */
-export function SetupGuideCard({ kind }: { kind: GuideKind }) {
+/** The AI polish guide card: three ways to get the service, short steps, and the full guide. */
+function SetupGuideCard() {
   const { t } = useTranslation()
-  const prefix = `onboarding.guide.${kind}`
+  const prefix = 'onboarding.guide.ai'
 
   return (
-    <div className="row-group" data-testid={`setup-guide-${kind}`}>
-      {kind === 'speech' && (
-        <Row label={t('onboarding.guide.builtin')} help={t('onboarding.guide.speech.builtin')} />
-      )}
+    <div className="row-group" data-testid="setup-guide-ai">
       <Row label={t('onboarding.guide.thisMac')} help={t(`${prefix}.thisMac`)} layout="stacked">
-        {LOCAL_COMMANDS[kind].map((command) => (
+        {LOCAL_COMMANDS.map((command) => (
           <CommandLine key={command} command={command} />
         ))}
-        {kind === 'speech' && (
-          <p className="row-help mt-1.5">
-            {t('onboarding.guide.speech.fromRepository', {
-              script: 'scripts/setup-local-whisper.sh',
-            })}
-          </p>
-        )}
         <p className="row-help mt-1.5">{t(`${prefix}.thisMacThen`)}</p>
       </Row>
       <Row label={t('onboarding.guide.otherComputer')} help={t(`${prefix}.otherComputer`)} />
@@ -84,7 +66,7 @@ export function SetupGuideCard({ kind }: { kind: GuideKind }) {
         <button
           type="button"
           onClick={() =>
-            openUrl(FULL_GUIDE_URL[kind]).catch((error) =>
+            openUrl(FULL_GUIDE_URL).catch((error) =>
               console.error('[guide] failed to open the full guide', error),
             )
           }
@@ -99,64 +81,12 @@ export function SetupGuideCard({ kind }: { kind: GuideKind }) {
 }
 
 /**
- * "How to set this up". For speech (plan 0014) the link opens the guide card in a sheet, so the
- * step itself stays short; for AI it still expands the card below the link.
+ * "How to set this up" for the AI polish service: expands the guide card below the link.
+ * (Speech has no in-app guide since plan 0015; its "Learn more" opens the guide on GitHub.)
  */
-export function SetupGuide({ kind }: { kind: GuideKind }) {
+export function SetupGuide() {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    if (!open || kind !== 'speech') return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open, kind])
-
-  if (kind === 'speech') {
-    return (
-      <>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          onClick={() => setOpen(true)}
-          className="inline-flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-[12px] text-accent hover:underline"
-        >
-          {t('onboarding.guide.howTo')}
-        </button>
-        {open && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-5">
-            <div className="fixed inset-0" onClick={() => setOpen(false)} />
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('onboarding.guide.howTo')}
-              className="dialog relative z-10 flex max-h-[85vh] w-full max-w-[460px] flex-col"
-            >
-              <div className="flex flex-none items-center justify-between px-4 pt-3 pb-2">
-                <h3 className="m-0 text-[14px] font-semibold text-text-primary">
-                  {t('onboarding.guide.howTo')}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="btn-icon"
-                  aria-label={t('onboarding.guide.close')}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-              <div className="min-h-0 overflow-y-auto px-4 pb-4">
-                <SetupGuideCard kind={kind} />
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-    )
-  }
 
   return (
     <div className="space-y-2">
@@ -169,7 +99,7 @@ export function SetupGuide({ kind }: { kind: GuideKind }) {
         {t('onboarding.guide.howTo')}
         <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <SetupGuideCard kind={kind} />}
+      {open && <SetupGuideCard />}
     </div>
   )
 }

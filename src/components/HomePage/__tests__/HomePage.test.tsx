@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { translate } from '../../../test-utils/i18nMock'
 import { useAppStore } from '../../../stores/appStore'
@@ -38,10 +38,31 @@ function setHotkeys(
   useAppStore.setState({ config: { ...config, hotkeys: { ...config.hotkeys, ...partial } } })
 }
 
+function hardware(models: string[]): tauri.SpeechHardwareCheck {
+  return {
+    hardware: {
+      chipKind: models.includes('large-v3-turbo') ? 'apple_silicon' : 'intel',
+      chipName: 'Apple M1 Pro',
+      memoryBytes: 32 * 1024 ** 3,
+      freeBytes: 50_000_000_000,
+    },
+    offer: {
+      models: models.map((id, index) => ({
+        id,
+        sizeBytes: id === 'small' ? 190_085_487 : 574_041_195,
+        recommended: index === 0 && models.length > 1,
+      })),
+      leftOut: models.includes('large-v3-turbo') ? null : 'needs_apple_silicon',
+      neededBytes: null,
+    },
+  }
+}
+
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState())
-  useSpeechSetupStore.setState({ status: IDLE_SETUP_STATUS, models: null })
+  useSpeechSetupStore.setState({ status: IDLE_SETUP_STATUS, models: null, hardware: null })
   vi.clearAllMocks()
+  vi.mocked(tauri.getSpeechHardware).mockResolvedValue(hardware(['large-v3-turbo', 'small']))
   vi.mocked(tauri.getSpeechSetupStatus).mockResolvedValue(IDLE_SETUP_STATUS)
   vi.mocked(tauri.listSpeechModels).mockResolvedValue([])
   vi.mocked(tauri.startSpeechSetup).mockResolvedValue(undefined)
@@ -56,8 +77,9 @@ afterEach(() => {
 
 describe('HomePage', () => {
   describe('Finish setup card', () => {
-    it('shows a row per service that is not ready, each opening its Settings tab', () => {
+    it('shows a row per service that is not ready, each opening its Settings tab', async () => {
       render(<HomePage />)
+      await waitFor(() => expect(useSpeechSetupStore.getState().hardware).not.toBeNull())
 
       const card = screen.getByRole('region', { name: 'Finish setup' })
       expect(within(card).getByTestId('finish-setup-speech')).toHaveTextContent('Not set up yet')
@@ -65,7 +87,8 @@ describe('HomePage', () => {
         'Dictate pastes the raw transcript',
       )
 
-      // Speech: "Set up" starts Quick setup here (plan 0012); "Other options" opens Settings.
+      // Speech: "Set up" starts the Built-in setup here with the first offered model (plan
+      // 0015); "Other options" opens Settings.
       fireEvent.click(within(card).getByRole('button', { name: 'Set up: Speech recognition' }))
       expect(tauri.startSpeechSetup).toHaveBeenCalledWith('large-v3-turbo')
       expect(window.location.hash).toBe('')
@@ -88,11 +111,22 @@ describe('HomePage', () => {
 
       const bar = await screen.findByRole('progressbar', { name: 'Speech model download' })
       expect(bar).toHaveAttribute('aria-valuenow', '49')
-      expect(screen.getByText('287 MB of 574 MB · 10 MB/s · 29 s left')).toBeInTheDocument()
+      expect(screen.getByText('Downloading 49%')).toBeInTheDocument()
+      expect(screen.getByText('Best accuracy · 287 of 574 MB')).toBeInTheDocument()
+      expect(screen.getByText('10 MB/s · about 29 s left')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Set up: Speech recognition' })).toBeDisabled()
 
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
       expect(tauri.cancelSpeechSetup).toHaveBeenCalled()
+    })
+
+    it('"Set up" picks the only model an Intel Mac is offered', async () => {
+      vi.mocked(tauri.getSpeechHardware).mockResolvedValue(hardware(['small']))
+      render(<HomePage />)
+      await waitFor(() => expect(useSpeechSetupStore.getState().hardware).not.toBeNull())
+
+      fireEvent.click(screen.getByRole('button', { name: 'Set up: Speech recognition' }))
+      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('small')
     })
 
     it('shows only the missing service and says when its last test failed', () => {
@@ -243,9 +277,7 @@ describe('HomePage', () => {
 
     const card = screen.getByRole('region', { name: 'Your setup' })
     expect(within(card).getByTestId('config-row-microphone')).toHaveTextContent('USB Mic')
-    expect(within(card).getByTestId('config-row-speech')).toHaveTextContent(
-      'whisper.cpp on this Mac',
-    )
+    expect(within(card).getByTestId('config-row-speech')).toHaveTextContent('Built-in (this Mac)')
     expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('qwen3:4b-instruct')
     expect(within(card).getByTestId('config-row-polish')).toHaveTextContent('Disabled')
     expect(within(card).getByTestId('config-row-output')).toHaveTextContent('Paste from clipboard')

@@ -308,6 +308,8 @@ export interface SpeechSetupStatus {
   totalBytes: number
   bytesPerSecond: number
   error: SpeechSetupError | null
+  /** How long the automatic test took once the model was ready (ms); null before that. */
+  testMs?: number | null
 }
 
 export interface SpeechModelInfo {
@@ -336,6 +338,41 @@ export async function listSpeechModels(): Promise<SpeechModelInfo[]> {
 
 export async function deleteSpeechModel(modelId: string): Promise<void> {
   return invoke('delete_speech_model', { modelId })
+}
+
+// ─── Plan 0015: which built-in models this Mac runs well ───
+
+export type ChipKind = 'apple_silicon' | 'intel' | 'unknown'
+
+/** Why the larger model is not offered. Mirrors `LeftOutReason` in `stt/hardware.rs`. */
+export type ModelLeftOutReason = 'needs_apple_silicon' | 'needs_memory' | 'needs_disk_space'
+
+export interface OfferedModel {
+  id: string
+  sizeBytes: number
+  /** The first of two cards; selected by default. */
+  recommended: boolean
+}
+
+/** Result of `get_speech_hardware`. */
+export interface SpeechHardwareCheck {
+  hardware: {
+    chipKind: ChipKind
+    chipName: string
+    memoryBytes: number
+    freeBytes: number
+  }
+  offer: {
+    models: OfferedModel[]
+    leftOut: ModelLeftOutReason | null
+    /** Set when no model fits on the disk: the free space the smallest one needs. */
+    neededBytes: number | null
+  }
+}
+
+/** Reads the chip, memory and free disk space, and the models this Mac is offered. */
+export async function getSpeechHardware(): Promise<SpeechHardwareCheck> {
+  return invoke('get_speech_hardware')
 }
 
 // Lists model ids from an OpenAI-compatible `GET {baseUrl}/models`.

@@ -1,8 +1,8 @@
-import type { SpeechSetupError, SpeechSetupStatus } from './tauri'
+import type { SpeechHardwareCheck, SpeechSetupError, SpeechSetupStatus } from './tauri'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 
-/** The model Quick setup downloads by default, and the smaller choice. */
+/** The larger model ("Best accuracy") and the smaller one ("Faster"). */
 export const DEFAULT_SETUP_MODEL = 'large-v3-turbo'
 export const SMALL_SETUP_MODEL = 'small'
 
@@ -69,4 +69,51 @@ export function setupErrorMessage(error: SpeechSetupError, t: Translate): string
       return t('speechSetup.errors.load', { reason: match ? match[1] : error.reason })
     }
   }
+}
+
+/** Installed memory as macOS reports it: "32" (GB, binary). */
+export function memoryGigabytes(bytes: number): number {
+  return Math.round(bytes / 1024 ** 3)
+}
+
+/**
+ * Plan 0015: the model the option cards select when the user has not picked one: the given
+ * one if it is offered, otherwise the first (recommended) offered model.
+ */
+export function defaultModelChoice(
+  check: SpeechHardwareCheck | null,
+  preferred?: string | null,
+): string | null {
+  const offered = check?.offer.models ?? []
+  if (preferred && offered.some((model) => model.id === preferred)) return preferred
+  return offered[0]?.id ?? null
+}
+
+/**
+ * The hardware note (plan 0015). `long` for onboarding: "This Mac: Apple M1 Pro, 32 GB memory."
+ * plus why the larger model is left out; `short` for the Settings group header:
+ * "Apple M1 Pro · 32 GB". With no model that fits, says how much space is needed.
+ */
+export function hardwareNote(
+  check: SpeechHardwareCheck | null,
+  t: Translate,
+  style: 'long' | 'short',
+): string {
+  if (!check) return ''
+  const { hardware, offer } = check
+  if (offer.models.length === 0 && offer.neededBytes !== null) {
+    return t('speechSetup.hardware.noSpace', {
+      needed: formatGigabytes(offer.neededBytes),
+      available: formatGigabytes(hardware.freeBytes),
+    })
+  }
+  const chip = hardware.chipName || t('speechSetup.hardware.unknownChip')
+  const memory = memoryGigabytes(hardware.memoryBytes)
+  const reason = offer.leftOut ? t(`speechSetup.hardware.leftOut.${offer.leftOut}`) : ''
+  if (style === 'short') {
+    const base = t('speechSetup.hardware.short', { chip, memory })
+    return reason ? `${base} · ${reason}` : base
+  }
+  const base = t('speechSetup.hardware.long', { chip, memory })
+  return reason ? `${base} ${reason}` : base
 }

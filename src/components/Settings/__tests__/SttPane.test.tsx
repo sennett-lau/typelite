@@ -1,45 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, cleanup, within, act } from '@testing-library/react'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { SttPane } from '../SttPane'
 import * as tauri from '../../../lib/tauri'
-import {
-  BUILTIN_SPEECH_PRESETS,
-  BUILTIN_WHISPER_PRESET_ID,
-  useAppStore,
-  type SpeechPreset,
-} from '../../../stores/appStore'
+import { BUILTIN_SPEECH_PRESETS, useAppStore, type SpeechPreset } from '../../../stores/appStore'
 import { IDLE_SETUP_STATUS, useSpeechSetupStore } from '../../../stores/speechSetupStore'
+import { hardwareCheck, installedBuiltin, serverPreset } from '../../../test-utils/speechHardware'
 
 vi.mock('../../../lib/tauri')
+vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl: vi.fn() }))
 
 vi.mock('react-i18next', async () => {
   const { translate } = await import('../../../test-utils/i18nMock')
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const LOCAL_ID = 'builtin-speech-local'
-
-const customPreset: SpeechPreset = {
-  id: 'pc-speaches',
-  name: 'PC Speaches',
-  base_url: 'http://192.0.2.10:8000/v1',
-  model: 'Systran/faster-whisper-large-v3',
-  language: 'en',
-  builtin: false,
-  verified_at: null,
-}
-
-const builtinPreset: SpeechPreset = {
-  id: BUILTIN_WHISPER_PRESET_ID,
-  name: 'Built-in (this Mac)',
-  kind: 'builtin',
-  base_url: '',
-  model: 'large-v3-turbo',
-  model_file: 'ggml-large-v3-turbo-q5_0.bin',
-  language: 'auto',
-  builtin: true,
-  verified_at: 5,
-}
+const BUILTIN_ID = 'builtin-speech-this-mac'
 
 const MODELS: tauri.SpeechModelInfo[] = [
   {
@@ -55,21 +31,21 @@ function config() {
   return useAppStore.getState().config
 }
 
-function activeSpeechPreset() {
-  const { speech_presets, active_speech_preset_id } = config()
-  return speech_presets.find((preset) => preset.id === active_speech_preset_id)
+function setPresets(speech_presets: SpeechPreset[], active_speech_preset_id = BUILTIN_ID) {
+  const next = { ...config(), speech_presets, active_speech_preset_id }
+  useAppStore.getState().setConfig(next)
+  useAppStore.getState().setSavedConfig(next)
 }
 
-function setPresets(speech_presets: SpeechPreset[], active_speech_preset_id = LOCAL_ID) {
-  useAppStore.getState().setConfig({ ...config(), speech_presets, active_speech_preset_id })
+function engine(name: RegExp) {
+  return within(screen.getByRole('radiogroup', { name: 'Speech recognition uses' })).getByRole(
+    'radio',
+    { name },
+  )
 }
 
-function templates(): SpeechPreset[] {
-  return BUILTIN_SPEECH_PRESETS.map((preset) => ({ ...preset }))
-}
-
-function chooseType(name: 'Built-in (this Mac)' | 'Local server' | 'OpenAI-compatible') {
-  fireEvent.click(within(screen.getByRole('group', { name: 'Type' })).getByText(name))
+function modelCard(name: RegExp) {
+  return within(screen.getByRole('radiogroup', { name: 'Model' })).getByRole('radio', { name })
 }
 
 function clientBufferLimit(
@@ -78,7 +54,7 @@ function clientBufferLimit(
   return {
     capability: {
       registryVersion: 1,
-      providerId: LOCAL_ID,
+      providerId: BUILTIN_ID,
       transport: 'fileUpload',
       recommendedMaxSeconds: 600,
       hardMaxSeconds: 720,
@@ -96,384 +72,262 @@ function clientBufferLimit(
 describe('SttPane', () => {
   beforeEach(() => {
     useAppStore.setState(useAppStore.getInitialState())
-    useSpeechSetupStore.setState({ status: IDLE_SETUP_STATUS, models: null })
-    setPresets(templates())
+    useSpeechSetupStore.setState({ status: IDLE_SETUP_STATUS, models: null, hardware: null })
+    setPresets(BUILTIN_SPEECH_PRESETS.map((preset) => ({ ...preset })))
     vi.clearAllMocks()
     vi.mocked(tauri.readCredential).mockResolvedValue(null)
     vi.mocked(tauri.setCredential).mockResolvedValue(undefined)
+    vi.mocked(tauri.updateConfig).mockResolvedValue(undefined)
     vi.mocked(tauri.getSttRecordingCapability).mockResolvedValue(clientBufferLimit())
     vi.mocked(tauri.getSpeechSetupStatus).mockResolvedValue(IDLE_SETUP_STATUS)
     vi.mocked(tauri.listSpeechModels).mockResolvedValue([])
+    vi.mocked(tauri.getSpeechHardware).mockResolvedValue(hardwareCheck(['large-v3-turbo', 'small']))
     vi.mocked(tauri.startSpeechSetup).mockResolvedValue(undefined)
+    vi.mocked(tauri.cancelSpeechSetup).mockResolvedValue(true)
     vi.mocked(tauri.deleteSpeechModel).mockResolvedValue(undefined)
+    vi.mocked(openUrl).mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     cleanup()
   })
 
-  describe('Type picker', () => {
-    it('opens on Built-in with Quick setup while speech is not set up', () => {
+  describe('Speech recognition uses', () => {
+    it('shows two option cards, with the engine in use selected', async () => {
       render(<SttPane />)
 
-      const type = screen.getByRole('group', { name: 'Type' })
-      expect(within(type).getByText('Built-in (this Mac)')).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByTestId('quick-speech-setup')).toBeInTheDocument()
-      expect(screen.queryByLabelText('Address')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('API key')).not.toBeInTheDocument()
+      expect(engine(/^Built-in/)).toHaveAttribute('aria-checked', 'true')
+      expect(engine(/Your server or API key/)).toHaveAttribute('aria-checked', 'false')
+      expect(screen.getByTestId('builtin-settings')).toBeInTheDocument()
+      // Details, then Language and Recording.
+      expect(screen.getByLabelText('Spoken language')).toHaveValue('auto')
+      expect(await screen.findByLabelText('Single recording duration')).toBeInTheDocument()
     })
 
-    it('opens on the type of a ready preset', () => {
-      setPresets([...templates(), { ...customPreset, verified_at: 1 }], 'pc-speaches')
+    it('with no saved preset, "Your server" shows the empty form and keeps Built-in in use', () => {
       render(<SttPane />)
+      fireEvent.click(engine(/Your server or API key/))
 
-      expect(
-        within(screen.getByRole('group', { name: 'Type' })).getByText('Local server'),
-      ).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByLabelText('Address')).toHaveValue('http://192.0.2.10:8000/v1')
+      expect(engine(/Your server or API key/)).toHaveAttribute('aria-checked', 'true')
+      expect(screen.getByText('Add your server or API key')).toBeInTheDocument()
+      expect(screen.getByLabelText('Address')).toHaveAttribute(
+        'placeholder',
+        'https://api.openai.com/v1',
+      )
+      expect(screen.getByLabelText('Model')).toHaveAttribute('placeholder', 'whisper-1')
+      expect(screen.getByLabelText('API key')).toHaveAttribute('placeholder', 'Optional')
+      expect(screen.getByLabelText('Name')).toHaveAttribute('placeholder', 'Filled in for you')
+      expect(screen.queryByText('Delete this preset')).not.toBeInTheDocument()
+      expect(config().active_speech_preset_id).toBe(BUILTIN_ID)
+      expect(tauri.updateConfig).not.toHaveBeenCalled()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Learn more' }))
+      expect(openUrl).toHaveBeenCalledWith(
+        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md',
+      )
     })
 
-    it('Local server shows address, model and language, but no API key or name', () => {
+    it('choosing an engine makes it the one in use and saves at once', async () => {
+      const groq = serverPreset(
+        'groq',
+        'Groq',
+        'https://api.groq.com/openai/v1',
+        'whisper-large-v3-turbo',
+      )
+      setPresets([...BUILTIN_SPEECH_PRESETS.map((p) => ({ ...p })), groq])
       render(<SttPane />)
-      chooseType('Local server')
 
-      expect(config().active_speech_preset_id).toBe(LOCAL_ID)
-      expect(screen.getByLabelText('Address')).toHaveValue('http://127.0.0.1:8178/v1')
-      expect(screen.getByLabelText('Model')).toHaveValue('large-v3-turbo')
-      expect(screen.getByLabelText('Language')).toHaveValue('auto')
-      expect(screen.queryByLabelText('API key')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('Preset name')).not.toBeInTheDocument()
-    })
-
-    it('OpenAI-compatible picks a service; the address shows only for Custom', () => {
-      render(<SttPane />)
-      chooseType('OpenAI-compatible')
-
-      expect(config().active_speech_preset_id).toBe('builtin-speech-openai')
-      const serviceGroup = screen.getByRole('group', { name: 'Service' })
-      expect(within(serviceGroup).getByText('OpenAI')).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByLabelText('API key')).toBeInTheDocument()
-      expect(screen.getByLabelText('Model')).toHaveValue('whisper-1')
-      expect(screen.queryByLabelText('Address')).not.toBeInTheDocument()
-
-      fireEvent.click(within(serviceGroup).getByText('Groq'))
-      expect(activeSpeechPreset()).toMatchObject({
-        id: 'builtin-speech-groq',
-        base_url: 'https://api.groq.com/openai/v1',
-      })
+      fireEvent.click(engine(/Your server or API key/))
+      await waitFor(() => expect(config().active_speech_preset_id).toBe('groq'))
+      expect(tauri.updateConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ active_speech_preset_id: 'groq' }),
+      )
+      expect(useAppStore.getState().savedConfig?.active_speech_preset_id).toBe('groq')
+      expect(screen.getByLabelText('Address')).toHaveValue('https://api.groq.com/openai/v1')
       expect(screen.getByLabelText('Model')).toHaveValue('whisper-large-v3-turbo')
 
-      fireEvent.click(within(serviceGroup).getByText('Custom'))
-      const created = activeSpeechPreset()!
-      expect(created.builtin).toBe(false)
-      expect(screen.getByLabelText('Address')).toHaveValue('')
-      expect(screen.getByLabelText('Preset name')).toHaveValue('My speech preset')
-      expect(
-        within(screen.getByRole('group', { name: 'Service' })).getByText('Custom'),
-      ).toHaveAttribute('aria-pressed', 'true')
+      fireEvent.click(engine(/^Built-in/))
+      await waitFor(() => expect(config().active_speech_preset_id).toBe(BUILTIN_ID))
+      expect(screen.getByTestId('builtin-settings')).toBeInTheDocument()
     })
 
-    it('maps existing presets onto a type by their address', () => {
-      const cloud: SpeechPreset = {
-        ...customPreset,
-        id: 'my-cloud',
-        name: 'My cloud',
-        base_url: 'https://speech.example.com/v1',
-        verified_at: 1,
-      }
-      setPresets([...templates(), cloud], 'my-cloud')
+    it('the language edits the preset in use and waits for the Save bar', () => {
       render(<SttPane />)
+      fireEvent.change(screen.getByLabelText('Spoken language'), { target: { value: 'en' } })
 
-      expect(
-        within(screen.getByRole('group', { name: 'Type' })).getByText('OpenAI-compatible'),
-      ).toHaveAttribute('aria-pressed', 'true')
-      expect(
-        within(screen.getByRole('group', { name: 'Service' })).getByText('Custom'),
-      ).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByLabelText('Address')).toHaveValue('https://speech.example.com/v1')
-    })
-
-    it('edits only the active preset and keeps edits unsaved for the DirtyBar', () => {
-      useAppStore.getState().setSavedConfig(config())
-      render(<SttPane />)
-      chooseType('Local server')
-
-      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'small' } })
-      fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'zh' } })
-
-      expect(activeSpeechPreset()).toMatchObject({ id: LOCAL_ID, model: 'small', language: 'zh' })
-      expect(config().speech_presets[2]).toEqual(templates()[2])
-      expect(useAppStore.getState().savedConfig?.speech_presets[0].model).toBe('large-v3-turbo')
+      expect(config().speech_presets[0].language).toBe('en')
+      expect(useAppStore.getState().savedConfig?.speech_presets[0].language).toBe('auto')
+      expect(tauri.updateConfig).not.toHaveBeenCalled()
     })
   })
 
-  describe('Saved presets', () => {
-    it('lists only the user’s presets and switches to one', async () => {
-      setPresets([...templates(), customPreset])
-      vi.mocked(tauri.readCredential).mockImplementation(async (_namespace, id) =>
-        id === 'pc-speaches' ? 'pc-secret' : null,
+  describe('Built-in details', () => {
+    it('offers both models on a capable Mac, the larger one selected and recommended', async () => {
+      render(<SttPane />)
+
+      const best = await waitFor(() => modelCard(/Best accuracy/))
+      expect(best).toHaveAttribute('aria-checked', 'true')
+      expect(within(best).getByText('Recommended')).toBeInTheDocument()
+      expect(modelCard(/Faster/)).toHaveAttribute('aria-checked', 'false')
+      expect(screen.getByText('Apple M1 Pro · 32 GB')).toBeInTheDocument()
+
+      const status = screen.getByTestId('builtin-status')
+      expect(within(status).getByText('Not downloaded')).toBeInTheDocument()
+      fireEvent.click(within(status).getByRole('button', { name: 'Download' }))
+      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('large-v3-turbo')
+
+      fireEvent.click(modelCard(/Faster/))
+      expect(modelCard(/Faster/)).toHaveAttribute('aria-checked', 'true')
+      fireEvent.click(within(status).getByRole('button', { name: 'Download' }))
+      expect(tauri.startSpeechSetup).toHaveBeenLastCalledWith('small')
+    })
+
+    it('a Mac offered one model shows it selected, with the reason in the note', async () => {
+      vi.mocked(tauri.getSpeechHardware).mockResolvedValue(
+        hardwareCheck(['small'], {
+          chipKind: 'intel',
+          chipName: 'Intel Core i7',
+          memoryBytes: 16 * 1024 ** 3,
+          leftOut: 'needs_apple_silicon',
+        }),
       )
       render(<SttPane />)
 
-      const menu = screen.getByLabelText('Saved presets')
-      const options = within(menu)
-        .getAllByRole('option')
-        .map((option) => option.textContent)
-      expect(options).toEqual(['Saved presets', 'PC Speaches'])
-
-      fireEvent.change(menu, { target: { value: 'pc-speaches' } })
-
-      expect(config().active_speech_preset_id).toBe('pc-speaches')
-      expect(screen.getByLabelText('Preset name')).toHaveValue('PC Speaches')
-      expect(screen.getByLabelText('Address')).toHaveValue('http://192.0.2.10:8000/v1')
-      expect(screen.getByLabelText('Language')).toHaveValue('en')
-      await waitFor(() => expect(tauri.readCredential).toHaveBeenCalledWith('stt', 'pc-speaches'))
-    })
-
-    it('"Add new preset…" adds a named preset of the shown type', () => {
-      render(<SttPane />)
-      chooseType('Local server')
-
-      fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: '__add__' } })
-
-      const created = activeSpeechPreset()!
-      expect(config().speech_presets).toHaveLength(5)
-      expect(created).toMatchObject({
-        name: 'My speech preset',
-        base_url: 'http://127.0.0.1:8178/v1',
-        builtin: false,
-      })
-      fireEvent.change(screen.getByLabelText('Preset name'), { target: { value: 'Studio PC' } })
-      expect(activeSpeechPreset()?.name).toBe('Studio PC')
-      expect(screen.getByLabelText('Saved presets')).toHaveValue(created.id)
-    })
-
-    it('deletes the selected custom preset and goes back to the type’s template', () => {
-      setPresets([...templates(), customPreset], 'pc-speaches')
-      render(<SttPane />)
-
-      const menu = screen.getByLabelText('Saved presets')
-      expect(within(menu).getByText('Delete “PC Speaches”')).toBeInTheDocument()
-      fireEvent.change(menu, { target: { value: '__delete__' } })
-
-      expect(config().speech_presets.map((preset) => preset.id)).not.toContain('pc-speaches')
-      expect(config().active_speech_preset_id).toBe(LOCAL_ID)
-    })
-
-    it('offers a changed Local server address as its own preset', () => {
-      render(<SttPane />)
-      chooseType('Local server')
-      expect(screen.queryByRole('button', { name: 'Save as a preset' })).not.toBeInTheDocument()
-
-      fireEvent.change(screen.getByLabelText('Address'), {
-        target: { value: 'http://192.0.2.10:8000/v1' },
-      })
-      fireEvent.click(screen.getByRole('button', { name: 'Save as a preset' }))
-
-      expect(activeSpeechPreset()).toMatchObject({
-        name: 'Local server — 192.0.2.10',
-        base_url: 'http://192.0.2.10:8000/v1',
-        builtin: false,
-      })
-      const template = config().speech_presets.find((preset) => preset.id === LOCAL_ID)
-      expect(template?.base_url).toBe('http://127.0.0.1:8178/v1')
-    })
-  })
-
-  describe('API key (OpenAI-compatible only)', () => {
-    it('loads the key from the Keychain for the active preset', async () => {
-      vi.mocked(tauri.readCredential).mockResolvedValue('sk-openai')
-      render(<SttPane />)
-      chooseType('OpenAI-compatible')
-
-      await waitFor(() => {
-        expect(screen.getByLabelText('API key')).toHaveValue('sk-openai')
-      })
-      expect(tauri.readCredential).toHaveBeenCalledWith('stt', 'builtin-speech-openai')
-    })
-
-    it('saves the typed key under the preset id and never in the config', async () => {
-      render(<SttPane />)
-      chooseType('OpenAI-compatible')
-
-      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-new' } })
-
-      await waitFor(() => {
-        expect(tauri.setCredential).toHaveBeenCalledWith('stt', 'builtin-speech-openai', 'sk-new')
-      })
-      expect(JSON.stringify(config())).not.toContain('sk-new')
-    })
-
-    it('shows an inline error when the Keychain save fails', async () => {
-      vi.mocked(tauri.setCredential).mockRejectedValueOnce(new Error('vault locked'))
-      render(<SttPane />)
-      chooseType('OpenAI-compatible')
-
-      const input = screen.getByLabelText('API key')
-      fireEvent.change(input, { target: { value: 'sk-new' } })
-      fireEvent.blur(input)
-
+      const faster = await waitFor(() => modelCard(/Faster/))
+      expect(faster).toHaveAttribute('aria-checked', 'true')
       expect(
-        await screen.findByText('Could not save API key to OS vault. vault locked'),
+        within(screen.getByRole('radiogroup', { name: 'Model' })).getAllByRole('radio'),
+      ).toHaveLength(1)
+      expect(
+        screen.getByText('Intel Core i7 · 16 GB · The larger model needs an Apple Silicon Mac.'),
       ).toBeInTheDocument()
     })
 
-    it('typing a new API key forgets the passed test', () => {
-      setPresets(
-        templates().map((preset) =>
-          preset.id === 'builtin-speech-openai' ? { ...preset, verified_at: 5 } : preset,
-        ),
-        'builtin-speech-openai',
-      )
-      useAppStore.getState().setSavedConfig(config())
-      render(<SttPane />)
-
-      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-new' } })
-
-      expect(activeSpeechPreset()?.verified_at).toBeNull()
-    })
-
-    it('passes the typed key to the test', async () => {
-      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(10)
-      render(<SttPane />)
-      chooseType('OpenAI-compatible')
-
-      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-test' } })
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-
-      await waitFor(() => {
-        expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
-          expect.objectContaining({ id: 'builtin-speech-openai' }),
-          'sk-test',
-        )
-      })
-    })
-  })
-
-  describe('Test button', () => {
-    it('tests the active preset and shows the result on the same line', async () => {
-      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(1834)
-      render(<SttPane />)
-      chooseType('Local server')
-
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-
-      expect(await screen.findByText('Works · 1.8 s')).toBeInTheDocument()
-      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(templates()[0], '')
-      expect(useAppStore.getState().sttTestStatus).toBe('success')
-      expect(activeSpeechPreset()?.verified_at).toEqual(expect.any(Number))
-    })
-
-    it('does not mark a preset with unsaved edits as ready in the saved config', async () => {
-      useAppStore.getState().setSavedConfig(config())
-      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(10)
-      render(<SttPane />)
-      chooseType('Local server')
-
-      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'small' } })
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-
-      await waitFor(() => expect(activeSpeechPreset()?.verified_at).toEqual(expect.any(Number)))
-      expect(useAppStore.getState().savedConfig?.speech_presets[0].verified_at).toBeNull()
-    })
-
-    it('fails a placeholder URL with a clear message without calling the server', async () => {
-      setPresets(templates(), 'builtin-speech-lan')
-      render(<SttPane />)
-      chooseType('Local server')
-
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-
-      expect(await screen.findByText(/Replace <computer-ip> in the base URL/)).toBeInTheDocument()
-      expect(tauri.testSpeechPreset).not.toHaveBeenCalled()
-    })
-
-    it('shows the backend error when the test fails', async () => {
-      vi.mocked(tauri.testSpeechPreset).mockRejectedValue('connection refused (127.0.0.1:8178)')
-      render(<SttPane />)
-      chooseType('Local server')
-
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-
-      expect(await screen.findByText('connection refused (127.0.0.1:8178)')).toBeInTheDocument()
-      expect(useAppStore.getState().sttTestStatus).toBe('error')
-    })
-
-    it('is disabled without a model, and a field change clears the last result', async () => {
-      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(900)
-      render(<SttPane />)
-      chooseType('Local server')
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-      expect(await screen.findByText('Works · 900 ms')).toBeInTheDocument()
-
-      fireEvent.change(screen.getByLabelText('Model'), { target: { value: '' } })
-
-      expect(screen.queryByText('Works · 900 ms')).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Test' })).toBeDisabled()
-    })
-  })
-
-  describe('Built-in (this Mac)', () => {
-    beforeEach(() => {
-      setPresets([builtinPreset, ...templates()], BUILTIN_WHISPER_PRESET_ID)
+    it('shows the model in use with Delete, which needs a second click', async () => {
+      setPresets([installedBuiltin('large-v3-turbo', 5)])
       vi.mocked(tauri.listSpeechModels).mockResolvedValue(MODELS)
-    })
-
-    it('shows the installed model, language and Test, but no address or key', async () => {
       render(<SttPane />)
 
-      expect(
-        within(screen.getByRole('group', { name: 'Type' })).getByText('Built-in (this Mac)'),
-      ).toHaveAttribute('aria-pressed', 'true')
-      const model = screen.getByLabelText('Model')
-      await waitFor(() =>
-        expect(within(model).getByText('Large v3 Turbo (most accurate)')).toBeInTheDocument(),
-      )
-      expect(model).toHaveValue('ggml-large-v3-turbo-q5_0.bin')
-      expect(screen.getByLabelText('Language')).toHaveValue('auto')
-      expect(screen.queryByLabelText('Address')).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('API key')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('quick-speech-setup')).not.toBeInTheDocument()
-    })
+      const status = screen.getByTestId('builtin-status')
+      expect(await within(status).findByText('In use')).toBeInTheDocument()
+      expect(within(status).getByText('Whisper large-v3-turbo · 574 MB')).toBeInTheDocument()
 
-    it('tests the built-in preset without a key', async () => {
-      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(640)
-      render(<SttPane />)
-
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-
-      expect(await screen.findByText('Works · 640 ms')).toBeInTheDocument()
-      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(builtinPreset, '')
-    })
-
-    it('offers the model that is not installed yet', async () => {
-      render(<SttPane />)
-
-      fireEvent.click(
-        await screen.findByRole('button', {
-          name: 'Also download Small (smaller and faster) (190 MB)',
-        }),
-      )
-      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('small')
-    })
-
-    it('lists installed models with their size and deletes one after a second click', async () => {
-      render(<SttPane />)
-
-      const group = await screen.findByRole('region', { name: 'Built-in models' })
-      const row = within(group).getByTestId('builtin-model-large-v3-turbo')
-      expect(row).toHaveTextContent('ggml-large-v3-turbo-q5_0.bin · 574 MB · in use')
-      expect(within(group).queryByTestId('builtin-model-small')).not.toBeInTheDocument()
-
-      const button = within(row).getByRole('button', {
-        name: 'Delete: Large v3 Turbo (most accurate)',
-      })
-      fireEvent.click(button)
+      fireEvent.click(within(status).getByRole('button', { name: 'Delete' }))
       expect(tauri.deleteSpeechModel).not.toHaveBeenCalled()
-      expect(button).toHaveTextContent('Click again to delete')
-      fireEvent.click(button)
-
+      fireEvent.click(within(status).getByRole('button', { name: 'Click again to delete' }))
       await waitFor(() => expect(tauri.deleteSpeechModel).toHaveBeenCalledWith('large-v3-turbo'))
+    })
+
+    it('shows a running download with a bar and Cancel, and a failure with Try again', async () => {
+      render(<SttPane />)
+      await waitFor(() => modelCard(/Best accuracy/))
+      act(() => {
+        useSpeechSetupStore.getState().applyStatus({
+          ...IDLE_SETUP_STATUS,
+          modelId: 'large-v3-turbo',
+          phase: 'downloading',
+          downloadedBytes: 241_000_000,
+          totalBytes: 574_041_195,
+          bytesPerSecond: 12_000_000,
+        })
+      })
+      const status = screen.getByTestId('builtin-status')
+      expect(within(status).getByText('Downloading 41%')).toBeInTheDocument()
+      expect(within(status).getByText('Best accuracy · 241 of 574 MB')).toBeInTheDocument()
+      expect(within(status).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '41')
+      fireEvent.click(within(status).getByRole('button', { name: 'Cancel' }))
+      expect(tauri.cancelSpeechSetup).toHaveBeenCalled()
+
+      act(() => {
+        useSpeechSetupStore.getState().applyStatus({
+          ...IDLE_SETUP_STATUS,
+          modelId: 'large-v3-turbo',
+          phase: 'error',
+          error: { code: 'network', reason: 'connection reset' },
+        })
+      })
+      expect(within(status).getByText('Download failed')).toBeInTheDocument()
+      fireEvent.click(within(status).getByRole('button', { name: 'Try again' }))
+      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('large-v3-turbo')
+    })
+  })
+
+  describe('Your server or API key details', () => {
+    const pc = serverPreset(
+      'pc',
+      'Speech server on my PC',
+      'http://192.0.2.10:8000/v1',
+      'Systran/faster-whisper-large-v3',
+    )
+    const groq = serverPreset(
+      'groq',
+      'Groq',
+      'https://api.groq.com/openai/v1',
+      'whisper-large-v3-turbo',
+    )
+
+    beforeEach(() => {
+      setPresets([...BUILTIN_SPEECH_PRESETS.map((p) => ({ ...p })), pc, groq], 'pc')
+    })
+
+    it('puts the saved presets in a picker at the upper right, with + Add preset…', async () => {
+      render(<SttPane />)
+
+      expect(engine(/Your server or API key/)).toHaveAttribute('aria-checked', 'true')
+      const picker = screen.getByLabelText('Saved presets')
+      expect(
+        within(picker)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual(['Speech server on my PC', 'Groq', '+ Add preset…'])
+      expect(screen.getByLabelText('Address')).toHaveValue('http://192.0.2.10:8000/v1')
+      expect(screen.getByLabelText('Name')).toHaveValue('Speech server on my PC')
+
+      fireEvent.change(picker, { target: { value: 'groq' } })
+      await waitFor(() => expect(config().active_speech_preset_id).toBe('groq'))
+      expect(screen.getByLabelText('Address')).toHaveValue('https://api.groq.com/openai/v1')
+
+      fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: '__add__' } })
+      expect(screen.getByLabelText('Address')).toHaveValue('')
+      expect(screen.queryByText('Delete this preset')).not.toBeInTheDocument()
+    })
+
+    it('tests the edited fields with the typed key and saves them as ready', async () => {
+      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(600)
+      render(<SttPane />)
+
+      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'large-v3' } })
+      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-1' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+      expect(await screen.findByText('Works · 600 ms')).toBeInTheDocument()
+      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'pc', model: 'large-v3' }),
+        'sk-1',
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+      await waitFor(() =>
+        expect(config().speech_presets.find((p) => p.id === 'pc')?.model).toBe('large-v3'),
+      )
+      expect(tauri.setCredential).toHaveBeenCalledWith('stt', 'pc', 'sk-1')
+      expect(config().speech_presets.find((p) => p.id === 'pc')?.verified_at).toEqual(
+        expect.any(Number),
+      )
+      expect(JSON.stringify(config())).not.toContain('sk-1')
+    })
+
+    it('deletes the selected preset after a second click and moves to the next one', async () => {
+      render(<SttPane />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Delete this preset' }))
+      expect(config().speech_presets).toHaveLength(3)
+      fireEvent.click(screen.getByRole('button', { name: 'Click again to delete' }))
+
+      await waitFor(() =>
+        expect(config().speech_presets.map((p) => p.id)).toEqual([BUILTIN_ID, 'groq']),
+      )
+      expect(config().active_speech_preset_id).toBe('groq')
+      expect(tauri.setCredential).toHaveBeenCalledWith('stt', 'pc', '')
     })
   })
 

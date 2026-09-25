@@ -4,18 +4,32 @@ import { useAppStore } from '../../stores/appStore'
 import { activeAiPreset, activeSpeechPreset, endpointState } from '../../lib/connectionStatus'
 import { isAiReady, isSpeechReady } from '../../lib/readiness'
 import { settingsPaneHash } from '../../lib/router'
+import { cancelSpeechSetup } from '../../lib/tauri'
+import { DEFAULT_SETUP_MODEL, defaultModelChoice } from '../../lib/speechSetup'
 import { isSetupRunning } from '../../stores/speechSetupStore'
 import { Group, Row } from '../ui/Group'
-import { SpeechSetupProgress } from '../Settings/QuickSpeechSetup'
-import { beginSpeechSetup, useSpeechSetupStatus } from '../../hooks/useSpeechSetup'
+import { ProgressTrack } from '../Speech/BuiltinParts'
+import {
+  failedBadge,
+  failedReason,
+  runningBadge,
+  runningEta,
+  runningSize,
+  setupFailed,
+} from '../Speech/builtinText'
+import {
+  beginSpeechSetup,
+  useSpeechHardware,
+  useSpeechSetupStatus,
+} from '../../hooks/useSpeechSetup'
 
 /**
  * "Finish setup" (plan 0007): one row per service that is not ready yet, with what it means
  * for the shortcuts. Hidden when both work.
  *
- * Speech (plan 0012): "Set up" starts Quick setup right here (download a model and run it on
- * this Mac); the progress shows under the row until it is done. "Other options" opens
- * Settings → Speech. AI: "Set up" opens Settings → AI.
+ * Speech (plans 0012 and 0015): "Set up" starts the Built-in setup right here with the model
+ * this Mac is offered first; the progress shows under the row until it is done. "Other
+ * options" opens Settings → Speech. AI: "Set up" opens Settings → AI.
  */
 export function FinishSetup() {
   const { t } = useTranslation()
@@ -23,6 +37,7 @@ export function FinishSetup() {
   const speechHealth = useAppStore((s) => s.speechHealth)
   const aiHealth = useAppStore((s) => s.aiHealth)
   const setupStatus = useSpeechSetupStatus()
+  const hardware = useSpeechHardware()
 
   const rows: { id: 'speech' | 'ai'; pane: 'stt' | 'llm'; failed: boolean }[] = []
   if (!isSpeechReady(config)) {
@@ -39,7 +54,13 @@ export function FinishSetup() {
     window.location.hash = settingsPaneHash(pane)
   }
   const running = isSetupRunning(setupStatus)
-  const showProgress = running || (setupStatus.phase === 'error' && setupStatus.error !== null)
+  const failed = setupFailed(setupStatus)
+  // No model fits on this Mac's disk: Settings says how much space is needed.
+  const noModelFits = hardware !== null && hardware.offer.models.length === 0
+  const setUpSpeech = () => {
+    if (noModelFits) openPane('stt')
+    else beginSpeechSetup(defaultModelChoice(hardware) ?? DEFAULT_SETUP_MODEL)
+  }
 
   return (
     <div className="mb-[22px]">
@@ -70,7 +91,7 @@ export function FinishSetup() {
               )}
               <button
                 type="button"
-                onClick={() => (row.id === 'speech' ? beginSpeechSetup() : openPane(row.pane))}
+                onClick={() => (row.id === 'speech' ? setUpSpeech() : openPane(row.pane))}
                 disabled={row.id === 'speech' && running}
                 aria-label={`${t('home.setup.setUp')}: ${t(`home.setup.${row.id}`)}`}
                 className="btn-accent"
@@ -78,11 +99,46 @@ export function FinishSetup() {
                 {t('home.setup.setUp')}
               </button>
             </Row>
-            {row.id === 'speech' && showProgress && (
+            {row.id === 'speech' && running && (
               <Row>
-                <div className="min-w-0 flex-1">
-                  <SpeechSetupProgress />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span className="status-line">
+                    <span className="badge badge-neutral">{runningBadge(setupStatus, t)}</span>
+                    <span className="status-detail">{runningSize(setupStatus, t)}</span>
+                  </span>
+                  <ProgressTrack status={setupStatus} />
+                  <span className="status-detail">{runningEta(setupStatus, t)}</span>
                 </div>
+                {setupStatus.phase === 'downloading' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      cancelSpeechSetup().catch((error) =>
+                        console.error('[speech setup] cancel failed', error),
+                      )
+                    }}
+                    className="btn-secondary"
+                  >
+                    {t('speechSetup.cancel')}
+                  </button>
+                )}
+              </Row>
+            )}
+            {row.id === 'speech' && failed && (
+              <Row>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="status-line">
+                    <span className="badge badge-error">{failedBadge(setupStatus, t)}</span>
+                  </span>
+                  <span className="status-detail">{failedReason(setupStatus, t)}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => beginSpeechSetup(setupStatus.modelId ?? undefined)}
+                  className="btn-accent"
+                >
+                  {t('speechSetup.retry')}
+                </button>
               </Row>
             )}
           </Fragment>
