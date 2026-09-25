@@ -44,23 +44,16 @@ building a feature.
   clipboard. Needs Accessibility permission.
 - Voice-edit of selected text ("make this shorter") and per-app tone are nice-to-haves.
 
-## Current architecture (working prototype)
+## Architecture
 
 ```
-Mac client ──audio──> whisper.cpp server on the Mac (127.0.0.1:8178, large-v3-turbo q5_0, lang auto)
-           ──text───> Ollama on sennett-pc over Tailscale (:11434, qwen3:4b-instruct-2507-q4_K_M)
-           <─polished text── paste into focused app
+Typelite ──audio──> speech recognition (built-in whisper.cpp, or an OpenAI-compatible server)
+         ──text───> AI polish (an OpenAI-compatible chat server, e.g. Ollama on a GPU PC)
+         <─polished text── paste into the focused app
 ```
 
-- STT: `whisper-server` from Homebrew `whisper-cpp`, run by the LaunchAgent
-  `~/Library/LaunchAgents/com.typelite.whisper-server.plist`. Model at
-  `~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin`. OpenAI-compatible path
-  `/v1/audio/transcriptions`, returns `{"text": ...}`. About 2 s for a short clip.
-- LLM: Ollama (Windows native, not WSL) on `sennett-pc`. Starts at logon through the scheduled
-  task `Ollama`. User env: `OLLAMA_HOST=0.0.0.0:11434`, `OLLAMA_KEEP_ALIVE=-1`,
-  `OLLAMA_CONTEXT_LENGTH=4096`, `OLLAMA_FLASH_ATTENTION=1`. The firewall rule
-  "Ollama (Tailscale only)" allows only `100.64.0.0/10`. About 3 GB VRAM, about 0.15 s per
-  cleanup once warm. SSH details for the PC are in the global `~/.claude/CLAUDE.md`.
+The developer's own machines, addresses and services are described in `CLAUDE.local.md`
+(not committed). Never put private addresses or machine names in committed files.
 
 ## Licence
 

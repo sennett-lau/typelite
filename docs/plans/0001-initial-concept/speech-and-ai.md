@@ -15,7 +15,7 @@ STT and LLM backends, prompts and latency. Back to [index](index.md).
 
 ## LLM
 
-- Ollama on sennett-pc over Tailscale (`http://100.90.208.26:11434/v1`),
+- Ollama on a GPU PC on the network (`http://<pc-ip>:11434/v1`),
   model `qwen3:4b-instruct-2507-q4_K_M`, kept loaded. About 0.15 s per cleanup when warm.
 - OpenAI-compatible `/chat/completions`, `temperature` low (about 0.2), short `max_tokens`.
 - Use non-thinking models only. Qwen3.5 thinks by default and returns empty text without a

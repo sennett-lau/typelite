@@ -33,7 +33,7 @@ Superseded by [0002](../0002-v1-scope/index.md): v1 is a Tauri app instead of a 
 | Minimum macOS 15 | Modern SwiftUI; the only user is on macOS 26. |
 | Menu-bar app (no Dock icon) | Typeless-style background utility. |
 | STT: existing whisper-server over HTTP first, behind a swappable protocol | Already works with auto language detection; WhisperKit in-process can replace it later. |
-| LLM: Ollama on sennett-pc through its OpenAI-compatible API | Already running on about 3 GB VRAM with about 0.15 s cleanups. |
+| LLM: Ollama on a GPU PC through its OpenAI-compatible API | Already running on about 3 GB VRAM with about 0.15 s cleanups. |
 | Sign every build with one stable self-signed certificate | Keeps Accessibility and Microphone grants across rebuilds. |
 | Licence: MIT; reference VoiceInk's design but copy no GPL code | Keeps the licence permissive. |
 

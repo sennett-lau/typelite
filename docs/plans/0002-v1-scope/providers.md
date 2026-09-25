@@ -25,7 +25,7 @@ Built-in presets to start with:
 | Preset | Type | Values |
 |---|---|---|
 | Local whisper.cpp (Mac) | Speech | `http://127.0.0.1:8178/v1`, large-v3-turbo, auto language |
-| PC Ollama — Qwen3 4B Instruct | AI | `http://100.90.208.26:11434/v1`, `qwen3:4b-instruct-2507-q4_K_M` |
+| PC Ollama — Qwen3 4B Instruct | AI | `http://<pc-ip>:11434/v1`, `qwen3:4b-instruct-2507-q4_K_M` |
 
 Later presets as we test models: Speaches on the PC, Qwen3-ASR on the PC, other Ollama models.
 
