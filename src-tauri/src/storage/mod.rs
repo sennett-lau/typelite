@@ -2,7 +2,7 @@ use crate::app_detector::types::ContextFamily;
 use anyhow::Result;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri_plugin_store::StoreExt;
@@ -296,11 +296,36 @@ pub const SUPPORTED_TRANSLATION_LANGUAGES: &[&str] = &[
 /// Most translation targets a user can choose (the pill shows one chip per target).
 pub const MAX_TRANSLATION_TARGETS: usize = 3;
 
+/// Longest custom translation instructions for one language, like the custom polish
+/// instructions (plan `translation-language-presets`).
+pub const TRANSLATION_INSTRUCTIONS_MAX_CHARS: usize = 2000;
+
+/// One translation language's own settings (plan `translation-language-presets`). `None` means
+/// the default: the AI polish preset, and the built-in instructions for that language.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(default)]
+pub struct TranslationLanguageSettings {
+    /// AI preset that translates into this language. `None`: the AI polish preset.
+    pub ai_preset_id: Option<String>,
+    /// The editable, language-specific part of the translation prompt. `None`: the built-in
+    /// default (`llm::prompt::default_translation_instructions`).
+    pub instructions: Option<String>,
+}
+
+impl TranslationLanguageSettings {
+    pub fn is_default(&self) -> bool {
+        self.ai_preset_id.is_none() && self.instructions.is_none()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct TranslationConfig {
     pub targets: Vec<String>,
     pub active_target: String,
+    /// Per-language settings by language code. A missing language uses the defaults. Kept for
+    /// languages that are not in `targets`, so removing and adding one back keeps its settings.
+    pub languages: BTreeMap<String, TranslationLanguageSettings>,
 }
 
 impl Default for TranslationConfig {
@@ -309,6 +334,7 @@ impl Default for TranslationConfig {
         Self {
             targets: vec!["en".to_string()],
             active_target: "en".to_string(),
+            languages: BTreeMap::new(),
         }
     }
 }
@@ -319,7 +345,59 @@ impl TranslationConfig {
         Self {
             targets: vec![target.clone()],
             active_target: target,
+            languages: BTreeMap::new(),
         }
+    }
+
+    /// The user's own settings for `code`, if any.
+    pub fn language(&self, code: &str) -> Option<&TranslationLanguageSettings> {
+        let code = normalize_translation_code(code)?;
+        self.languages.get(&code)
+    }
+
+    /// The user's custom translation instructions for `code`, or `None` for the default.
+    pub fn custom_instructions(&self, code: &str) -> Option<&str> {
+        self.language(code)?.instructions.as_deref()
+    }
+
+    /// Plan `translation-language-presets`: canonical codes, bounded instructions (text equal to
+    /// the built-in default counts as no custom text), preset ids that exist, no empty entries.
+    fn normalize_languages(&mut self, ai_presets: &[AiPreset]) {
+        let mut normalized: BTreeMap<String, TranslationLanguageSettings> = BTreeMap::new();
+        for (code, settings) in std::mem::take(&mut self.languages) {
+            let Some(code) = normalize_translation_code(&code) else {
+                continue;
+            };
+            let instructions = settings
+                .instructions
+                .map(|text| sanitize_translation_instructions(&text))
+                .filter(|text| !text.is_empty());
+            let ai_preset_id = settings
+                .ai_preset_id
+                .map(|id| id.trim().to_string())
+                .filter(|id| !id.is_empty())
+                .filter(|id| {
+                    let exists = ai_presets.iter().any(|preset| preset.id == *id);
+                    if !exists {
+                        tracing::info!(
+                            "Translation language {code}: AI preset {id} no longer exists; \
+                             using the AI polish preset"
+                        );
+                    }
+                    exists
+                });
+            // Two spellings of one code (`zh` and `zh-Hans`): the first one wins, the other
+            // only fills gaps.
+            let entry = normalized.entry(code).or_default();
+            if entry.ai_preset_id.is_none() {
+                entry.ai_preset_id = ai_preset_id;
+            }
+            if entry.instructions.is_none() {
+                entry.instructions = instructions;
+            }
+        }
+        normalized.retain(|_, settings| !settings.is_default());
+        self.languages = normalized;
     }
 
     fn normalize(&mut self, legacy_target: &str) {
@@ -1141,6 +1219,24 @@ impl AppConfig {
             .unwrap_or_else(|| FALLBACK.get_or_init(AiPreset::builtin_default))
     }
 
+    /// Plan `translation-language-presets`: the AI preset for one AI request. A request that
+    /// translates into `translation_target` uses that language's own preset when it has one;
+    /// everything else (and a preset id that no longer exists) uses the AI polish preset.
+    pub fn ai_preset_for_request(&self, translation_target: Option<&str>) -> &AiPreset {
+        let chosen = translation_target
+            .and_then(|code| self.translation.language(code))
+            .and_then(|settings| settings.ai_preset_id.as_deref());
+        if let Some(id) = chosen {
+            if let Some(preset) = self.ai_presets.iter().find(|preset| preset.id == id) {
+                return preset;
+            }
+            tracing::warn!(
+                "Translation AI preset {id} no longer exists; using the AI polish preset"
+            );
+        }
+        self.active_ai_preset()
+    }
+
     /// Language hint of the active speech preset. `None` means auto-detect.
     pub fn speech_language(&self) -> Option<&str> {
         let language = self.active_speech_preset().language.trim();
@@ -1511,6 +1607,7 @@ impl AppConfig {
             &self.system_scene_overrides,
         );
         self.translation.normalize(&self.target_lang);
+        self.translation.normalize_languages(&self.ai_presets);
         self.target_lang = self.translation.active_target.clone();
         self.normalize_insertion_strategy();
         self.normalize_paste_shortcut();
@@ -1934,6 +2031,17 @@ fn sanitize_polish_custom_prompt(value: &str) -> String {
         .chars()
         .take(POLISH_CUSTOM_PROMPT_MAX_CHARS)
         .collect()
+}
+
+fn sanitize_translation_instructions(value: &str) -> String {
+    value
+        .replace('\0', "")
+        .trim()
+        .chars()
+        .take(TRANSLATION_INSTRUCTIONS_MAX_CHARS)
+        .collect::<String>()
+        .trim_end()
+        .to_string()
 }
 
 fn sanitize_scene_string(value: &str, max_chars: usize) -> String {
@@ -3376,6 +3484,7 @@ mod tests {
             TranslationConfig {
                 targets: vec!["ja".to_string()],
                 active_target: "ja".to_string(),
+                languages: BTreeMap::new(),
             }
         );
         assert_eq!(legacy.target_lang, "ja");
@@ -3465,6 +3574,131 @@ mod tests {
         assert_eq!(normalize_translation_code("zh").as_deref(), Some("zh-Hans"));
         assert_eq!(normalize_translation_code("zh-hk"), None);
         assert_eq!(normalize_translation_code("EN").as_deref(), Some("en"));
+    }
+
+    /// A config with one user AI preset (`pc`) next to the Built-in one, and `languages` as
+    /// stored JSON.
+    fn config_with_languages(languages: serde_json::Value) -> AppConfig {
+        AppConfig::from_stored_value(serde_json::json!({
+            "ai_presets": [
+                {"id": "pc", "name": "PC", "base_url": "http://192.0.2.10:11434/v1", "model": "m"}
+            ],
+            "translation": {
+                "targets": ["en", "zh-Hant-HK"],
+                "active_target": "en",
+                "languages": languages
+            }
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn translation_languages_default_to_empty_for_old_configs() {
+        let config = AppConfig::from_stored_value(serde_json::json!({
+            "translation": {"targets": ["en", "ja"], "active_target": "ja"}
+        }))
+        .unwrap();
+        assert!(config.translation.languages.is_empty());
+        assert_eq!(config.translation.custom_instructions("ja"), None);
+        assert_eq!(
+            config.ai_preset_for_request(Some("ja")).id,
+            BUILTIN_AI_PRESET_ID
+        );
+        let stored = serde_json::to_value(&config).unwrap();
+        assert_eq!(stored["translation"]["languages"], serde_json::json!({}));
+    }
+
+    #[test]
+    fn translation_languages_are_normalized_and_bounded() {
+        let long = "x".repeat(TRANSLATION_INSTRUCTIONS_MAX_CHARS + 50);
+        let config = config_with_languages(serde_json::json!({
+            "ZH-hant-hk": {"ai_preset_id": " pc ", "instructions": "  Write Cantonese.\0  "},
+            "ja": {"instructions": long},
+            "fr": {"ai_preset_id": "", "instructions": "   "},
+            "xx": {"instructions": "unknown language"},
+            "zh": {"instructions": "Plain zh is Simplified"}
+        }));
+        let languages = &config.translation.languages;
+        assert_eq!(
+            languages.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["ja", "zh-Hans", "zh-Hant-HK"]
+        );
+        let hk = &languages["zh-Hant-HK"];
+        assert_eq!(hk.ai_preset_id.as_deref(), Some("pc"));
+        assert_eq!(hk.instructions.as_deref(), Some("Write Cantonese."));
+        assert_eq!(
+            languages["ja"]
+                .instructions
+                .as_ref()
+                .unwrap()
+                .chars()
+                .count(),
+            TRANSLATION_INSTRUCTIONS_MAX_CHARS
+        );
+        assert_eq!(
+            config.translation.custom_instructions("zh"),
+            Some("Plain zh is Simplified")
+        );
+    }
+
+    #[test]
+    fn translation_language_with_a_deleted_preset_falls_back_to_polish() {
+        let config = config_with_languages(serde_json::json!({
+            "zh-Hant-HK": {"ai_preset_id": "deleted"},
+            "ja": {"ai_preset_id": "deleted", "instructions": "Keep keigo."}
+        }));
+        // The stale id is dropped on load; an entry with nothing left goes too.
+        assert!(!config.translation.languages.contains_key("zh-Hant-HK"));
+        assert_eq!(config.translation.languages["ja"].ai_preset_id, None);
+        assert_eq!(
+            config.translation.custom_instructions("ja"),
+            Some("Keep keigo.")
+        );
+        assert_eq!(
+            config.ai_preset_for_request(Some("zh-Hant-HK")).id,
+            BUILTIN_AI_PRESET_ID
+        );
+    }
+
+    #[test]
+    fn ai_preset_for_request_follows_the_translation_target() {
+        let mut config = config_with_languages(serde_json::json!({
+            "zh-Hant-HK": {"ai_preset_id": "pc"}
+        }));
+        // Default: polish and every language without its own preset use the polish preset.
+        assert_eq!(config.ai_preset_for_request(None).id, BUILTIN_AI_PRESET_ID);
+        assert_eq!(
+            config.ai_preset_for_request(Some("en")).id,
+            BUILTIN_AI_PRESET_ID
+        );
+        // Custom: that language's preset, whatever spelling the target uses.
+        assert_eq!(config.ai_preset_for_request(Some("zh-Hant-HK")).id, "pc");
+        assert_eq!(config.ai_preset_for_request(Some("zh-hant-hk")).id, "pc");
+        // A preset deleted after the config was loaded: back to the polish preset.
+        config.ai_presets.retain(|preset| preset.id != "pc");
+        assert_eq!(
+            config.ai_preset_for_request(Some("zh-Hant-HK")).id,
+            BUILTIN_AI_PRESET_ID
+        );
+        // Saving drops the stale id.
+        config.normalize_values();
+        assert!(config.translation.languages.is_empty());
+    }
+
+    #[test]
+    fn translation_language_settings_survive_removing_the_language() {
+        let mut config = config_with_languages(serde_json::json!({
+            "zh-Hant-HK": {"ai_preset_id": "pc", "instructions": "Mine"}
+        }));
+        config.translation.targets = vec!["en".to_string()];
+        config.normalize_values();
+        let round_trip =
+            AppConfig::from_stored_value(serde_json::to_value(&config).unwrap()).unwrap();
+        assert_eq!(round_trip.translation.targets, ["en"]);
+        assert_eq!(
+            round_trip.translation.custom_instructions("zh-Hant-HK"),
+            Some("Mine")
+        );
     }
 
     #[test]

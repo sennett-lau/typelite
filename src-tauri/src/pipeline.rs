@@ -3245,6 +3245,7 @@ mod tests {
             translation: storage::TranslationConfig {
                 targets: vec!["ja".to_string()],
                 active_target: "ja".to_string(),
+                ..storage::TranslationConfig::default()
             },
             ..storage::AppConfig::default()
         };
