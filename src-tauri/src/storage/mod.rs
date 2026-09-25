@@ -374,13 +374,17 @@ pub fn normalize_translation_code(value: &str) -> Option<String> {
 /// Id of the speech preset used as the fallback: the Built-in one (whisper.cpp inside the app,
 /// plan 0015). Every config has it, with or without a downloaded model.
 pub const BUILTIN_SPEECH_PRESET_ID: &str = BUILTIN_WHISPER_PRESET_ID;
-/// Id of the first built-in AI preset (Ollama on this Mac). Used as the fallback.
-pub const BUILTIN_AI_PRESET_ID: &str = "builtin-ai-ollama-local";
+/// Id of the AI preset used as the fallback: the Built-in one (`llama-server` started by
+/// Typelite, plan 0017). Every config has it, with or without a downloaded model.
+pub const BUILTIN_AI_PRESET_ID: &str = BUILTIN_LLAMA_PRESET_ID;
+/// Id of the old "Ollama on this Mac" template (plan 0007).
+pub const LEGACY_OLLAMA_LOCAL_PRESET_ID: &str = "builtin-ai-ollama-local";
 /// Version of the built-in preset templates. A stored config with an older version gets its
 /// old built-ins replaced by the current templates once (see `migrate_builtin_presets`).
 /// 1: plan 0007 templates. 2: plan 0015, speech keeps only the Built-in preset; the old server
-/// and cloud templates are dropped unless the user edited or used them.
-pub const BUILTIN_PRESETS_VERSION: u32 = 2;
+/// and cloud templates are dropped unless the user edited or used them. 3: plan 0017, the same
+/// for AI, which gets its own Built-in preset.
+pub const BUILTIN_PRESETS_VERSION: u32 = 3;
 /// Speech preset language value that means "let the server detect the language".
 pub const SPEECH_LANGUAGE_AUTO: &str = "auto";
 /// Longest preset id; matches the limit of the credential account names in the Keychain.
@@ -545,15 +549,39 @@ impl SpeechPreset {
     }
 }
 
-/// A saved chat endpoint: an OpenAI-compatible `POST {base_url}/chat/completions` server.
+/// Id of the "Built-in (this Mac)" AI preset (plan 0017): llama.cpp's `llama-server`, started
+/// by Typelite on this Mac. Every config has it, with or without a downloaded model.
+pub const BUILTIN_LLAMA_PRESET_ID: &str = "builtin-ai-this-mac";
+
+/// How an AI preset reaches its model.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum AiProviderKind {
+    /// An OpenAI-compatible `POST {base_url}/chat/completions` server. Configs written before
+    /// plan 0017 have no `kind`, so this is the default.
+    #[default]
+    OpenaiCompatible,
+    /// `llama-server` run by Typelite with a downloaded model file (plan 0017). The base URL is
+    /// filled in at runtime from the running server and never stored.
+    Builtin,
+}
+
+/// A saved chat endpoint: an OpenAI-compatible `POST {base_url}/chat/completions` server, or
+/// with `kind: builtin` a model file that Typelite's own `llama-server` runs.
 /// The optional API key lives in the Keychain under the preset id.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(default)]
 pub struct AiPreset {
     pub id: String,
     pub name: String,
+    pub kind: AiProviderKind,
+    /// Server presets only. Empty for the built-in preset.
     pub base_url: String,
+    /// Model name sent to the server. For the built-in preset the id of the known model
+    /// (`qwen3-4b`).
     pub model: String,
+    /// Built-in preset only: the model file name inside the app's `models` folder.
+    pub model_file: String,
     /// Copied into every chat request body, overriding the defaults.
     /// Example: `{"reasoning_effort": "none"}` for models that think by default.
     pub extra_request_fields: serde_json::Map<String, serde_json::Value>,
@@ -570,26 +598,60 @@ impl AiPreset {
             name: name.to_string(),
             base_url: base_url.to_string(),
             model: model.to_string(),
-            extra_request_fields: serde_json::Map::new(),
             builtin: true,
-            verified_at: None,
+            ..Self::default()
         }
     }
 
-    /// Ollama on this Mac: the first built-in and the fallback.
-    pub fn builtin_local() -> Self {
-        Self::template(
-            BUILTIN_AI_PRESET_ID,
-            "Ollama on this Mac",
-            "http://127.0.0.1:11434/v1",
-            "qwen3:4b-instruct-2507-q4_K_M",
-        )
+    /// A server preset (OpenAI-compatible) made by the user.
+    pub fn server(id: &str, name: &str, base_url: &str, model: &str) -> Self {
+        Self {
+            builtin: false,
+            ..Self::template(id, name, base_url, model)
+        }
     }
 
-    /// The built-in templates, in the order the picker shows them.
+    /// The "Built-in (this Mac)" AI preset for a model (plan 0017); `model_file` is empty until
+    /// a model is downloaded.
+    pub fn builtin_llama(model_id: &str, model_file: &str) -> Self {
+        Self {
+            id: BUILTIN_LLAMA_PRESET_ID.to_string(),
+            name: "Built-in (this Mac)".to_string(),
+            kind: AiProviderKind::Builtin,
+            model: model_id.to_string(),
+            model_file: model_file.to_string(),
+            builtin: true,
+            ..Self::default()
+        }
+    }
+
+    /// True when Typelite's own `llama-server` runs this preset.
+    pub fn is_builtin_llama(&self) -> bool {
+        self.kind == AiProviderKind::Builtin
+    }
+
+    /// The built-in AI preset before any model is downloaded: the fallback and the only AI
+    /// template of a new config (plan 0017).
+    pub fn builtin_default() -> Self {
+        Self::builtin_llama(crate::llm::models::DEFAULT_MODEL_ID, "")
+    }
+
+    /// The AI templates of a new config.
     pub fn builtin_templates() -> Vec<Self> {
+        vec![Self::builtin_default()]
+    }
+
+    /// The server and cloud templates of plan 0007 (template versions 1 and 2). Only the
+    /// migrations use them: version 1 to compare, version 3 to drop the ones the user never
+    /// changed.
+    pub(crate) fn legacy_templates_v1() -> Vec<Self> {
         vec![
-            Self::builtin_local(),
+            Self::template(
+                LEGACY_OLLAMA_LOCAL_PRESET_ID,
+                "Ollama on this Mac",
+                "http://127.0.0.1:11434/v1",
+                "qwen3:4b-instruct-2507-q4_K_M",
+            ),
             Self::template(
                 "builtin-ai-ollama-lan",
                 "Ollama on another computer",
@@ -613,8 +675,10 @@ impl AiPreset {
 
     /// Same endpoint: the fields that decide whether a passed Test still holds.
     pub fn same_connection(&self, other: &Self) -> bool {
-        self.base_url == other.base_url
+        self.kind == other.kind
+            && self.base_url == other.base_url
             && self.model == other.model
+            && self.model_file == other.model_file
             && self.extra_request_fields == other.extra_request_fields
     }
 }
@@ -689,7 +753,8 @@ impl VerifiablePreset for AiPreset {
         &self.id
     }
     fn is_builtin(&self) -> bool {
-        self.builtin
+        // Like speech: the Built-in preset is not a template a migration may remove.
+        self.builtin && !self.is_builtin_llama()
     }
     fn base_url(&self) -> &str {
         &self.base_url
@@ -1069,7 +1134,7 @@ impl AppConfig {
             .iter()
             .find(|preset| preset.id == self.active_ai_preset_id)
             .or_else(|| self.ai_presets.first())
-            .unwrap_or_else(|| FALLBACK.get_or_init(AiPreset::builtin_local))
+            .unwrap_or_else(|| FALLBACK.get_or_init(AiPreset::builtin_default))
     }
 
     /// Language hint of the active speech preset. `None` means auto-detect.
@@ -1169,6 +1234,75 @@ impl AppConfig {
         mark_verified(&mut self.ai_presets, tested, at)
     }
 
+    /// Plan 0017: the "Built-in (this Mac)" AI preset, if the config has one (it always does
+    /// after `normalize_values`).
+    pub fn builtin_ai_preset(&self) -> Option<&AiPreset> {
+        self.ai_presets
+            .iter()
+            .find(|preset| preset.is_builtin_llama())
+    }
+
+    /// Plan 0017: sets the Built-in AI preset to an installed model and makes it the active AI
+    /// preset, like `install_builtin_whisper`. It starts unverified when the model changed; the
+    /// test request after setup marks it ready.
+    pub fn install_builtin_llama(&mut self, model_id: &str, model_file: &str) -> AiPreset {
+        let fresh = AiPreset::builtin_llama(model_id, model_file);
+        let preset = match self
+            .ai_presets
+            .iter_mut()
+            .find(|preset| preset.is_builtin_llama())
+        {
+            Some(existing) => {
+                existing.base_url.clear();
+                if existing.model_file != fresh.model_file {
+                    existing.model = fresh.model.clone();
+                    existing.model_file = fresh.model_file.clone();
+                    existing.verified_at = None;
+                }
+                existing.clone()
+            }
+            None => {
+                self.ai_presets.insert(0, fresh.clone());
+                fresh
+            }
+        };
+        self.active_ai_preset_id = preset.id.clone();
+        preset
+    }
+
+    /// Plan 0017: keeps the Built-in AI preset in step with the model files on disk, like
+    /// `reconcile_builtin_models` does for speech. Returns true when anything changed.
+    pub fn reconcile_builtin_ai_models(&mut self, installed: &[(String, String)]) -> bool {
+        let mut changed = false;
+        for preset in &mut self.ai_presets {
+            if !preset.is_builtin_llama()
+                || (!preset.model_file.is_empty()
+                    && installed.iter().any(|(_, file)| *file == preset.model_file))
+            {
+                continue;
+            }
+            let replacement = installed
+                .iter()
+                .find(|(id, _)| *id == preset.model)
+                .or_else(|| installed.first());
+            match replacement {
+                Some((model_id, file)) => {
+                    preset.model = model_id.clone();
+                    preset.model_file = file.clone();
+                    preset.verified_at = None;
+                    changed = true;
+                }
+                None if !preset.model_file.is_empty() || preset.verified_at.is_some() => {
+                    preset.model_file.clear();
+                    preset.verified_at = None;
+                    changed = true;
+                }
+                None => {}
+            }
+        }
+        changed
+    }
+
     /// Clears the verification of one preset, for example after its API key changed.
     /// Returns true when the preset was verified before.
     pub fn clear_verification(&mut self, kind: ServiceKind, preset_id: &str) -> bool {
@@ -1206,7 +1340,7 @@ impl AppConfig {
             migrate_preset_list(
                 &mut self.ai_presets,
                 &mut self.active_ai_preset_id,
-                AiPreset::builtin_templates(),
+                AiPreset::legacy_templates_v1(),
                 verify_at,
             );
             if onboarding_completed {
@@ -1215,6 +1349,9 @@ impl AppConfig {
         }
         if self.builtin_presets_version < 2 {
             self.migrate_speech_presets_v2(active_was_chosen);
+        }
+        if self.builtin_presets_version < 3 {
+            self.migrate_ai_presets_v3(active_was_chosen);
         }
         self.builtin_presets_version = BUILTIN_PRESETS_VERSION;
     }
@@ -1256,6 +1393,38 @@ impl AppConfig {
         }
     }
 
+    /// Plan 0017: AI has two engines too, Built-in and "your server or API key". The same rule
+    /// as `migrate_speech_presets_v2`: old templates the user never edited, picked or got
+    /// working leave the list, the others become ordinary user presets, and the Built-in preset
+    /// is added in front. The active preset stays active.
+    fn migrate_ai_presets_v3(&mut self, keep_active: bool) {
+        let legacy = AiPreset::legacy_templates_v1();
+        let active = self.active_ai_preset_id.clone();
+        self.ai_presets.retain_mut(|preset| {
+            if preset.is_builtin_llama() {
+                return true;
+            }
+            if let Some(template) = legacy.iter().find(|template| template.id == preset.id) {
+                let unedited = preset.name == template.name
+                    && preset.base_url == template.base_url
+                    && preset.model == template.model
+                    && preset.extra_request_fields.is_empty();
+                let in_use = keep_active && preset.id == active;
+                if unedited && !in_use && preset.verified_at.is_none() {
+                    return false;
+                }
+            }
+            preset.builtin = false;
+            true
+        });
+        if !self.ai_presets.iter().any(AiPreset::is_builtin_llama) {
+            self.ai_presets.insert(0, AiPreset::builtin_default());
+        }
+        if !self.ai_presets.iter().any(|preset| preset.id == active) {
+            self.active_ai_preset_id = BUILTIN_AI_PRESET_ID.to_string();
+        }
+    }
+
     fn normalize_presets(&mut self) {
         // Plan 0015: the Built-in engine always has its preset.
         if !self
@@ -1294,14 +1463,21 @@ impl AppConfig {
             self.active_speech_preset_id = self.speech_presets[0].id.clone();
         }
 
-        if self.ai_presets.is_empty() {
-            self.ai_presets = AiPreset::builtin_templates();
+        // Plan 0017: the Built-in AI engine always has its preset.
+        if !self.ai_presets.iter().any(AiPreset::is_builtin_llama) {
+            self.ai_presets.insert(0, AiPreset::builtin_default());
         }
         let mut seen_ids = HashSet::new();
         for preset in &mut self.ai_presets {
             preset.id = unique_preset_id(&preset.id, &mut seen_ids);
             preset.name = preset_name_or_default(&preset.name, &preset.model);
-            preset.base_url = normalize_preset_base_url(&preset.base_url);
+            if preset.is_builtin_llama() {
+                preset.base_url.clear();
+                preset.model_file = preset.model_file.trim().to_string();
+            } else {
+                preset.base_url = normalize_preset_base_url(&preset.base_url);
+                preset.model_file.clear();
+            }
             preset.model = preset.model.trim().to_string();
             if base_url_has_placeholder(&preset.base_url) {
                 preset.verified_at = None;
@@ -2559,7 +2735,7 @@ mod tests {
 
         // Speech has only the Built-in preset now (plan 0015).
         assert_eq!(config.speech_presets, SpeechPreset::builtin_templates());
-        assert_eq!(config.ai_presets.len(), 4);
+        assert_eq!(config.ai_presets, AiPreset::builtin_templates());
         assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
         assert_eq!(config.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
     }
@@ -2645,15 +2821,7 @@ mod tests {
             .into_iter()
             .map(|p| p.id)
             .collect();
-        assert_eq!(
-            ai,
-            [
-                "builtin-ai-ollama-local",
-                "builtin-ai-ollama-lan",
-                "builtin-ai-openai",
-                "builtin-ai-groq"
-            ]
-        );
+        assert_eq!(ai, ["builtin-ai-this-mac"]);
         let stored = serde_json::to_string(&AppConfig::default()).unwrap();
         assert!(!stored.contains("100."));
         assert!(!stored.contains("192.168."));
@@ -2867,6 +3035,149 @@ mod tests {
         assert_eq!(next.ai_presets[0].verified_at, Some(9));
     }
 
+    // ─── Plan 0017: Built-in AI preset and the version 3 migration ───
+
+    fn version_2_ai_config(active: &str) -> serde_json::Value {
+        let template = |id: &str, name: &str, url: &str, model: &str| {
+            serde_json::json!({"id": id, "name": name, "base_url": url, "model": model,
+                               "extra_request_fields": {}, "builtin": true})
+        };
+        serde_json::json!({
+            "ai_presets": [
+                template("builtin-ai-ollama-local", "Ollama on this Mac",
+                         "http://127.0.0.1:11434/v1", "qwen3:4b-instruct-2507-q4_K_M"),
+                template("builtin-ai-ollama-lan", "Ollama on another computer",
+                         "http://192.0.2.10:11434/v1", "qwen3:4b-instruct-2507-q4_K_M"),
+                template("builtin-ai-openai", "OpenAI (your key)",
+                         "https://api.openai.com/v1", "gpt-4.1-mini"),
+                {"id": "builtin-ai-groq", "name": "Groq (your key)",
+                 "base_url": "https://api.groq.com/openai/v1", "model": "llama-3.1-8b-instant",
+                 "builtin": true, "verified_at": 12},
+                {"id": "mine", "name": "Mine", "base_url": "http://192.0.2.7:11434/v1",
+                 "model": "m", "builtin": false, "verified_at": 13}
+            ],
+            "active_ai_preset_id": active,
+            "builtin_presets_version": 2
+        })
+    }
+
+    fn ai_ids(config: &AppConfig) -> Vec<&str> {
+        config.ai_presets.iter().map(|p| p.id.as_str()).collect()
+    }
+
+    #[test]
+    fn version_3_adds_built_in_ai_and_keeps_the_active_and_used_presets() {
+        let config =
+            AppConfig::from_stored_value_with_onboarding(version_2_ai_config("mine"), true)
+                .unwrap();
+        // Unedited, unused local and OpenAI templates go; the edited LAN address, the tested
+        // Groq preset and the user's preset stay; the Built-in preset comes first.
+        assert_eq!(
+            ai_ids(&config),
+            [
+                "builtin-ai-this-mac",
+                "builtin-ai-ollama-lan",
+                "builtin-ai-groq",
+                "mine"
+            ]
+        );
+        assert!(config.ai_presets[0].is_builtin_llama());
+        assert!(config.ai_presets[1..].iter().all(|p| !p.builtin));
+        assert!(config.ai_presets[1..]
+            .iter()
+            .all(|p| p.kind == AiProviderKind::OpenaiCompatible));
+        assert_eq!(config.active_ai_preset_id, "mine");
+        assert!(config.ai_ready());
+        assert_eq!(config.builtin_presets_version, BUILTIN_PRESETS_VERSION);
+    }
+
+    #[test]
+    fn version_3_keeps_an_active_unedited_template() {
+        let config = AppConfig::from_stored_value_with_onboarding(
+            version_2_ai_config("builtin-ai-ollama-local"),
+            true,
+        )
+        .unwrap();
+        assert!(ai_ids(&config).contains(&"builtin-ai-ollama-local"));
+        assert!(!ai_ids(&config).contains(&"builtin-ai-openai"));
+        assert_eq!(config.active_ai_preset_id, "builtin-ai-ollama-local");
+        assert_eq!(
+            config.active_ai_preset().base_url,
+            "http://127.0.0.1:11434/v1"
+        );
+    }
+
+    #[test]
+    fn built_in_ai_presets_round_trip_and_never_store_an_address() {
+        let mut stored = AppConfig::default();
+        assert_eq!(stored.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
+        assert!(!stored.ai_ready());
+        let preset = stored.install_builtin_llama("qwen3-1.7b", "Qwen3-1.7B-Q4_K_M.gguf");
+        assert!(stored.mark_ai_verified(&preset, 9));
+        let mut value = serde_json::to_value(&stored).unwrap();
+        assert_eq!(value["ai_presets"][0]["kind"], "builtin");
+        value["ai_presets"][0]["base_url"] = serde_json::json!("http://127.0.0.1:5000/v1");
+
+        let config = AppConfig::from_stored_value(value).unwrap();
+        let active = config.active_ai_preset();
+        assert!(active.is_builtin_llama());
+        assert_eq!(active.model, "qwen3-1.7b");
+        assert_eq!(active.model_file, "Qwen3-1.7B-Q4_K_M.gguf");
+        assert_eq!(active.base_url, "");
+        assert!(config.ai_ready());
+
+        // A preset without a kind is a server preset.
+        let config = AppConfig::from_stored_value(serde_json::json!({
+            "ai_presets": [{"id": "x", "name": "X", "base_url": "http://192.0.2.1/v1",
+                            "model": "m", "model_file": "stray.gguf"}],
+            "active_ai_preset_id": "x",
+            "builtin_presets_version": BUILTIN_PRESETS_VERSION
+        }))
+        .unwrap();
+        assert_eq!(ai_ids(&config), ["builtin-ai-this-mac", "x"]);
+        assert_eq!(
+            config.active_ai_preset().kind,
+            AiProviderKind::OpenaiCompatible
+        );
+        assert_eq!(config.active_ai_preset().model_file, "");
+    }
+
+    #[test]
+    fn built_in_ai_follows_the_model_files_on_disk() {
+        let mut config = AppConfig::default();
+        config
+            .ai_presets
+            .push(AiPreset::server("mine", "Mine", "http://192.0.2.3/v1", "m"));
+        config.active_ai_preset_id = "mine".to_string();
+        let preset = config.install_builtin_llama("qwen3-4b", "Qwen3-4B-Instruct-2507-Q4_K_M.gguf");
+        assert_eq!(config.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
+        assert_eq!(config.ai_presets.len(), 2);
+        config.mark_ai_verified(&preset, 3);
+        // The same model again keeps the passed test; another model clears it.
+        config.install_builtin_llama("qwen3-4b", "Qwen3-4B-Instruct-2507-Q4_K_M.gguf");
+        assert!(config.ai_ready());
+        let pairs = |list: &[(&str, &str)]| -> Vec<(String, String)> {
+            list.iter()
+                .map(|(id, file)| (id.to_string(), file.to_string()))
+                .collect()
+        };
+        let both = pairs(&[
+            ("qwen3-4b", "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"),
+            ("qwen3-1.7b", "Qwen3-1.7B-Q4_K_M.gguf"),
+        ]);
+        assert!(!config.reconcile_builtin_ai_models(&both));
+        assert!(
+            config.reconcile_builtin_ai_models(&pairs(&[("qwen3-1.7b", "Qwen3-1.7B-Q4_K_M.gguf")]))
+        );
+        assert_eq!(config.active_ai_preset().model, "qwen3-1.7b");
+        assert!(!config.ai_ready());
+        assert!(config.reconcile_builtin_ai_models(&[]));
+        assert_eq!(config.active_ai_preset().model_file, "");
+        assert!(!config.reconcile_builtin_ai_models(&[]));
+        // The Built-in preset is never removed.
+        assert!(config.builtin_ai_preset().is_some());
+    }
+
     #[test]
     fn a_test_counts_only_for_the_stored_connection() {
         let mut config = AppConfig::default();
@@ -2880,7 +3191,8 @@ mod tests {
         assert!(config.speech_ready());
 
         // A template with a placeholder URL can never be ready.
-        let lan = config.ai_presets[1].clone();
+        let lan = AiPreset::legacy_templates_v1()[1].clone();
+        config.ai_presets.push(lan.clone());
         assert!(base_url_has_placeholder(&lan.base_url));
         assert!(!config.mark_ai_verified(&lan, 7));
 

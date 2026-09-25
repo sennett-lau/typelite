@@ -1,3 +1,4 @@
+pub mod ai_setup;
 pub mod app_mappings;
 pub mod ask;
 pub mod audio;
@@ -6,6 +7,7 @@ pub mod credentials;
 pub mod dictionary;
 pub mod llm;
 pub mod misc;
+pub mod model_setup;
 pub mod permissions;
 pub mod speech_setup;
 pub mod stt;

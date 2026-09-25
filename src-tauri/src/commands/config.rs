@@ -254,6 +254,9 @@ pub async fn update_config(
     if patch.get("show_in_dock").is_some() {
         crate::apply_dock_visibility(&app, config.show_in_dock);
     }
+    // Plan 0017: start the built-in AI server when Built-in AI became the engine in use, stop
+    // it when another engine was picked.
+    crate::llm::builtin::sync_with_config(&config);
     if refresh_provider_connections {
         if let Some(pipeline) = app.try_state::<crate::pipeline::PipelineHandle>() {
             let pipeline = pipeline.inner().clone();

@@ -7,6 +7,13 @@ fn main() {
     #[cfg(target_os = "macos")]
     link_clang_runtime();
 
+    // Plan 0017: the built-in AI server binary is named after the target triple
+    // (`llama-server-aarch64-apple-darwin`), as Tauri external binaries are.
+    println!(
+        "cargo:rustc-env=TYPELITE_TARGET_TRIPLE={}",
+        std::env::var("TARGET").unwrap_or_default()
+    );
+
     tauri_build::build()
 }
 
