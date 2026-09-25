@@ -60,6 +60,7 @@ impl LlmProvider for OpenAiProvider {
             },
             translate_enabled: req.translate_enabled,
             target_lang: &req.target_lang,
+            translation_instructions: &req.translation_instructions,
             has_selected_text,
             voice_intent: Some(&req.voice_intent),
         });

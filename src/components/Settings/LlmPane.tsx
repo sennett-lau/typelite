@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '../../stores/appStore'
+import { isCustomTranslationLanguage, useAppStore } from '../../stores/appStore'
 import type { PolishStyle } from '../../stores/appStore'
 import { getLatestMappingCandidate, listCustomAppMappings } from '../../lib/tauri'
 import type { CustomAppMappingView, MappingCandidateView } from '../../lib/tauri'
@@ -12,6 +12,7 @@ import { AI_SERVICE } from '../Speech/services'
 import { AppLogo } from '../AppLogo'
 import { ContextAdaptationApps } from './ContextAdaptationApps'
 import { TranslationTargets } from './TranslationTargets'
+import { TranslationLanguageSheet } from './TranslationLanguageSheet'
 import { AppStyleMappingDialog } from './AppStyleMappingDialog'
 import { ManageAppMappingsDialog } from './ManageAppMappingsDialog'
 
@@ -26,7 +27,8 @@ const STYLE_KEY: Record<PolishStyle, string> = {
 /**
  * Settings → AI (plan `ai-polish-setup`): "AI polish uses" (Built-in or your server or API key,
  * with their details), then Polish (clean-up switch, style cards, match the app, the last app and
- * browser access), Translation (language chips, always translate) and a collapsed Advanced
+ * browser access), Translation (language chips with their model and instructions sheet, plan
+ * `translation-language-presets`; always translate) and a collapsed Advanced
  * (selected text, custom instructions).
  */
 export function LlmPane() {
@@ -45,6 +47,7 @@ export function LlmPane() {
   const [appStyleDialogOpen, setAppStyleDialogOpen] = useState(false)
   const [manageMappingsOpen, setManageMappingsOpen] = useState(false)
   const [editingMapping, setEditingMapping] = useState<CustomAppMappingView | null>(null)
+  const [editingLanguage, setEditingLanguage] = useState<string | null>(null)
   const appStyleMenuButtonRef = useRef<HTMLButtonElement>(null)
   const showBrowserAccessHint = Boolean(
     config.polish_enabled &&
@@ -247,6 +250,8 @@ export function LlmPane() {
           <TranslationTargets
             value={config.translation}
             onChange={(translation) => updateConfig({ translation })}
+            onEdit={setEditingLanguage}
+            isCustom={(code) => isCustomTranslationLanguage(config, code)}
           />
         </Row>
         <Row label={t('settings.translationMode')} help={t('settings.translationModeDesc')}>
@@ -319,6 +324,10 @@ export function LlmPane() {
             setEditingMapping(null)
           }}
         />
+      )}
+
+      {editingLanguage && (
+        <TranslationLanguageSheet code={editingLanguage} onClose={() => setEditingLanguage(null)} />
       )}
 
       {manageMappingsOpen && (

@@ -1274,6 +1274,7 @@ pub fn run() {
             commands::audio::start_mic_level_monitor,
             commands::audio::stop_mic_level_monitor,
             commands::translation::set_active_translation_target,
+            commands::translation::get_translation_language_defaults,
             commands::translation::cycle_translation_target,
             commands::app_mappings::get_latest_mapping_candidate,
             commands::app_mappings::list_custom_app_mappings,

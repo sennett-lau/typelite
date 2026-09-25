@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { findActivePreset, useAppStore } from '../appStore'
+import {
+  findActivePreset,
+  isCustomTranslationLanguage,
+  translationLanguagePreset,
+  useAppStore,
+  withoutTranslationPreset,
+} from '../appStore'
 import type { DictionaryEntry, CorrectionRule, HotkeyConfig } from '../appStore'
 
 function getState() {
@@ -76,7 +82,7 @@ describe('appStore', () => {
       expect(config.polish_chinese_script).toBe('preserve')
       expect(config.custom_scenes).toEqual([])
       expect(config.active_scene).toBeNull()
-      expect(config.translation).toEqual({ targets: ['en'], active_target: 'en' })
+      expect(config.translation).toEqual({ targets: ['en'], active_target: 'en', languages: {} })
       expect(config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
       expect(config.target_lang).toBe('en')
       // Plan `two-tab-speech`: only the Built-in preset, before a model is downloaded.
@@ -301,6 +307,7 @@ describe('appStore', () => {
       expect(getState().config.translation).toEqual({
         targets: ['en', 'fr'],
         active_target: 'fr',
+        languages: {},
       })
 
       // At most three, unique and supported.
@@ -313,6 +320,7 @@ describe('appStore', () => {
       expect(getState().config.translation).toEqual({
         targets: ['fr', 'ja', 'de'],
         active_target: 'ja',
+        languages: {},
       })
       expect(getState().config.target_lang).toBe('ja')
 
@@ -321,6 +329,7 @@ describe('appStore', () => {
       expect(getState().config.translation).toEqual({
         targets: ['fr', 'ja', 'ko'],
         active_target: 'ko',
+        languages: {},
       })
     })
 
@@ -331,8 +340,74 @@ describe('appStore', () => {
       expect(getState().config.translation).toEqual({
         targets: ['ja', 'zh-Hans', 'zh-Hant-HK'],
         active_target: 'zh-Hans',
+        languages: {},
       })
       expect(getState().config.target_lang).toBe('zh-Hans')
+    })
+
+    it('keeps per-language translation settings when the language list changes', () => {
+      const languages = { 'zh-Hant-HK': { ai_preset_id: 'pc', instructions: null } }
+      getState().setConfig({
+        ...getState().config,
+        translation: { targets: ['en', 'zh-Hant-HK'], active_target: 'en', languages },
+      })
+      // The chips and onboarding send the list without `languages`.
+      getState().updateConfig({ translation: { targets: ['en'], active_target: 'en' } })
+      expect(getState().config.translation.languages).toEqual(languages)
+      getState().updateConfig({ target_lang: 'fr' })
+      expect(getState().config.translation.languages).toEqual(languages)
+    })
+
+    it('applies saved language settings without touching unsaved list edits', () => {
+      getState().setConfig({
+        ...getState().config,
+        translation: { targets: ['en', 'ja'], active_target: 'ja', languages: {} },
+      })
+      getState().setSavedConfig({
+        ...getState().config,
+        translation: { targets: ['en'], active_target: 'en', languages: {} },
+      })
+      const languages = { ja: { ai_preset_id: null, instructions: 'Use polite form.' } }
+      getState().applyPersistedTranslationLanguages(languages)
+      expect(getState().config.translation).toEqual({
+        targets: ['en', 'ja'],
+        active_target: 'ja',
+        languages,
+      })
+      expect(getState().savedConfig?.translation.targets).toEqual(['en'])
+      expect(getState().savedConfig?.translation.languages).toEqual(languages)
+    })
+
+    it('marks custom languages and ignores a deleted preset', () => {
+      const config = {
+        ...getState().config,
+        ai_presets: [
+          ...getState().config.ai_presets,
+          { ...getState().config.ai_presets[0], id: 'pc', kind: 'openai_compatible' as const },
+        ],
+        translation: {
+          targets: ['en', 'zh-Hant-HK', 'ja'],
+          active_target: 'en',
+          languages: {
+            'zh-Hant-HK': { ai_preset_id: 'pc', instructions: null },
+            ja: { ai_preset_id: 'deleted', instructions: null },
+          },
+        },
+      }
+      expect(isCustomTranslationLanguage(config, 'zh-Hant-HK')).toBe(true)
+      expect(translationLanguagePreset(config, 'zh-Hant-HK')?.id).toBe('pc')
+      expect(isCustomTranslationLanguage(config, 'ja')).toBe(false)
+      expect(translationLanguagePreset(config, 'ja')).toBeNull()
+      expect(isCustomTranslationLanguage(config, 'en')).toBe(false)
+      expect(
+        withoutTranslationPreset(
+          {
+            'zh-Hant-HK': { ai_preset_id: 'pc', instructions: null },
+            ja: { ai_preset_id: 'pc', instructions: 'Keep it.' },
+          },
+          'pc',
+        ),
+      ).toEqual({ ja: { ai_preset_id: null, instructions: 'Keep it.' } })
     })
 
     it('fills in the default Switch language key for configs without one', () => {

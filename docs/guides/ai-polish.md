@@ -98,6 +98,35 @@ fields**:
 
 Built-in models always run with thinking off.
 
+## Translation languages
+
+Each language in **Settings → AI → Translation** can have its own model and its own
+instructions. Press the pencil on a language to open its settings:
+
+- **AI model**: **Same as AI polish** (the default), or any saved AI preset, including
+  Built-in. Every translation into that language uses it: the Translate shortcut, "Always
+  translate output", highlight-and-translate and Ask's "translate this into …". Switching
+  language during a recording also switches the model. Polish without translation keeps the AI
+  polish model.
+- **Instructions**: how to write that language, up to 2000 characters. It starts with a
+  built-in text; **Reset to default** brings that back. Typelite always adds its own rules
+  around your text (output only the translation, keep the line breaks, use the right Chinese
+  script), so an edit cannot make the model add notes or answer in two languages.
+- A language you changed shows **Custom**. If you delete a preset a language uses, that
+  language goes back to **Same as AI polish**.
+
+The built-in instructions are a plain, natural translation for most languages, plus:
+
+| Language | Built-in instructions |
+|---|---|
+| Chinese (Traditional, Hong Kong) | Colloquial written Cantonese as Hong Kong people type it (嘅 咗 喺 啲 冇 唔…), with the English words Hongkongers say in English kept in English: "你可唔可以幫我check下個proposal嘅deadline？". Edit it if you want formal written Chinese. |
+| Chinese (Traditional, Taiwan) | Taiwan Mandarin wording and vocabulary (軟體, 網路, 計程車). |
+| Chinese (Simplified) | Mainland wording and vocabulary (软件, 网络, 出租车). |
+
+Small 4B models write passable Cantonese but still slip into written Chinese now and then. For
+better Cantonese, set a larger or Cantonese-tuned model for that language only, while polish
+stays on the fast one.
+
 ## Share presets
 
 **Settings → AI → Your server or API key** has **Import…** and **Export…** under the preset's

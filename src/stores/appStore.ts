@@ -333,9 +333,54 @@ export interface VoiceRoutingFlags {
   search: boolean
 }
 
+/**
+ * Plan `translation-language-presets`: one translation language's own settings. `null` means the
+ * default: the AI polish preset, and the built-in instructions for that language.
+ */
+export interface TranslationLanguageSettings {
+  ai_preset_id: string | null
+  instructions: string | null
+}
+
 export interface TranslationConfig {
   targets: string[]
   active_target: string
+  /** Per-language settings by language code. Missing in older configs; missing = defaults. */
+  languages?: Record<string, TranslationLanguageSettings>
+}
+
+/** Longest custom translation instructions for one language (matches the backend). */
+export const TRANSLATION_INSTRUCTIONS_MAX_CHARS = 2000
+
+/**
+ * The saved AI preset that translates into `code`, or null for "Same as AI polish" (also when
+ * the stored preset was deleted).
+ */
+export function translationLanguagePreset(config: AppConfig, code: string): AiPreset | null {
+  const id = config.translation.languages?.[code]?.ai_preset_id
+  if (!id) return null
+  return config.ai_presets.find((preset) => preset.id === id) ?? null
+}
+
+/** True when a language's model or instructions differ from the defaults. */
+export function isCustomTranslationLanguage(config: AppConfig, code: string): boolean {
+  const settings = config.translation.languages?.[code]
+  if (!settings) return false
+  return settings.instructions !== null || translationLanguagePreset(config, code) !== null
+}
+
+/** `languages` without any use of the AI preset `presetId` (after that preset was deleted). */
+export function withoutTranslationPreset(
+  languages: Record<string, TranslationLanguageSettings>,
+  presetId: string,
+): Record<string, TranslationLanguageSettings> {
+  const next: Record<string, TranslationLanguageSettings> = {}
+  for (const [code, settings] of Object.entries(languages)) {
+    const cleaned =
+      settings.ai_preset_id === presetId ? { ...settings, ai_preset_id: null } : settings
+    if (cleaned.ai_preset_id !== null || cleaned.instructions !== null) next[code] = cleaned
+  }
+  return next
 }
 
 export interface AppConfig {
@@ -451,6 +496,13 @@ interface AppState {
   setConfig: (config: AppConfig) => void
   updateConfig: (partial: Partial<AppConfig>) => void
   applyPersistedConfigPatch: (patch: Partial<AppConfig>) => void
+  /**
+   * Plan `translation-language-presets`: puts saved per-language settings into both the edited
+   * and the saved config, leaving other unsaved translation edits (the language list) alone.
+   */
+  applyPersistedTranslationLanguages: (
+    languages: Record<string, TranslationLanguageSettings>,
+  ) => void
 
   // Dictionary
   dictionary: DictionaryEntry[]
@@ -1037,7 +1089,11 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
     return {
       ...merged,
       target_lang: activeTarget,
-      translation: { targets, active_target: activeTarget },
+      translation: {
+        targets,
+        active_target: activeTarget,
+        languages: partial.translation.languages ?? previous.translation?.languages ?? {},
+      },
     }
   }
 
@@ -1054,7 +1110,11 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
     return {
       ...merged,
       target_lang: activeTarget,
-      translation: { targets, active_target: activeTarget },
+      translation: {
+        targets,
+        active_target: activeTarget,
+        languages: previous.translation?.languages ?? {},
+      },
     }
   }
 
@@ -1131,7 +1191,7 @@ const defaultConfig: AppConfig = {
   family_scene_assignments: [],
   translate_enabled: false,
   target_lang: 'en',
-  translation: { targets: ['en'], active_target: 'en' },
+  translation: { targets: ['en'], active_target: 'en', languages: {} },
   hotkey: defaultDictationHotkey(),
   ask_hotkey: defaultAskHotkey(),
   hotkey_mode: defaultDictationHotkeyMode(),
@@ -1211,6 +1271,13 @@ export const useAppStore = create<AppState>((set) => ({
     set((s) => ({
       config: syncHotkeyConfig(s.config, patch),
       savedConfig: s.savedConfig ? syncHotkeyConfig(s.savedConfig, patch) : s.savedConfig,
+    })),
+  applyPersistedTranslationLanguages: (languages) =>
+    set((s) => ({
+      config: { ...s.config, translation: { ...s.config.translation, languages } },
+      savedConfig: s.savedConfig
+        ? { ...s.savedConfig, translation: { ...s.savedConfig.translation, languages } }
+        : s.savedConfig,
     })),
 
   dictionary: [],

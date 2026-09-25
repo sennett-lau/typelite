@@ -1343,6 +1343,13 @@ pub async fn stop_ask_dictation(
                     .as_ref()
                     .map_or_else(|_| draft_started.elapsed(), |draft| draft.llm_elapsed),
             );
+            // Plan `translation-language-presets`: a translation can use its language's preset.
+            let used_preset = app
+                .state::<crate::pipeline::PipelineHandle>()
+                .take_last_ai_preset_id();
+            if let Some(timing) = run_config.as_mut() {
+                *timing = crate::pipeline::config_for_run_timing(timing, used_preset).into_owned();
+            }
             let draft = draft?;
             return Ok(AskDictationResult::new(
                 question,

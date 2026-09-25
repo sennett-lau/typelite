@@ -134,6 +134,7 @@ fn dictation_request(raw_text: &str) -> PolishRequest {
         polish_chinese_script: "preserve".into(),
         translate_enabled: false,
         target_lang: "en".into(),
+        translation_instructions: String::new(),
         selected_text: None,
         voice_intent: VoiceIntent::from_parts(
             VoiceIntentKind::DictateInsert,

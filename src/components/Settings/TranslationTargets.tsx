@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Pencil, Plus, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MAX_TRANSLATION_TARGETS, TARGET_LANGUAGES, targetLanguageLabel } from '../../lib/constants'
 import type { TranslationConfig } from '../../stores/appStore'
@@ -7,6 +7,10 @@ import type { TranslationConfig } from '../../stores/appStore'
 interface TranslationTargetsProps {
   value: TranslationConfig
   onChange: (value: TranslationConfig) => void
+  /** Plan `translation-language-presets`: opens a language's settings sheet (edit button). */
+  onEdit?: (code: string) => void
+  /** Whether a language's model or instructions differ from the defaults ("Custom" tag). */
+  isCustom?: (code: string) => boolean
 }
 
 /**
@@ -14,9 +18,10 @@ interface TranslationTargetsProps {
  * three. Plan `ai-polish-setup`: shown as chips, the default one first and marked; clicking another
  * chip makes it the default, × removes it (the last language cannot be removed), "+ Add" shows
  * while fewer than three are chosen. The pill shows exactly these languages, and the Switch
- * language shortcut cycles through them in their saved order.
+ * language shortcut cycles through them in their saved order. Plan `translation-language-presets`:
+ * a pencil opens the language's model and instructions, and a "Custom" tag marks changed ones.
  */
-export function TranslationTargets({ value, onChange }: TranslationTargetsProps) {
+export function TranslationTargets({ value, onChange, onEdit, isCustom }: TranslationTargetsProps) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
 
@@ -36,7 +41,7 @@ export function TranslationTargets({ value, onChange }: TranslationTargetsProps)
     const next = targets.filter((target) => target !== code)
     const activeTarget =
       code === value.active_target ? next[Math.min(index, next.length - 1)] : value.active_target
-    onChange({ targets: next, active_target: activeTarget })
+    onChange({ ...value, targets: next, active_target: activeTarget })
   }
 
   const addTarget = (code: string) => {
@@ -72,6 +77,20 @@ export function TranslationTargets({ value, onChange }: TranslationTargetsProps)
                 {languageLabel(code)}
                 {active && ` · ${t('translate.defaultMark')}`}
               </button>
+              {isCustom?.(code) && (
+                <span className="lang-chip-custom">{t('translate.language.customTag')}</span>
+              )}
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(code)}
+                  aria-label={`${t('translate.language.edit')} ${languageLabel(code)}`}
+                  title={t('translate.language.edit')}
+                  className="lang-chip-remove lang-chip-edit"
+                >
+                  <Pencil size={11} />
+                </button>
+              )}
               {canRemove && (
                 <button
                   type="button"

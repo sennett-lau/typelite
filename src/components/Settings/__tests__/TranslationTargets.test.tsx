@@ -64,4 +64,39 @@ describe('TranslationTargets', () => {
 
     expect(onChange).toHaveBeenCalledWith({ targets: ['en', 'fr'], active_target: 'fr' })
   })
+
+  it('keeps per-language settings when the list changes', () => {
+    const languages = { ja: { ai_preset_id: 'pc', instructions: null } }
+    const onChange = renderTargets({ targets: ['en', 'ja'], active_target: 'en', languages })
+
+    fireEvent.click(screen.getByRole('button', { name: 'translate.remove 日本語' }))
+
+    expect(onChange).toHaveBeenCalledWith({ targets: ['en'], active_target: 'en', languages })
+  })
+
+  it("opens a language's settings from its edit button and tags custom languages", () => {
+    const onChange = vi.fn()
+    const onEdit = vi.fn()
+    render(
+      <TranslationTargets
+        value={{ targets: ['en', 'zh-Hant-HK'], active_target: 'en' }}
+        onChange={onChange}
+        onEdit={onEdit}
+        isCustom={(code) => code === 'zh-Hant-HK'}
+      />,
+    )
+
+    expect(screen.getByTestId('translation-target-zh-Hant-HK')).toHaveTextContent(
+      'translate.language.customTag',
+    )
+    expect(screen.getByTestId('translation-target-en')).not.toHaveTextContent(
+      'translate.language.customTag',
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'translate.language.edit translate.languages.zhHantHK' }),
+    )
+    expect(onEdit).toHaveBeenCalledWith('zh-Hant-HK')
+    // Editing does not change the list or the default.
+    expect(onChange).not.toHaveBeenCalled()
+  })
 })

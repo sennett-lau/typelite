@@ -6,6 +6,13 @@ use crate::{pipeline::PipelineHandle, storage};
 /// save their targets in the same order as they switched the running recording.
 static TARGET_SWITCH_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
+/// Plan `translation-language-presets`: the built-in translation instructions of every
+/// supported language, by code, for the Settings sheet (prefill and "Reset to default").
+#[tauri::command]
+pub fn get_translation_language_defaults() -> std::collections::BTreeMap<String, String> {
+    crate::llm::prompt::default_translation_instructions_by_code()
+}
+
 #[tauri::command]
 pub async fn set_active_translation_target(
     app: tauri::AppHandle,

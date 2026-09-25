@@ -732,7 +732,21 @@
       "zhHantHK": "Chinese (Traditional, Hong Kong)",
       "zhHantTW": "Chinese (Traditional, Taiwan)"
     },
-    "add": "Add"
+    "add": "Add",
+    "language": {
+      "edit": "Model and instructions:",
+      "customTag": "Custom",
+      "sheetHelp": "How Typelite translates into this language. Polish without translation is not affected.",
+      "model": "AI model",
+      "sameAsPolish": "Same as AI polish",
+      "builtinPreset": "Built-in (this Mac)",
+      "presetDeleted": "The preset this language used was deleted, so it uses the AI polish model again.",
+      "instructions": "Instructions",
+      "resetToDefault": "Reset to default",
+      "count": "{{count}} / {{max}} characters",
+      "defaultsFailed": "The built-in instructions could not be loaded. Leave this empty to use them.",
+      "contractNote": "Typelite always adds its own rules around these: output only the translation, keep the line breaks and use the right Chinese script."
+    }
   },
   "presets": {
     "unnamed": "Untitled preset",

@@ -209,6 +209,15 @@ pub fn resolve_llm_config_secret<V: CredentialSecretReader>(
         .unwrap_or_default())
 }
 
+/// API key of one AI preset (plan `translation-language-presets`: a translation language can use
+/// another preset than AI polish), or an empty string when none is stored.
+pub fn resolve_llm_preset_secret<V: CredentialSecretReader>(
+    preset_id: &str,
+    vault: &V,
+) -> Result<String> {
+    Ok(vault.get_secret("llm", preset_id)?.unwrap_or_default())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

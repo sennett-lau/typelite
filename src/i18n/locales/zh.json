@@ -732,7 +732,21 @@
       "zhHantHK": "繁體中文（香港）",
       "zhHantTW": "繁體中文（台灣）"
     },
-    "add": "添加"
+    "add": "添加",
+    "language": {
+      "edit": "模型和说明：",
+      "customTag": "自定义",
+      "sheetHelp": "Typelite 如何翻译成这种语言。不翻译时的润色不受影响。",
+      "model": "AI 模型",
+      "sameAsPolish": "与 AI 润色相同",
+      "builtinPreset": "内置（这台 Mac）",
+      "presetDeleted": "这种语言使用的预设已被删除，现在改用 AI 润色的模型。",
+      "instructions": "说明",
+      "resetToDefault": "恢复默认",
+      "count": "{{count}} / {{max}} 个字符",
+      "defaultsFailed": "无法载入内置说明。留空即使用内置说明。",
+      "contractNote": "Typelite 总会在外面加上自己的规则：只输出译文、保留换行，并使用正确的简繁体。"
+    }
   },
   "presets": {
     "unnamed": "未命名预设",
