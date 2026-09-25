@@ -248,7 +248,7 @@ fn is_unchanged_speech_template(preset: &SpeechPreset) -> bool {
 
 fn is_unchanged_ai_template(preset: &AiPreset) -> bool {
     preset.builtin
-        && AiPreset::builtin_templates()
+        && AiPreset::legacy_templates_v1()
             .iter()
             .any(|template| template.id == preset.id && template.same_connection(preset))
 }
@@ -262,6 +262,7 @@ fn speech_exportable(preset: &SpeechPreset) -> bool {
 
 fn ai_exportable(preset: &AiPreset) -> bool {
     stored_kind(preset) == SHAREABLE_KIND
+        && !preset.is_builtin_llama()
         && shareable_address(&preset.base_url).is_some()
         && !is_unchanged_ai_template(preset)
 }
@@ -735,6 +736,8 @@ mod tests {
     #[test]
     fn export_leaves_out_builtin_templates_and_placeholders() {
         let mut config = config_with_user_presets();
+        // Configs from before plan `ai-polish-setup` still hold the old AI templates.
+        config.ai_presets.extend(AiPreset::legacy_templates_v1());
         // An edited shipped template (the address filled in) is the user's own setup now.
         let lan = config
             .ai_presets
@@ -756,7 +759,8 @@ mod tests {
             .into_iter()
             .map(|candidate| candidate.id)
             .collect();
-        assert_eq!(ai, vec!["builtin-ai-ollama-lan", "ai-office"]);
+        // The Built-in (this Mac) AI preset is never offered either.
+        assert_eq!(ai, vec!["ai-office", "builtin-ai-ollama-lan"]);
     }
 
     #[test]

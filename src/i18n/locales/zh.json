@@ -253,8 +253,8 @@
       "microphoneSub": "选择你的麦克风",
       "speechRecognition": "语音识别",
       "speechRecognitionSub": "把你的语音转成文字。它在这台 Mac 上运行。",
-      "aiPolish": "AI 润色服务",
-      "aiPolishSub": "选择 AI 服务并测试",
+      "aiPolish": "AI 润色",
+      "aiPolishSub": "整理你说的话：去掉口头禅、应用更正、加上标点。",
       "dictate": "听写",
       "dictateSub": "设置快捷键并试用一次",
       "translate": "翻译",
@@ -267,21 +267,6 @@
       "next": "下一步",
       "finish": "完成",
       "close": "关闭"
-    },
-    "guide": {
-      "howTo": "如何设置",
-      "thisMac": "这台 Mac",
-      "otherComputer": "局域网中的另一台电脑",
-      "cloud": "使用你自己密钥的云服务",
-      "openFullGuide": "打开完整指南",
-      "copy": "复制命令",
-      "copied": "已复制",
-      "ai": {
-        "thisMac": "在“终端”中运行以下命令：安装 Ollama、下载模型，然后启动 Ollama。",
-        "thisMacThen": "然后选择“Ollama on this Mac”并点击“测试”。",
-        "otherComputer": "在那台电脑上安装 Ollama，设置 OLLAMA_HOST=0.0.0.0:11434 让这台 Mac 可以连接，并下载同一个模型。选择“Ollama on another computer”，把 <computer-ip> 换成它的地址，然后点击“测试”。",
-        "cloud": "选择“OpenAI (your key)”或“Groq (your key)”，粘贴你的 API Key 并点击“测试”。之后转写文字会发送到该服务。"
-      }
     }
   },
   "capsule": {
@@ -402,12 +387,10 @@
     "storedLocally": "保存在这台 Mac 的 macOS 钥匙串中。",
     "credentialSaveFailed": "无法保存 API Key 到系统凭据库。{{details}}",
     "model": "模型",
-    "fetchModels": "获取可用模型",
-    "modelsAvailable": "{{count}} 个模型可用",
     "baseUrl": "Base URL",
-    "enableAiPolish": "AI 整理听写",
+    "enableAiPolish": "整理听写内容",
     "enableAiPolishDesc": "输出前清理口癖、标点和语序。关闭后会直接输出原始转写。",
-    "contextAdaptation": "根据当前应用调整写作风格",
+    "contextAdaptation": "根据当前应用调整",
     "contextAdaptationHint": "只使用本地识别的应用类别来调整表达方式。",
     "contextAdaptationApps": "根据上下文适配的应用",
     "lastDictationContext": "上次听写场景",
@@ -516,7 +499,13 @@
     "switchLanguageHint": "仅在翻译录音进行时生效：切换到下一种翻译语言。",
     "switchLanguageReset": "使用 Shift（左右均可）",
     "eitherShift": "Shift（左右均可）",
-    "shortcutOff": "关闭"
+    "shortcutOff": "关闭",
+    "enableAiPolishHelp": "关闭后按原话粘贴",
+    "contextAdaptationHelp": "邮件、聊天和文档各用合适的语气",
+    "polishStyleMinimalDetail": "只做修正",
+    "polishStyleCleanDetail": "默认",
+    "polishStyleStructuredDetail": "列表",
+    "polishStyleProfessionalDetail": "正式"
   },
   "contextFamilies": {
     "email": "邮件",
@@ -742,25 +731,12 @@
       "zhHans": "简体中文",
       "zhHantHK": "繁體中文（香港）",
       "zhHantTW": "繁體中文（台灣）"
-    }
+    },
+    "add": "添加"
   },
   "presets": {
-    "preset": "预设",
-    "name": "预设名称",
     "unnamed": "未命名预设",
-    "saveAsNew": "另存为新预设",
-    "delete": "删除",
-    "deleteLastDisabled": "至少需要保留一个预设。",
-    "copyName": "{{name}} 副本",
-    "builtinHint": "内置预设。可以直接编辑，也可以另存为新预设。",
-    "apiKeyOptional": "API Key（可选）",
-    "apiKeyPlaceholder": "本地服务可留空",
-    "extraFields": "额外请求字段（JSON 对象）",
-    "extraFieldsHint": "会加入每个对话请求。Qwen3.5 等思考模型需要 {\"reasoning_effort\": \"none\"}。",
-    "extraFieldsInvalid": "这不是 JSON 对象，因此不会保存。仍使用上一次有效的值。",
-    "latency": "{{ms}} 毫秒",
-    "placeholderUrl": "请把服务地址中的 <computer-ip> 换成运行服务的那台电脑的地址。",
-    "aiTestHelp": "这个时间包括发送一个单词的请求、模型回复和下载。润色真实文字会更久。"
+    "extraFieldsInvalid": "这不是 JSON 对象，因此不会保存。仍使用上一次有效的值。"
   },
   "presetShare": {
     "import": "导入…",
@@ -911,7 +887,6 @@
     "cancel": "取消",
     "testAndUse": "测试并使用",
     "learnMore": "了解更多",
-    "learnMoreAbout": "支持的服务和地址。",
     "address": "地址",
     "model": "模型",
     "apiKey": "API 密钥",
@@ -938,6 +913,50 @@
     },
     "languageGroup": "语言",
     "spokenLanguage": "说话语言",
-    "spokenLanguageHelp": "自动检测可以处理混合语言"
+    "spokenLanguageHelp": "自动检测可以处理混合语言",
+    "notAvailable": "这台 Mac 不可用"
+  },
+  "ai": {
+    "engineLabel": "AI 润色使用",
+    "engines": {
+      "builtin": {
+        "title": "内置",
+        "detail": "在这台 Mac 上运行一个小型开源模型"
+      },
+      "server": {
+        "title": "你的服务器或 API 密钥",
+        "detail": "Ollama、OpenAI、Groq、OpenRouter…"
+      }
+    },
+    "advanced": "高级",
+    "extraFields": "额外字段",
+    "extraFieldsHint": "添加到每个聊天请求的 JSON，例如默认会思考的模型可用 {\"reasoning_effort\": \"none\"}。",
+    "skipHint": "听写仍可使用，会粘贴原始转写文字"
+  },
+  "aiSetup": {
+    "builtinBody": "在这台 Mac 上的 Typelite 里运行一个小型开源模型。无需安装其他软件。",
+    "progressLabel": "AI 模型下载",
+    "testing": "正在启动模型并测试…",
+    "models": {
+      "best": "质量最好",
+      "faster": "更快"
+    },
+    "modelDetail": {
+      "best": "Qwen3 4B Instruct · {{size}}",
+      "faster": "Qwen3 1.7B · {{size}}"
+    },
+    "errors": {
+      "load": "{{reason}}",
+      "serverMissing": "这个 Typelite 版本没有内置 AI 服务器。请改用你自己的服务器或 API 密钥。"
+    },
+    "hardware": {
+      "none": "这台 Mac 无法流畅运行内置 AI 模型。请改用你自己的服务器或 API 密钥。",
+      "serverMissing": "这个 Typelite 版本没有内置 AI 服务器。请改用你自己的服务器或 API 密钥。",
+      "leftOut": {
+        "needs_apple_silicon": "内置 AI 需要 Apple 芯片的 Mac。",
+        "needs_memory": "较大的模型需要 16 GB 内存。",
+        "needs_disk_space": "可用空间不足，无法使用较大的模型。"
+      }
+    }
   }
 }

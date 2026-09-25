@@ -78,10 +78,16 @@ pub struct InstalledModel {
     pub size_bytes: u64,
 }
 
-/// The known models whose file is fully in place (a `.part` file does not count). The file
-/// size must match; the checksum was checked before the file got its name.
+/// The known speech models whose file is fully in place (see [`installed_from`]).
 pub fn installed_models(dir: &Path) -> Vec<InstalledModel> {
-    KNOWN_MODELS
+    installed_from(dir, KNOWN_MODELS)
+}
+
+/// The models of `table` whose file is fully in place (a `.part` file does not count). The file
+/// size must match; the checksum was checked before the file got its name. Used for the speech
+/// models and, with their own table, the built-in AI models (plan `ai-polish-setup`).
+pub fn installed_from(dir: &Path, table: &[KnownModel]) -> Vec<InstalledModel> {
+    table
         .iter()
         .filter_map(|model| {
             let metadata = std::fs::metadata(dir.join(model.file_name)).ok()?;
@@ -96,7 +102,12 @@ pub fn installed_models(dir: &Path) -> Vec<InstalledModel> {
 
 /// `(id, file name)` of each installed model, for `AppConfig::reconcile_builtin_models`.
 pub fn installed_pairs(dir: &Path) -> Vec<(String, String)> {
-    installed_models(dir)
+    pairs(installed_models(dir))
+}
+
+/// `(id, file name)` of each model in `installed`.
+pub fn pairs(installed: Vec<InstalledModel>) -> Vec<(String, String)> {
+    installed
         .into_iter()
         .map(|model| (model.id, model.file_name))
         .collect()
@@ -134,9 +145,12 @@ pub enum DownloadError {
     Cancelled,
     /// Writing the file failed.
     Io { reason: String },
-    /// The file is in place but whisper.cpp could not load or run it (the automatic test
-    /// after the download).
+    /// The file is in place but the engine (whisper.cpp, or llama-server for AI) could not
+    /// load or run it (the automatic test after the download).
     Load { reason: String },
+    /// Plan `ai-polish-setup`: this copy of Typelite was built without the `llama-server` program,
+    /// so Built-in AI cannot run.
+    ServerMissing,
 }
 
 impl std::fmt::Display for DownloadError {
@@ -154,6 +168,7 @@ impl std::fmt::Display for DownloadError {
             DownloadError::Cancelled => write!(f, "cancelled"),
             DownloadError::Io { reason } => write!(f, "file error: {reason}"),
             DownloadError::Load { reason } => write!(f, "{reason}"),
+            DownloadError::ServerMissing => write!(f, "the built-in AI server is missing"),
         }
     }
 }

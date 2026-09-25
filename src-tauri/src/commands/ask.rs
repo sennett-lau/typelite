@@ -707,14 +707,39 @@ fn append_final_transcript(transcript: &Arc<Mutex<String>>, text: &str) -> Strin
     current.trim().to_string()
 }
 
+/// Plan `ai-polish-setup`: the config with the active AI preset's runtime address filled in (for
+/// the Built-in preset, Typelite's own server, started when needed), and the key to send.
+async fn resolved_ai_config(
+    config: &storage::AppConfig,
+) -> Result<(storage::AppConfig, String), AppError> {
+    let api_key = resolve_llm_config_secret(config, &SystemCredentialVault)
+        .map_err(|e| AppError::Config(e.to_string()))?;
+    let active = config.active_ai_preset();
+    if !active.is_builtin_llama() {
+        return Ok((config.clone(), api_key));
+    }
+    let (resolved, api_key) = crate::llm::builtin::resolve_preset(active, api_key)
+        .await
+        .map_err(|e| AppError::Config(e.to_string()))?;
+    let mut config = config.clone();
+    if let Some(preset) = config
+        .ai_presets
+        .iter_mut()
+        .find(|preset| preset.id == resolved.id)
+    {
+        *preset = resolved;
+    }
+    Ok((config, api_key))
+}
+
 async fn answer_question(
     config: &storage::AppConfig,
     client: &reqwest::Client,
     question: &str,
     selected_text: Option<&str>,
 ) -> Result<String, AppError> {
-    let llm_api_key = resolve_llm_config_secret(config, &SystemCredentialVault)
-        .map_err(|e| AppError::Config(e.to_string()))?;
+    let (config, llm_api_key) = resolved_ai_config(config).await?;
+    let config = &config;
 
     if should_use_byok(config) {
         return ask_via_byok(client, config, &llm_api_key, question, selected_text)
@@ -780,11 +805,14 @@ async fn check_live_question(
     question: &str,
 ) -> crate::llm::live_question::LiveCheck {
     let started = std::time::Instant::now();
-    let check = match resolve_llm_config_secret(config, &SystemCredentialVault) {
-        Ok(api_key) => {
-            let llm_config = crate::llm::LlmConfig::from_preset(config.active_ai_preset(), api_key);
-            crate::llm::live_question::classify(client, &llm_config, question).await
-        }
+    let llm_config = match resolve_llm_config_secret(config, &SystemCredentialVault) {
+        Ok(api_key) => crate::llm::builtin::llm_config(config.active_ai_preset(), api_key)
+            .await
+            .map_err(|e| e.to_string()),
+        Err(error) => Err(error.to_string()),
+    };
+    let check = match llm_config {
+        Ok(llm_config) => crate::llm::live_question::classify(client, &llm_config, question).await,
         Err(error) => {
             tracing::warn!("Live-question check has no AI credential ({error}); using keywords");
             let (live, reason) = crate::llm::live_question::keyword_check(question);
@@ -1836,6 +1864,11 @@ mod tests {
     #[test]
     fn byok_ask_needs_base_url_and_model_but_no_key() {
         let mut config = storage::AppConfig::default();
+        // The Built-in preset gets its address only once its server runs.
+        assert!(!should_use_byok(&config));
+        config.ai_presets[0] =
+            storage::AiPreset::server("mine", "Mine", "http://192.0.2.3:11434/v1", "m");
+        config.active_ai_preset_id = "mine".to_string();
         assert!(should_use_byok(&config));
 
         config.ai_presets[0].model = " ".to_string();

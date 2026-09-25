@@ -6,15 +6,29 @@ import { getLatestMappingCandidate, listCustomAppMappings } from '../../lib/taur
 import type { CustomAppMappingView, MappingCandidateView } from '../../lib/tauri'
 import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
-import { ChevronDown, MoreHorizontal } from 'lucide-react'
-import { AiPresetEditor } from './AiPresetEditor'
-import { PresetShareButtons } from './PresetShareButtons'
+import { MoreHorizontal } from 'lucide-react'
+import { EngineChoice } from '../Speech/SpeechEngineChoice'
+import { AI_SERVICE } from '../Speech/services'
 import { AppLogo } from '../AppLogo'
 import { ContextAdaptationApps } from './ContextAdaptationApps'
 import { TranslationTargets } from './TranslationTargets'
 import { AppStyleMappingDialog } from './AppStyleMappingDialog'
 import { ManageAppMappingsDialog } from './ManageAppMappingsDialog'
 
+const POLISH_STYLES: PolishStyle[] = ['minimal', 'clean', 'structured', 'professional']
+const STYLE_KEY: Record<PolishStyle, string> = {
+  minimal: 'Minimal',
+  clean: 'Clean',
+  structured: 'Structured',
+  professional: 'Professional',
+}
+
+/**
+ * Settings → AI (plan `ai-polish-setup`): "AI polish uses" (Built-in or your server or API key,
+ * with their details), then Polish (clean-up switch, style cards, match the app, the last app and
+ * browser access), Translation (language chips, always translate) and a collapsed Advanced
+ * (selected text, custom instructions).
+ */
 export function LlmPane() {
   const config = useAppStore((s) => s.config)
   const updateConfig = useAppStore((s) => s.updateConfig)
@@ -93,12 +107,10 @@ export function LlmPane() {
 
   return (
     <div>
-      <AiPresetEditor />
-      {/* Plan `preset-sharing`: export and import AI presets. */}
-      <PresetShareButtons service="ai" />
+      <EngineChoice service={AI_SERVICE} />
 
       <Group label={t('settings.groupPolish')}>
-        <Row label={t('settings.enableAiPolish')}>
+        <Row label={t('settings.enableAiPolish')} help={t('settings.enableAiPolishHelp')}>
           <Toggle
             checked={config.polish_enabled}
             onChange={(checked) => updateConfig({ polish_enabled: checked })}
@@ -108,27 +120,51 @@ export function LlmPane() {
         </Row>
 
         {config.polish_enabled && (
-          <Row label={t('settings.polishStyle')}>
-            <select
+          <Row label={t('settings.polishStyle')} layout="stacked">
+            <div
+              role="radiogroup"
               aria-label={t('settings.polishStyle')}
-              value={config.polish_style}
-              onChange={(e) => updateConfig({ polish_style: e.target.value as PolishStyle })}
-              className="popup"
+              className="option-cards option-cards-four w-full"
             >
-              <option value="minimal">{t('settings.polishStyleMinimal')}</option>
-              <option value="clean">{t('settings.polishStyleClean')}</option>
-              <option value="structured">{t('settings.polishStyleStructured')}</option>
-              <option value="professional">{t('settings.polishStyleProfessional')}</option>
-            </select>
+              {POLISH_STYLES.map((style) => (
+                <button
+                  key={style}
+                  type="button"
+                  role="radio"
+                  aria-checked={config.polish_style === style}
+                  onClick={() => updateConfig({ polish_style: style })}
+                  className="option-card"
+                >
+                  <span className="option-card-title">
+                    {t(`settings.polishStyle${STYLE_KEY[style]}`)}
+                  </span>
+                  <span className="option-card-detail">
+                    {t(`settings.polishStyle${STYLE_KEY[style]}Detail`)}
+                  </span>
+                </button>
+              ))}
+            </div>
           </Row>
         )}
 
         <Row
           label={t('settings.contextAdaptation')}
           help={
-            <ContextAdaptationApps
-              disabled={!config.polish_enabled || !config.context_adaptation_enabled}
-            />
+            <>
+              <span className="block">{t('settings.contextAdaptationHelp')}</span>
+              <ContextAdaptationApps
+                disabled={!config.polish_enabled || !config.context_adaptation_enabled}
+              />
+              {appMappings.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setManageMappingsOpen(true)}
+                  className="link-button mt-1"
+                >
+                  {t('settings.manageAppMappings')}
+                </button>
+              )}
+            </>
           }
         >
           <Toggle
@@ -205,7 +241,15 @@ export function LlmPane() {
       </Group>
 
       <Group label={t('settings.groupTranslation')}>
-        <Row label={t('settings.translationMode')}>
+        {/* The languages are used by the Translate shortcut too, so they always show,
+            not only when "Always translate output" is on. */}
+        <Row label={t('translate.targetsLabel')} help={t('translate.switchHint')} layout="stacked">
+          <TranslationTargets
+            value={config.translation}
+            onChange={(translation) => updateConfig({ translation })}
+          />
+        </Row>
+        <Row label={t('settings.translationMode')} help={t('settings.translationModeDesc')}>
           <Toggle
             checked={config.translate_enabled}
             onChange={(checked) => updateConfig({ translate_enabled: checked })}
@@ -213,66 +257,51 @@ export function LlmPane() {
             hideLabel
           />
         </Row>
-        {/* The languages are used by the Translate shortcut too, so they always show,
-            not only when "Always translate output" is on. */}
-        <Row>
-          <TranslationTargets
-            value={config.translation}
-            onChange={(translation) => updateConfig({ translation })}
-          />
-        </Row>
       </Group>
 
-      <Group label={t('settings.groupAdvanced')}>
+      <div className="mx-1 mt-4">
         <button
           type="button"
           aria-expanded={polishAdvancedOpen}
           onClick={() => setPolishAdvancedOpen((open) => !open)}
-          className="row w-full cursor-pointer border-none bg-transparent text-left"
+          className="disclosure"
         >
-          <span className="row-label">{t('settings.advancedPolishSettings')}</span>
-          <ChevronDown
-            size={14}
-            className={`flex-none text-text-tertiary transition-transform ${
-              polishAdvancedOpen ? 'rotate-180' : ''
-            }`}
-          />
+          {t('settings.groupAdvanced')}
         </button>
-
-        {polishAdvancedOpen && (
-          <>
-            <Row
+      </div>
+      {polishAdvancedOpen && (
+        <Group flush className="mt-2">
+          <Row
+            label={t('settings.selectedTextContext')}
+            help={t('settings.selectedTextContextDesc')}
+          >
+            <Toggle
+              checked={config.selected_text_enabled}
+              onChange={(checked) => updateConfig({ selected_text_enabled: checked })}
               label={t('settings.selectedTextContext')}
-              help={t('settings.selectedTextContextDesc')}
+              hideLabel
+            />
+          </Row>
+
+          {config.polish_enabled && (
+            <Row
+              label={t('settings.customPolishInstructions')}
+              help={t('settings.customPolishInstructionsCount', { count: polishPromptLength })}
+              layout="stacked"
             >
-              <Toggle
-                checked={config.selected_text_enabled}
-                onChange={(checked) => updateConfig({ selected_text_enabled: checked })}
-                label={t('settings.selectedTextContext')}
-                hideLabel
+              <textarea
+                aria-label={t('settings.customPolishInstructions')}
+                value={config.polish_custom_prompt}
+                onChange={(e) => updateConfig({ polish_custom_prompt: e.target.value })}
+                maxLength={2000}
+                rows={4}
+                placeholder={t('settings.customPolishInstructionsPlaceholder')}
+                className="field w-full resize-y"
               />
             </Row>
-
-            {config.polish_enabled && (
-              <Row
-                label={t('settings.customPolishInstructions')}
-                help={t('settings.customPolishInstructionsCount', { count: polishPromptLength })}
-                layout="stacked"
-              >
-                <textarea
-                  aria-label={t('settings.customPolishInstructions')}
-                  value={config.polish_custom_prompt}
-                  onChange={(e) => updateConfig({ polish_custom_prompt: e.target.value })}
-                  maxLength={2000}
-                  rows={4}
-                  placeholder={t('settings.customPolishInstructionsPlaceholder')}
-                  className="field w-full resize-y"
-                />
-              </Row>
-            )}
-          </>
-        )}
-      </Group>
+          )}
+        </Group>
+      )}
 
       {appStyleDialogOpen && lastContext && (
         <AppStyleMappingDialog

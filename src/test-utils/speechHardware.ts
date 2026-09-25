@@ -1,7 +1,12 @@
 import type { SpeechHardwareCheck } from '../lib/tauri'
-import type { SpeechPreset } from '../stores/appStore'
+import type { AiPreset, SpeechPreset } from '../stores/appStore'
 
-const SIZES: Record<string, number> = { 'large-v3-turbo': 574_041_195, small: 190_085_487 }
+const SIZES: Record<string, number> = {
+  'large-v3-turbo': 574_041_195,
+  small: 190_085_487,
+  'qwen3-4b': 2_497_281_120,
+  'qwen3-1.7b': 1_107_409_472,
+}
 
 /**
  * A hardware check result offering `models` (plan `two-tab-speech`), as the backend would send it.
@@ -11,10 +16,12 @@ export function hardwareCheck(
   options: Partial<SpeechHardwareCheck['hardware']> & {
     leftOut?: SpeechHardwareCheck['offer']['leftOut']
     neededBytes?: number | null
+    serverAvailable?: boolean
   } = {},
 ): SpeechHardwareCheck {
-  const { leftOut = null, neededBytes = null, ...hardware } = options
+  const { leftOut = null, neededBytes = null, serverAvailable, ...hardware } = options
   return {
+    ...(serverAvailable === undefined ? {} : { serverAvailable }),
     hardware: {
       chipKind: 'apple_silicon',
       chipName: 'Apple M1 Pro',
@@ -69,5 +76,36 @@ export function installedBuiltin(
     language: 'auto',
     builtin: true,
     verified_at,
+  }
+}
+
+/** Plan `ai-polish-setup`: the Built-in AI preset with an installed model. */
+export function installedAiBuiltin(model = 'qwen3-4b', verified_at: number | null = 5): AiPreset {
+  return {
+    id: 'builtin-ai-this-mac',
+    name: 'Built-in (this Mac)',
+    kind: 'builtin',
+    base_url: '',
+    model,
+    model_file:
+      model === 'qwen3-1.7b' ? 'Qwen3-1.7B-Q4_K_M.gguf' : 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+    extra_request_fields: {},
+    builtin: true,
+    verified_at,
+  }
+}
+
+/** Plan `ai-polish-setup`: a saved AI server or API key preset. */
+export function aiServerPreset(id: string, name: string, base_url: string, model = 'm'): AiPreset {
+  return {
+    id,
+    name,
+    kind: 'openai_compatible',
+    base_url,
+    model,
+    model_file: '',
+    extra_request_fields: {},
+    builtin: false,
+    verified_at: null,
   }
 }

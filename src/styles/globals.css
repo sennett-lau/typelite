@@ -730,6 +730,82 @@ body,
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
+  /* Plan `ai-polish-setup`: an engine this Mac cannot run ("Not available on this Mac"). */
+  .option-card:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  /* Plan `ai-polish-setup`: the four polish styles in one row (two on narrow windows). */
+  .option-cards-four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  @media (max-width: 720px) {
+    .option-cards-four {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Plan `ai-polish-setup`: translation languages as chips; the default one is tinted. */
+  .lang-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--color-bg-secondary);
+    font-size: 12px;
+  }
+  .lang-chip-default {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .lang-chip-label,
+  .lang-chip-remove {
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .lang-chip-default .lang-chip-label {
+    cursor: default;
+  }
+  .lang-chip-remove {
+    display: inline-flex;
+    color: var(--color-text-secondary);
+  }
+  .lang-chip-remove:hover {
+    color: var(--color-error);
+  }
+  .lang-chip-label:focus-visible,
+  .lang-chip-remove:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Plan `ai-polish-setup`: a quiet "▸ Advanced" toggle that opens more fields below it. */
+  .disclosure {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .disclosure::before {
+    content: '▸ ';
+  }
+  .disclosure[aria-expanded='true']::before {
+    content: '▾ ';
+  }
+  .disclosure:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
   .hardware-note {
     font-size: 11.5px;
     color: var(--color-text-secondary);

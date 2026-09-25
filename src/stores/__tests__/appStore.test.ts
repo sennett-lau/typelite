@@ -94,23 +94,21 @@ describe('appStore', () => {
         },
       ])
       expect(config.active_speech_preset_id).toBe('builtin-speech-this-mac')
-      expect(config.ai_presets.map((preset) => preset.id)).toEqual([
-        'builtin-ai-ollama-local',
-        'builtin-ai-ollama-lan',
-        'builtin-ai-openai',
-        'builtin-ai-groq',
+      // Plan `ai-polish-setup`: AI starts on its Built-in preset too, before a model is downloaded.
+      expect(config.ai_presets).toEqual([
+        {
+          id: 'builtin-ai-this-mac',
+          name: 'Built-in (this Mac)',
+          kind: 'builtin',
+          base_url: '',
+          model: 'qwen3-4b',
+          model_file: '',
+          extra_request_fields: {},
+          builtin: true,
+          verified_at: null,
+        },
       ])
-      expect(config.ai_presets[0]).toEqual({
-        id: 'builtin-ai-ollama-local',
-        name: 'Ollama on this Mac',
-        base_url: 'http://127.0.0.1:11434/v1',
-        model: 'qwen3:4b-instruct-2507-q4_K_M',
-        extra_request_fields: {},
-        builtin: true,
-        verified_at: null,
-      })
-      expect(config.active_ai_preset_id).toBe('builtin-ai-ollama-local')
-      expect(config.ai_presets[1].base_url).toBe('http://<computer-ip>:11434/v1')
+      expect(config.active_ai_preset_id).toBe('builtin-ai-this-mac')
       expect(config.shortcut_tour_completed).toBe(false)
       expect(config.shortcut_tour_prompt_dismissed).toBe(false)
       expect(JSON.stringify(config)).not.toMatch(/api_key/)
@@ -143,13 +141,7 @@ describe('appStore', () => {
       })
 
       const { config } = getState()
-      expect(config.ai_presets.map((preset) => preset.id)).toEqual([
-        'builtin-ai-ollama-local',
-        'builtin-ai-ollama-lan',
-        'builtin-ai-openai',
-        'builtin-ai-groq',
-        'copy',
-      ])
+      expect(config.ai_presets.map((preset) => preset.id)).toEqual(['builtin-ai-this-mac', 'copy'])
       expect(findActivePreset(config.ai_presets, config.active_ai_preset_id)).toBe(copy)
       expect(config.speech_presets).toHaveLength(1)
     })

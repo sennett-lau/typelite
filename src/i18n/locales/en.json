@@ -253,8 +253,8 @@
       "microphoneSub": "Choose your microphone",
       "speechRecognition": "Speech recognition",
       "speechRecognitionSub": "Turns your voice into text. It runs on this Mac.",
-      "aiPolish": "AI Polish Service",
-      "aiPolishSub": "Pick an AI service and test it",
+      "aiPolish": "AI polish",
+      "aiPolishSub": "Cleans up what you said: fillers out, corrections applied, punctuation in.",
       "dictate": "Dictate",
       "dictateSub": "Set your shortcut and try it once",
       "translate": "Translate",
@@ -267,21 +267,6 @@
       "next": "Next",
       "finish": "Finish",
       "close": "Close"
-    },
-    "guide": {
-      "howTo": "How to set this up",
-      "thisMac": "This Mac",
-      "otherComputer": "Another computer on your network",
-      "cloud": "A cloud service with your own key",
-      "openFullGuide": "Open full guide",
-      "copy": "Copy command",
-      "copied": "Copied",
-      "ai": {
-        "thisMac": "Run these in Terminal: install Ollama, download the model, then start Ollama.",
-        "thisMacThen": "Then pick “Ollama on this Mac” and press Test.",
-        "otherComputer": "Install Ollama there, set OLLAMA_HOST=0.0.0.0:11434 so this Mac can reach it, and pull the same model. Pick “Ollama on another computer”, replace <computer-ip> with its address, then press Test.",
-        "cloud": "Pick “OpenAI (your key)” or “Groq (your key)”, paste your API key and press Test. Your transcripts are then sent to that service."
-      }
     }
   },
   "capsule": {
@@ -402,12 +387,10 @@
     "storedLocally": "Stored in the macOS Keychain on this Mac.",
     "credentialSaveFailed": "Could not save API key to OS vault. {{details}}",
     "model": "Model",
-    "fetchModels": "Fetch available models",
-    "modelsAvailable": "{{count}} models available",
     "baseUrl": "Base URL",
-    "enableAiPolish": "AI cleanup for dictation",
+    "enableAiPolish": "Clean up dictation",
     "enableAiPolishDesc": "Cleans up fillers, punctuation, and wording before output. Turn off to output raw transcription.",
-    "contextAdaptation": "Adapt writing to the current app",
+    "contextAdaptation": "Match the app you’re in",
     "contextAdaptationHint": "Uses a private local app category to shape the writing style.",
     "contextAdaptationApps": "Apps adapted by context",
     "lastDictationContext": "Last dictation context",
@@ -516,7 +499,13 @@
     "switchLanguageHint": "Only while a Translate recording runs: moves to the next translation language.",
     "switchLanguageReset": "Use Shift (either side)",
     "eitherShift": "Shift (either side)",
-    "shortcutOff": "Off"
+    "shortcutOff": "Off",
+    "enableAiPolishHelp": "Off pastes exactly what you said",
+    "contextAdaptationHelp": "Email, chat and docs each get their own tone",
+    "polishStyleMinimalDetail": "Fix only",
+    "polishStyleCleanDetail": "Default",
+    "polishStyleStructuredDetail": "Lists",
+    "polishStyleProfessionalDetail": "Formal"
   },
   "contextFamilies": {
     "email": "Email",
@@ -742,25 +731,12 @@
       "zhHans": "Chinese (Simplified)",
       "zhHantHK": "Chinese (Traditional, Hong Kong)",
       "zhHantTW": "Chinese (Traditional, Taiwan)"
-    }
+    },
+    "add": "Add"
   },
   "presets": {
-    "preset": "Preset",
-    "name": "Preset name",
     "unnamed": "Untitled preset",
-    "saveAsNew": "Save as new preset",
-    "delete": "Delete",
-    "deleteLastDisabled": "Keep at least one preset.",
-    "copyName": "{{name}} copy",
-    "builtinHint": "Built-in preset. You can edit it, or save a copy as a new preset.",
-    "apiKeyOptional": "API key (optional)",
-    "apiKeyPlaceholder": "Leave empty for local servers",
-    "extraFields": "Extra request fields (JSON object)",
-    "extraFieldsHint": "Added to every chat request. Thinking models such as Qwen3.5 need {\"reasoning_effort\": \"none\"}.",
-    "extraFieldsInvalid": "This is not a JSON object, so it is not saved. The last valid value is kept.",
-    "latency": "{{ms}} ms",
-    "placeholderUrl": "Replace <computer-ip> in the base URL with the address of the computer that runs the server.",
-    "aiTestHelp": "The time includes sending a one-word request, the model's reply, and the download. Polishing real text takes longer."
+    "extraFieldsInvalid": "This is not a JSON object, so it is not saved. The last valid value is kept."
   },
   "presetShare": {
     "import": "Import…",
@@ -911,7 +887,6 @@
     "cancel": "Cancel",
     "testAndUse": "Test and use",
     "learnMore": "Learn more",
-    "learnMoreAbout": "about supported services and addresses.",
     "address": "Address",
     "model": "Model",
     "apiKey": "API key",
@@ -938,6 +913,50 @@
     },
     "languageGroup": "Language",
     "spokenLanguage": "Spoken language",
-    "spokenLanguageHelp": "Auto-detect handles mixed languages"
+    "spokenLanguageHelp": "Auto-detect handles mixed languages",
+    "notAvailable": "Not available on this Mac"
+  },
+  "ai": {
+    "engineLabel": "AI polish uses",
+    "engines": {
+      "builtin": {
+        "title": "Built-in",
+        "detail": "Runs a small open model on this Mac"
+      },
+      "server": {
+        "title": "Your server or API key",
+        "detail": "Ollama, OpenAI, Groq, OpenRouter…"
+      }
+    },
+    "advanced": "Advanced",
+    "extraFields": "Extra fields",
+    "extraFieldsHint": "JSON added to every chat request, for example {\"reasoning_effort\": \"none\"} for models that think by default.",
+    "skipHint": "Dictation still works; you get the raw transcript"
+  },
+  "aiSetup": {
+    "builtinBody": "Runs a small open model inside Typelite on this Mac. No other software needed.",
+    "progressLabel": "AI model download",
+    "testing": "Starting the model and running a test…",
+    "models": {
+      "best": "Best quality",
+      "faster": "Faster"
+    },
+    "modelDetail": {
+      "best": "Qwen3 4B Instruct · {{size}}",
+      "faster": "Qwen3 1.7B · {{size}}"
+    },
+    "errors": {
+      "load": "{{reason}}",
+      "serverMissing": "This copy of Typelite was built without the built-in AI server. Use your own server or API key instead."
+    },
+    "hardware": {
+      "none": "This Mac can’t run a built-in AI model well. Use your own server or API key instead.",
+      "serverMissing": "This copy of Typelite was built without the built-in AI server. Use your own server or API key instead.",
+      "leftOut": {
+        "needs_apple_silicon": "Built-in AI needs an Apple Silicon Mac.",
+        "needs_memory": "The larger model needs 16 GB of memory.",
+        "needs_disk_space": "Not enough free space for the larger model."
+      }
+    }
   }
 }

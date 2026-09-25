@@ -50,7 +50,7 @@ building a feature.
 
 ```
 Typelite ──audio──> speech recognition (built-in whisper.cpp, or an OpenAI-compatible server)
-         ──text───> AI polish (an OpenAI-compatible chat server, e.g. Ollama on a GPU PC)
+         ──text───> AI polish (built-in llama-server, or an OpenAI-compatible chat server)
          <─polished text── paste into the focused app
 ```
 
@@ -68,7 +68,8 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
   `npx tsc --noEmit`, `npx eslint src/`, `npx prettier --check src`.
 - End-to-end against real servers: `bash scripts/e2e.sh` (whisper.cpp + an OpenAI-compatible
   chat server; set `TYPELITE_E2E_AI_URL` etc., see `src-tauri/tests/e2e_services.rs`). Speech
-  audio is synthesised with macOS `say`.
+  audio is synthesised with macOS `say`. Built-in AI: `bash scripts/build-llama-server.sh`, then
+  set `TYPELITE_E2E_LLAMA_MODEL` to a Qwen3 GGUF file.
 - The app logs to `~/Library/Logs/Typelite/typelite.log` (timings, sizes, errors; never dictated
   text). Each speech request logs endpoint, status and duration; `[Pipeline Timing]` lines give
   the per-step breakdown. Ask the user for this file when debugging a report.
@@ -111,6 +112,11 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
   `reasoning_effort: "none"`.
 - Apple Speech needs one fixed locale and has no auto-detect. whisper.cpp with `-l auto` handles
   mixed English, Cantonese and Mandarin (Cantonese comes out as standard written Chinese).
+- Built-in AI (`llm/builtin.rs`): llama-server built with embedded Metal shaders compiles them
+  on its first launch, which blocks for one to two minutes (even `llama-server --version`);
+  macOS caches the result per binary. Tauri's build script fails when a listed `externalBin` is
+  missing, so llama-server is listed only in `src-tauri/tauri.bundle.conf.json`
+  (`npm run build:app`).
 - Only Command Line Tools are installed on this Mac. `xcodebuild` needs full Xcode.
 - The global Rust default is pinned to 1.85.0 on purpose. Use `rustup override set stable` per
   project instead of changing the default.

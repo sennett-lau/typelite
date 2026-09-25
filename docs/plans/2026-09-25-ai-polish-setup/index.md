@@ -35,6 +35,10 @@ Status: building — 2026-09-25
 | Model files use the same download, resume and checksum code as the speech models | One tested path. |
 | When no model suits the Mac: no model cards, no status row, no Set up / Download button; the Built-in option shows "Not available on this Mac" and cannot be picked | The user asked for the download section to be hidden, not shown disabled. |
 | "Learn more" sits on the "… uses" header of each Settings page | The link is visible whichever option is picked; replaces the scattered links. |
+| The external binary is listed only in a bundle config overlay (`tauri.bundle.conf.json`) | Tauri's build script fails on a missing external binary; this keeps `cargo build` and `cargo test` working without it. |
+| The server gets a random API key on every start | It listens on 127.0.0.1, but any local program or web page could otherwise use it. |
+| Models come from Unsloth's Hugging Face repositories, pinned to a commit | Qwen publishes no Q4_K_M GGUF of these two models. |
+| Speech and AI share the setup code and screens, which take a "service" | One tested path for download, cards, sheet and form; no copies. |
 
 ## Parts
 
@@ -47,3 +51,6 @@ Status: building — 2026-09-25
 ## Open questions
 
 - Model choice for Cantonese quality (another agent is testing Qwen3.5); swap later if needed.
+- The first polish after the server starts takes one to two seconds longer than later ones,
+  because llama-server evaluates the long polish system prompt once and caches it. A warm-up
+  request at server start would hide this; not done yet.

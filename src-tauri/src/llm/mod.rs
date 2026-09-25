@@ -1,5 +1,7 @@
+pub mod builtin;
 pub mod context_policy;
 pub mod live_question;
+pub mod models;
 pub mod openai;
 pub mod prompt;
 pub mod protocol;

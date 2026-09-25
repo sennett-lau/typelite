@@ -21,6 +21,7 @@ import {
 import { applyVerificationEvent, type PresetVerificationEvent } from '../lib/readiness'
 import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/connectionStatus'
 import { useSpeechSetupStore } from '../stores/speechSetupStore'
+import { useAiSetupStore } from '../stores/aiSetupStore'
 import type { SpeechSetupStatus } from '../lib/tauri'
 
 type Unlisten = () => void | Promise<void>
@@ -182,6 +183,10 @@ export function useTauriEvents() {
     // leaving the step.
     addListener<SpeechSetupStatus>('speech-setup:status', (status) =>
       useSpeechSetupStore.getState().applyStatus(status),
+    )
+    // Plan `ai-polish-setup`: the same for the Built-in AI setup.
+    addListener<SpeechSetupStatus>('ai-setup:status', (status) =>
+      useAiSetupStore.getState().applyStatus(status),
     )
 
     addListener<void>('tray:settings', () => {

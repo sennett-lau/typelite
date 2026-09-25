@@ -81,6 +81,17 @@ pub struct HardwareCheck {
     pub offer: ModelOffer,
 }
 
+/// What one model needs from the Mac. Speech and AI (plan `ai-polish-setup`) each have a list of
+/// these, largest model first.
+#[derive(Debug, Clone, Copy)]
+pub struct ModelRule {
+    pub model: KnownModel,
+    /// Only offered on Apple Silicon.
+    pub needs_apple_silicon: bool,
+    /// Installed memory the model needs (0: no minimum).
+    pub min_memory_bytes: u64,
+}
+
 /// Applies the table of layout.md. A model that is already installed needs no free space.
 ///
 /// | Condition | Best accuracy | Faster |
@@ -90,60 +101,92 @@ pub struct HardwareCheck {
 /// | Free disk < 1.1 × large but ≥ 1.1 × small | not offered | offered |
 /// | Not enough disk for either | none; say how much space is needed | |
 pub fn offer_models(hardware: &Hardware, installed_ids: &[String]) -> ModelOffer {
-    let fits = |model: &KnownModel| {
-        installed_ids.iter().any(|id| id == model.id)
-            || hardware.free_bytes >= models::needed_free_bytes(model.size_bytes, 0)
-    };
     let (Some(best), Some(faster)) = (
         models::known_model(BEST_MODEL_ID),
         models::known_model(FASTER_MODEL_ID),
     ) else {
-        return ModelOffer {
-            models: Vec::new(),
-            left_out: None,
-            needed_bytes: None,
-        };
+        return offer_by_rules(hardware, &[], installed_ids);
     };
+    let rules = [
+        ModelRule {
+            model: *best,
+            needs_apple_silicon: true,
+            min_memory_bytes: MIN_MEMORY_FOR_BEST,
+        },
+        ModelRule {
+            model: *faster,
+            needs_apple_silicon: false,
+            min_memory_bytes: 0,
+        },
+    ];
+    offer_by_rules(hardware, &rules, installed_ids)
+}
 
-    let chip_ok = hardware.chip_kind == ChipKind::AppleSilicon;
-    let memory_ok = hardware.memory_bytes >= MIN_MEMORY_FOR_BEST;
-    let best_ok = chip_ok && memory_ok && fits(best);
-    let faster_ok = fits(faster);
-
-    let mut offered = Vec::new();
-    if best_ok {
-        offered.push(best);
-    }
-    if faster_ok {
-        offered.push(faster);
-    }
+/// The models of `rules` (largest first) this Mac is offered. Each needs its chip and memory,
+/// and free disk space of 1.1 × its size unless it is installed. With two offered the first is
+/// recommended. `left_out` says why the first rule's model is missing; when none is offered,
+/// `needed_bytes` is set if only the disk is short, otherwise `left_out` says why the least
+/// demanding model does not suit this Mac.
+pub fn offer_by_rules(
+    hardware: &Hardware,
+    rules: &[ModelRule],
+    installed_ids: &[String],
+) -> ModelOffer {
+    let chip_ok = |rule: &ModelRule| {
+        !rule.needs_apple_silicon || hardware.chip_kind == ChipKind::AppleSilicon
+    };
+    let memory_ok = |rule: &ModelRule| hardware.memory_bytes >= rule.min_memory_bytes;
+    let fits = |rule: &ModelRule| {
+        installed_ids.iter().any(|id| id == rule.model.id)
+            || hardware.free_bytes >= models::needed_free_bytes(rule.model.size_bytes, 0)
+    };
+    let reason = |rule: &ModelRule| {
+        if !chip_ok(rule) {
+            LeftOutReason::NeedsAppleSilicon
+        } else if !memory_ok(rule) {
+            LeftOutReason::NeedsMemory
+        } else {
+            LeftOutReason::NeedsDiskSpace
+        }
+    };
+    let offered: Vec<&ModelRule> = rules
+        .iter()
+        .filter(|rule| chip_ok(rule) && memory_ok(rule) && fits(rule))
+        .collect();
     let count = offered.len();
     let models = offered
-        .into_iter()
+        .iter()
         .enumerate()
-        .map(|(index, model)| OfferedModel {
-            id: model.id.to_string(),
-            size_bytes: model.size_bytes,
+        .map(|(index, rule)| OfferedModel {
+            id: rule.model.id.to_string(),
+            size_bytes: rule.model.size_bytes,
             recommended: index == 0 && count > 1,
         })
         .collect::<Vec<_>>();
 
     if models.is_empty() {
-        return ModelOffer {
-            models,
-            left_out: None,
-            needed_bytes: Some(models::needed_free_bytes(faster.size_bytes, 0)),
+        // The smallest model the chip and memory allow; only the disk is short for it.
+        let disk_short = rules
+            .iter()
+            .filter(|rule| chip_ok(rule) && memory_ok(rule))
+            .min_by_key(|rule| rule.model.size_bytes);
+        return match disk_short {
+            Some(rule) => ModelOffer {
+                models,
+                left_out: None,
+                needed_bytes: Some(models::needed_free_bytes(rule.model.size_bytes, 0)),
+            },
+            None => ModelOffer {
+                models,
+                left_out: rules.last().map(reason),
+                needed_bytes: None,
+            },
         };
     }
-    let left_out = (!best_ok).then(|| {
-        if !chip_ok {
-            LeftOutReason::NeedsAppleSilicon
-        } else if !memory_ok {
-            LeftOutReason::NeedsMemory
-        } else {
-            LeftOutReason::NeedsDiskSpace
-        }
-    });
+    let left_out = rules
+        .first()
+        .filter(|first| !offered.iter().any(|rule| rule.model.id == first.model.id))
+        .map(reason);
     ModelOffer {
         models,
         left_out,

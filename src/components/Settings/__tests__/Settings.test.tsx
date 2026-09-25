@@ -4,11 +4,7 @@
  * 覆盖以下范围：
  * 1. Tab 切换 — 点击侧边栏后正确显示对应 Pane 内容
  * 2. 动画结构 — AnimatePresence wrapper 正常渲染
- * 3. appStore.llmModels — 状态提升：初始值、读写、reset
- * 4. LlmPane preset 切换 — 清空 models 缓存
- * 5. LlmPane useEffect skip — 已有缓存时不再触发 debounce fetch
- * 6. DirtyBar — 配置变更后出现，Reset 后消失
- * 7. appStore getInitialState — llmModels 在 reset 后为空数组
+ * 3. DirtyBar — 配置变更后出现，Reset 后消失
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -217,9 +213,12 @@ vi.mock('../../../lib/tauri', () => ({
   setAutoStart: vi.fn().mockResolvedValue(undefined),
   testSpeechPreset: vi.fn().mockResolvedValue(1800),
   testAiPreset: vi.fn().mockResolvedValue(150),
+  // Plan `ai-polish-setup`: the Built-in AI setup store asks for these when Settings → AI opens.
+  getAiSetupStatus: vi.fn().mockResolvedValue(null),
+  listAiModels: vi.fn().mockResolvedValue([]),
+  getAiHardware: vi.fn().mockResolvedValue(null),
   readCredential: vi.fn().mockResolvedValue(null),
   setCredential: vi.fn().mockResolvedValue(undefined),
-  fetchAiModels: vi.fn().mockResolvedValue(['qwen3:4b', 'qwen3:8b']),
   addDictionaryEntry: vi.fn().mockResolvedValue(undefined),
   updateDictionaryEntry: vi.fn().mockResolvedValue(undefined),
   removeDictionaryEntry: vi.fn().mockResolvedValue(undefined),
@@ -1240,140 +1239,6 @@ describe('Settings 动画结构', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. appStore.llmModels — store 层测试
-// ─────────────────────────────────────────────────────────────────────────────
-describe('appStore.llmModels', () => {
-  beforeEach(() => {
-    resetStore()
-  })
-
-  it('初始值为空数组', () => {
-    expect(useAppStore.getState().llmModels).toEqual([])
-  })
-
-  it('setLlmModels 正确更新 store', () => {
-    useAppStore.getState().setLlmModels(['model-a', 'model-b'])
-    expect(useAppStore.getState().llmModels).toEqual(['model-a', 'model-b'])
-  })
-
-  it('setLlmModels([]) 可以清空缓存', () => {
-    useAppStore.getState().setLlmModels(['model-a'])
-    useAppStore.getState().setLlmModels([])
-    expect(useAppStore.getState().llmModels).toHaveLength(0)
-  })
-
-  it('store 中的 llmModels 不随组件卸载而丢失', () => {
-    useAppStore.getState().setLlmModels(['gpt-4o', 'qwen3:4b'])
-    // 模拟"切走再切回"：zustand store 不依赖组件生命周期
-    const { unmount } = render(<div />)
-    unmount()
-    expect(useAppStore.getState().llmModels).toEqual(['gpt-4o', 'qwen3:4b'])
-  })
-
-  it('setLlmModels 替换而不是合并', () => {
-    useAppStore.getState().setLlmModels(['a', 'b', 'c'])
-    useAppStore.getState().setLlmModels(['x'])
-    expect(useAppStore.getState().llmModels).toEqual(['x'])
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. LlmPane — provider 切换时清空 models 缓存
-// ─────────────────────────────────────────────────────────────────────────────
-describe('LlmPane preset 切换清空 models', () => {
-  beforeEach(() => {
-    resetStore()
-    seedSavedConfig()
-  })
-
-  it('切换 preset 时 store 中的 llmModels 被清空', async () => {
-    const { ai_presets } = useAppStore.getState().config
-    useAppStore.getState().updateConfig({
-      ai_presets: [...ai_presets, { ...ai_presets[0], id: 'second', name: 'Second' }],
-    })
-    useAppStore.getState().setLlmModels(['model-x', 'model-y'])
-
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('presets.preset'), { target: { value: 'second' } })
-    })
-
-    expect(useAppStore.getState().config.active_ai_preset_id).toBe('second')
-    expect(useAppStore.getState().llmModels).toEqual([])
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. LlmPane useEffect — 已有缓存时不重复 fetch
-// ─────────────────────────────────────────────────────────────────────────────
-describe('LlmPane models 缓存：已有缓存时跳过 fetch', () => {
-  beforeEach(() => {
-    resetStore()
-    seedSavedConfig()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.clearAllMocks()
-  })
-
-  it('llmModels 已有内容时不触发 fetchAiModels', async () => {
-    const { fetchAiModels } = await import('../../../lib/tauri')
-    const mockFetch = vi.mocked(fetchAiModels)
-    mockFetch.mockClear()
-
-    useAppStore.getState().setLlmModels(['cached-model'])
-
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-
-    await act(async () => {
-      vi.runAllTimers()
-    })
-
-    expect(mockFetch).not.toHaveBeenCalled()
-  })
-
-  it('llmModels 为空且 preset 有 base URL 时触发 fetchAiModels（无需 API key）', async () => {
-    const { fetchAiModels } = await import('../../../lib/tauri')
-    const mockFetch = vi.mocked(fetchAiModels)
-    mockFetch.mockClear()
-
-    useAppStore.getState().setLlmModels([])
-
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-
-    // runAllTimersAsync 同时推进 fake timer 并 flush 所有 pending microtasks/promises
-    await act(async () => {
-      await vi.runAllTimersAsync()
-    })
-
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:11434/v1', '')
-  })
-
-  it('fetchAiModels 完成后 store 中 llmModels 被更新', async () => {
-    const { fetchAiModels } = await import('../../../lib/tauri')
-    vi.mocked(fetchAiModels).mockResolvedValue(['qwen3:4b', 'qwen3:8b'])
-
-    useAppStore.getState().setLlmModels([])
-
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-
-    await act(async () => {
-      await vi.runAllTimersAsync()
-    })
-
-    expect(useAppStore.getState().llmModels).toEqual(['qwen3:4b', 'qwen3:8b'])
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 6. DirtyBar — 配置变更后出现，Reset 后消失
 // ─────────────────────────────────────────────────────────────────────────────
 describe('DirtyBar 行为', () => {
@@ -1576,28 +1441,5 @@ describe('DirtyBar 行为', () => {
     expect(useAppStore.getState().config.auto_start).toBe(true)
     expect(useAppStore.getState().savedConfig?.auto_start).toBe(true)
     expect(toast).toHaveBeenCalledWith('Shortcut registration failed', 'error')
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 7. appStore getInitialState — llmModels 包含在初始状态中
-// ─────────────────────────────────────────────────────────────────────────────
-describe('appStore getInitialState 包含 llmModels', () => {
-  it('getInitialState().llmModels 为空数组', () => {
-    const initial = useAppStore.getInitialState()
-    expect(initial.llmModels).toEqual([])
-  })
-
-  it('setState(getInitialState()) 后 llmModels 恢复为空', () => {
-    useAppStore.getState().setLlmModels(['stale-model'])
-    useAppStore.setState(useAppStore.getInitialState())
-    expect(useAppStore.getState().llmModels).toEqual([])
-  })
-
-  it('getInitialState 不改变 llmModels 以外的字段', () => {
-    const initial = useAppStore.getInitialState()
-    expect(initial.config.hotkey).toBe('Ctrl+/')
-    expect(initial.pipelineState).toBe('idle')
-    expect(initial.dictionary).toEqual([])
   })
 })

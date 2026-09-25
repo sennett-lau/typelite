@@ -1,30 +1,29 @@
-import { useAppStore, type AppConfig, type SpeechPreset } from '../../stores/appStore'
+import { useAppStore, type AppConfig } from '../../stores/appStore'
 import { setCredential, updateConfig as saveConfig } from '../../lib/tauri'
-
-type SpeechChoice = Pick<AppConfig, 'speech_presets' | 'active_speech_preset_id'>
+import { SPEECH_SERVICE, type AnyPreset, type EngineService } from './services'
 
 /**
- * Plan `two-tab-speech`: the speech engine, the preset in use and a saved preset are saved at once
- * (not through Settings' Save bar), both in onboarding and in Settings. Only the speech fields are
- * written; other unsaved Settings edits stay unsaved.
+ * Plan `two-tab-speech` (speech) and `ai-polish-setup` (AI): the engine, the preset in use and a
+ * saved preset are saved at once (not through Settings' Save bar), both in onboarding and in
+ * Settings. Only the fields of that service are written; other unsaved Settings edits stay unsaved.
  */
-export async function saveSpeechChoice(choice: SpeechChoice): Promise<void> {
+export async function saveChoice(choice: Partial<AppConfig>): Promise<void> {
   const { config, savedConfig, applyPersistedConfigPatch } = useAppStore.getState()
   await saveConfig({ ...(savedConfig ?? config), ...choice })
   applyPersistedConfigPatch(choice)
 }
 
-/** The speech presets as saved (edits waiting for Settings' Save bar are not included). */
-function savedPresets(): SpeechPreset[] {
+/** The service's presets as saved (edits waiting for Settings' Save bar are not included). */
+export function savedPresetsOf(service: EngineService): AnyPreset[] {
   const { config, savedConfig } = useAppStore.getState()
-  return (savedConfig ?? config).speech_presets
+  return service.presetsOf(savedConfig ?? config)
 }
 
 /** Makes the preset with `id` the one in use. */
-export async function selectSpeechPreset(id: string): Promise<void> {
+export async function selectPreset(service: EngineService, id: string): Promise<void> {
   const { config } = useAppStore.getState()
-  if (config.active_speech_preset_id === id) return
-  await saveSpeechChoice({ speech_presets: savedPresets(), active_speech_preset_id: id })
+  if (service.activeIdOf(config) === id) return
+  await saveChoice(service.choice(savedPresetsOf(service), id))
 }
 
 /**
@@ -32,26 +31,41 @@ export async function selectSpeechPreset(id: string): Promise<void> {
  * Keychain first (the backend clears a passed Test when the key changes), then the config.
  */
 export async function saveServerPreset(
-  preset: SpeechPreset,
+  service: EngineService,
+  preset: AnyPreset,
   apiKey: { value: string; changed: boolean },
 ): Promise<void> {
-  if (apiKey.changed) await setCredential('stt', preset.id, apiKey.value)
-  const presets = savedPresets()
+  if (apiKey.changed) await setCredential(service.credential, preset.id, apiKey.value)
+  const presets = savedPresetsOf(service)
   const exists = presets.some((existing) => existing.id === preset.id)
-  const speech_presets = exists
+  const next = exists
     ? presets.map((existing) => (existing.id === preset.id ? preset : existing))
     : [...presets, preset]
-  await saveSpeechChoice({ speech_presets, active_speech_preset_id: preset.id })
+  await saveChoice(service.choice(next, preset.id))
 }
 
 /** Removes a server preset and its key. The engine in use falls back to `fallbackId`. */
-export async function deleteServerPreset(id: string, fallbackId: string): Promise<void> {
+export async function deleteServerPreset(
+  service: EngineService,
+  id: string,
+  fallbackId: string,
+): Promise<void> {
   const { config } = useAppStore.getState()
-  const speech_presets = savedPresets().filter((preset) => preset.id !== id)
-  const active_speech_preset_id =
-    config.active_speech_preset_id === id ? fallbackId : config.active_speech_preset_id
-  await saveSpeechChoice({ speech_presets, active_speech_preset_id })
-  await setCredential('stt', id, '').catch((error) =>
-    console.error('[speech] failed to remove the API key of a deleted preset', error),
+  const next = savedPresetsOf(service).filter((preset) => preset.id !== id)
+  const activeId = service.activeIdOf(config) === id ? fallbackId : service.activeIdOf(config)
+  await saveChoice(service.choice(next, activeId))
+  await setCredential(service.credential, id, '').catch((error) =>
+    console.error(`[${service.id}] failed to remove the API key of a deleted preset`, error),
   )
+}
+
+/** Speech shorthands (plan `two-tab-speech`). */
+export function saveSpeechChoice(
+  choice: Pick<AppConfig, 'speech_presets' | 'active_speech_preset_id'>,
+): Promise<void> {
+  return saveChoice(choice)
+}
+
+export function selectSpeechPreset(id: string): Promise<void> {
+  return selectPreset(SPEECH_SERVICE, id)
 }

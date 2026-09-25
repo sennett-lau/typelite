@@ -11,7 +11,7 @@ use crate::audio::{AudioCaptureHandle, AudioConfig};
 use crate::credentials::{
     resolve_llm_config_secret, resolve_stt_config_secret, SystemCredentialVault,
 };
-use crate::llm::{self, LlmConfig, PolishRequest};
+use crate::llm::{self, PolishRequest};
 use crate::output;
 use crate::storage;
 use crate::stt::{self, SttConfig, TranscriptEvent};
@@ -2188,7 +2188,9 @@ impl PipelineHandle {
         self.set_state(PipelineState::Polishing);
         let llm_start = std::time::Instant::now();
 
-        let llm_config = LlmConfig::from_preset(config.active_ai_preset(), llm_api_key);
+        // Plan `ai-polish-setup`: for the Built-in preset this starts Typelite's own server when
+        // needed.
+        let llm_config = llm::builtin::llm_config(config.active_ai_preset(), llm_api_key).await;
         let provider = llm::create_provider(Some(self.shared_client.clone()));
 
         let streaming_strategy = provider_plan
@@ -2265,7 +2267,10 @@ impl PipelineHandle {
             voice_intent: voice_intent.clone(),
         };
 
-        let polish_result = provider.polish(&llm_config, &req, Some(&on_chunk)).await;
+        let polish_result = match llm_config {
+            Ok(llm_config) => provider.polish(&llm_config, &req, Some(&on_chunk)).await,
+            Err(error) => Err(error),
+        };
         drop(on_chunk);
         let streaming_report = match streaming_worker.take() {
             Some(worker) => worker.finish().await,

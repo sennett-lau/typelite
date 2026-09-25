@@ -5,7 +5,7 @@ import { openPrivacySettings } from '../../lib/tauri'
 import type { PermissionStatus } from '../../lib/tauri'
 import { PERMISSION_IDS } from './usePermissions'
 import type { PermissionId, PermissionsState } from './usePermissions'
-import { SkipLink } from './SetupGuide'
+import { SkipLink } from './SkipLink'
 
 const ICONS: Record<PermissionId, React.ComponentType<{ size?: number }>> = {
   microphone: Mic,

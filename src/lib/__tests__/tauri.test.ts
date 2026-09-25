@@ -6,7 +6,7 @@ import {
   commitDictionaryImport,
   exportDictionaryCsv,
   exportDictionaryJson,
-  fetchAiModels,
+  getAiHardware,
   getCorrectionRules,
   getSttRecordingCapability,
   openSettingsPane,
@@ -14,6 +14,7 @@ import {
   removeCorrectionRule,
   setCorrectionRuleEnabled,
   setShortcutTourState,
+  startAiSetup,
   testAiPreset,
   testSpeechPreset,
   updateCorrectionRule,
@@ -123,15 +124,18 @@ describe('preset commands', () => {
     expect(invoke).toHaveBeenCalledWith('test_ai_preset', { preset: aiPreset, apiKey: 'sk-x' })
   })
 
-  it('fetches AI models by base URL', async () => {
-    vi.mocked(invoke).mockResolvedValueOnce(['qwen3:4b'])
+  it('starts the Built-in AI setup and reads the AI hardware check', async () => {
+    vi.mocked(invoke).mockResolvedValueOnce(undefined)
+    await startAiSetup('qwen3-1.7b')
+    expect(invoke).toHaveBeenCalledWith('start_ai_setup', { modelId: 'qwen3-1.7b' })
 
-    await expect(fetchAiModels('http://192.0.2.10:11434/v1', '')).resolves.toEqual(['qwen3:4b'])
+    vi.mocked(invoke).mockResolvedValueOnce(undefined)
+    await startAiSetup()
+    expect(invoke).toHaveBeenLastCalledWith('start_ai_setup', { modelId: null })
 
-    expect(invoke).toHaveBeenCalledWith('fetch_ai_models', {
-      baseUrl: 'http://192.0.2.10:11434/v1',
-      apiKey: '',
-    })
+    vi.mocked(invoke).mockResolvedValueOnce({ serverAvailable: false })
+    await expect(getAiHardware()).resolves.toEqual({ serverAvailable: false })
+    expect(invoke).toHaveBeenLastCalledWith('get_ai_hardware')
   })
 
   it('saves the shortcut tour flags on their own', async () => {

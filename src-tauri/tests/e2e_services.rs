@@ -8,11 +8,16 @@
 //! ```
 //!
 //! Servers are chosen with environment variables (defaults in brackets):
-//! - `TYPELITE_E2E_SPEECH_URL` [`http://127.0.0.1:8178/v1`], `TYPELITE_E2E_SPEECH_MODEL` [`large-v3-turbo`]
-//! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL` [`qwen3:4b-instruct-2507-q4_K_M`]
+//! - `TYPELITE_E2E_SPEECH_URL` [`http://127.0.0.1:8178/v1`], `TYPELITE_E2E_SPEECH_MODEL`
+//! [`large-v3-turbo`]
+//! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL`
+//! [`qwen3:4b-instruct-2507-q4_K_M`]
 //!
 //! - `TYPELITE_E2E_BUILTIN_MODEL` [`~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin`]: model
 //!   file for the in-process (built-in) speech test; the test is skipped when it is missing.
+//! - `TYPELITE_E2E_LLAMA_MODEL`: a Qwen3 GGUF file for the built-in AI test (plan
+//! `ai-polish-setup`); it also   needs `src-tauri/binaries/llama-server-<triple>` from
+//! `scripts/build-llama-server.sh`.
 //! - `TYPELITE_E2E_DOWNLOAD=1`: also run the Quick setup download test (190 MB from Hugging Face).
 //!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
@@ -624,4 +629,68 @@ async fn quick_setup_downloads_and_resumes_the_small_model() {
     );
     assert_eq!(std::fs::metadata(&path).unwrap().len(), model.size_bytes);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Plan `ai-polish-setup`: the model file for the built-in AI test (a Qwen3 Q4_K_M GGUF).
+fn llama_model_path() -> Option<PathBuf> {
+    let path = std::env::var("TYPELITE_E2E_LLAMA_MODEL")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(PathBuf::from)?;
+    path.is_file().then_some(path)
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs src-tauri/binaries/llama-server-<triple> (scripts/build-llama-server.sh) and TYPELITE_E2E_LLAMA_MODEL"]
+async fn builtin_ai_server_starts_and_polishes_a_sentence() {
+    use typelite_lib::llm::builtin;
+    let Some(model) = llama_model_path() else {
+        println!("builtin AI: TYPELITE_E2E_LLAMA_MODEL is not set to a model file, skipping");
+        return;
+    };
+    let pid_file = std::env::temp_dir().join(format!("typelite-e2e-{}.pid", std::process::id()));
+    builtin::server().set_paths(model.parent().unwrap().to_path_buf(), pid_file);
+    assert!(
+        builtin::server().binary_available(),
+        "build llama-server first: bash scripts/build-llama-server.sh"
+    );
+    let preset = AiPreset::builtin_llama("qwen3-4b", model.file_name().unwrap().to_str().unwrap());
+
+    let started = Instant::now();
+    let endpoint = builtin::endpoint_for(&preset, String::new())
+        .await
+        .expect("the built-in server should start");
+    let startup = started.elapsed();
+    // The automatic test that setup runs ("tested on this Mac in …").
+    let setup_test_ms = builtin::test_request(&endpoint, &preset.model)
+        .await
+        .expect("the setup test request should pass");
+    let config = builtin::llm_config(&preset, String::new())
+        .await
+        .expect("the running server is reused");
+    assert_eq!(config.base_url, endpoint.base_url);
+    assert!(config.base_url.starts_with("http://127.0.0.1:"));
+
+    let req = dictation_request(
+        "um so I was thinking we could uh meet on Monday no wait Tuesday at like 3pm to go over the the design review",
+    );
+    let provider = llm::create_provider(None);
+    let mut timings = Vec::new();
+    let mut text = String::new();
+    for _ in 0..3 {
+        let request_started = Instant::now();
+        text = provider
+            .polish(&config, &req, None)
+            .await
+            .expect("polish request")
+            .polished_text;
+        timings.push(request_started.elapsed());
+    }
+    builtin::server().stop();
+    println!(
+        "builtin AI: start {startup:?}, setup test {setup_test_ms} ms, polish {timings:?} -> {text:?}"
+    );
+    let words = normalised(&text);
+    assert!(words.contains("tuesday"), "self-correction lost: {text:?}");
+    assert!(!text.contains("<think>"), "thinking was not off: {text:?}");
 }

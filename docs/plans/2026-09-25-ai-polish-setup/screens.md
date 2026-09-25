@@ -1,7 +1,8 @@
 # Screens
 
 Every screen and state in words. Back to [index](index.md). Open [mock.html](mock.html) for the
-exact look; it follows the speech layout in [two-tab-speech layout](../2026-09-25-two-tab-speech/layout.md).
+exact look; it follows the speech layout in [two-tab-speech
+layout](../2026-09-25-two-tab-speech/layout.md).
 
 ## Onboarding → AI polish
 
@@ -44,10 +45,11 @@ A collapsed **Advanced** holds Extra fields (JSON, placeholder `{"reasoning_effo
    dropped, as in the speech form.
 4. **Polish** group: "Clean up dictation" switch (off pastes exactly what was said); Style as
    four option cards (Minimal, Clean, Structured, Professional); "Match the app you're in"
-   switch with a **Manage app mappings** link; browser access (Gmail, Docs, Slack on the web)
-   as a switch under it.
-5. **Translation** group: languages as chips (default first, up to three, **+ Add**), and the
-   "Always translate output" switch.
+   switch with a **Manage app mappings** link (when the user has mappings); under it the last
+   app with its writing-style menu and the browser access hint (Gmail, Docs, Slack on the
+   web), which is a macOS permission, not a stored setting.
+5. **Translation** group: languages as chips (default first, up to three, **+ Add**; clicking a
+   chip makes it the default, × removes it), and the "Always translate output" switch.
 6. **Advanced** (collapsed): use selected text in Ask and polish; custom instructions (2000
    characters).
 

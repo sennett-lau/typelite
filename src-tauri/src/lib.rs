@@ -1026,6 +1026,10 @@ pub fn run() {
             // Plan `quick-speech-setup`: tell the built-in speech engine where models live, and
             // drop presets whose model file is gone.
             tauri::async_runtime::block_on(commands::speech_setup::init(&app_handle));
+            // Plan `ai-polish-setup`: the same for Built-in AI, and start its server when it is in
+            // use.
+            app.manage(commands::ai_setup::AiSetupState::default());
+            tauri::async_runtime::block_on(commands::ai_setup::init(&app_handle));
             app.manage(commands::ask::AskDictationState::default());
             app.manage(commands::audio::MicMonitorState::default());
             app.manage(HotkeyModeCache(Arc::new(Mutex::new(
@@ -1212,7 +1216,8 @@ pub fn run() {
             if let Ok(store) = app.handle().store("settings.json") {
                 if let Some(val) = store.get("window_state") {
                     if let Ok(ws) = serde_json::from_value::<WindowState>(val.clone()) {
-                        // Validate: skip if coordinates are off-screen (e.g. -32000 from minimized state)
+                        // Validate: skip if coordinates are off-screen (e.g. -32000 from minimized
+                        // state)
                         if ws.x > -1000 && ws.y > -1000 && ws.width >= 720 && ws.height >= 480 {
                             if let Some(window) = app.get_webview_window("main") {
                                 let _ = window.set_position(tauri::Position::Physical(
@@ -1302,7 +1307,12 @@ pub fn run() {
             commands::speech_setup::delete_speech_model,
             commands::speech_setup::get_speech_hardware,
             commands::llm::test_ai_preset,
-            commands::llm::fetch_ai_models,
+            commands::ai_setup::get_ai_setup_status,
+            commands::ai_setup::start_ai_setup,
+            commands::ai_setup::cancel_ai_setup,
+            commands::ai_setup::list_ai_models,
+            commands::ai_setup::delete_ai_model,
+            commands::ai_setup::get_ai_hardware,
             commands::preset_share::list_exportable_presets,
             commands::preset_share::export_presets,
             commands::preset_share::pick_preset_import,
@@ -1348,6 +1358,9 @@ pub fn run() {
                 // Plan `quick-speech-setup`: free the built-in speech model before exit, or GGML's
                 // Metal cleanup aborts the process.
                 stt::builtin::engine().unload();
+                // Plan `ai-polish-setup`: the built-in AI server is a separate program; stop it
+                // too.
+                llm::builtin::server().stop();
             }
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen {
