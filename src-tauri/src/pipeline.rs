@@ -9,7 +9,7 @@ use crate::app_detector;
 use crate::app_detector::types::{RecordingContext, TargetAppGuard};
 use crate::audio::{AudioCaptureHandle, AudioConfig};
 use crate::credentials::{
-    resolve_llm_config_secret, resolve_stt_config_secret, SystemCredentialVault,
+    resolve_llm_preset_secret, resolve_stt_config_secret, SystemCredentialVault,
 };
 use crate::llm::{self, PolishRequest};
 use crate::output;
@@ -338,6 +338,40 @@ fn request_translation(
         config.translate_enabled,
         config.translation.active_target.clone(),
     )
+}
+
+/// Plan `translation-language-presets`: the AI preset for this request (the translation
+/// language's own preset when it has one, else the AI polish preset). Logs the preset id and the
+/// language code, never text.
+fn request_ai_preset<'a>(
+    config: &'a storage::AppConfig,
+    translate_enabled: bool,
+    target_lang: &str,
+) -> &'a storage::AiPreset {
+    let translation_target = translate_enabled.then_some(target_lang);
+    let preset = config.ai_preset_for_request(translation_target);
+    tracing::info!(
+        "AI request: preset={} translation={}",
+        preset.id,
+        translation_target.unwrap_or("none")
+    );
+    preset
+}
+
+/// The config the Speed board records for a run: the AI preset is the one the run's AI request
+/// used (plan `translation-language-presets`), which can differ from the AI polish preset.
+pub(crate) fn config_for_run_timing(
+    config: &storage::AppConfig,
+    ai_preset_id: Option<String>,
+) -> std::borrow::Cow<'_, storage::AppConfig> {
+    match ai_preset_id {
+        Some(id) if id != config.active_ai_preset().id => {
+            let mut timing = config.clone();
+            timing.active_ai_preset_id = id;
+            std::borrow::Cow::Owned(timing)
+        }
+        _ => std::borrow::Cow::Borrowed(config),
+    }
 }
 
 fn streaming_insert_strategy_for_config(
@@ -731,6 +765,9 @@ pub struct PipelineHandle {
     pipeline_lock: Arc<tokio::sync::Mutex<()>>,
     /// Plan `copy-when-no-field`: the result shown in the Copy pill, while the pill is up.
     copy_offer: crate::copy_pill::CopyOfferSlot,
+    /// Plan `translation-language-presets`: the AI preset the last AI request used, for the
+    /// Speed board (a translation can use another preset than AI polish).
+    last_ai_preset_id: Arc<Mutex<Option<String>>>,
 }
 
 struct PolishTextInput<'a> {
@@ -973,7 +1010,16 @@ impl PipelineHandle {
             shared_client,
             pipeline_lock: Arc::new(tokio::sync::Mutex::new(())),
             copy_offer: crate::copy_pill::CopyOfferSlot::default(),
+            last_ai_preset_id: Arc::new(Mutex::new(None)),
         }
+    }
+
+    /// The AI preset the last AI request used, once (plan `translation-language-presets`).
+    pub(crate) fn take_last_ai_preset_id(&self) -> Option<String> {
+        self.last_ai_preset_id
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take()
     }
 
     fn set_state(&self, new_state: PipelineState) {
@@ -1947,6 +1993,7 @@ impl PipelineHandle {
 
         // ── Phase 3: Timing, cleanup ───────────────────────────────────
         let total_elapsed = stop_start.elapsed();
+        let timing_config = config_for_run_timing(&config, self.take_last_ai_preset_id());
         if !self.abort_flag.load(Ordering::SeqCst) {
             crate::timing::record_run(
                 &self.app_handle,
@@ -1963,7 +2010,7 @@ impl PipelineHandle {
                         .clone()
                         .unwrap_or_else(|| crate::timing::OUTCOME_OK.to_string()),
                 },
-                &config,
+                &timing_config,
             );
         }
 
@@ -2127,7 +2174,11 @@ impl PipelineHandle {
             )
             .with_error_code("voice_route_failed");
         };
-        let llm_api_key = match resolve_llm_config_secret(config, &SystemCredentialVault) {
+        // Plan `translation-language-presets`: a translation uses its language's AI preset.
+        let (translate_enabled, target_lang) =
+            request_translation(&voice_intent, provider_text, config);
+        let ai_preset = request_ai_preset(config, translate_enabled, &target_lang);
+        let llm_api_key = match resolve_llm_preset_secret(&ai_preset.id, &SystemCredentialVault) {
             Ok(secret) => secret,
             Err(error) => {
                 tracing::warn!("Failed to read LLM credential: {error}");
@@ -2190,7 +2241,11 @@ impl PipelineHandle {
 
         // Plan `ai-polish-setup`: for the Built-in preset this starts Typelite's own server when
         // needed.
-        let llm_config = llm::builtin::llm_config(config.active_ai_preset(), llm_api_key).await;
+        *self
+            .last_ai_preset_id
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = Some(ai_preset.id.clone());
+        let llm_config = llm::builtin::llm_config(ai_preset, llm_api_key).await;
         let provider = llm::create_provider(Some(self.shared_client.clone()));
 
         let streaming_strategy = provider_plan
@@ -2236,8 +2291,6 @@ impl PipelineHandle {
         });
 
         let selected_text_for_execution = selected_text.clone();
-        let (translate_enabled, target_lang) =
-            request_translation(&voice_intent, provider_text, config);
         // A translated result shows its language in the Copy pill.
         let polished_copy_pill = copy_pill.as_ref().map(|_| crate::copy_pill::CopyPillRun {
             target_lang: translate_enabled.then(|| target_lang.clone()),
@@ -3666,6 +3719,107 @@ mod tests {
         assert_eq!(
             request_translation(&unknown, "translate this into Klingon", &config),
             (false, "en".to_string())
+        );
+    }
+
+    /// `translate_run_config` with a second AI preset (`pc`) that Hong Kong Chinese uses.
+    fn config_with_hong_kong_preset(active: &str) -> storage::AppConfig {
+        let mut config = translate_run_config(active);
+        config.ai_presets.push(storage::AiPreset::server(
+            "pc",
+            "PC",
+            "http://192.0.2.10:11434/v1",
+            "cantonese-model",
+        ));
+        config.translation.languages.insert(
+            "zh-Hant-HK".to_string(),
+            storage::TranslationLanguageSettings {
+                ai_preset_id: Some("pc".to_string()),
+                instructions: None,
+            },
+        );
+        config
+    }
+
+    #[test]
+    fn translation_requests_use_the_target_language_preset() {
+        let config = config_with_hong_kong_preset("zh-Hant-HK");
+        let polish = config.active_ai_preset().id.clone();
+        assert_eq!(request_ai_preset(&config, true, "zh-Hant-HK").id, "pc");
+        // Other languages, and polish without translation, keep the AI polish preset.
+        assert_eq!(request_ai_preset(&config, true, "ja").id, polish);
+        assert_eq!(request_ai_preset(&config, false, "zh-Hant-HK").id, polish);
+
+        // Highlight-and-translate with no speech goes into the active language.
+        let instruction = crate::voice_intent::language::SELECTION_TRANSLATE_INSTRUCTION;
+        let intent = translate_selection_intent(instruction, &config);
+        let (translate, target) = request_translation(&intent, instruction, &config);
+        assert_eq!(request_ai_preset(&config, translate, &target).id, "pc");
+        // A language named in speech picks that language's preset.
+        let intent = translate_selection_intent("translate this into Japanese", &config);
+        let (translate, target) =
+            request_translation(&intent, "translate this into Japanese", &config);
+        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
+    }
+
+    #[test]
+    fn switching_language_during_a_run_picks_the_new_target_preset() {
+        let mut config = config_with_hong_kong_preset("en");
+        let polish = config.active_ai_preset().id.clone();
+        let (translate, target) = request_translation(
+            &route_pipeline_voice_intent(
+                crate::voice_intent::VoiceMode::Translate,
+                "see you tomorrow",
+                None,
+                &config,
+            ),
+            "see you tomorrow",
+            &config,
+        );
+        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
+
+        let mut operation =
+            TranslationOperationState::new("en".to_string(), &config.translation.targets);
+        operation.cycle_target().unwrap();
+        // stop() copies the finalized target into the run's config.
+        config.translation.active_target = operation.finalize();
+        let (translate, target) = request_translation(
+            &route_pipeline_voice_intent(
+                crate::voice_intent::VoiceMode::Translate,
+                "see you tomorrow",
+                None,
+                &config,
+            ),
+            "see you tomorrow",
+            &config,
+        );
+        assert_eq!(target, "zh-Hant-HK");
+        assert_eq!(request_ai_preset(&config, translate, &target).id, "pc");
+    }
+
+    #[test]
+    fn a_deleted_language_preset_falls_back_to_the_polish_preset() {
+        let mut config = config_with_hong_kong_preset("zh-Hant-HK");
+        config.ai_presets.retain(|preset| preset.id != "pc");
+        assert_eq!(
+            request_ai_preset(&config, true, "zh-Hant-HK").id,
+            config.active_ai_preset().id
+        );
+    }
+
+    #[test]
+    fn run_timing_records_the_preset_the_request_used() {
+        let config = config_with_hong_kong_preset("zh-Hant-HK");
+        let polish = config.active_ai_preset().id.clone();
+        assert_eq!(
+            config_for_run_timing(&config, Some("pc".to_string()))
+                .active_ai_preset()
+                .id,
+            "pc"
+        );
+        assert_eq!(
+            config_for_run_timing(&config, None).active_ai_preset().id,
+            polish
         );
     }
 

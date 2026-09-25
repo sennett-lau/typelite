@@ -615,11 +615,22 @@ pub async fn test_request(endpoint: &Endpoint, model: &str) -> Result<u32, Strin
 }
 
 /// What the built-in server should do for this config: run the Built-in preset's model when it
-/// is the active, tested AI preset, otherwise nothing.
+/// is tested and in use, as the AI polish preset or (plan `translation-language-presets`) as
+/// the preset of a chosen translation language; otherwise nothing.
 pub fn wanted_model(config: &AppConfig) -> Option<(String, String)> {
-    let preset = config.active_ai_preset();
-    (preset.is_builtin_llama() && !preset.model_file.is_empty() && preset.verified_at.is_some())
-        .then(|| (preset.model_file.clone(), preset.model.clone()))
+    let in_use = config
+        .translation
+        .targets
+        .iter()
+        .map(|code| config.ai_preset_for_request(Some(code)));
+    std::iter::once(config.active_ai_preset())
+        .chain(in_use)
+        .find(|preset| {
+            preset.is_builtin_llama()
+                && !preset.model_file.is_empty()
+                && preset.verified_at.is_some()
+        })
+        .map(|preset| (preset.model_file.clone(), preset.model.clone()))
 }
 
 /// Starts or stops the built-in server to match `config` (at app start and after the AI engine
@@ -884,6 +895,22 @@ mod tests {
             "m",
         ));
         config.active_ai_preset_id = "mine".to_string();
+        assert_eq!(wanted_model(&config), None);
+
+        // Plan `translation-language-presets`: a chosen language that uses Built-in AI keeps it.
+        config.translation.targets = vec!["en".to_string(), "zh-Hant-HK".to_string()];
+        config.translation.languages.insert(
+            "zh-Hant-HK".to_string(),
+            crate::storage::TranslationLanguageSettings {
+                ai_preset_id: Some(preset.id.clone()),
+                instructions: None,
+            },
+        );
+        assert_eq!(
+            wanted_model(&config).map(|(file, _)| file).as_deref(),
+            Some("Qwen3-4B-Instruct-2507-Q4_K_M.gguf")
+        );
+        config.translation.targets = vec!["en".to_string()];
         assert_eq!(wanted_model(&config), None);
     }
 
