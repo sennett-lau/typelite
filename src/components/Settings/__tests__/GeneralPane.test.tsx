@@ -1,5 +1,5 @@
 /**
- * Settings → General (plan general-settings): Shortcuts, Recording and Output groups, and the
+ * Settings → General (plan `general-settings`): Shortcuts, Recording and Output groups, and the
  * controls in them writing to the config.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'

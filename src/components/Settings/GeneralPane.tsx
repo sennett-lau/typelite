@@ -150,7 +150,7 @@ export function GeneralPane() {
     hotkeyStatusMessage ? { key: 'status', tone: 'warning', text: hotkeyStatusMessage } : null,
   ].filter((note): note is { key: string; tone: string; text: string } => note !== null)
 
-  // Pasting and Typing map onto the existing output settings (plan general-settings).
+  // Pasting and Typing map onto the existing output settings (plan `general-settings`).
   const setOutputMode = (outputMode: OutputMode) =>
     updateConfig({
       output_mode: outputMode,
@@ -222,7 +222,7 @@ export function GeneralPane() {
             </button>
           }
         />
-        {/* Escape is fixed (plan pill-follows-cursor-and-escape), so this row only informs. */}
+        {/* Escape is fixed (plan `pill-follows-cursor-and-escape`), so this row only informs. */}
         <Row
           label={t('settings.generalPane.cancel')}
           help={t('settings.generalPane.cancelDesc')}

@@ -13,7 +13,7 @@ Status: building — 2026-09-25
 - One screen that explains every shortcut in plain words and shows its keys the way Home does.
 - Recording and output choices read as sentences ("Start and stop", "Put text in the app by").
 - Same visual language as Settings → Speech and AI (groups, rows, segmented options, toolbar tabs
-  from two-tab-speech).
+  from plan [`two-tab-speech`](../2026-09-25-two-tab-speech/index.md)).
 
 ## Non-goals
 
@@ -49,8 +49,8 @@ OUTPUT
 | Shortcut rows use the Home names (Dictate, Translate, Ask anything) with a short description | Same words everywhere; the description says what the shortcut does. |
 | Shortcut keys are drawn as key caps inside the clickable recorder field; the field keeps the text for screen readers | Matches the mock and Home, and the field still says "click me". |
 | Extra bindings (up to three), the ⋯ menu, + add and Try Ask stay | Existing features; the redesign must not drop them. |
-| Switch language keeps its reset button and shows only on macOS | As today (translate-controls). |
-| Cancel is a read-only row showing Esc | Escape is fixed in pill-follows-cursor-and-escape; nothing to configure. |
+| Switch language keeps its reset button and shows only on macOS | As today (plan [`translate-controls`](../2026-09-25-translate-controls/index.md)). |
+| Cancel is a read-only row showing Esc | Escape is fixed by plan [`pill-follows-cursor-and-escape`](../2026-09-25-pill-follows-cursor-and-escape/index.md); nothing to configure. |
 | "Start and stop" maps to the existing `hotkey_mode` (`toggle` / `hold`); toggle is listed first | Both modes exist in the backend and apply to Dictate and Translate. |
 | The existing microphone picker and its level meter are reused unchanged, with the row label "Microphone" | The meter already runs in Settings while idle; no new code path. |
 | "Pasting" is `output_mode: clipboard` + `insertion_strategy: clipboardPaste`; "Typing" is `keyboard` + `auto` | The same mapping the old control used, so saved configs read back the same. |
