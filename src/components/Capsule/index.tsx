@@ -98,9 +98,11 @@ export function Capsule() {
   const dragStart = useRef<{ x: number; y: number } | null>(null)
   const isDragging = useRef(false)
 
+  const rootRef = useRef<HTMLDivElement>(null)
+
   const hasError = pipelineError !== null
   const doneFlash = useDoneFlash(pipelineState, hasError)
-  useCapsuleResize(doneFlash)
+  useCapsuleResize(doneFlash, rootRef)
 
   const capsuleState = getCapsuleState(pipelineState, hasError, doneFlash)
   const capsuleShellSize = getPillSize(
@@ -169,6 +171,7 @@ export function Capsule() {
 
   return (
     <div
+      ref={rootRef}
       className="w-full h-full flex items-center justify-start relative"
       style={{ background: 'transparent' }}
       onContextMenu={handleContextMenu}
