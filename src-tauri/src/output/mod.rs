@@ -1,4 +1,5 @@
 pub mod clipboard;
+pub mod focus;
 pub mod keyboard;
 pub mod windows_modifier_guard;
 pub mod windows_sendinput;
@@ -54,6 +55,9 @@ pub enum InsertStatus {
     CopiedFallback,
     Failed,
     PartiallyInserted,
+    /// Plan `copy-when-no-field`: not pasted because no text field had focus; the Copy pill offers
+    /// the text.
+    HeldForCopy,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -109,6 +113,18 @@ impl InsertResult {
             strategy_used,
             chars_inserted,
             chars_copied: 0,
+            warning_code: None,
+            message: None,
+        }
+    }
+
+    /// Plan `copy-when-no-field`: the result went to the Copy pill instead of the focused app.
+    pub fn held_for_copy(strategy_used: InsertionStrategy, chars: usize) -> Self {
+        Self {
+            status: InsertStatus::HeldForCopy,
+            strategy_used,
+            chars_inserted: 0,
+            chars_copied: chars,
             warning_code: None,
             message: None,
         }

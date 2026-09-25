@@ -294,9 +294,10 @@ fn route_pipeline_voice_intent(
     })
 }
 
-/// Whether the AI request translates, and into which language. Plan 0011: a selection
-/// translation goes into the language named in speech, else the active translation language
-/// (after any Switch language presses). Everything else keeps the configured behaviour.
+/// Whether the AI request translates, and into which language. Plan
+/// `ask-translate-and-live-questions`: a selection translation goes into the language named in
+/// speech, else the active translation language (after any Switch language presses). Everything
+/// else keeps the configured behaviour.
 fn request_translation(
     intent: &crate::voice_intent::VoiceIntent,
     utterance: &str,
@@ -704,7 +705,7 @@ pub struct PipelineHandle {
     preloaded_selected_text: Arc<Mutex<Option<String>>>,
     preloaded_voice_mode: Arc<Mutex<Option<crate::voice_intent::VoiceMode>>>,
     recording_start: Arc<Mutex<Option<std::time::Instant>>>,
-    /// Plan 0008: where the current run's speech provider notes its upload moments.
+    /// Plan `speed-board`: where the current run's speech provider notes its upload moments.
     stt_upload_probe: Arc<Mutex<Option<crate::timing::UploadProbe>>>,
     active_translation_operation: Arc<Mutex<Option<TranslationOperationState>>>,
     shared_client: reqwest::Client,
@@ -713,6 +714,8 @@ pub struct PipelineHandle {
     /// Without this, a quick press-release in hold mode causes stop() to run
     /// while start() is still connecting to STT, finding empty fields.
     pipeline_lock: Arc<tokio::sync::Mutex<()>>,
+    /// Plan `copy-when-no-field`: the result shown in the Copy pill, while the pill is up.
+    copy_offer: crate::copy_pill::CopyOfferSlot,
 }
 
 struct PolishTextInput<'a> {
@@ -725,6 +728,10 @@ struct PolishTextInput<'a> {
     selected_text: Option<String>,
     voice_intent: crate::voice_intent::VoiceIntent,
     popup_fallback_enabled: bool,
+    /// Plan `copy-when-no-field`: `Some` for Dictate and Translate, whose result goes to the Copy
+    /// pill when no
+    /// text field has focus. `None` for Ask.
+    copy_pill: Option<crate::copy_pill::CopyPillRun>,
 }
 
 #[derive(Debug, Clone)]
@@ -734,7 +741,7 @@ struct PolishTextOutcome {
     output_status: Option<String>,
     output_error: Option<String>,
     voice_execution: Option<crate::voice_intent::executor::VoiceExecutionResult>,
-    /// Plan 0008: error code of the step that failed, for the Speed board. `None` when the
+    /// Plan `speed-board`: error code of the step that failed, for the Speed board. `None` when the
     /// text reached the app.
     error_code: Option<String>,
 }
@@ -742,7 +749,7 @@ struct PolishTextOutcome {
 pub(crate) struct AskVoiceDraftOutcome {
     pub text: String,
     pub execution: crate::voice_intent::executor::VoiceExecutionResult,
-    /// How long the AI request took (Plan 0008).
+    /// How long the AI request took (Plan `speed-board`).
     pub llm_elapsed: std::time::Duration,
 }
 
@@ -753,8 +760,9 @@ enum SttWait {
     Cancelled,
     /// Recognition failed or heard nothing; carries the error code.
     Failed(String),
-    /// Nothing was heard, and the caller asked to handle that itself (Plan 0011: a selection
-    /// translation needs no speech). No error was shown.
+    /// Nothing was heard, and the caller asked to handle that itself (Plan
+    /// `ask-translate-and-live-questions`: a selection translation needs no speech). No error was
+    /// shown.
     NoSpeech,
 }
 
@@ -767,6 +775,7 @@ struct PipelineVoiceExecutionBackend<'a> {
     config: &'a storage::AppConfig,
     already_copied: bool,
     popup_fallback_enabled: bool,
+    copy_pill: Option<crate::copy_pill::CopyPillRun>,
 }
 
 #[async_trait::async_trait]
@@ -794,10 +803,20 @@ impl crate::voice_intent::executor::VoiceExecutionBackend for PipelineVoiceExecu
     async fn insert_at_cursor(&mut self, text: &str) -> std::result::Result<(), String> {
         let result = self
             .pipeline
-            .output_text(text, self.app_name, self.target_guard, self.config)
+            .output_text(
+                text,
+                self.app_name,
+                self.target_guard,
+                self.config,
+                self.copy_pill.as_ref(),
+            )
             .await
             .map_err(|error| error.to_string())?;
-        if result.status == output::InsertStatus::Inserted {
+        // Held for the Copy pill (plan `copy-when-no-field`): the result is handled, nothing else
+        // to try.
+        if result.status == output::InsertStatus::Inserted
+            || result.status == output::InsertStatus::HeldForCopy
+        {
             Ok(())
         } else if result.status == output::InsertStatus::CopiedFallback {
             self.already_copied = true;
@@ -838,6 +857,7 @@ impl crate::voice_intent::executor::VoiceExecutionBackend for PipelineVoiceExecu
                 self.app_name,
                 &TargetAppGuard::default(),
                 &copy_config,
+                None,
             )
             .await
             .map_err(|error| error.to_string())?;
@@ -937,6 +957,7 @@ impl PipelineHandle {
             active_translation_operation: Arc::new(Mutex::new(None)),
             shared_client,
             pipeline_lock: Arc::new(tokio::sync::Mutex::new(())),
+            copy_offer: crate::copy_pill::CopyOfferSlot::default(),
         }
     }
 
@@ -1105,6 +1126,8 @@ impl PipelineHandle {
 
         // Reset abort flag for new recording
         self.abort_flag.store(false, Ordering::SeqCst);
+        // Plan `copy-when-no-field`: a new run closes a Copy pill that is still up.
+        self.dismiss_copy_offer();
 
         // Atomic CAS: only one caller can transition Idle → Preparing. Recording is emitted only
         // after audio capture is ready, so the capsule does not tell users to speak too early.
@@ -1121,8 +1144,8 @@ impl PipelineHandle {
             return Ok(());
         }
 
-        // Plan 0007: a missing service stops the run before anything starts, with one clear
-        // message. Dictate without AI still runs and pastes the raw transcript.
+        // Plan `setup-without-dead-ends`: a missing service stops the run before anything starts,
+        // with one clear message. Dictate without AI still runs and pastes the raw transcript.
         let loaded_config = self.load_config().await;
         let feature = if options.force_translate {
             crate::readiness::Feature::Translate
@@ -1264,7 +1287,8 @@ impl PipelineHandle {
             sample_rate: 16000,
         };
 
-        // Plan 0008: the provider notes when its upload starts and ends, for the Speed board.
+        // Plan `speed-board`: the provider notes when its upload starts and ends, for the Speed
+        // board.
         let upload_probe = crate::timing::UploadProbe::default();
         provider.set_upload_probe(upload_probe.clone());
         *self
@@ -1686,7 +1710,8 @@ impl PipelineHandle {
     }
 
     pub async fn stop(&self) -> Result<()> {
-        // Plan 0008: every step on the Speed board is measured from the moment stop is pressed.
+        // Plan `speed-board`: every step on the Speed board is measured from the moment stop is
+        // pressed.
         let stop_start = std::time::Instant::now();
 
         // Acquire pipeline_lock so we wait for start() to finish its setup
@@ -1828,8 +1853,8 @@ impl PipelineHandle {
         drop(guard);
 
         // ── Phase 1: Wait for STT ──────────────────────────────────────
-        // Plan 0011: selected text + Translate needs no speech; silence means "translate the
-        // selection into the target language".
+        // Plan `ask-translate-and-live-questions`: selected text + Translate needs no speech;
+        // silence means "translate the selection into the target language".
         let selection_translate = voice_mode == crate::voice_intent::VoiceMode::Translate
             && selected_text_has_content(selected_text.as_deref());
         let raw_text = match self
@@ -1898,6 +1923,8 @@ impl PipelineHandle {
                 selected_text,
                 voice_intent,
                 popup_fallback_enabled: true,
+                copy_pill: (voice_mode != crate::voice_intent::VoiceMode::Ask)
+                    .then(crate::copy_pill::CopyPillRun::default),
             })
             .await;
         let final_text = polish_outcome.final_text;
@@ -2067,6 +2094,7 @@ impl PipelineHandle {
             selected_text,
             voice_intent,
             popup_fallback_enabled,
+            copy_pill,
         } = input;
         let provider_plan =
             crate::voice_intent::plan_voice_provider_work(voice_mode, raw_text, &voice_intent);
@@ -2133,6 +2161,7 @@ impl PipelineHandle {
                     &app_ctx.profile.app_label,
                     &app_ctx.target_guard,
                     config,
+                    copy_pill.as_ref(),
                 )
                 .await
             {
@@ -2154,7 +2183,15 @@ impl PipelineHandle {
         let streaming_strategy = provider_plan
             .allow_streaming
             .then(|| streaming_insert_strategy_for_runtime(config, selected_text.as_deref()))
-            .flatten();
+            .flatten()
+            // Plan `copy-when-no-field`: never stream into something that is not a text field; the
+            // final
+            // result then goes through the Copy pill check instead.
+            .filter(|_| {
+                crate::copy_pill::streaming_allowed(copy_pill.as_ref(), || {
+                    tokio::task::block_in_place(output::focus::check_focus)
+                })
+            });
         let mut streaming_worker = streaming_strategy.map(|strategy| {
             spawn_streaming_insert_worker(
                 self.app_handle.clone(),
@@ -2188,6 +2225,10 @@ impl PipelineHandle {
         let selected_text_for_execution = selected_text.clone();
         let (translate_enabled, target_lang) =
             request_translation(&voice_intent, provider_text, config);
+        // A translated result shows its language in the Copy pill.
+        let polished_copy_pill = copy_pill.as_ref().map(|_| crate::copy_pill::CopyPillRun {
+            target_lang: translate_enabled.then(|| target_lang.clone()),
+        });
         let mapped_scene_prompt = storage::automatic_scene_prompt(
             config,
             app_ctx.profile.family,
@@ -2414,6 +2455,7 @@ impl PipelineHandle {
                     config,
                     already_copied: false,
                     popup_fallback_enabled,
+                    copy_pill: polished_copy_pill,
                 };
                 let execution = crate::voice_intent::executor::execute_voice_intent(
                     crate::voice_intent::executor::VoiceExecutionRequest {
@@ -2527,6 +2569,7 @@ impl PipelineHandle {
                         &app_ctx.profile.app_label,
                         &app_ctx.target_guard,
                         config,
+                        copy_pill.as_ref(),
                     )
                     .await
                 {
@@ -2554,8 +2597,8 @@ impl PipelineHandle {
     }
 
     /// Runs an Ask command that writes into the focused app: a draft inserted at the cursor, or
-    /// (Plan 0011) an edit or a translation that replaces the selection. The Ask caller shows
-    /// fallbacks.
+    /// (Plan `ask-translate-and-live-questions`) an edit or a translation that replaces the
+    /// selection. The Ask caller shows fallbacks.
     pub(crate) async fn run_ask_draft(
         &self,
         config: &storage::AppConfig,
@@ -2608,6 +2651,7 @@ impl PipelineHandle {
                 selected_text,
                 voice_intent,
                 popup_fallback_enabled: false,
+                copy_pill: None,
             })
             .await;
         self.set_state(PipelineState::Idle);
@@ -2724,6 +2768,7 @@ impl PipelineHandle {
         app_name: &str,
         target_guard: &TargetAppGuard,
         config: &storage::AppConfig,
+        copy_pill: Option<&crate::copy_pill::CopyPillRun>,
     ) -> Result<output::InsertResult> {
         self.set_state(PipelineState::Outputting);
 
@@ -2770,6 +2815,26 @@ impl PipelineHandle {
         } else {
             strategy
         };
+
+        // Plan `copy-when-no-field`: with no text field to paste into, keep the result for the Copy
+        // pill.
+        let focus_check = || {
+            // A blocking Accessibility query of a few milliseconds.
+            tokio::task::block_in_place(output::focus::check_focus)
+        };
+        let hold = crate::copy_pill::should_hold_for_copy_pill(
+            copy_pill,
+            effective_strategy,
+            target_warning.is_none(),
+            focus_check,
+        );
+        if let (true, Some(run)) = (hold, copy_pill) {
+            self.hold_for_copy_pill(text, run);
+            return Ok(output::InsertResult::held_for_copy(
+                effective_strategy,
+                text.chars().count(),
+            ));
+        }
 
         let clipboard_options = output::clipboard::ClipboardOutputOptions {
             restore_after_paste: config.restore_clipboard_after_paste,
@@ -2820,6 +2885,65 @@ impl PipelineHandle {
 
         let _ = self.app_handle.emit("pipeline:target_app", app_name);
         Ok(insert_result)
+    }
+
+    /// Shows the Copy pill with `text` instead of pasting it. Nothing is pasted and the
+    /// clipboard is not touched; the text stays in memory only until the pill closes.
+    fn hold_for_copy_pill(&self, text: &str, run: &crate::copy_pill::CopyPillRun) {
+        tracing::info!(
+            "No text field has focus; showing the Copy pill ({} chars)",
+            text.chars().count()
+        );
+        self.copy_offer.hold(text);
+        let _ = self.app_handle.emit(
+            crate::copy_pill::COPY_OFFER_EVENT,
+            Some(crate::copy_pill::CopyOffer {
+                text: text.to_string(),
+                target_lang: run.target_lang.clone(),
+            }),
+        );
+    }
+
+    /// True while the Copy pill offers a result.
+    pub fn has_copy_offer(&self) -> bool {
+        self.copy_offer.is_up()
+    }
+
+    /// Closes the Copy pill (Escape, the countdown, or a new run). Returns true when it was up.
+    pub fn dismiss_copy_offer(&self) -> bool {
+        let was_up = self.copy_offer.clear();
+        if was_up {
+            let _ = self.app_handle.emit(
+                crate::copy_pill::COPY_OFFER_EVENT,
+                Option::<crate::copy_pill::CopyOffer>::None,
+            );
+        }
+        was_up
+    }
+
+    /// The Copy button: puts the held result on the clipboard and leaves it there (the user
+    /// asked for it, so the old clipboard is not restored). The pill shows "Copied" and closes
+    /// itself.
+    pub async fn copy_offer_to_clipboard(&self) -> std::result::Result<(), String> {
+        let text = self
+            .copy_offer
+            .take()
+            .ok_or_else(|| "Nothing to copy".to_string())?;
+        let copy_only = output::clipboard::ClipboardOutput::with_options(
+            output::clipboard::ClipboardOutputOptions {
+                restore_after_paste: false,
+                auto_paste: false,
+                ..output::clipboard::ClipboardOutputOptions::default()
+            },
+        );
+        output::TextOutput::type_text(&copy_only, &text)
+            .await
+            .map_err(|error| error.to_string())?;
+        tracing::info!(
+            "Copy pill: copied the result ({} chars)",
+            text.chars().count()
+        );
+        Ok(())
     }
 
     async fn pre_warm_endpoint(&self, endpoint: &str) {

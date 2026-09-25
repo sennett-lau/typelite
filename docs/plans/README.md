@@ -9,20 +9,31 @@ Every plan is its own folder under `docs/plans/`:
 
 ```
 docs/plans/
-  README.md                  ← this file (the rules)
-  0001-initial-concept/
+  README.md                        ← this file (the rules)
+  2026-09-24-initial-concept/
     index.md
     product.md
     architecture.md
     ...
-  0002-<next-feature>/
+  2026-10-02-<next-feature>/
     index.md
     ...
 ```
 
-- Folder name: `NNNN-short-slug`. `NNNN` is the next free 4-digit number; `short-slug` is
-  lowercase kebab-case, 2–4 words. Numbers are never reused, even if a plan is dropped.
+- Folder name: `YYYY-MM-DD-short-slug`. The date is the day the plan was created; it only orders
+  the folders. `short-slug` is lowercase kebab-case, 2–4 words, and it alone identifies the plan.
+- The slug must be unique across `docs/plans/`. Check before you create a folder; if the slug is
+  taken, choose a more specific one. There is no running number, so plans made on different
+  branches do not collide. A dropped plan keeps its folder, so its slug stays taken.
 - One folder per feature or major change. Do not put two features in one plan.
+
+## Referring to a plan
+
+- Refer to a plan by its slug, never by a number or by the date alone: "plan `quick-speech-setup`".
+- Inside `docs/`, link to the folder with a relative path, for example
+  `[quick-speech-setup](../2026-09-25-quick-speech-setup/index.md)`.
+- In code comments and tests, use the same form: "Plan `quick-speech-setup`: ..." or
+  "(plan `quick-speech-setup`)".
 
 ## What goes in a plan folder
 
@@ -46,6 +57,6 @@ docs/plans/
 - Put unresolved items under "Open questions" in `index.md`, not scattered through the files.
 - Diagrams: small ASCII or Mermaid blocks only.
 - When a later plan changes a decision in an earlier one, say so in the new plan's `index.md`
-  and add a one-line "Superseded by NNNN" note in the old plan's `index.md`. Do not rewrite
+  and add a one-line "Superseded by <slug>" note in the old plan's `index.md`. Do not rewrite
   history in the old plan.
 - Update the status line when the plan's state changes.

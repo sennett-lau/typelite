@@ -1,6 +1,7 @@
 pub mod app_detector;
 pub mod audio;
 pub mod commands;
+pub mod copy_pill;
 pub mod credentials;
 pub mod dictionary_io;
 pub mod error;
@@ -382,7 +383,7 @@ mod tests {
             .find(|window| window["label"].as_str() == Some("main"))
             .unwrap();
 
-        // Plan 0005: native window buttons over the sidebar, no title bar strip.
+        // Plan `glass-main-window`: native window buttons over the sidebar, no title bar strip.
         assert_eq!(main["decorations"].as_bool(), Some(true));
         assert_eq!(main["titleBarStyle"].as_str(), Some("Overlay"));
         assert_eq!(main["hiddenTitle"].as_bool(), Some(true));
@@ -546,6 +547,20 @@ async fn stop_recording(state: tauri::State<'_, pipeline::PipelineHandle>) -> Re
 fn abort_recording(state: tauri::State<'_, pipeline::PipelineHandle>) -> Result<(), String> {
     state.abort();
     Ok(())
+}
+
+/// Plan `copy-when-no-field`: the Copy pill's Copy button. Puts the held result on the clipboard.
+#[tauri::command]
+async fn copy_offer_to_clipboard(
+    state: tauri::State<'_, pipeline::PipelineHandle>,
+) -> Result<(), String> {
+    state.copy_offer_to_clipboard().await
+}
+
+/// Plan `copy-when-no-field`: the Copy pill closed (its countdown ran out, or after "Copied").
+#[tauri::command]
+fn dismiss_copy_offer(state: tauri::State<'_, pipeline::PipelineHandle>) {
+    state.dismiss_copy_offer();
 }
 
 #[cfg(any(target_os = "linux", test))]
@@ -1008,8 +1023,8 @@ pub fn run() {
             app.manage(pipeline_handle);
             app.manage(timing::RunTimingBuffer::default());
             app.manage(commands::speech_setup::SpeechSetupState::default());
-            // Plan 0012: tell the built-in speech engine where models live, and drop presets
-            // whose model file is gone.
+            // Plan `quick-speech-setup`: tell the built-in speech engine where models live, and
+            // drop presets whose model file is gone.
             tauri::async_runtime::block_on(commands::speech_setup::init(&app_handle));
             app.manage(commands::ask::AskDictationState::default());
             app.manage(commands::audio::MicMonitorState::default());
@@ -1240,6 +1255,8 @@ pub fn run() {
             start_recording,
             stop_recording,
             abort_recording,
+            copy_offer_to_clipboard,
+            dismiss_copy_offer,
             commands::ask::ask_anything,
             commands::ask::start_ask_dictation,
             commands::ask::stop_ask_dictation,
@@ -1323,13 +1340,13 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
-            // Plan 0008: the Speed board's run timings never outlive the app.
+            // Plan `speed-board`: the Speed board's run timings never outlive the app.
             if let tauri::RunEvent::Exit = _event {
                 if let Some(buffer) = _app.try_state::<timing::RunTimingBuffer>() {
                     buffer.clear();
                 }
-                // Plan 0012: free the built-in speech model before exit, or GGML's Metal
-                // cleanup aborts the process.
+                // Plan `quick-speech-setup`: free the built-in speech model before exit, or GGML's
+                // Metal cleanup aborts the process.
                 stt::builtin::engine().unload();
             }
             #[cfg(target_os = "macos")]

@@ -44,7 +44,7 @@ export function progressPercent(status: SpeechSetupStatus): number {
   return Math.min(100, Math.floor((status.downloadedBytes / status.totalBytes) * 100))
 }
 
-/** The messages of behaviour.md (plan 0012) for each way a setup can stop. */
+/** The messages of behaviour.md (plan `quick-speech-setup`) for each way a setup can stop. */
 export function setupErrorMessage(error: SpeechSetupError, t: Translate): string {
   switch (error.code) {
     case 'network':
@@ -77,8 +77,8 @@ export function memoryGigabytes(bytes: number): number {
 }
 
 /**
- * Plan 0015: the model the option cards select when the user has not picked one: the given
- * one if it is offered, otherwise the first (recommended) offered model.
+ * Plan `two-tab-speech`: the model the option cards select when the user has not picked one: the
+ * given one if it is offered, otherwise the first (recommended) offered model.
  */
 export function defaultModelChoice(
   check: SpeechHardwareCheck | null,
@@ -90,8 +90,8 @@ export function defaultModelChoice(
 }
 
 /**
- * The hardware note (plan 0015). `long` for onboarding: "This Mac: Apple M1 Pro, 32 GB memory."
- * plus why the larger model is left out; `short` for the Settings group header:
+ * The hardware note (plan `two-tab-speech`). `long` for onboarding: "This Mac: Apple M1 Pro, 32 GB
+ * memory." plus why the larger model is left out; `short` for the Settings group header:
  * "Apple M1 Pro · 32 GB". With no model that fits, says how much space is needed.
  */
 export function hardwareNote(

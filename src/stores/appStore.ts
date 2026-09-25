@@ -15,7 +15,7 @@ export type VoiceMode = 'dictate' | 'ask' | 'translate'
 
 /**
  * How a speech preset runs: an OpenAI-compatible `POST {base_url}/audio/transcriptions`
- * server, or whisper.cpp inside the app with a downloaded model (plan 0012).
+ * server, or whisper.cpp inside the app with a downloaded model (plan `quick-speech-setup`).
  */
 export type SpeechProviderKind = 'openai_compatible' | 'builtin'
 
@@ -28,7 +28,7 @@ export type SpeechProviderKind = 'openai_compatible' | 'builtin'
 export interface SpeechPreset {
   id: string
   name: string
-  /** Missing in configs from before plan 0012; means 'openai_compatible'. */
+  /** Missing in configs from before plan `quick-speech-setup`; means 'openai_compatible'. */
   kind?: SpeechProviderKind
   base_url: string
   model: string
@@ -62,7 +62,10 @@ export interface AiPreset {
   verified_at: number | null
 }
 
-/** Id of the "Built-in (this Mac)" preset (plan 0012). Every config has it (plan 0015). */
+/**
+ * Id of the "Built-in (this Mac)" preset (plan `quick-speech-setup`). Every config has it (plan
+ * `two-tab-speech`).
+ */
 export const BUILTIN_WHISPER_PRESET_ID = 'builtin-speech-this-mac'
 
 /** True when whisper.cpp runs this preset inside the app. */
@@ -76,7 +79,7 @@ function aiTemplate(id: string, name: string, base_url: string, model: string): 
 
 /**
  * Speech templates of a new config: only the Built-in preset, before a model is downloaded
- * (plan 0015). Mirrors `SpeechPreset::builtin_templates` in the backend.
+ * (plan `two-tab-speech`). Mirrors `SpeechPreset::builtin_templates` in the backend.
  */
 export const BUILTIN_SPEECH_PRESETS: readonly SpeechPreset[] = [
   {
@@ -128,7 +131,8 @@ export function sameSpeechConnection(a: SpeechPreset, b: SpeechPreset): boolean 
     a.base_url === b.base_url &&
     a.model === b.model &&
     (a.model_file ?? '') === (b.model_file ?? '') &&
-    // The built-in model runs every language, so only a server's language counts (plan 0015).
+    // The built-in model runs every language, so only a server's language counts (plan
+    // `two-tab-speech`).
     (a.kind === 'builtin' || a.language === b.language)
   )
 }
@@ -183,7 +187,15 @@ export type InsertionStrategy =
   | 'clipboardPaste'
   | 'clipboardCopyOnly'
   | 'windowsSendInput'
-export type InsertStatus = 'inserted' | 'copiedFallback' | 'failed' | 'partiallyInserted'
+export type InsertStatus =
+  | 'inserted'
+  | 'copiedFallback'
+  | 'failed'
+  | 'partiallyInserted'
+  /**
+   * Plan `copy-when-no-field`: not pasted because no text field had focus; the Copy pill offers it.
+   */
+  | 'heldForCopy'
 export type HotkeyMode = 'hold' | 'toggle'
 export type Theme = 'light' | 'dark' | 'system'
 export type PolishChineseScript = 'preserve' | 'simplified' | 'traditional'
@@ -221,7 +233,7 @@ export interface HotkeyConfig {
   dictationMode: HotkeyMode
   /**
    * Switches the language of a running Translate recording; only listened to while one runs
-   * (plan 0010). `Shift` means either Shift key. null turns it off.
+   * (plan `translate-controls`). `Shift` means either Shift key. null turns it off.
    */
   switchLanguage: ShortcutBinding | null
 }
@@ -251,6 +263,16 @@ export interface InsertResult {
   charsCopied: number
   warningCode: string | null
   message: string | null
+}
+
+/**
+ * Plan `copy-when-no-field`: a result that was not pasted because no text field had focus. The pill
+ * shows it
+ * with a Copy button. `targetLang` is the language code of a translation, else null.
+ */
+export interface CopyOffer {
+  text: string
+  targetLang: string | null
 }
 
 export interface DictionaryEntry {
@@ -405,6 +427,12 @@ interface AppState {
   setLastInsertResult: (result: InsertResult | null) => void
   lastContext: ContextProfileSummary | null
   setLastContext: (context: ContextProfileSummary | null) => void
+  /**
+   * Plan `copy-when-no-field`: the result shown in the Copy pill, or null when the pill offers
+   * nothing.
+   */
+  copyOffer: CopyOffer | null
+  setCopyOffer: (offer: CopyOffer | null) => void
 
   // Config
   config: AppConfig
@@ -1160,6 +1188,8 @@ export const useAppStore = create<AppState>((set) => ({
   setLastInsertResult: (lastInsertResult) => set({ lastInsertResult }),
   lastContext: null,
   setLastContext: (lastContext) => set({ lastContext }),
+  copyOffer: null,
+  setCopyOffer: (copyOffer) => set({ copyOffer }),
 
   config: defaultConfig,
   setConfig: (config) => set((s) => ({ config: syncHotkeyConfig(s.config, config) })),
