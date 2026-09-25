@@ -19,7 +19,7 @@ Back to [index](index.md).
 | Preset | Type | Base URL | Model |
 |---|---|---|---|
 | whisper.cpp on this Mac | Speech | `http://127.0.0.1:8178/v1` | `large-v3-turbo` |
-| Speech server on another computer | Speech | `http://<computer-ip>:8000/v1` | `Systran/faster-whisper-large-v3-turbo` |
+| Speech server on another computer | Speech | `http://<computer-ip>:8000/v1` | `Systran/faster-whisper-large-v3` |
 | OpenAI (your key) | Speech | `https://api.openai.com/v1` | `whisper-1` |
 | Groq (your key) | Speech | `https://api.groq.com/openai/v1` | `whisper-large-v3-turbo` |
 | Ollama on this Mac | AI | `http://127.0.0.1:11434/v1` | `qwen3:4b-instruct-2507-q4_K_M` |
