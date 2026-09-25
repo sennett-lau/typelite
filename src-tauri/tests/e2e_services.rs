@@ -300,21 +300,20 @@ async fn ai_classifies_live_and_timeless_questions() {
     }
 }
 
-#[tokio::test(flavor = "multi_thread")]
-#[ignore = "needs a running AI server; see scripts/e2e.sh"]
-async fn selection_translation_into_hong_kong_chinese_uses_traditional_characters() {
+/// Source text for the regional Chinese checks: it names software, a laptop and a network,
+/// which Hong Kong and Taiwan write differently (軟件/軟體, 手提電腦/筆電, 網絡/網路).
+const REGIONAL_SOURCE: &str = "The meeting has moved to next Tuesday. Please bring your laptop and the software update notes, and check that the office network is working.";
+
+/// Selected text + Translate with no speech: the built-in instruction, and the active language
+/// as the target.
+async fn translate_selection_into(active_target: &str) -> String {
     use typelite_lib::voice_intent::language::{
         resolve_selection_translation_target, SELECTION_TRANSLATE_INSTRUCTION,
     };
 
-    // Selected text + Translate with no speech: the built-in instruction, and the active
-    // language as the target (here Hong Kong Traditional Chinese).
-    let (target, _) = resolve_selection_translation_target("", "zh-Hant-HK", &[]);
+    let (target, _) = resolve_selection_translation_target("", active_target, &[]);
     let mut req = dictation_request(SELECTION_TRANSLATE_INSTRUCTION);
-    req.selected_text = Some(
-        "The meeting has moved to next Tuesday. Please bring your laptop and the software update notes."
-            .into(),
-    );
+    req.selected_text = Some(REGIONAL_SOURCE.into());
     req.translate_enabled = true;
     req.target_lang = target;
     req.voice_intent = VoiceIntent::from_parts(
@@ -329,13 +328,18 @@ async fn selection_translation_into_hong_kong_chinese_uses_traditional_character
     .expect("valid selection translation intent");
 
     let (text, took) = polish(&req).await;
-    println!("selection translate (zh-Hant-HK): {took:?} -> {text:?}");
+    println!("selection translate ({active_target}): {took:?} -> {text:?}");
+    text
+}
+
+/// Traditional characters only (no Simplified forms), and actually translated.
+fn assert_traditional_translation(text: &str) {
     // Characters whose Simplified and Traditional forms differ.
     let traditional = [
-        '會', '議', '請', '帶', '腦', '軟', '體', '們', '筆', '記', '這', '將',
+        '會', '議', '請', '帶', '腦', '軟', '體', '們', '筆', '記', '這', '將', '網', '絡',
     ];
     let simplified = [
-        '会', '议', '请', '带', '脑', '软', '体', '们', '笔', '记', '这', '将',
+        '会', '议', '请', '带', '脑', '软', '体', '们', '笔', '记', '这', '将', '网', '络',
     ];
     assert!(
         text.chars().any(|c| traditional.contains(&c)),
@@ -348,6 +352,28 @@ async fn selection_translation_into_hong_kong_chinese_uses_traditional_character
     assert!(
         !text.to_lowercase().contains("meeting"),
         "not translated: {text:?}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn selection_translation_into_hong_kong_chinese_uses_traditional_characters() {
+    let text = translate_selection_into("zh-Hant-HK").await;
+    assert_traditional_translation(&text);
+    // Hong Kong vocabulary, not Taiwan's.
+    for taiwan in ["軟體", "筆電", "網路"] {
+        assert!(!text.contains(taiwan), "Taiwan term {taiwan} in {text:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn selection_translation_into_taiwan_chinese_uses_taiwan_vocabulary() {
+    let text = translate_selection_into("zh-Hant-TW").await;
+    assert_traditional_translation(&text);
+    assert!(
+        text.contains("軟體") || text.contains("筆電"),
+        "no Taiwan term (軟體 or 筆電) in {text:?}"
     );
 }
 
