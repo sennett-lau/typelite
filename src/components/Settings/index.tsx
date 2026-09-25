@@ -13,8 +13,8 @@ import { DirtyBar } from './shared/DirtyBar'
 import { useDirtyConfig } from './shared/useDirtyConfig'
 
 /**
- * Settings sections, shown as toolbar tabs across the top of the page (plan 0015): icon above
- * label, as in macOS Settings windows.
+ * Settings sections, shown as toolbar tabs across the top of the page (plan `two-tab-speech`): icon
+ * above label, as in macOS Settings windows.
  */
 const PANES = [
   { id: 'general', labelKey: 'settings.general', Icon: Gear },

@@ -6,7 +6,7 @@ export interface CapsuleSize {
   height: number
 }
 
-// Pill sizes from plan 0009 (pill.md). The window adds 12 pt of padding on each side.
+// Pill sizes from plan `aurora-pill` (pill.md). The window adds 12 pt of padding on each side.
 
 /** Dictate recording: red dot, 18-bar waveform and cancel button. */
 export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }

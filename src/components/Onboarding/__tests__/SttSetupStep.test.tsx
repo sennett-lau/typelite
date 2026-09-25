@@ -41,7 +41,7 @@ function card() {
   return screen.getByTestId('builtin-setup-card')
 }
 
-/** The buttons in the card: only one action at a time (plan 0015). */
+/** The buttons in the card: only one action at a time (plan `two-tab-speech`). */
 function cardButtons() {
   return within(card())
     .getAllByRole('button')

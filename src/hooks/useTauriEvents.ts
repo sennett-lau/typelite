@@ -173,7 +173,8 @@ export function useTauriEvents() {
     })
 
     addListener<PresetVerificationEvent>('preset:verification', applyVerificationEvent)
-    // Plan 0012: Quick speech setup progress, kept in a store so it survives leaving the step.
+    // Plan `quick-speech-setup`: Quick speech setup progress, kept in a store so it survives
+    // leaving the step.
     addListener<SpeechSetupStatus>('speech-setup:status', (status) =>
       useSpeechSetupStore.getState().applyStatus(status),
     )

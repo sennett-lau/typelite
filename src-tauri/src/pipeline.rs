@@ -294,9 +294,10 @@ fn route_pipeline_voice_intent(
     })
 }
 
-/// Whether the AI request translates, and into which language. Plan 0011: a selection
-/// translation goes into the language named in speech, else the active translation language
-/// (after any Switch language presses). Everything else keeps the configured behaviour.
+/// Whether the AI request translates, and into which language. Plan
+/// `ask-translate-and-live-questions`: a selection translation goes into the language named in
+/// speech, else the active translation language (after any Switch language presses). Everything
+/// else keeps the configured behaviour.
 fn request_translation(
     intent: &crate::voice_intent::VoiceIntent,
     utterance: &str,
@@ -704,7 +705,7 @@ pub struct PipelineHandle {
     preloaded_selected_text: Arc<Mutex<Option<String>>>,
     preloaded_voice_mode: Arc<Mutex<Option<crate::voice_intent::VoiceMode>>>,
     recording_start: Arc<Mutex<Option<std::time::Instant>>>,
-    /// Plan 0008: where the current run's speech provider notes its upload moments.
+    /// Plan `speed-board`: where the current run's speech provider notes its upload moments.
     stt_upload_probe: Arc<Mutex<Option<crate::timing::UploadProbe>>>,
     active_translation_operation: Arc<Mutex<Option<TranslationOperationState>>>,
     shared_client: reqwest::Client,
@@ -734,7 +735,7 @@ struct PolishTextOutcome {
     output_status: Option<String>,
     output_error: Option<String>,
     voice_execution: Option<crate::voice_intent::executor::VoiceExecutionResult>,
-    /// Plan 0008: error code of the step that failed, for the Speed board. `None` when the
+    /// Plan `speed-board`: error code of the step that failed, for the Speed board. `None` when the
     /// text reached the app.
     error_code: Option<String>,
 }
@@ -742,7 +743,7 @@ struct PolishTextOutcome {
 pub(crate) struct AskVoiceDraftOutcome {
     pub text: String,
     pub execution: crate::voice_intent::executor::VoiceExecutionResult,
-    /// How long the AI request took (Plan 0008).
+    /// How long the AI request took (Plan `speed-board`).
     pub llm_elapsed: std::time::Duration,
 }
 
@@ -753,8 +754,9 @@ enum SttWait {
     Cancelled,
     /// Recognition failed or heard nothing; carries the error code.
     Failed(String),
-    /// Nothing was heard, and the caller asked to handle that itself (Plan 0011: a selection
-    /// translation needs no speech). No error was shown.
+    /// Nothing was heard, and the caller asked to handle that itself (Plan
+    /// `ask-translate-and-live-questions`: a selection translation needs no speech). No error was
+    /// shown.
     NoSpeech,
 }
 
@@ -1121,8 +1123,8 @@ impl PipelineHandle {
             return Ok(());
         }
 
-        // Plan 0007: a missing service stops the run before anything starts, with one clear
-        // message. Dictate without AI still runs and pastes the raw transcript.
+        // Plan `setup-without-dead-ends`: a missing service stops the run before anything starts,
+        // with one clear message. Dictate without AI still runs and pastes the raw transcript.
         let loaded_config = self.load_config().await;
         let feature = if options.force_translate {
             crate::readiness::Feature::Translate
@@ -1264,7 +1266,8 @@ impl PipelineHandle {
             sample_rate: 16000,
         };
 
-        // Plan 0008: the provider notes when its upload starts and ends, for the Speed board.
+        // Plan `speed-board`: the provider notes when its upload starts and ends, for the Speed
+        // board.
         let upload_probe = crate::timing::UploadProbe::default();
         provider.set_upload_probe(upload_probe.clone());
         *self
@@ -1686,7 +1689,8 @@ impl PipelineHandle {
     }
 
     pub async fn stop(&self) -> Result<()> {
-        // Plan 0008: every step on the Speed board is measured from the moment stop is pressed.
+        // Plan `speed-board`: every step on the Speed board is measured from the moment stop is
+        // pressed.
         let stop_start = std::time::Instant::now();
 
         // Acquire pipeline_lock so we wait for start() to finish its setup
@@ -1828,8 +1832,8 @@ impl PipelineHandle {
         drop(guard);
 
         // ── Phase 1: Wait for STT ──────────────────────────────────────
-        // Plan 0011: selected text + Translate needs no speech; silence means "translate the
-        // selection into the target language".
+        // Plan `ask-translate-and-live-questions`: selected text + Translate needs no speech;
+        // silence means "translate the selection into the target language".
         let selection_translate = voice_mode == crate::voice_intent::VoiceMode::Translate
             && selected_text_has_content(selected_text.as_deref());
         let raw_text = match self
@@ -2554,8 +2558,8 @@ impl PipelineHandle {
     }
 
     /// Runs an Ask command that writes into the focused app: a draft inserted at the cursor, or
-    /// (Plan 0011) an edit or a translation that replaces the selection. The Ask caller shows
-    /// fallbacks.
+    /// (Plan `ask-translate-and-live-questions`) an edit or a translation that replaces the
+    /// selection. The Ask caller shows fallbacks.
     pub(crate) async fn run_ask_draft(
         &self,
         config: &storage::AppConfig,

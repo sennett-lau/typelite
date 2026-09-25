@@ -1,6 +1,6 @@
-//! Plan 0011: does an open Ask question need live information (news, prices, weather, ...)
-//! that the model cannot know? Typelite cannot search the web yet, so such questions get an
-//! honest reply instead of an invented answer.
+//! Plan `ask-translate-and-live-questions`: does an open Ask question need live information (news,
+//! prices, weather, ...) that the model cannot know? Typelite cannot search the web yet, so such
+//! questions get an honest reply instead of an invented answer.
 //!
 //! The AI decides with one short request (strict JSON, a few output tokens). When that request
 //! fails or takes longer than `CLASSIFY_TIMEOUT`, a keyword list decides instead.

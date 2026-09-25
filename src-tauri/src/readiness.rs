@@ -1,4 +1,4 @@
-//! Which features can start, given which services are ready (plan 0007).
+//! Which features can start, given which services are ready (plan `setup-without-dead-ends`).
 //!
 //! A service is ready when its active preset passed a Test since it last changed
 //! (`AppConfig::speech_ready` / `ai_ready`). The checks here run at the start of every

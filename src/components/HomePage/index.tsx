@@ -64,7 +64,8 @@ function ShortcutTiles() {
   )
   const targetName = targetLanguageLabel(activeTarget, t)
   const targetCount = useAppStore((s) => s.config.translation?.targets.length ?? 1)
-  // Plan 0010: the Switch language key, shown when there is more than one language to switch to.
+  // Plan `translate-controls`: the Switch language key, shown when there is more than one language
+  // to switch to.
   const switchHint =
     hotkeys.switchLanguage && targetCount > 1
       ? t('home.shortcuts.translateSwitchHint', {

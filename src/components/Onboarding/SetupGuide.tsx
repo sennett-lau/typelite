@@ -82,7 +82,8 @@ function SetupGuideCard() {
 
 /**
  * "How to set this up" for the AI polish service: expands the guide card below the link.
- * (Speech has no in-app guide since plan 0015; its "Learn more" opens the guide on GitHub.)
+ * (Speech has no in-app guide since plan `two-tab-speech`; its "Learn more" opens the guide on
+ * GitHub.)
  */
 export function SetupGuide() {
   const { t } = useTranslation()

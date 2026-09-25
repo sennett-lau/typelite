@@ -1,6 +1,6 @@
 /**
- * Plan 0008: the Speed board's numbers. The backend keeps the last 50 runs in memory (never on
- * disk) and sends one `timing:run` event per run; this file turns those records into the
+ * Plan `speed-board`: the Speed board's numbers. The backend keeps the last 50 runs in memory
+ * (never on disk) and sends one `timing:run` event per run; this file turns those records into the
  * "last run" bar, the "typical" medians and one rule-based tip.
  */
 import type { AppConfig } from '../stores/appStore'

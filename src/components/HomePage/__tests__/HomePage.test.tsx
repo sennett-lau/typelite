@@ -87,8 +87,8 @@ describe('HomePage', () => {
         'Dictate pastes the raw transcript',
       )
 
-      // Speech: "Set up" starts the Built-in setup here with the first offered model (plan
-      // 0015); "Other options" opens Settings.
+      // Speech: "Set up" starts the Built-in setup here with the first offered model
+      // (plan `two-tab-speech`); "Other options" opens Settings.
       fireEvent.click(within(card).getByRole('button', { name: 'Set up: Speech recognition' }))
       expect(tauri.startSpeechSetup).toHaveBeenCalledWith('large-v3-turbo')
       expect(window.location.hash).toBe('')

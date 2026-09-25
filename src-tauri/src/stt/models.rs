@@ -1,5 +1,5 @@
-//! Plan 0012: the Whisper model files that Quick setup downloads for the built-in speech
-//! provider.
+//! Plan `quick-speech-setup`: the Whisper model files that Quick setup downloads for the built-in
+//! speech provider.
 //!
 //! Models come from the official whisper.cpp repository on Hugging Face and are checked
 //! against a SHA-256 written into this file. They live in `<app data>/models/` (on macOS

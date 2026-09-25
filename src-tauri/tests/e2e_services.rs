@@ -266,7 +266,7 @@ async fn polish_keeps_one_topic_in_one_paragraph() {
     assert!(!text.contains('\n'), "unexpected line break: {text:?}");
 }
 
-// ─── Plan 0011: selection translate and live questions ───
+// ─── Plan `ask-translate-and-live-questions`: selection translate and live questions ───
 
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
@@ -380,8 +380,8 @@ async fn selection_translation_into_taiwan_chinese_uses_taiwan_vocabulary() {
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn ask_edit_on_a_selection_returns_a_shorter_replacement() {
-    // Plan 0011: Ask + "make this shorter" on a selection is routed as an edit that replaces
-    // the selection, so the AI must return only the shorter text.
+    // Plan `ask-translate-and-live-questions`: Ask + "make this shorter" on a selection is routed
+    // as an edit that replaces the selection, so the AI must return only the shorter text.
     let selected = "Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.";
     let instruction = "Make this shorter.";
     let intent = typelite_lib::commands::ask::route_ask_intent(
@@ -405,8 +405,8 @@ async fn ask_edit_on_a_selection_returns_a_shorter_replacement() {
     );
 }
 
-/// Plan 0012: the model file for the in-process test. Defaults to the developer's copy used by
-/// the local whisper.cpp server.
+/// Plan `quick-speech-setup`: the model file for the in-process test. Defaults to the developer's
+/// copy used by the local whisper.cpp server.
 fn builtin_model_path() -> Option<PathBuf> {
     let path = std::env::var("TYPELITE_E2E_BUILTIN_MODEL")
         .ok()
@@ -485,8 +485,8 @@ async fn builtin_speech_transcribes_an_english_sentence_in_process() {
     stt::builtin::engine().unload();
 }
 
-/// Plan 0012: Quick setup's download against the real Hugging Face file (190 MB): stop part
-/// way, resume with a Range request through the CDN redirect, then check the SHA-256.
+/// Plan `quick-speech-setup`: Quick setup's download against the real Hugging Face file (190 MB):
+/// stop part way, resume with a Range request through the CDN redirect, then check the SHA-256.
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "downloads 190 MB from Hugging Face"]
 async fn quick_setup_downloads_and_resumes_the_small_model() {

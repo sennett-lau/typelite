@@ -54,7 +54,7 @@ pub fn transcription_endpoint(base_url: &str) -> Result<String, String> {
     Ok(parsed.to_string())
 }
 
-/// Builds the in-process provider settings for a built-in preset (plan 0012).
+/// Builds the in-process provider settings for a built-in preset (plan `quick-speech-setup`).
 pub fn build_builtin_config(
     preset: &SpeechPreset,
 ) -> Result<super::builtin::BuiltinConfig, String> {

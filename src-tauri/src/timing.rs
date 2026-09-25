@@ -1,4 +1,4 @@
-//! Plan 0008: per-run step timings for the Speed board on Home.
+//! Plan `speed-board`: per-run step timings for the Speed board on Home.
 //!
 //! Every Dictate, Translate and Ask run records how long each step after "stop" took. The
 //! records live only in this process's memory (the last [`RUN_TIMING_CAPACITY`] runs) and are

@@ -86,7 +86,7 @@ describe('getCapsuleVisibility', () => {
 describe('getSizeForState', () => {
   const size = (width: number) => ({ width, height: 36 })
 
-  it('uses the narrow plan 0009 sizes while recording', () => {
+  it('uses the narrow plan `aurora-pill` sizes while recording', () => {
     expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(150))
     expect(getSizeForState('recording', false, false, false)).toEqual(size(150))
     expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(150))

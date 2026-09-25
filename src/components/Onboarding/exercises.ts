@@ -1,9 +1,9 @@
 import type { ShortcutRole } from './shortcutConfig'
 
 /**
- * Plan 0013: the scripted exercises of the three shortcut steps, and their forgiving success
- * checks. Speech and models vary, so a check looks for a key word or a visible change, never
- * for exact text.
+ * Plan `guided-tutorial`: the scripted exercises of the three shortcut steps, and their forgiving
+ * success checks. Speech and models vary, so a check looks for a key word or a visible change,
+ * never for exact text.
  */
 
 export type ExerciseId =

@@ -1,9 +1,9 @@
 import { BUILTIN_WHISPER_PRESET_ID, isBuiltinSpeech, type SpeechPreset } from '../stores/appStore'
 
 /**
- * Plan 0015: speech recognition runs on one of two engines, Built-in (whisper.cpp inside
- * Typelite) or "your server or API key" (any OpenAI-compatible speech service). The engine in
- * use follows from the active preset's kind.
+ * Plan `two-tab-speech`: speech recognition runs on one of two engines, Built-in (whisper.cpp
+ * inside Typelite) or "your server or API key" (any OpenAI-compatible speech service). The engine
+ * in use follows from the active preset's kind.
  */
 export type SpeechEngine = 'builtin' | 'server'
 

@@ -4,8 +4,8 @@ import { progressPercent } from '../../lib/speechSetup'
 import { modelDetail, modelName } from './builtinText'
 
 /**
- * Plan 0015: the models this Mac runs well, as radio option cards. With one model there is
- * nothing to choose, but it still shows as selected.
+ * Plan `two-tab-speech`: the models this Mac runs well, as radio option cards. With one model there
+ * is nothing to choose, but it still shows as selected.
  */
 export function ModelOptions({
   models,

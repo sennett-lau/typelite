@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Theme: plan 0006 (UI revamp). Light values live in @theme; `.dark` (set on <html> by
+ * Theme: plan `ui-revamp`. Light values live in @theme; `.dark` (set on <html> by
  * src/hooks/useTheme.ts) switches to the "Aurora" dark mode. Components use these tokens through
  * Tailwind utilities (`bg-bg-elevated`, `text-text-secondary`, ...) or the component classes below.
  */
@@ -95,7 +95,7 @@
   --color-pill-menu: rgba(30, 30, 32, 0.86);
   --color-pill-text: #ffffff;
   --color-recording: #ff453a;
-  /* Aurora light inside the pill and the waveform gradient (plan 0009): blue to violet in
+  /* Aurora light inside the pill and the waveform gradient (plan `aurora-pill`): blue to violet in
      light mode, teal to violet in dark mode. */
   --color-aurora-a: #0a84ff;
   --color-aurora-b: #af52de;
@@ -103,8 +103,8 @@
   --color-pill-chip: #0a84ff;
   --color-pill-chip-text: #ffffff;
 
-  /* Speed board steps (plan 0008): the colour follows the step, not the feature. Read through
-     var() in inline styles, so they live here to be always emitted. */
+  /* Speed board steps (plan `speed-board`): the colour follows the step, not the feature. Read
+     through var() in inline styles, so they live here to be always emitted. */
   --color-step-recording: #aeaeb2;
   --color-step-speech: #0a84ff;
   --color-step-ai: #af52de;
@@ -558,7 +558,7 @@ body,
     outline-offset: -2px;
   }
 
-  /* ─── Settings toolbar tabs (plan 0015): icon above label, like macOS Settings windows ─── */
+  /* ─── Settings toolbar tabs (plan `two-tab-speech`): icon above label, like macOS Settings ─── */
   .toolbar-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -595,7 +595,7 @@ body,
     outline-offset: -2px;
   }
 
-  /* ─── Speech setup (plan 0015, docs/plans/0015-two-tab-speech/mock.html) ─── */
+  /* ─── Speech setup (plan `two-tab-speech`, docs/plans/2026-09-25-two-tab-speech/mock.html) ─── */
 
   /* The onboarding Built-in card: one fixed height for every state, so text never moves. */
   .setup-card {
@@ -923,7 +923,7 @@ body,
   color: transparent;
 }
 
-/* ─── Aurora — the light inside the pill (plan 0009, CapsuleAurora.tsx) ─── */
+/* ─── Aurora — the light inside the pill (plan `aurora-pill`, CapsuleAurora.tsx) ─── */
 .aurora {
   position: absolute;
   inset: 0;

@@ -26,9 +26,9 @@ import {
 type CardState = 'none' | 'downloading' | 'ready' | 'failed'
 
 /**
- * Onboarding → Speech recognition, the Built-in card (plan 0015). It has one fixed height; every
- * state fills the same two slots, a status area and one action button at the bottom right:
- * Not set up (model cards + hardware note, Set up), Downloading (Cancel), Ready (Change
+ * Onboarding → Speech recognition, the Built-in card (plan `two-tab-speech`). It has one fixed
+ * height; every state fills the same two slots, a status area and one action button at the bottom
+ * right: Not set up (model cards + hardware note, Set up), Downloading (Cancel), Ready (Change
  * model), Failed (Try again).
  */
 export function BuiltinSetupCard() {

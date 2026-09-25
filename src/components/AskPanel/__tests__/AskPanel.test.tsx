@@ -433,7 +433,7 @@ describe('AskPanel', () => {
     })
   })
 
-  describe('live questions (Plan 0011)', () => {
+  describe('live questions (Plan `ask-translate-and-live-questions`)', () => {
     const liveResult = () =>
       askResult({
         question: "What's the AI news today?",
