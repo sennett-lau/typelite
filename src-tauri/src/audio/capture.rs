@@ -361,6 +361,12 @@ fn run_capture(
     let target_channels = config.channels;
     let samples_per_chunk = (target_rate * config.chunk_duration_ms / 1000) as usize;
     let buffer: Arc<Mutex<Vec<i16>>> = Arc::new(Mutex::new(Vec::with_capacity(samples_per_chunk)));
+    // The chunk sender lives in a slot we clear ourselves on stop. The speech task finishes when
+    // this channel closes, and CoreAudio may keep the stream callback (and anything it owns)
+    // alive after the stream is dropped, so we must not rely on that drop to close it.
+    let sender_slot: Arc<Mutex<Option<mpsc::Sender<Vec<u8>>>>> = Arc::new(Mutex::new(Some(sender)));
+    let callback_sender = sender_slot.clone();
+    let flush_buffer = buffer.clone();
 
     let stream = device.build_input_stream(
         &stream_config,
@@ -399,7 +405,13 @@ fn run_capture(
             while buf.len() >= samples_per_chunk {
                 let chunk: Vec<i16> = buf.drain(..samples_per_chunk).collect();
                 let bytes: Vec<u8> = chunk.iter().flat_map(|s| s.to_le_bytes()).collect();
-                let _ = sender.try_send(bytes);
+                if let Some(sender) = callback_sender
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .as_ref()
+                {
+                    let _ = sender.try_send(bytes);
+                }
             }
         },
         |err| {
@@ -434,7 +446,22 @@ fn run_capture(
     let _ = stop_rx.recv();
     drop(output_mute);
 
-    // Stream is dropped here, stopping capture
+    // Flush the last partial chunk, then close the channel so the speech task sends the audio.
+    {
+        let mut slot = sender_slot.lock().unwrap_or_else(|e| e.into_inner());
+        let rest: Vec<i16> = flush_buffer
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .drain(..)
+            .collect();
+        if let (Some(sender), false) = (slot.as_ref(), rest.is_empty()) {
+            let bytes: Vec<u8> = rest.iter().flat_map(|s| s.to_le_bytes()).collect();
+            let _ = sender.try_send(bytes);
+        }
+        *slot = None;
+    }
+    tracing::debug!("Audio chunk channel closed");
+
     drop(stream);
     *state.lock().unwrap_or_else(|e| e.into_inner()) = CaptureState::Idle;
     tracing::info!("Audio capture stopped");
