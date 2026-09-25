@@ -1,27 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, RotateCw } from 'lucide-react'
+import { RotateCw } from 'lucide-react'
 import {
   bindingFromHotkey,
   displayBinding,
   hotkeyBindingIdentity,
   useAppStore,
 } from '../../stores/appStore'
-import type { HotkeyConfig, ShortcutBinding, VoiceMode } from '../../stores/appStore'
+import type { HotkeyConfig, ShortcutBinding } from '../../stores/appStore'
 import { resumeHotkey } from '../../lib/tauri'
 import { TARGET_LANGUAGES } from '../../lib/constants'
+import { switchLanguageLabel } from '../../lib/switchLanguage'
 import { HotkeyRecorder } from '../Settings/ShortcutBindingList'
 import { Row } from '../ui/Group'
 import { persistConfig } from './persistConfig'
-import { usePracticeCompletion } from './usePracticeCompletion'
+import { ShortcutExercises } from './ShortcutExercises'
 import { LIST_KEY, roleBindings, translationWithFirstTarget } from './shortcutConfig'
 import type { ShortcutRole } from './shortcutConfig'
-
-const ROLE_MODE: Record<ShortcutRole, VoiceMode> = {
-  dictation: 'dictate',
-  translate: 'translate',
-  ask: 'ask',
-}
 
 interface Props {
   role: ShortcutRole
@@ -30,22 +25,20 @@ interface Props {
 }
 
 /**
- * Steps 5–7: record the shortcut by pressing keys, then use it once in the practice box.
- * The step is complete when a real run worked (see `usePracticeCompletion`).
+ * Steps 5–7: record the shortcut by pressing keys, then work through the step's scripted
+ * exercises (plan 0013). The step is complete when each exercise is done or skipped.
  */
 export function ShortcutStep({ role, done, onDone }: Props) {
   const { t } = useTranslation()
   const hotkeys = useAppStore((s) => s.config.hotkeys)
   const translation = useAppStore((s) => s.config.translation)
   const updateConfig = useAppStore((s) => s.updateConfig)
-  const [practiceText, setPracticeText] = useState('')
   const [saveError, setSaveError] = useState<string | null>(null)
   const [liveError, setLiveError] = useState<string | null>(null)
 
   const bindings = roleBindings(hotkeys, role)
   const current = bindings[0] ?? null
   const keyLabel = current ? displayBinding(current) : ''
-  const practice = usePracticeCompletion(ROLE_MODE[role], onDone)
 
   // Shortcuts are registered at app start even during onboarding. Register them again when
   // the step opens, so a shortcut paused by an earlier recording or a late Accessibility
@@ -109,9 +102,6 @@ export function ShortcutStep({ role, done, onDone }: Props) {
   }
 
   const holdMode = role !== 'ask' && hotkeys.dictationMode === 'hold'
-  const instructionKey = holdMode
-    ? `onboarding.${role}.practiceHold`
-    : `onboarding.${role}.practice`
 
   return (
     <div className="space-y-4">
@@ -164,42 +154,16 @@ export function ShortcutStep({ role, done, onDone }: Props) {
         </div>
       )}
 
-      <div className="row-group">
-        <Row layout="stacked" label={t('onboarding.practice.label')}>
-          <p className="mb-2 text-[12px] leading-relaxed text-text-secondary">
-            {current ? t(instructionKey, { key: keyLabel }) : t('onboarding.shortcut.recordFirst')}
-          </p>
-          <textarea
-            aria-label={t('onboarding.practice.label')}
-            value={practiceText}
-            onChange={(event) => {
-              setPracticeText(event.target.value)
-              practice.notePracticeText(event.target.value)
-            }}
-            autoFocus
-            rows={3}
-            placeholder={t('onboarding.practice.placeholder')}
-            className="field w-full resize-none text-[13px]"
-          />
-          {practice.answer && (
-            <div className="mt-2 rounded-[8px] bg-bg-secondary px-3 py-2 text-[12px] text-text-primary">
-              <p className="mb-0.5 text-[11px] text-text-tertiary">{t('onboarding.ask.answer')}</p>
-              <p className="whitespace-pre-wrap">{practice.answer}</p>
-            </div>
-          )}
-          {done ? (
-            <p className="mt-2 flex items-center gap-1 text-[12px] text-success">
-              <CheckCircle2 size={13} /> {t(`onboarding.${role}.success`)}
-            </p>
-          ) : (
-            practice.error && (
-              <p className="mt-2 text-[12px] text-error">
-                {t('onboarding.practice.failed', { error: practice.error })}
-              </p>
-            )
-          )}
-        </Row>
-      </div>
+      <ShortcutExercises
+        role={role}
+        keyLabel={current ? keyLabel : ''}
+        holdMode={holdMode}
+        target={translation.active_target}
+        targetCount={translation.targets.length}
+        switchKeyLabel={switchLanguageLabel(hotkeys.switchLanguage ?? null, t)}
+        done={done}
+        onComplete={onDone}
+      />
     </div>
   )
 }

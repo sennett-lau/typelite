@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ShortcutStep } from '../ShortcutStep'
 import { translationWithFirstTarget } from '../shortcutConfig'
@@ -54,7 +54,7 @@ function lastSaved() {
 async function renderStep(role: ShortcutRole, onDone = vi.fn()) {
   const view = render(<ShortcutStep role={role} done={false} onDone={onDone} />)
   // Wait until the practice listeners are attached.
-  await waitFor(() => expect(listeners.get('pipeline:insert_result')?.length).toBeGreaterThan(0))
+  await waitFor(() => expect(listeners.get('pipeline:error')?.length).toBeGreaterThan(0))
   return { ...view, onDone }
 }
 
@@ -96,7 +96,7 @@ describe('ShortcutStep recording', () => {
 
     expect(screen.getByRole('button', { name: 'Fn' })).toBeInTheDocument()
     expect(
-      screen.getByText('Press Fn, say a sentence, then press Fn again. The text appears below.'),
+      screen.getByText('Press Fn, read the line below, then press Fn again.'),
     ).toBeInTheDocument()
     expect(tauri.resumeHotkey).toHaveBeenCalledTimes(1)
   })
@@ -178,40 +178,102 @@ describe('ShortcutStep translate language', () => {
   })
 })
 
-describe('ShortcutStep completion', () => {
-  it('completes Dictate when a dictation run pasted its text', async () => {
+/** The practice box of the current exercise card. */
+const box = () => screen.getByLabelText('Try it') as HTMLTextAreaElement
+
+/** A Dictate or Translate run: the transcript, the paste into the box, then the result. */
+function speakRun(mode: 'dictate' | 'translate', said: string | null, pastedBox: string) {
+  emit('pipeline:voice_mode', mode)
+  if (said !== null) emit('stt:final', said)
+  fireEvent.change(box(), { target: { value: pastedBox } })
+  emit('pipeline:insert_result', { status: 'inserted' })
+  emit('pipeline:voice_mode', null)
+}
+
+function beforeAfter() {
+  return screen.queryByTestId('before-after')
+}
+
+describe('Dictate exercises', () => {
+  it('shows the script with the current binding and the before/after of a passing run', async () => {
+    const end = bindingFromHotkey('End')!
+    const hotkeys = useAppStore.getState().config.hotkeys
+    useAppStore
+      .getState()
+      .updateConfig({ hotkeys: { ...hotkeys, dictation: end, dictationBindings: [end] } })
     const { onDone } = await renderStep('dictation')
 
-    emit('pipeline:voice_mode', 'dictate')
-    emit('pipeline:insert_result', { status: 'inserted' })
+    expect(screen.getByText('Exercise 1 of 2: Change of mind')).toBeInTheDocument()
+    expect(screen.getByText('Press End, read the line below, then press End again.')).toBeVisible()
+    expect(screen.getByText("Let's have lunch at 1… oh no, let's do it at 2.")).toBeVisible()
+    expect(beforeAfter()).toBeNull()
+    expect(document.activeElement).toBe(box())
 
+    speakRun('dictate', "Let's have lunch at 1 oh no let's do it at 2", "Let's have lunch at 2.")
+
+    expect(
+      within(beforeAfter()!).getByText("Let's have lunch at 1 oh no let's do it at 2"),
+    ).toBeVisible()
+    expect(within(beforeAfter()!).getByText("Let's have lunch at 2.")).toBeVisible()
+    expect(screen.getByText('Typelite kept only your correction.')).toBeVisible()
+    expect(onDone).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next exercise' }))
+    expect(screen.getByText('Exercise 2 of 2: Fillers')).toBeInTheDocument()
+    expect(beforeAfter()).toBeNull()
+    expect(box()).toHaveValue('')
+    await waitFor(() => expect(listeners.get('stt:final')?.length).toBe(1))
+
+    speakRun(
+      'dictate',
+      'Um so I think we should like ship it on Friday',
+      'I think we should ship it on Friday.',
+    )
+    expect(screen.getByText('Fillers like um and like are removed.')).toBeVisible()
     expect(onDone).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish exercises' }))
+    expect(screen.getByText('All exercises finished')).toBeInTheDocument()
+    expect(screen.getByText('Dictation works.')).toBeVisible()
+  })
+
+  it('shows a miss for a run that kept "at 1", and Try again resets the card', async () => {
+    const { onDone } = await renderStep('dictation')
+
+    speakRun('dictate', 'lunch at 1', "Let's have lunch at 1.")
+    expect(
+      await screen.findByText(
+        "That doesn't look like the expected result yet. Try again, or skip this exercise.",
+      ),
+    ).toBeVisible()
+    expect(onDone).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(box()).toHaveValue('')
+    expect(beforeAfter()).toBeNull()
+    expect(screen.queryByText(/expected result/)).toBeNull()
   })
 
   it('ignores runs of another mode', async () => {
-    const { onDone } = await renderStep('dictation')
+    await renderStep('dictation')
 
-    emit('pipeline:voice_mode', 'translate')
-    emit('pipeline:insert_result', { status: 'inserted' })
-
-    expect(onDone).not.toHaveBeenCalled()
+    speakRun('translate', 'lunch at 2', "Let's have lunch at 2.")
+    expect(screen.queryByText('Typelite kept only your correction.')).toBeNull()
   })
 
-  it('completes Translate only for a translate run', async () => {
-    const { onDone } = await renderStep('translate')
+  it('completes the step when every exercise is skipped', async () => {
+    const { onDone } = await renderStep('dictation')
 
-    emit('pipeline:voice_mode', 'dictate')
-    emit('pipeline:insert_result', { status: 'inserted' })
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this exercise' }))
+    expect(screen.getByText('Exercise 2 of 2: Fillers')).toBeInTheDocument()
     expect(onDone).not.toHaveBeenCalled()
-
-    emit('pipeline:voice_mode', 'translate')
-    emit('pipeline:voice_mode', null)
-    emit('pipeline:insert_result', { status: 'copiedFallback' })
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this exercise' }))
     expect(onDone).toHaveBeenCalledTimes(1)
+    expect(screen.getAllByLabelText('Skipped')).toHaveLength(2)
   })
 
-  it('shows a failed paste or pipeline error and stays incomplete', async () => {
-    const { onDone } = await renderStep('dictation')
+  it('shows a failed paste or pipeline error', async () => {
+    await renderStep('dictation')
 
     emit('pipeline:voice_mode', 'dictate')
     emit('pipeline:insert_result', { status: 'failed', message: 'paste blocked' })
@@ -219,28 +281,136 @@ describe('ShortcutStep completion', () => {
 
     emit('pipeline:error', { code: 'stt_connection_failed' })
     expect(await screen.findByText('That did not work (STT offline). Try again.')).toBeVisible()
-    expect(onDone).not.toHaveBeenCalled()
   })
 
-  it('completes Ask when an answer arrives and shows it', async () => {
-    const { onDone } = await renderStep('ask')
+  it('forgets the before/after when the step changes', async () => {
+    const view = render(
+      <ShortcutStep key="dictation" role="dictation" done={false} onDone={vi.fn()} />,
+    )
+    await waitFor(() => expect(listeners.get('stt:final')?.length).toBe(1))
+    speakRun('dictate', 'lunch at 2', "Let's have lunch at 2.")
+    expect(beforeAfter()).not.toBeNull()
 
-    emit('ask:result', { question: 'Capital of France?', answer: 'Paris.', output: 'popupAnswer' })
+    view.rerender(<ShortcutStep key="translate" role="translate" done={false} onDone={vi.fn()} />)
+    expect(beforeAfter()).toBeNull()
+    view.rerender(<ShortcutStep key="dictation" role="dictation" done={false} onDone={vi.fn()} />)
+    expect(beforeAfter()).toBeNull()
+    expect(box()).toHaveValue('')
+    expect(screen.queryByText('lunch at 2')).toBeNull()
+  })
+})
 
+describe('Translate exercises', () => {
+  it('translates speech, then a pre-selected sentence in another language', async () => {
+    const { onDone } = await renderStep('translate')
+
+    expect(screen.getByText('Good morning, can we meet tomorrow afternoon?')).toBeVisible()
+    speakRun(
+      'translate',
+      '早上好，我们明天下午可以见面吗？',
+      'Good morning, can we meet tomorrow afternoon?',
+    )
+    expect(screen.getByText('Typelite wrote it in English.')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next exercise' }))
+    expect(box()).toHaveValue('今天下午三点开会')
+    expect(document.activeElement).toBe(box())
+    expect(box().selectionStart).toBe(0)
+    expect(box().selectionEnd).toBe('今天下午三点开会'.length)
+    await waitFor(() => expect(listeners.get('stt:final')?.length).toBe(1))
+
+    // No speech: the selection itself is translated and replaced.
+    speakRun('translate', null, 'The meeting is at three this afternoon.')
+    expect(within(beforeAfter()!).getByText('Nothing (no speech this time)')).toBeVisible()
+    expect(screen.getByText('The selection was replaced by its English translation.')).toBeVisible()
     expect(onDone).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Paris.')).toBeInTheDocument()
   })
 
-  it('completes Ask when the answer was typed into the practice box', async () => {
-    const { onDone } = await renderStep('ask')
-    const box = screen.getByLabelText('Try it')
+  it('pre-fills English for a non-English target and fails an untranslated box', async () => {
+    useAppStore.getState().updateConfig({ translation: { targets: ['ja'], active_target: 'ja' } })
+    await renderStep('translate')
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this exercise' }))
 
-    fireEvent.change(box, { target: { value: 'typed by hand' } })
-    expect(onDone).not.toHaveBeenCalled()
+    expect(box()).toHaveValue('The meeting starts at three this afternoon.')
+    await waitFor(() => expect(listeners.get('stt:final')?.length).toBe(1))
+    speakRun('translate', null, 'The meeting starts at 3 this afternoon.')
+    expect(await screen.findByText(/expected result/)).toBeVisible()
+  })
+
+  it('shows the Switch language key with two or more languages', async () => {
+    await renderStep('translate')
+    expect(screen.queryByText(/While recording, press/)).toBeNull()
+    cleanup()
+
+    useAppStore
+      .getState()
+      .updateConfig({ translation: { targets: ['en', 'ja'], active_target: 'en' } })
+    await renderStep('translate')
+    expect(screen.getByText(/You chose 2 languages\. While recording, press/)).toBeVisible()
+  })
+})
+
+describe('Ask exercises', () => {
+  it('answers a question, then shortens a pre-selected sentence', async () => {
+    const { onDone } = await renderStep('ask')
+
+    expect(screen.getByText('What is fifteen percent of two hundred forty?')).toBeVisible()
+    emit('pipeline:state', 'ask_recording')
+    emit('ask:final', 'What is fifteen percent of two hundred forty?')
+    emit('pipeline:state', 'ask_thinking')
+    emit('ask:result', {
+      question: 'What is 15% of 240?',
+      answer: '15% of 240 is 36.',
+      output: 'popupAnswer',
+    })
+    expect(within(beforeAfter()!).getByText('What is 15% of 240?')).toBeVisible()
+    expect(within(beforeAfter()!).getByText('15% of 240 is 36.')).toBeVisible()
+    expect(screen.getByText('Typelite answered: 15% of 240 is 36.')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next exercise' }))
+    const prefill =
+      'Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.'
+    expect(box()).toHaveValue(prefill)
+    expect(box().selectionEnd).toBe(prefill.length)
+    await waitFor(() => expect(listeners.get('ask:result')?.length).toBe(1))
+
+    emit('pipeline:state', 'ask_recording')
+    emit('ask:final', 'Make this shorter.')
+    emit('pipeline:state', 'ask_thinking')
+    emit('ask:result', {
+      question: 'Make this shorter.',
+      answer: 'Did you get a chance to look at my draft?',
+      output: 'popupAnswer',
+    })
+    expect(screen.getByText('Typelite wrote a shorter version of your selection.')).toBeVisible()
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('counts an answer typed into the box, but not typing by hand', async () => {
+    await renderStep('ask')
+
+    fireEvent.change(box(), { target: { value: 'typed by hand' } })
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    expect(screen.queryByText(/Typelite answered/)).toBeNull()
 
     emit('pipeline:state', 'ask_recording')
     emit('pipeline:state', 'ask_thinking')
-    fireEvent.change(box, { target: { value: 'An answer pasted by Ask' } })
-    expect(onDone).toHaveBeenCalledTimes(1)
+    fireEvent.change(box(), { target: { value: 'typed by hand 36' } })
+    expect(screen.getByText('Typelite answered: 15% of 240 is 36.')).toBeVisible()
+  })
+
+  it('does not pass an edit that made the text longer', async () => {
+    await renderStep('ask')
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this exercise' }))
+    await waitFor(() => expect(listeners.get('ask:result')?.length).toBe(1))
+
+    emit('pipeline:state', 'ask_recording')
+    emit('pipeline:state', 'ask_thinking')
+    emit('ask:result', {
+      question: 'Make this shorter.',
+      answer: `${box().value} Thanks a lot, really appreciate it!`,
+      output: 'popupAnswer',
+    })
+    expect(await screen.findByText(/expected result/)).toBeVisible()
   })
 })
