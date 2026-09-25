@@ -249,3 +249,15 @@ async fn dictation_round_trip_from_audio_to_polished_text() {
     assert!(words.contains("tuesday"), "{polished:?}");
     assert!(!words.contains("monday"), "{polished:?}");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn polish_keeps_one_topic_in_one_paragraph() {
+    // Whisper segments arrive as separate lines; the result must not keep those breaks.
+    let req = dictation_request(
+        "I also see how it looks quite weird when it tries to paste the text\nbecause it puts its own new line in the middle of some random places\nit should only do new lines on sections or content that should be separated",
+    );
+    let (text, took) = polish(&req).await;
+    println!("polish (one paragraph): {took:?} -> {text:?}");
+    assert!(!text.contains('\n'), "unexpected line break: {text:?}");
+}

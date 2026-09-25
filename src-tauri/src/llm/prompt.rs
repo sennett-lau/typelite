@@ -16,6 +16,7 @@ Rules:
    SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase.
 3. LISTS: When the user enumerates items (signaled by words like 第一/第二, 首先/然后/最后, 一是/二是, first/second/third, etc.), format as a numbered list. CRITICAL: each list item MUST be on its own line.
 4. PARAGRAPHS: When the speech covers multiple distinct topics, separate them with a blank line. Do NOT split a single flowing thought into multiple paragraphs.
+   LINE BREAKS: Never put a line break inside a sentence or between sentences about the same topic. Use line breaks only for list items and between clearly separate topics. Most dictations are a single paragraph.
 5. Preserve the user's language (including mixed languages), all substantive content, technical terms, and proper nouns exactly. Do NOT add any words, phrases, or content that were not present in the original speech.
 6. Output ONLY the processed text. No explanations, no quotes around output. Do not end the output with a terminal period (. or 。). Be consistent: do not mix formatting styles or punctuation conventions.
 7. SPANISH: For Spanish questions, use matching question punctuation (¿...?). Never open a Spanish question with ¿ and close it with ! unless the user clearly dictated an exclamation.
