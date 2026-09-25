@@ -78,7 +78,8 @@
       "switchScene": "切换提示词预设",
       "switchSceneDesc": "切换到下一个提示词预设",
       "openApp": "打开 Typelite",
-      "openAppDesc": "显示主窗口"
+      "openAppDesc": "显示主窗口",
+      "translateSwitchHint": "按 {{key}} 切换语言"
     },
     "subtitle": "在任何地方按下快捷键说话，润色后的文字会替你输入。",
     "takeTour": "体验快捷键教程",
@@ -226,9 +227,8 @@
   "capsule": {
     "cancelRecording": "取消录音",
     "preparing": "准备中...",
-    "transcribing": "转录中...",
+    "transcribing": "转录中",
     "cancelProcessing": "取消处理",
-    "thinking": "思考中...",
     "cancelPolishing": "取消润色",
     "done": "完成",
     "errorOccurred": "发生错误",
@@ -259,7 +259,9 @@
       "settings": "设置",
       "exit": "退出"
     },
-    "setUp": "去设置"
+    "setUp": "去设置",
+    "polishing": "润色中",
+    "pasting": "粘贴中"
   },
   "settings": {
     "title": "设置",
@@ -425,7 +427,12 @@
     "groupTranslation": "翻译",
     "groupAdvanced": "高级",
     "connection": "连接",
-    "versionLine": "版本 {{version}}"
+    "versionLine": "版本 {{version}}",
+    "switchLanguageHotkey": "切换语言",
+    "switchLanguageHint": "仅在翻译录音进行时生效：切换到下一种翻译语言。",
+    "switchLanguageReset": "使用 Shift（左右均可）",
+    "eitherShift": "Shift（左右均可）",
+    "shortcutOff": "关闭"
   },
   "contextFamilies": {
     "email": "邮件",
@@ -639,12 +646,19 @@
   },
   "translate": {
     "targetsLabel": "翻译语言",
-    "slot": "语言 {{number}}",
     "setActive": "默认使用：",
     "remove": "移除",
-    "cycleHint": "录音时再次按下翻译快捷键可切换语言；按听写快捷键结束。",
     "chipsLabel": "翻译语言",
-    "chipLabel": "翻译为"
+    "chipLabel": "翻译为",
+    "defaultMark": "默认",
+    "addLanguage": "添加语言",
+    "chooseLanguage": "选择语言",
+    "switchHint": "最多三种语言。翻译录音进行时，按“切换语言”键（设置 → 通用）切换到下一种语言。再次按翻译或按听写快捷键即可结束并粘贴。",
+    "languages": {
+      "zhHans": "简体中文",
+      "zhHantHK": "繁體中文（香港）",
+      "zhHantTW": "繁體中文（台灣）"
+    }
   },
   "presets": {
     "preset": "预设",
@@ -680,7 +694,7 @@
     "microphonePicker": "麦克风选择器，带实时输入电平。",
     "pressKeysShortcut": "按下按键即可录制快捷键。",
     "liveWaveform": "说话时胶囊中显示实时波形。",
-    "translationLanguages": "最多三种翻译语言，可在胶囊中选择。",
+    "translationLanguages": "最多三种翻译语言，翻译时可用“切换语言”键切换。",
     "setupTutorial": "全新的分步设置教程。",
     "nativeGlass": "Native Glass 外观，跟随浅色和深色模式。",
     "noHistory": "不再保存历史：Typelite 不会记录你说的内容。"

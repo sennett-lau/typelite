@@ -109,6 +109,11 @@ pub struct KeyInput {
     pub class: KeyClass,
 }
 
+/// Tells the matcher whether the Switch language bindings are live right now (a Translate
+/// recording is running). Called on the key listener thread for each key press, so it must be
+/// quick and must not wait on anything that waits on the listener.
+pub type SwitchGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
+
 /// Matches held keys against the configured chords.
 ///
 /// Rules:
@@ -120,39 +125,75 @@ pub struct KeyInput {
 ///   first. Then the smaller one is dropped, and it cannot fire again until its keys are
 ///   pressed again.
 /// - Otherwise the winner fires `Pressed` at once, and `Released` when any of its keys goes up.
+/// - Switch language bindings count only while the [`SwitchGate`] says a Translate recording
+///   runs. At other times they are ignored completely, so a bare key like Shift types as
+///   usual. Only a key *press* seen while the gate is open can trigger them, so a key that was
+///   already held when the recording started (part of the Translate chord) never counts.
+///   While they are live, a key press they win is swallowed, even a modifier; its release is
+///   swallowed too, so the focused app never sees half of the key.
 pub struct ChordMatcher {
     bindings: Vec<NativeHotkeyBinding>,
-    has_superset: Vec<bool>,
-    bound_keys: BTreeSet<u16>,
+    /// Per binding: another binding has a larger chord that contains it, with the Switch
+    /// language bindings left out (`idle`) or included (`armed`).
+    has_superset_idle: Vec<bool>,
+    has_superset_armed: Vec<bool>,
+    bound_keys_idle: BTreeSet<u16>,
+    bound_keys_armed: BTreeSet<u16>,
     held: BTreeSet<u16>,
     active: Vec<usize>,
     deferred: Vec<usize>,
     swallowed: BTreeSet<u16>,
+    switch_gate: Option<SwitchGate>,
+}
+
+fn is_switch_role(binding: &NativeHotkeyBinding) -> bool {
+    binding.role == crate::hotkey::HotkeyRole::SwitchLanguage
 }
 
 impl ChordMatcher {
     pub fn new(bindings: Vec<NativeHotkeyBinding>) -> Self {
-        let has_superset = bindings
-            .iter()
-            .map(|binding| {
-                bindings
-                    .iter()
-                    .any(|other| binding.chord.is_strict_subset_of(&other.chord))
-            })
-            .collect();
-        let bound_keys = bindings
-            .iter()
-            .flat_map(|binding| binding.chord.keys.iter().copied())
-            .collect();
+        let has_superset = |include_switch: bool| -> Vec<bool> {
+            bindings
+                .iter()
+                .map(|binding| {
+                    bindings.iter().any(|other| {
+                        (include_switch || !is_switch_role(other))
+                            && binding.chord.is_strict_subset_of(&other.chord)
+                    })
+                })
+                .collect()
+        };
+        let bound_keys = |include_switch: bool| -> BTreeSet<u16> {
+            bindings
+                .iter()
+                .filter(|binding| include_switch || !is_switch_role(binding))
+                .flat_map(|binding| binding.chord.keys.iter().copied())
+                .collect()
+        };
         Self {
+            has_superset_idle: has_superset(false),
+            has_superset_armed: has_superset(true),
+            bound_keys_idle: bound_keys(false),
+            bound_keys_armed: bound_keys(true),
             bindings,
-            has_superset,
-            bound_keys,
             held: BTreeSet::new(),
             active: Vec::new(),
             deferred: Vec::new(),
             swallowed: BTreeSet::new(),
+            switch_gate: None,
         }
+    }
+
+    /// Use `gate` to decide when the Switch language bindings are live. Without a gate they
+    /// never are.
+    pub fn with_switch_gate(mut self, gate: SwitchGate) -> Self {
+        self.switch_gate = Some(gate);
+        self
+    }
+
+    fn switch_armed(&self) -> bool {
+        self.bindings.iter().any(is_switch_role)
+            && self.switch_gate.as_ref().is_some_and(|gate| gate())
     }
 
     /// Keys currently believed to be held.
@@ -192,15 +233,22 @@ impl ChordMatcher {
 
     fn press(&mut self, input: KeyInput, events: &mut Vec<NativeHotkeyEvent>) -> bool {
         let code = input.code;
-        let always_swallow = input.class == KeyClass::Standalone && self.bound_keys.contains(&code);
+        let armed = self.switch_armed();
+        let bound_keys = if armed {
+            &self.bound_keys_armed
+        } else {
+            &self.bound_keys_idle
+        };
+        let always_swallow = input.class == KeyClass::Standalone && bound_keys.contains(&code);
         if input.autorepeat || self.held.contains(&code) {
             return always_swallow || self.swallowed.contains(&code);
         }
         self.held.insert(code);
 
-        let winner = self.newly_satisfied_largest(code);
+        let winner = self.newly_satisfied_largest(code, armed);
+        let switch_won = winner.is_some_and(|index| is_switch_role(&self.bindings[index]));
         let swallow = match input.class {
-            KeyClass::Modifier => false,
+            KeyClass::Modifier => switch_won,
             KeyClass::Standalone => always_swallow,
             KeyClass::Typing => winner.is_some(),
         };
@@ -215,7 +263,12 @@ impl ChordMatcher {
         let bindings = &self.bindings;
         self.deferred
             .retain(|deferred| !bindings[*deferred].chord.is_strict_subset_of(&chord));
-        if self.has_superset[index] {
+        let has_superset = if armed {
+            self.has_superset_armed[index]
+        } else {
+            self.has_superset_idle[index]
+        };
+        if has_superset {
             if !self.deferred.contains(&index) {
                 self.deferred.push(index);
             }
@@ -257,10 +310,14 @@ impl ChordMatcher {
 
     /// The largest binding that contains `code` and is satisfied now. Such a binding cannot
     /// have been satisfied before `code` went down. Ties keep the first configured binding.
-    fn newly_satisfied_largest(&self, code: u16) -> Option<usize> {
+    /// Switch language bindings take part only when `armed`.
+    fn newly_satisfied_largest(&self, code: u16, armed: bool) -> Option<usize> {
         let mut best: Option<usize> = None;
         for (index, binding) in self.bindings.iter().enumerate() {
-            if !binding.chord.contains(code) || !binding.chord.is_satisfied_by(&self.held) {
+            if (!armed && is_switch_role(binding))
+                || !binding.chord.contains(code)
+                || !binding.chord.is_satisfied_by(&self.held)
+            {
                 continue;
             }
             let larger = best
@@ -539,10 +596,12 @@ struct NativeHotkeyRuntimeInner {
 }
 
 impl NativeHotkeyRuntime {
-    /// Replace the running listener with one that matches `bindings`.
+    /// Replace the running listener with one that matches `bindings`. `switch_gate` says when
+    /// the Switch language bindings are live.
     pub fn install(
         &self,
         bindings: Vec<NativeHotkeyBinding>,
+        switch_gate: SwitchGate,
         handler: NativeHotkeyHandler,
     ) -> Result<(), String> {
         let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
@@ -552,7 +611,8 @@ impl NativeHotkeyRuntime {
             return Ok(());
         }
 
-        inner.monitor = Some(platform::PlatformNativeMonitor::start(bindings, handler)?);
+        let matcher = ChordMatcher::new(bindings).with_switch_gate(switch_gate);
+        inner.monitor = Some(platform::PlatformNativeMonitor::start(matcher, handler)?);
         Ok(())
     }
 
@@ -729,14 +789,8 @@ mod platform {
     }
 
     impl PlatformNativeMonitor {
-        pub fn start(
-            bindings: Vec<super::NativeHotkeyBinding>,
-            handler: NativeHotkeyHandler,
-        ) -> Result<Self, String> {
-            Self::start_tap(
-                TapLogic::Hotkeys(ChordMatcher::new(bindings)),
-                TapHandler::Hotkeys(handler),
-            )
+        pub fn start(matcher: ChordMatcher, handler: NativeHotkeyHandler) -> Result<Self, String> {
+            Self::start_tap(TapLogic::Hotkeys(matcher), TapHandler::Hotkeys(handler))
         }
 
         pub fn start_capture(handler: ShortcutCaptureHandler) -> Result<Self, String> {
@@ -1007,15 +1061,7 @@ mod platform {
     }
 
     impl PlatformNativeMonitor {
-        pub fn start(
-            bindings: Vec<super::NativeHotkeyBinding>,
-            handler: NativeHotkeyHandler,
-        ) -> Result<Self, String> {
-            if bindings.is_empty() {
-                return Err("Windows native hotkeys currently support RightAlt only".to_string());
-            }
-            let matcher = ChordMatcher::new(bindings);
-
+        pub fn start(matcher: ChordMatcher, handler: NativeHotkeyHandler) -> Result<Self, String> {
             let (status_tx, status_rx) = mpsc::channel();
             let startup = Arc::new(WindowsStartupState::new());
             let thread_startup = Arc::clone(&startup);
@@ -1267,13 +1313,13 @@ mod platform {
 
 #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
 mod platform {
-    use super::{NativeHotkeyBinding, NativeHotkeyHandler, ShortcutCaptureHandler};
+    use super::{ChordMatcher, NativeHotkeyHandler, ShortcutCaptureHandler};
 
     pub struct PlatformNativeMonitor;
 
     impl PlatformNativeMonitor {
         pub fn start(
-            _bindings: Vec<NativeHotkeyBinding>,
+            _matcher: ChordMatcher,
             _handler: NativeHotkeyHandler,
         ) -> Result<Self, String> {
             Err("Native hotkey runtime is unsupported on this platform".to_string())
@@ -1402,7 +1448,154 @@ mod tests {
         let runtime = NativeHotkeyRuntime::default();
         let handler: NativeHotkeyHandler = Arc::new(|_| {});
 
-        assert!(runtime.install(Vec::new(), handler).is_ok());
+        assert!(runtime
+            .install(Vec::new(), Arc::new(|| false), handler)
+            .is_ok());
+    }
+
+    const LEFT_SHIFT: u16 = 56;
+
+    /// Default bindings (Dictate `Fn`, Translate `Fn + Left Shift`) plus Switch language on
+    /// either Shift, with a gate the test opens and closes.
+    fn switch_matcher(translate: &[u16]) -> (ChordMatcher, Arc<std::sync::atomic::AtomicBool>) {
+        let armed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let gate_flag = Arc::clone(&armed);
+        let matcher = ChordMatcher::new(vec![
+            binding(HotkeyRole::Dictation, &[FN]),
+            binding(HotkeyRole::TranslateSelection, translate),
+            binding(HotkeyRole::SwitchLanguage, &[LEFT_SHIFT]),
+            binding(HotkeyRole::SwitchLanguage, &[RIGHT_SHIFT]),
+        ])
+        .with_switch_gate(Arc::new(move || {
+            gate_flag.load(std::sync::atomic::Ordering::SeqCst)
+        }));
+        (matcher, armed)
+    }
+
+    fn set(flag: &std::sync::atomic::AtomicBool, value: bool) {
+        flag.store(value, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn switch_language_is_ignored_and_passes_through_outside_a_translate_recording() {
+        let (mut matcher, _armed) = switch_matcher(&[FN, LEFT_SHIFT]);
+        let (events, swallows) = run(
+            &mut matcher,
+            &[
+                down(RIGHT_SHIFT),
+                up(RIGHT_SHIFT),
+                down(LEFT_SHIFT),
+                up(LEFT_SHIFT),
+            ],
+        );
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![false, false, false, false]);
+    }
+
+    #[test]
+    fn switch_language_fires_and_is_swallowed_during_a_translate_recording() {
+        let (mut matcher, armed) = switch_matcher(&[FN, LEFT_SHIFT]);
+        set(&armed, true);
+        // Right Shift is in no larger chord, so it fires on press.
+        let (events, swallows) = run(&mut matcher, &[down(RIGHT_SHIFT), up(RIGHT_SHIFT)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::SwitchLanguage, Pressed),
+                (HotkeyRole::SwitchLanguage, Released),
+            ]
+        );
+        assert_eq!(swallows, vec![true, true]);
+
+        // Left Shift is part of Fn + Left Shift, so it fires when it goes up alone.
+        let (events, swallows) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::SwitchLanguage, Pressed),
+                (HotkeyRole::SwitchLanguage, Released),
+            ]
+        );
+        assert_eq!(swallows, vec![true, true]);
+    }
+
+    #[test]
+    fn switch_key_held_from_the_translate_chord_does_not_count() {
+        let (mut matcher, armed) = switch_matcher(&[FN, LEFT_SHIFT]);
+        let (events, _) = run(&mut matcher, &[down(FN), down(LEFT_SHIFT)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Pressed)]);
+
+        // The recording starts while the chord is still held.
+        set(&armed, true);
+        let (events, swallows) = run(&mut matcher, &[up(LEFT_SHIFT), up(FN)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Released)]);
+        assert_eq!(
+            swallows,
+            vec![false, false],
+            "the chord's release reaches the app"
+        );
+
+        // A fresh press counts.
+        let (events, _) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::SwitchLanguage, Pressed),
+                (HotkeyRole::SwitchLanguage, Released),
+            ]
+        );
+    }
+
+    #[test]
+    fn translate_chord_again_finishes_instead_of_switching() {
+        let (mut matcher, armed) = switch_matcher(&[FN, LEFT_SHIFT]);
+        set(&armed, true);
+        // Shift first, then Fn: the larger Translate chord wins over the waiting switch.
+        let (events, swallows) = run(
+            &mut matcher,
+            &[down(LEFT_SHIFT), down(FN), up(FN), up(LEFT_SHIFT)],
+        );
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::TranslateSelection, Pressed),
+                (HotkeyRole::TranslateSelection, Released),
+            ]
+        );
+        // Shift went down swallowed, so its release is swallowed too.
+        assert_eq!(swallows, vec![true, false, false, true]);
+    }
+
+    #[test]
+    fn hold_mode_switches_with_the_other_shift_while_the_chord_is_held() {
+        let (mut matcher, armed) = switch_matcher(&[END, RIGHT_SHIFT]);
+        let (events, _) = run(&mut matcher, &[down(END), down(RIGHT_SHIFT)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Pressed)]);
+        set(&armed, true);
+        let (events, _) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::SwitchLanguage, Pressed),
+                (HotkeyRole::SwitchLanguage, Released),
+            ]
+        );
+        let (events, _) = run(&mut matcher, &[up(END)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Released)]);
+    }
+
+    #[test]
+    fn dictate_key_still_fires_during_a_translate_recording() {
+        let (mut matcher, armed) = switch_matcher(&[FN, LEFT_SHIFT]);
+        set(&armed, true);
+        let (events, _) = run(&mut matcher, &[down(FN), up(FN)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::Dictation, Pressed),
+                (HotkeyRole::Dictation, Released),
+            ]
+        );
     }
 
     #[test]

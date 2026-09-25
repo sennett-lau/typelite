@@ -152,6 +152,30 @@ describe('HomePage', () => {
     expect(screen.queryByTestId('shortcut-row-editSelection')).not.toBeInTheDocument()
   })
 
+  it('shows the Switch language key under Translate when there is a language to switch to', () => {
+    const config = useAppStore.getState().config
+    useAppStore.setState({
+      config: {
+        ...config,
+        translation: { targets: ['en'], active_target: 'en' },
+      },
+    })
+    const { unmount } = render(<HomePage />)
+    expect(screen.getByTestId('shortcut-row-translate')).not.toHaveTextContent('switch language')
+    unmount()
+
+    useAppStore.setState({
+      config: {
+        ...config,
+        translation: { targets: ['en', 'zh-Hant-TW'], active_target: 'zh-Hant-TW' },
+      },
+    })
+    render(<HomePage />)
+    const translateRow = screen.getByTestId('shortcut-row-translate')
+    expect(translateRow).toHaveTextContent('Speak and paste it in Chinese (Traditional, Taiwan)')
+    expect(translateRow).toHaveTextContent('Shift (either side) to switch language')
+  })
+
   it('adds a row for an extra feature only when it has a shortcut', () => {
     setHotkeys({ editSelection: { primary: 'E', modifiers: ['Command', 'Shift'] } })
 

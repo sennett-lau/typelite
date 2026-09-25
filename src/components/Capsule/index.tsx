@@ -1,59 +1,70 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useAppStore, type VoiceMode } from '../../stores/appStore'
+import { useAppStore, type PipelineState } from '../../stores/appStore'
 import { useRecording } from '../../hooks/useRecording'
-import {
-  ASK_RECORDING_SIZE,
-  DICTATION_PILL_SIZE,
-  SETUP_ERROR_SIZE,
-  TRANSLATE_RECORDING_SIZE,
-  useCapsuleResize,
-} from '../../hooks/useCapsuleResize'
+import { getPillSize, useCapsuleResize } from '../../hooks/useCapsuleResize'
 import { stopAskFlow } from '../../lib/tauri'
 import { CapsuleIdle } from './CapsuleIdle'
 import { CapsulePreparing } from './CapsulePreparing'
 import { CapsuleRecording } from './CapsuleRecording'
 import { CapsuleProcessing } from './CapsuleProcessing'
 import { CapsulePolishing } from './CapsulePolishing'
-import { CapsuleComplete } from './CapsuleComplete'
+import { CapsuleDone, CapsulePasting } from './CapsuleComplete'
 import { CapsuleError } from './CapsuleError'
 import { CapsuleContextMenu } from './CapsuleContextMenu'
 import { CapsuleAskRecording } from './CapsuleAskRecording'
 import { CapsuleAskThinking } from './CapsuleAskThinking'
+import { CapsuleAurora, type AuroraMode } from './CapsuleAurora'
 
 const DRAG_THRESHOLD = 5
+/** How long the done flash stays before the pill hides. */
+const DONE_FLASH_MS = 500
 
-function getCapsuleState(pipelineState: string, hasError: boolean) {
+function getCapsuleState(pipelineState: string, hasError: boolean, doneFlash: boolean) {
   if (hasError) return 'error'
+  if (doneFlash && pipelineState === 'idle') return 'done'
   return pipelineState
 }
 
-function getCapsuleShellSize(
-  capsuleState: string,
-  activeVoiceMode: VoiceMode | null,
-  errorHasAction: boolean,
-) {
-  if (capsuleState === 'error' && errorHasAction) return SETUP_ERROR_SIZE
+function auroraModeFor(capsuleState: string): AuroraMode | null {
   switch (capsuleState) {
-    case 'idle':
-      return { width: 36, height: 36 }
-    case 'preparing':
-      return { width: 180, height: 36 }
-    case 'outputting':
-      return { width: 144, height: 36 }
-    case 'ask_recording':
-      return ASK_RECORDING_SIZE
-    case 'ask_thinking':
-      return { width: 168, height: 36 }
     case 'recording':
-      return activeVoiceMode === 'translate' ? TRANSLATE_RECORDING_SIZE : DICTATION_PILL_SIZE
+    case 'ask_recording':
+      return 'listening'
     case 'transcribing':
     case 'polishing':
-    case 'error':
-      return DICTATION_PILL_SIZE
+    case 'outputting':
+    case 'ask_thinking':
+      return 'working'
+    case 'done':
+      return 'done'
     default:
-      return { width: 36, height: 36 }
+      return null
   }
+}
+
+/**
+ * True for a moment after a paste finished (outputting -> idle without an error), so the
+ * pill can show its done flash before it hides.
+ */
+function useDoneFlash(pipelineState: PipelineState, hasError: boolean): boolean {
+  const [flash, setFlash] = useState(false)
+  const previous = useRef(pipelineState)
+
+  useEffect(() => {
+    const finishedPaste = previous.current === 'outputting' && pipelineState === 'idle'
+    previous.current = pipelineState
+    if (pipelineState !== 'idle' || hasError) {
+      setFlash(false)
+      return
+    }
+    if (!finishedPaste) return
+    setFlash(true)
+    const timer = setTimeout(() => setFlash(false), DONE_FLASH_MS)
+    return () => clearTimeout(timer)
+  }, [pipelineState, hasError])
+
+  return flash
 }
 
 export function Capsule() {
@@ -65,16 +76,24 @@ export function Capsule() {
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const errorHasAction = useAppStore((s) => s.pipelineErrorAction !== null)
+  const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
   const { stopRecording, isRecording } = useRecording()
 
   const dragStart = useRef<{ x: number; y: number } | null>(null)
   const isDragging = useRef(false)
 
-  useCapsuleResize()
-
   const hasError = pipelineError !== null
-  const capsuleState = getCapsuleState(pipelineState, hasError)
-  const capsuleShellSize = getCapsuleShellSize(capsuleState, activeVoiceMode, errorHasAction)
+  const doneFlash = useDoneFlash(pipelineState, hasError)
+  useCapsuleResize(doneFlash)
+
+  const capsuleState = getCapsuleState(pipelineState, hasError, doneFlash)
+  const capsuleShellSize = getPillSize(
+    capsuleState,
+    activeVoiceMode,
+    errorHasAction,
+    translateTargetCount,
+  )
+  const auroraMode = auroraModeFor(capsuleState)
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return
@@ -150,6 +169,7 @@ export function Capsule() {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
+        {auroraMode && <CapsuleAurora key={auroraMode} mode={auroraMode} />}
         <AnimatePresence mode="sync" initial={false}>
           <motion.div
             key={capsuleState}
@@ -164,7 +184,8 @@ export function Capsule() {
             {capsuleState === 'recording' && <CapsuleRecording />}
             {capsuleState === 'transcribing' && <CapsuleProcessing />}
             {capsuleState === 'polishing' && <CapsulePolishing />}
-            {capsuleState === 'outputting' && <CapsuleComplete />}
+            {capsuleState === 'outputting' && <CapsulePasting />}
+            {capsuleState === 'done' && <CapsuleDone />}
             {capsuleState === 'ask_recording' && <CapsuleAskRecording />}
             {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
             {capsuleState === 'error' && <CapsuleError />}

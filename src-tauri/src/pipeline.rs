@@ -582,14 +582,15 @@ enum TranslationOperationPhase {
     Finalizing,
 }
 
-/// How many translation targets the pill shows as chips, and cycles through.
-pub(crate) const PILL_TRANSLATION_TARGETS: usize = 3;
+/// How many translation targets the pill shows as chips, and the Switch language shortcut
+/// cycles through: all the ones a user can choose.
+pub(crate) const PILL_TRANSLATION_TARGETS: usize = storage::MAX_TRANSLATION_TARGETS;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct TranslationOperationState {
     target: String,
-    /// The languages the Translate shortcut cycles through: the first three configured
-    /// targets, captured when recording starts (the same ones the pill shows as chips).
+    /// The languages the Switch language shortcut cycles through: the configured targets
+    /// (at most three), captured when recording starts (the same ones the pill shows).
     targets: Vec<String>,
     phase: TranslationOperationPhase,
 }
@@ -967,6 +968,12 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .is_some()
+    }
+
+    /// True while a Translate recording is capturing audio: the only time the Switch language
+    /// shortcut listens. Called from the key listener thread, so it only reads state.
+    pub(crate) fn is_translate_recording(&self) -> bool {
+        self.current_state() == PipelineState::Recording && self.is_translate_run()
     }
 
     /// Moves the running Translate recording to its next target language (wrapping round) and

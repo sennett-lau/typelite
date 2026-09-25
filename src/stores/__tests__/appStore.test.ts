@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { findActivePreset, useAppStore } from '../appStore'
-import type { DictionaryEntry, CorrectionRule } from '../appStore'
+import type { DictionaryEntry, CorrectionRule, HotkeyConfig } from '../appStore'
 
 function getState() {
   return useAppStore.getState()
@@ -76,7 +76,8 @@ describe('appStore', () => {
       expect(config.polish_chinese_script).toBe('preserve')
       expect(config.custom_scenes).toEqual([])
       expect(config.active_scene).toBeNull()
-      expect(config.translation).toEqual({ targets: ['en', 'zh', 'ja'], active_target: 'en' })
+      expect(config.translation).toEqual({ targets: ['en'], active_target: 'en' })
+      expect(config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
       expect(config.target_lang).toBe('en')
       expect(config.speech_presets.map((preset) => preset.id)).toEqual([
         'builtin-speech-local',
@@ -307,10 +308,11 @@ describe('appStore', () => {
     it('keeps ordered translation targets and the legacy target mirror in sync', () => {
       getState().updateConfig({ target_lang: 'fr' })
       expect(getState().config.translation).toEqual({
-        targets: ['en', 'zh', 'ja', 'fr'],
+        targets: ['en', 'fr'],
         active_target: 'fr',
       })
 
+      // At most three, unique and supported.
       getState().updateConfig({
         translation: {
           targets: ['fr', 'fr', 'xx', 'ja', 'de', 'es', 'pt', 'it'],
@@ -318,10 +320,40 @@ describe('appStore', () => {
         },
       })
       expect(getState().config.translation).toEqual({
-        targets: ['fr', 'ja', 'de', 'es', 'pt'],
+        targets: ['fr', 'ja', 'de'],
         active_target: 'ja',
       })
       expect(getState().config.target_lang).toBe('ja')
+
+      // A fourth language replaces the last one.
+      getState().updateConfig({ target_lang: 'ko' })
+      expect(getState().config.translation).toEqual({
+        targets: ['fr', 'ja', 'ko'],
+        active_target: 'ko',
+      })
+    })
+
+    it('migrates plain Chinese to Simplified Chinese and keeps the order and active target', () => {
+      getState().updateConfig({
+        translation: { targets: ['ja', 'zh', 'ZH-HANT-hk'], active_target: 'zh' },
+      })
+      expect(getState().config.translation).toEqual({
+        targets: ['ja', 'zh-Hans', 'zh-Hant-HK'],
+        active_target: 'zh-Hans',
+      })
+      expect(getState().config.target_lang).toBe('zh-Hans')
+    })
+
+    it('fills in the default Switch language key for configs without one', () => {
+      const { switchLanguage: _dropped, ...olderHotkeys } = getState().config.hotkeys
+      getState().setConfig({
+        ...getState().config,
+        hotkeys: olderHotkeys as HotkeyConfig,
+      })
+      expect(getState().config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
+
+      getState().updateConfig({ hotkeys: { ...getState().config.hotkeys, switchLanguage: null } })
+      expect(getState().config.hotkeys.switchLanguage).toBeNull()
     })
   })
 

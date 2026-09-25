@@ -84,7 +84,7 @@ beforeEach(() => {
       askBindings: [fnSpace],
       dictationMode: 'toggle',
     },
-    translation: { targets: ['en', 'zh', 'ja'], active_target: 'en' },
+    translation: { targets: ['en'], active_target: 'en' },
   })
 })
 
@@ -150,13 +150,14 @@ describe('ShortcutStep recording', () => {
 })
 
 describe('ShortcutStep translate language', () => {
-  it('writes the picked language as the active target and first slot', async () => {
+  it('preselects English and writes the picked language as the one target and default', async () => {
     await renderStep('translate')
 
+    expect(screen.getByLabelText('Translate into')).toHaveValue('en')
     fireEvent.change(screen.getByLabelText('Translate into'), { target: { value: 'fr' } })
 
     expect(useAppStore.getState().config.translation).toEqual({
-      targets: ['fr', 'zh', 'ja'],
+      targets: ['fr'],
       active_target: 'fr',
     })
     await waitFor(() => expect(tauri.updateConfig).toHaveBeenCalled())
@@ -165,8 +166,11 @@ describe('ShortcutStep translate language', () => {
 
   it('keeps the other slots when the language was already one of them', () => {
     expect(
-      translationWithFirstTarget({ targets: ['en', 'zh', 'ja'], active_target: 'zh' }, 'ja'),
-    ).toEqual({ targets: ['ja', 'zh', 'en'], active_target: 'ja' })
+      translationWithFirstTarget(
+        { targets: ['en', 'zh-Hans', 'ja'], active_target: 'zh-Hans' },
+        'ja',
+      ),
+    ).toEqual({ targets: ['ja', 'zh-Hans', 'en'], active_target: 'ja' })
     expect(translationWithFirstTarget({ targets: [], active_target: 'en' }, 'de')).toEqual({
       targets: ['de'],
       active_target: 'de',

@@ -14,6 +14,8 @@ import { SegmentedControl } from './shared/SegmentedControl'
 import { Toggle } from './shared/Toggle'
 import { Group, Row } from '../ui/Group'
 import { ShortcutBindingList } from './ShortcutBindingList'
+import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
+import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
 
 const MAC_ACCESSIBILITY_HOTKEY_ERROR = 'Accessibility permission may be denied'
@@ -108,11 +110,14 @@ export function GeneralPane() {
     config.hotkeys.switchScene,
     config.hotkeys.openApp,
   ].filter((binding): binding is ShortcutBinding => Boolean(binding))
+  // The Switch language key (macOS only) may not be reused as another shortcut either.
+  const switchLanguageBindings = isMac ? switchLanguageVariants(config.hotkeys.switchLanguage) : []
   const otherBindingsFor = (role: 'dictation' | 'ask' | 'translate') => [
     ...(role === 'dictation' ? [] : dictationBindings),
     ...(role === 'ask' ? [] : askBindings),
     ...(role === 'translate' ? [] : translateBindings),
     ...secondaryBindings,
+    ...switchLanguageBindings,
   ]
   const updateCoreBindings = (
     role: 'dictation' | 'ask' | 'translate',
@@ -162,6 +167,20 @@ export function GeneralPane() {
           required={false}
           onChange={(bindings) => updateCoreBindings('translate', bindings)}
         />
+        {isMac && (
+          <SwitchLanguageShortcut
+            binding={config.hotkeys.switchLanguage ?? null}
+            otherBindings={[
+              ...dictationBindings,
+              ...askBindings,
+              ...translateBindings,
+              ...secondaryBindings,
+            ]}
+            onChange={(switchLanguage) =>
+              updateConfig({ hotkeys: { ...config.hotkeys, switchLanguage } })
+            }
+          />
+        )}
         <ShortcutBindingList
           role="ask"
           label={t('settings.askHotkey')}

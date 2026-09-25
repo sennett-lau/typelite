@@ -319,9 +319,18 @@ fn translation_instruction(
         return None;
     }
 
-    let lang_name = match target_lang.trim() {
+    let canonical = crate::storage::normalize_translation_code(target_lang);
+    let lang_name = match canonical.as_deref().unwrap_or(target_lang.trim()) {
         "en" => "English",
-        "zh" => "Chinese (中文)",
+        "zh-Hans" => {
+            "Simplified Chinese as used in mainland China (简体中文): use Simplified characters"
+        }
+        "zh-Hant-HK" => {
+            "Traditional Chinese as written in Hong Kong (繁體中文（香港）): use Traditional characters and Hong Kong vocabulary and punctuation"
+        }
+        "zh-Hant-TW" => {
+            "Traditional Chinese as written in Taiwan (繁體中文（台灣）): use Traditional characters and Taiwan vocabulary and punctuation"
+        }
         "ja" => "Japanese (日本語)",
         "ko" => "Korean (한국어)",
         "fr" => "French (Français)",
@@ -536,7 +545,10 @@ mod tests {
     fn test_build_prompt_all_languages() {
         let cases = vec![
             ("en", "English"),
-            ("zh", "Chinese"),
+            ("zh", "Simplified Chinese"),
+            ("zh-Hans", "Simplified Chinese as used in mainland China"),
+            ("zh-Hant-HK", "Traditional Chinese as written in Hong Kong"),
+            ("zh-Hant-TW", "Traditional Chinese as written in Taiwan"),
             ("ja", "Japanese"),
             ("ko", "Korean"),
             ("fr", "French"),
@@ -766,7 +778,7 @@ mod tests {
         let prompt = build_system_prompt(AppType::Chat, &dict, "", "preserve", true, "zh", false);
         assert!(prompt.contains("casual and concise"));
         assert!(prompt.contains("\"API\""));
-        assert!(prompt.contains("translate the entire result into Chinese"));
+        assert!(prompt.contains("translate the entire result into Simplified Chinese"));
     }
 
     #[test]
@@ -973,6 +985,44 @@ mod tests {
     }
 
     #[test]
+    fn test_chinese_variant_prompts_name_the_script_and_region() {
+        let hong_kong = build_system_prompt(
+            AppType::General,
+            &[],
+            "",
+            "preserve",
+            true,
+            "zh-Hant-HK",
+            false,
+        );
+        assert!(hong_kong.contains(
+            "translate the entire result into Traditional Chinese as written in Hong Kong (繁體中文（香港）): use Traditional characters and Hong Kong vocabulary and punctuation."
+        ));
+        let taiwan = build_system_prompt(
+            AppType::General,
+            &[],
+            "",
+            "preserve",
+            true,
+            "zh-Hant-TW",
+            false,
+        );
+        assert!(taiwan.contains("Traditional Chinese as written in Taiwan"));
+        assert!(taiwan.contains("Taiwan vocabulary and punctuation"));
+        let simplified = build_system_prompt(
+            AppType::General,
+            &[],
+            "",
+            "preserve",
+            true,
+            "zh-Hans",
+            false,
+        );
+        assert!(simplified.contains("Simplified Chinese as used in mainland China"));
+        assert!(!simplified.contains("Traditional"));
+    }
+
+    #[test]
     fn test_legacy_chinese_script_preference_is_ignored() {
         let prompt =
             build_system_prompt(AppType::General, &[], "", "traditional", false, "", false);
@@ -987,7 +1037,7 @@ mod tests {
             build_system_prompt(AppType::General, &[], "", "simplified", true, "zh", false);
 
         assert!(!prompt.contains("Simplified Chinese consistently"));
-        assert!(prompt.contains("translate the entire result into Chinese"));
+        assert!(prompt.contains("translate the entire result into Simplified Chinese"));
     }
 
     #[test]

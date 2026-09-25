@@ -81,31 +81,39 @@ describe('getCapsuleVisibility', () => {
 })
 
 describe('getSizeForState', () => {
-  it('widens the recording capsule for the three language chips in Translate', () => {
-    expect(getSizeForState('recording', false, false, false, 'translate')).toEqual({
-      width: 296,
-      height: 36,
-    })
-    expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual({
-      width: 216,
-      height: 36,
-    })
-    expect(getSizeForState('recording', false, false, false)).toEqual({ width: 216, height: 36 })
-    expect(getSizeForState('transcribing', false, false, false, 'translate')).toEqual({
-      width: 216,
-      height: 36,
-    })
+  const size = (width: number) => ({ width, height: 36 })
+
+  it('uses the narrow plan 0009 sizes while recording', () => {
+    expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(150))
+    expect(getSizeForState('recording', false, false, false)).toEqual(size(150))
+    expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(150))
   })
 
-  it('makes room for the waveform while Ask is recording', () => {
-    expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual({
-      width: 248,
-      height: 36,
-    })
-    expect(getSizeForState('ask_thinking', false, false, false, 'ask')).toEqual({
-      width: 168,
-      height: 36,
-    })
+  it('sizes Translate recording by the number of chosen languages', () => {
+    // Three chips, or one language name.
+    expect(getSizeForState('recording', false, false, false, 'translate', false, 3)).toEqual(
+      size(232),
+    )
+    expect(getSizeForState('recording', false, false, false, 'translate', false, 1)).toEqual(
+      size(232),
+    )
+    expect(getSizeForState('recording', false, false, false, 'translate', false, 2)).toEqual(
+      size(208),
+    )
+  })
+
+  it('uses one short working size for every working state and the done flash', () => {
+    for (const state of [
+      'preparing',
+      'transcribing',
+      'polishing',
+      'outputting',
+      'ask_thinking',
+    ] as const) {
+      expect(getSizeForState(state, false, false, false, 'translate')).toEqual(size(132))
+    }
+    expect(getSizeForState('idle', false, false, false, null, false, 1, true)).toEqual(size(132))
+    expect(getSizeForState('idle', false, false, false)).toEqual(size(36))
   })
 
   it('keeps the context menu and error sizes ahead of the voice mode', () => {
@@ -113,10 +121,19 @@ describe('getSizeForState', () => {
       width: 220,
       height: 220,
     })
-    expect(getSizeForState('recording', false, true, false, 'translate')).toEqual({
-      width: 216,
-      height: 36,
-    })
+    expect(getSizeForState('recording', false, true, false, 'translate')).toEqual(size(216))
+  })
+
+  it('keeps the pill visible during the done flash', () => {
+    expect(
+      getCapsuleVisibility({
+        contextMenuOpen: false,
+        capsuleExpanded: false,
+        hasError: false,
+        pipelineState: 'idle',
+        doneFlash: true,
+      }),
+    ).toBe(true)
   })
 })
 

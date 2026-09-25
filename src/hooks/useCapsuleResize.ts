@@ -6,23 +6,64 @@ export interface CapsuleSize {
   height: number
 }
 
-/** Translate recording: dot, waveform, three language chips, timer and cancel button. */
-export const TRANSLATE_RECORDING_SIZE: CapsuleSize = { width: 296, height: 36 }
-/** Ask recording: icon, title, waveform, timer and cancel button. */
-export const ASK_RECORDING_SIZE: CapsuleSize = { width: 248, height: 36 }
+// Pill sizes from plan 0009 (pill.md). The window adds 12 pt of padding on each side.
+
+/** Dictate recording: red dot, 18-bar waveform and cancel button. */
+export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
+/** Ask recording: Ask icon, waveform and cancel button. */
+export const ASK_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
+/** Translate recording with three language chips, or with one language name. */
+export const TRANSLATE_RECORDING_SIZE: CapsuleSize = { width: 232, height: 36 }
+/** Translate recording with two language chips. */
+export const TRANSLATE_TWO_TARGETS_SIZE: CapsuleSize = { width: 208, height: 36 }
 /**
- * Dictation recording (dot, waveform, timer, cancel button needs about 212 pt), and the
- * transcribing, polishing and error states that share its width.
+ * Working states (preparing, transcribing, polishing, pasting, Ask thinking) and the done
+ * flash: a short label over the aurora sweep.
  */
-export const DICTATION_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
+export const WORKING_PILL_SIZE: CapsuleSize = { width: 132, height: 36 }
+/** An error message (icon and one line). */
+export const ERROR_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
 export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
+const IDLE_SIZE: CapsuleSize = { width: 36, height: 36 }
+
+/**
+ * The pill's own size (without the context menu or window padding) for a capsule state.
+ * `capsuleState` is the pipeline state, `error`, or `done` (the brief flash after pasting).
+ */
+export function getPillSize(
+  capsuleState: string,
+  activeVoiceMode: VoiceMode | null,
+  errorHasAction: boolean,
+  translateTargetCount: number,
+): CapsuleSize {
+  switch (capsuleState) {
+    case 'error':
+      return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
+    case 'recording':
+      if (activeVoiceMode !== 'translate') return DICTATION_RECORDING_SIZE
+      return translateTargetCount === 2 ? TRANSLATE_TWO_TARGETS_SIZE : TRANSLATE_RECORDING_SIZE
+    case 'ask_recording':
+      return ASK_RECORDING_SIZE
+    case 'preparing':
+    case 'transcribing':
+    case 'polishing':
+    case 'outputting':
+    case 'ask_thinking':
+    case 'done':
+      return WORKING_PILL_SIZE
+    default:
+      return IDLE_SIZE
+  }
+}
 
 export interface CapsuleVisibilityInput {
   contextMenuOpen: boolean
   capsuleExpanded: boolean
   hasError: boolean
   pipelineState: PipelineState
+  /** The brief done flash after pasting keeps the pill up a moment longer. */
+  doneFlash?: boolean
 }
 
 /** The idle capsule is always hidden; it shows only while working, or for an error or menu. */
@@ -31,8 +72,9 @@ export function getCapsuleVisibility({
   capsuleExpanded,
   hasError,
   pipelineState,
+  doneFlash = false,
 }: CapsuleVisibilityInput): boolean {
-  return contextMenuOpen || capsuleExpanded || hasError || pipelineState !== 'idle'
+  return contextMenuOpen || capsuleExpanded || hasError || doneFlash || pipelineState !== 'idle'
 }
 
 export function getCapsuleFocusable(): boolean {
@@ -110,32 +152,18 @@ export function getSizeForState(
   contextMenuOpen: boolean,
   activeVoiceMode: VoiceMode | null = null,
   errorHasAction = false,
+  translateTargetCount = 3,
+  doneFlash = false,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
-  if (hasError) return errorHasAction ? SETUP_ERROR_SIZE : DICTATION_PILL_SIZE
+  if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translateTargetCount)
   if (expanded) return { width: 220, height: 90 }
-  switch (state) {
-    case 'idle':
-      return { width: 36, height: 36 }
-    case 'preparing':
-      return { width: 180, height: 36 }
-    case 'recording':
-      return activeVoiceMode === 'translate' ? TRANSLATE_RECORDING_SIZE : DICTATION_PILL_SIZE
-    case 'transcribing':
-    case 'polishing':
-      return DICTATION_PILL_SIZE
-    case 'outputting':
-      return { width: 144, height: 36 }
-    case 'ask_recording':
-      return ASK_RECORDING_SIZE
-    case 'ask_thinking':
-      return { width: 168, height: 36 }
-    default:
-      return { width: 36, height: 36 }
-  }
+  const capsuleState = doneFlash && state === 'idle' ? 'done' : state
+  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount)
 }
 
-export function useCapsuleResize() {
+/** Sizes, places and shows the capsule window. `doneFlash` is true during the done flash. */
+export function useCapsuleResize(doneFlash = false) {
   const pipelineState = useAppStore((s) => s.pipelineState)
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const pipelineError = useAppStore((s) => s.pipelineError)
@@ -143,6 +171,7 @@ export function useCapsuleResize() {
   const contextMenuOpen = useAppStore((s) => s.contextMenuOpen)
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
+  const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
   const anchor = useRef<CapsuleAnchor | null>(null)
   const visible = useRef(false)
   const queue = useRef<Promise<void>>(Promise.resolve())
@@ -157,6 +186,8 @@ export function useCapsuleResize() {
       contextMenuOpen,
       activeVoiceMode,
       errorHasAction,
+      translateTargetCount,
+      doneFlash,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
@@ -165,6 +196,7 @@ export function useCapsuleResize() {
       capsuleExpanded,
       hasError,
       pipelineState,
+      doneFlash,
     })
 
     const run = async () => {
@@ -230,6 +262,8 @@ export function useCapsuleResize() {
     contextMenuOpen,
     activeVoiceMode,
     errorHasAction,
+    translateTargetCount,
+    doneFlash,
     setContextMenuReady,
   ])
 
@@ -240,5 +274,7 @@ export function useCapsuleResize() {
     contextMenuOpen,
     activeVoiceMode,
     errorHasAction,
+    translateTargetCount,
+    doneFlash,
   )
 }

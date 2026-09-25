@@ -811,6 +811,46 @@ describe('Settings tab 切换', () => {
       })
     }
   })
+
+  it('records the Switch language key by pressing keys and can reset it to either Shift', async () => {
+    const originalPlatform = window.navigator.platform
+    Object.defineProperty(window.navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    })
+    try {
+      const { startShortcutCapture } = await import('../../../lib/tauri')
+      seedSavedConfig()
+      renderSettings()
+
+      const row = document.querySelector('[data-hotkey-role="switchLanguage"]') as HTMLElement
+      expect(row).toBeTruthy()
+      fireEvent.click(within(row).getByText('settings.eitherShift'))
+      await waitFor(() => expect(startShortcutCapture).toHaveBeenCalled())
+      act(() => {
+        emitTauriEvent('hotkey:capture', {
+          held: ['RightOption'],
+          finished: true,
+          cancelled: false,
+        })
+      })
+      expect(useAppStore.getState().config.hotkeys.switchLanguage).toEqual({
+        primary: 'RightOption',
+        modifiers: [],
+      })
+
+      fireEvent.click(within(row).getByRole('button', { name: 'settings.switchLanguageReset' }))
+      expect(useAppStore.getState().config.hotkeys.switchLanguage).toEqual({
+        primary: 'Shift',
+        modifiers: [],
+      })
+    } finally {
+      Object.defineProperty(window.navigator, 'platform', {
+        value: originalPlatform,
+        configurable: true,
+      })
+    }
+  })
 })
 
 describe('Settings Scenes local custom scenes', () => {

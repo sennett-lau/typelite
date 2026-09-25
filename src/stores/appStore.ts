@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { TARGET_LANGUAGES } from '../lib/constants'
+import { MAX_TRANSLATION_TARGETS, canonicalTranslationCode } from '../lib/constants'
 
 export type PipelineState =
   | 'idle'
@@ -207,6 +207,11 @@ export interface HotkeyConfig {
   switchScene: ShortcutBinding | null
   openApp: ShortcutBinding | null
   dictationMode: HotkeyMode
+  /**
+   * Switches the language of a running Translate recording; only listened to while one runs
+   * (plan 0010). `Shift` means either Shift key. null turns it off.
+   */
+  switchLanguage: ShortcutBinding | null
 }
 
 export interface PlatformCapabilities {
@@ -494,6 +499,9 @@ function defaultTranslateHotkey(): string | null {
   return 'Ctrl+Shift+/'
 }
 
+/** The default Switch language key: Shift on either side. */
+export const DEFAULT_SWITCH_LANGUAGE_HOTKEY = 'Shift'
+
 // Keep in sync with `hotkey_modifier_rank` in src-tauri/src/storage/mod.rs: Fn, End,
 // Home/Page keys, F13+, then Command, Control, Option, Shift (generic, left, right).
 const modifierOrder = [
@@ -670,6 +678,8 @@ function normalizePrimary(value: string): string | null {
     alt_right: 'RightAlt',
     'alt-right': 'RightAlt',
     end: 'End',
+    // Bare generic Shift (either side); only the Switch language shortcut can use it.
+    shift: 'Shift',
   }
   if (nativeKeyNames[lower]) return nativeKeyNames[lower]
   if (nativePrimary[lower]) return nativePrimary[lower]
@@ -893,6 +903,11 @@ function normalizeHotkeyConfig(config: AppConfig, hotkeysValue: HotkeyConfig): H
           : config.hotkey_mode === 'toggle'
             ? 'toggle'
             : defaultDictationHotkeyMode(),
+    // Older configs have no field: they get the default. An explicit null stays off.
+    switchLanguage:
+      hotkeys.switchLanguage === undefined
+        ? bindingFromHotkey(DEFAULT_SWITCH_LANGUAGE_HOTKEY)
+        : normalizeBinding(hotkeys.switchLanguage),
   }
 }
 
@@ -921,6 +936,8 @@ function hotkeyConfigFromLegacy(config: AppConfig): HotkeyConfig {
     editSelection: config.hotkeys?.editSelection ?? null,
     switchScene: config.hotkeys?.switchScene ?? null,
     openApp: config.hotkeys?.openApp ?? null,
+    // Left undefined for older configs, so normalizeHotkeyConfig fills in the default.
+    switchLanguage: config.hotkeys?.switchLanguage as ShortcutBinding | null,
     dictationMode:
       config.hotkey_mode === 'toggle'
         ? 'toggle'
@@ -947,15 +964,14 @@ function syncTypedHotkeysToLegacy(config: AppConfig): AppConfig {
   }
 }
 
-const supportedTranslationCodes = new Set(TARGET_LANGUAGES.map((language) => language.value))
-
-function normalizeTranslationTargets(targets: string[]): string[] {
+/** Canonical, supported, unique codes, at most three (plain `zh` becomes `zh-Hans`). */
+export function normalizeTranslationTargets(targets: string[]): string[] {
   const normalized: string[] = []
   for (const value of targets) {
-    const code = value.trim().toLowerCase()
-    if (!supportedTranslationCodes.has(code) || normalized.includes(code)) continue
+    const code = canonicalTranslationCode(value)
+    if (!code || normalized.includes(code)) continue
     normalized.push(code)
-    if (normalized.length === 5) break
+    if (normalized.length === MAX_TRANSLATION_TARGETS) break
   }
   return normalized
 }
@@ -964,11 +980,10 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
   const merged = { ...previous, ...partial }
   if (partial.translation) {
     const targets = normalizeTranslationTargets(partial.translation.targets)
-    const requestedActive = partial.translation.active_target.trim().toLowerCase()
-    if (targets.length === 0) {
-      targets.push(supportedTranslationCodes.has(requestedActive) ? requestedActive : 'en')
-    }
-    const activeTarget = targets.includes(requestedActive) ? requestedActive : targets[0]
+    const requestedActive = canonicalTranslationCode(partial.translation.active_target)
+    if (targets.length === 0) targets.push(requestedActive ?? 'en')
+    const activeTarget =
+      requestedActive && targets.includes(requestedActive) ? requestedActive : targets[0]
     return {
       ...merged,
       target_lang: activeTarget,
@@ -977,13 +992,13 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
   }
 
   if ('target_lang' in partial) {
-    const requested = partial.target_lang?.trim().toLowerCase() ?? ''
-    const activeTarget = supportedTranslationCodes.has(requested)
-      ? requested
-      : previous.translation?.active_target || 'en'
+    const activeTarget =
+      canonicalTranslationCode(partial.target_lang ?? '') ??
+      canonicalTranslationCode(previous.translation?.active_target ?? '') ??
+      'en'
     const targets = normalizeTranslationTargets(previous.translation?.targets ?? [activeTarget])
     if (!targets.includes(activeTarget)) {
-      if (targets.length === 5) targets[targets.length - 1] = activeTarget
+      if (targets.length === MAX_TRANSLATION_TARGETS) targets[targets.length - 1] = activeTarget
       else targets.push(activeTarget)
     }
     return {
@@ -995,9 +1010,7 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
 
   const current = merged.translation
   if (!current) {
-    const activeTarget = supportedTranslationCodes.has(merged.target_lang)
-      ? merged.target_lang
-      : 'en'
+    const activeTarget = canonicalTranslationCode(merged.target_lang) ?? 'en'
     return {
       ...merged,
       target_lang: activeTarget,
@@ -1068,7 +1081,7 @@ const defaultConfig: AppConfig = {
   family_scene_assignments: [],
   translate_enabled: false,
   target_lang: 'en',
-  translation: { targets: ['en', 'zh', 'ja'], active_target: 'en' },
+  translation: { targets: ['en'], active_target: 'en' },
   hotkey: defaultDictationHotkey(),
   ask_hotkey: defaultAskHotkey(),
   hotkey_mode: defaultDictationHotkeyMode(),
@@ -1085,6 +1098,7 @@ const defaultConfig: AppConfig = {
     switchScene: null,
     openApp: null,
     dictationMode: defaultDictationHotkeyMode(),
+    switchLanguage: bindingFromHotkey(DEFAULT_SWITCH_LANGUAGE_HOTKEY),
   },
   output_mode: 'keyboard',
   insertion_strategy: 'auto',

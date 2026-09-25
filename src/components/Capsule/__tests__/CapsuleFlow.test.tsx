@@ -1,5 +1,5 @@
 import React from 'react'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../../../stores/appStore'
@@ -35,7 +35,7 @@ vi.mock('../../../lib/tauri', () => ({
   abortAskDictation: vi.fn().mockResolvedValue(undefined),
   abortRecording: vi.fn().mockResolvedValue(undefined),
   setActiveTranslationTarget: vi.fn().mockResolvedValue({
-    targets: ['en', 'zh', 'ja'],
+    targets: ['en', 'zh-Hans', 'ja'],
     active_target: 'ja',
   }),
   stopAskFlow: vi.fn().mockResolvedValue(undefined),
@@ -71,23 +71,70 @@ describe('Capsule flow states', () => {
     expect(screen.getByText('capsule.preparing')).toBeInTheDocument()
   })
 
-  it('renders transcribing state with partial transcript when available', () => {
-    useAppStore.setState({
-      pipelineState: 'transcribing',
-      partialTranscript: 'hello world',
-    })
+  it('shows a short label over the aurora sweep while transcribing, polishing and pasting', () => {
+    useAppStore.setState({ pipelineState: 'transcribing', partialTranscript: 'hello world' })
+    const { container, rerender } = render(<Capsule />)
+    const shell = () => container.querySelector('.pill') as HTMLElement
 
-    render(<Capsule />)
+    // The label only, never the partial transcript.
+    expect(screen.getByText('capsule.transcribing')).toBeInTheDocument()
+    expect(screen.queryByText(/hello world/)).toBeNull()
+    expect(screen.getByTestId('capsule-aurora')).toHaveAttribute('data-mode', 'working')
+    expect(shell().style.width).toBe('132px')
 
-    expect(screen.getByText(/hello world/)).toBeInTheDocument()
+    useAppStore.setState({ pipelineState: 'polishing' })
+    rerender(<Capsule />)
+    expect(screen.getByText('capsule.polishing')).toBeInTheDocument()
+    expect(shell().style.width).toBe('132px')
+
+    useAppStore.setState({ pipelineState: 'outputting' })
+    rerender(<Capsule />)
+    expect(screen.getByText('capsule.pasting')).toBeInTheDocument()
+    expect(shell().style.width).toBe('132px')
   })
 
-  it('renders thinking state during polishing', () => {
-    useAppStore.setState({ pipelineState: 'polishing' })
+  it('flashes done after pasting, then hides', () => {
+    vi.useFakeTimers()
+    try {
+      useAppStore.setState({ pipelineState: 'outputting' })
+      const { rerender } = render(<Capsule />)
 
-    render(<Capsule />)
+      act(() => useAppStore.setState({ pipelineState: 'idle' }))
+      rerender(<Capsule />)
+      expect(screen.getByText('capsule.done')).toBeInTheDocument()
+      expect(screen.getByTestId('capsule-aurora')).toHaveAttribute('data-mode', 'done')
 
-    expect(screen.getByText('capsule.thinking')).toBeInTheDocument()
+      act(() => {
+        vi.advanceTimersByTime(600)
+      })
+      expect(screen.queryByText('capsule.done')).toBeNull()
+      expect(screen.queryByTestId('capsule-aurora')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('shows no timer while recording or working', () => {
+    for (const pipelineState of [
+      'recording',
+      'ask_recording',
+      'transcribing',
+      'polishing',
+      'ask_thinking',
+    ] as const) {
+      useAppStore.setState({ pipelineState, activeVoiceMode: 'dictate' })
+      const { container, unmount } = render(<Capsule />)
+      expect(container.textContent ?? '').not.toMatch(/\d{1,2}:\d{2}/)
+      unmount()
+    }
+  })
+
+  it('uses the listening aurora and narrow pill while recording', () => {
+    useAppStore.setState({ pipelineState: 'recording', activeVoiceMode: 'dictate' })
+    const { container } = render(<Capsule />)
+
+    expect(screen.getByTestId('capsule-aurora')).toHaveAttribute('data-mode', 'listening')
+    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('150px')
   })
 
   it('does not start dictation when the idle capsule is clicked', () => {
@@ -107,9 +154,8 @@ describe('Capsule flow states', () => {
 
     render(<Capsule />)
 
-    expect(screen.getByText('ask.title')).toBeInTheDocument()
-    expect(screen.getByText('ask.title')).toHaveClass('whitespace-nowrap')
-    expect(screen.getByText('00:00')).toBeInTheDocument()
+    // The Ask name is for screen readers only; the pill shows the icon.
+    expect(screen.getByText('ask.title')).toHaveClass('sr-only')
 
     const pointerUp = new Event('pointerup', { bubbles: true })
     Object.defineProperty(pointerUp, 'button', { value: 0 })
@@ -123,17 +169,16 @@ describe('Capsule flow states', () => {
 
     render(<Capsule />)
 
-    expect(screen.getByText('ask.title')).toBeInTheDocument()
-    expect(screen.getByText('ask.title')).toHaveClass('whitespace-nowrap')
+    expect(screen.getByText('ask.title')).toHaveClass('sr-only')
     expect(screen.getByText('ask.thinking')).toBeInTheDocument()
   })
 
   const translateConfig = () => ({
     ...useAppStore.getState().config,
-    translation: { targets: ['en', 'zh', 'ja', 'fr'], active_target: 'en' },
+    translation: { targets: ['en', 'zh-Hant-HK', 'ja'], active_target: 'en' },
   })
 
-  it('shows three language chips only while Translate is recording', () => {
+  it('shows one chip per chosen language only while Translate is recording', () => {
     useAppStore.setState({
       pipelineState: 'recording',
       activeVoiceMode: 'dictate',
@@ -148,7 +193,7 @@ describe('Capsule flow states', () => {
     const chips = within(screen.getByRole('group', { name: 'translate.chipsLabel' })).getAllByRole(
       'button',
     )
-    expect(chips.map((chip) => chip.textContent)).toEqual(['EN', '中', '日'])
+    expect(chips.map((chip) => chip.textContent)).toEqual(['EN', '港', '日'])
     expect(screen.getByRole('button', { name: 'translate.chipLabel English' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -156,19 +201,34 @@ describe('Capsule flow states', () => {
     expect(screen.getByRole('button', { name: 'translate.chipLabel English' })).toHaveClass(
       'bg-pill-chip',
     )
-    expect(screen.getByRole('button', { name: 'translate.chipLabel 中文' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    expect(
+      screen.getByRole('button', { name: 'translate.chipLabel translate.languages.zhHantHK' }),
+    ).toHaveAttribute('aria-pressed', 'false')
 
     useAppStore.setState({ pipelineState: 'transcribing' })
     rerender(<Capsule />)
     expect(screen.queryByRole('group', { name: 'translate.chipsLabel' })).toBeNull()
   })
 
+  it('shows the language name and no chips when only one language is chosen', () => {
+    useAppStore.setState({
+      pipelineState: 'recording',
+      activeVoiceMode: 'translate',
+      config: {
+        ...useAppStore.getState().config,
+        translation: { targets: ['ja'], active_target: 'ja' },
+      },
+    })
+    const { container } = render(<Capsule />)
+
+    expect(screen.queryByRole('group', { name: 'translate.chipsLabel' })).toBeNull()
+    expect(screen.getByText('日本語')).toBeInTheDocument()
+    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('232px')
+  })
+
   it('switches the target on chip click without stopping or restarting recording', async () => {
     vi.mocked(setActiveTranslationTarget).mockResolvedValueOnce({
-      targets: ['en', 'zh', 'ja', 'fr'],
+      targets: ['en', 'zh-Hant-HK', 'ja'],
       active_target: 'ja',
     })
     useAppStore.setState({
@@ -204,12 +264,12 @@ describe('Capsule flow states', () => {
     const { container, rerender } = render(<Capsule />)
     const shell = () => container.querySelector('.pill') as HTMLElement
 
-    expect(shell().style.width).toBe('296px')
+    expect(shell().style.width).toBe('232px')
     expect(shell().style.height).toBe('36px')
 
     useAppStore.setState({ activeVoiceMode: 'dictate' })
     rerender(<Capsule />)
-    expect(shell().style.width).toBe('216px')
+    expect(shell().style.width).toBe('150px')
   })
 
   it('shows the waveform while Ask is recording', () => {
@@ -219,6 +279,6 @@ describe('Capsule flow states', () => {
 
     expect(screen.getByTestId('waveform')).toBeInTheDocument()
     const shell = container.querySelector('.pill') as HTMLElement
-    expect(shell.style.width).toBe('248px')
+    expect(shell.style.width).toBe('150px')
   })
 })

@@ -13,6 +13,10 @@ Back to [index](index.md).
   becomes the list's first entry and the default.
 - The pill shows one chip per chosen language, and no chips when only one is chosen (it shows
   the language name instead).
+- Chinese comes in three variants, each its own language: Simplified (`zh-Hans`, chip 简),
+  Traditional as written in Hong Kong (`zh-Hant-HK`, chip 港) and Traditional as written in
+  Taiwan (`zh-Hant-TW`, chip 台). The translation prompt names the variant, its script and its
+  regional vocabulary. A stored plain `zh` becomes `zh-Hans`, keeping its place in the list.
 
 ## Shortcuts
 
