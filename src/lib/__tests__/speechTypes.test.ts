@@ -6,7 +6,9 @@ import {
   builtinWhisperPreset,
   engineOf,
   formatTestTime,
+  isQwenCloudAddress,
   serverPresets,
+  withServerKind,
 } from '../speechTypes'
 import {
   defaultModelChoice,
@@ -80,6 +82,28 @@ describe('speech engines (plan `two-tab-speech`)', () => {
     expect(addressHost('http://192.0.2.10:8000/v1')).toBe('192.0.2.10:8000')
     expect(formatTestTime(850)).toBe('850 ms')
     expect(formatTestTime(1400)).toBe('1.4 s')
+  })
+
+  it('picks the Qwen Cloud kind from the address (plan qwen-cloud-speech)', () => {
+    expect(isQwenCloudAddress('https://token-plan.maas.qwencloudapi.com/api/v1')).toBe(true)
+    expect(isQwenCloudAddress('https://dashscope.aliyuncs.com/compatible-mode/v1')).toBe(true)
+    expect(isQwenCloudAddress('https://dashscope-intl.aliyuncs.com/api/v1')).toBe(true)
+    expect(isQwenCloudAddress('https://api.openai.com/v1')).toBe(false)
+    expect(isQwenCloudAddress('https://qwencloudapi.com.example.com/v1')).toBe(false)
+    expect(isQwenCloudAddress('not a url')).toBe(false)
+
+    expect(
+      withServerKind(preset('https://token-plan.maas.qwencloudapi.com/compatible-mode/v1/')),
+    ).toMatchObject({
+      kind: 'qwen_cloud',
+      base_url: 'https://token-plan.maas.qwencloudapi.com/api/v1',
+    })
+    // Changing the address back to another service goes back to the OpenAI-compatible kind.
+    expect(
+      withServerKind(preset('https://api.groq.com/openai/v1', { kind: 'qwen_cloud' })),
+    ).toMatchObject({ kind: 'openai_compatible', base_url: 'https://api.groq.com/openai/v1' })
+    const builtin = { ...BUILTIN_SPEECH_PRESETS[0] }
+    expect(withServerKind(builtin)).toBe(builtin)
   })
 
   it('selects the preferred model when offered, otherwise the first', () => {

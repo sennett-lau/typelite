@@ -21,7 +21,11 @@ import {
 } from '../../lib/tauri'
 import { recordAiResult, recordSpeechResult } from '../../lib/connectionStatus'
 import { MODEL_SIZE_BYTES, type SetupTextNamespace } from '../../lib/speechSetup'
-import { SPEECH_SERVICES_GUIDE_URL } from '../../lib/speechTypes'
+import {
+  SPEECH_SERVICES_GUIDE_URL,
+  isQwenCloudAddress,
+  withServerKind,
+} from '../../lib/speechTypes'
 import type { ModelSetupStoreHook } from '../../stores/modelSetupStore'
 import { useSpeechSetupStore } from '../../stores/speechSetupStore'
 import { useAiSetupStore } from '../../stores/aiSetupStore'
@@ -55,6 +59,13 @@ export interface EngineService {
   isBuiltin: (preset: AnyPreset) => boolean
   newPreset: () => AnyPreset
   sameConnection: (a: AnyPreset, b: AnyPreset) => boolean
+  /**
+   * The preset as it is tested and saved. Speech sets the kind from the address (plan
+   * `qwen-cloud-speech`); AI presets are unchanged.
+   */
+  resolve: (preset: AnyPreset) => AnyPreset
+  /** The i18n key of a note shown under the fields for this address, if any. */
+  addressNote: (baseUrl: string) => string | null
   test: (preset: AnyPreset, apiKey: string) => Promise<number>
   recordResult: (ok: boolean) => void
   store: ModelSetupStoreHook
@@ -101,6 +112,8 @@ export const SPEECH_SERVICE: EngineService = {
     verified_at: null,
   }),
   sameConnection: (a, b) => sameSpeechConnection(a as SpeechPreset, b as SpeechPreset),
+  resolve: (preset) => withServerKind(preset as SpeechPreset),
+  addressNote: (baseUrl) => (isQwenCloudAddress(baseUrl) ? 'speech.qwenCloudNote' : null),
   test: (preset, apiKey) => testSpeechPreset(preset as SpeechPreset, apiKey),
   recordResult: (ok) => recordSpeechResult(ok),
   store: useSpeechSetupStore,
@@ -143,6 +156,8 @@ export const AI_SERVICE: EngineService = {
     verified_at: null,
   }),
   sameConnection: (a, b) => sameAiConnection(a as AiPreset, b as AiPreset),
+  resolve: (preset) => preset,
+  addressNote: () => null,
   test: (preset, apiKey) => testAiPreset(preset as AiPreset, apiKey),
   recordResult: (ok) => recordAiResult(ok),
   store: useAiSetupStore,

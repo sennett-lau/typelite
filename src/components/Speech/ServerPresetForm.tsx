@@ -100,7 +100,10 @@ export function ServerPresetForm({
 
   const handleTest = async () => {
     setTest({ status: 'testing' })
-    const tested = { ...draft }
+    // Plan `qwen-cloud-speech`: the address decides the speech kind (and fixes a Qwen
+    // compatible-mode address); the field shows what is tested.
+    const tested = service.resolve(draft)
+    setDraft(tested)
     try {
       const ms = await service.test(tested, apiKey)
       setTest({ status: 'ok', ms, tested, key: apiKey })
@@ -120,14 +123,18 @@ export function ServerPresetForm({
   }
 
   const handleSave = async () => {
+    const resolved = service.resolve(draft)
     const name =
-      draft.name.trim() || addressHostname(draft.base_url) || draft.model.trim() || draft.id
+      resolved.name.trim() ||
+      addressHostname(resolved.base_url) ||
+      resolved.model.trim() ||
+      resolved.id
     const passed =
-      test.status === 'ok' && test.key === apiKey && service.sameConnection(test.tested, draft)
+      test.status === 'ok' && test.key === apiKey && service.sameConnection(test.tested, resolved)
     const keyChanged = apiKey !== savedKey.current
-    const unchanged = preset !== null && !keyChanged && service.sameConnection(preset, draft)
+    const unchanged = preset !== null && !keyChanged && service.sameConnection(preset, resolved)
     const saved = {
-      ...draft,
+      ...resolved,
       name,
       builtin: false,
       verified_at: passed ? Date.now() : unchanged ? preset.verified_at : null,
@@ -147,6 +154,7 @@ export function ServerPresetForm({
   }
 
   const fieldClass = 'field font-mono text-[12px]'
+  const addressNote = service.addressNote(draft.base_url)
   const id = (field: string) => `${service.textNs}-${field}-${draft.id}`
 
   return (
@@ -194,6 +202,7 @@ export function ServerPresetForm({
           className="field text-[12.5px]"
         />
       </div>
+      {addressNote && <p className="m-0 mt-2 text-[12px] text-text-secondary">{t(addressNote)}</p>}
       {service.extraFields && (
         <div className="mt-2.5">
           <button

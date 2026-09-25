@@ -908,6 +908,7 @@
     "apiKeyPlaceholder": "Optional",
     "name": "Name",
     "namePlaceholder": "Filled in for you",
+    "qwenCloudNote": "Qwen Cloud: sent to Qwen’s own speech API. Recordings up to 4 min 50 s.",
     "test": "Test",
     "testing": "Testing…",
     "works": "Works · {{time}}",

@@ -342,6 +342,54 @@ describe('SttPane', () => {
       expect(JSON.stringify(config())).not.toContain('sk-1')
     })
 
+    it('a Qwen address tests and saves as Qwen Cloud, with the native address (plan qwen-cloud-speech)', async () => {
+      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(700)
+      render(<SttPane />)
+      fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: '__add__' } })
+
+      fireEvent.change(screen.getByLabelText('Address'), {
+        target: { value: 'https://token-plan.maas.qwencloudapi.com/compatible-mode/v1' },
+      })
+      fireEvent.change(screen.getByLabelText('Model'), {
+        target: { value: 'qwen-audio-3.0-asr-flash' },
+      })
+      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-q' } })
+      expect(screen.getByText(/Qwen Cloud: sent to Qwen’s own speech API/)).toBeInTheDocument()
+      expect(screen.getByLabelText('Name')).toHaveValue('token-plan.maas.qwencloudapi.com')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+      expect(await screen.findByText('Works · 700 ms')).toBeInTheDocument()
+      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'qwen_cloud',
+          base_url: 'https://token-plan.maas.qwencloudapi.com/api/v1',
+        }),
+        'sk-q',
+      )
+      expect(screen.getByLabelText('Address')).toHaveValue(
+        'https://token-plan.maas.qwencloudapi.com/api/v1',
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+      await waitFor(() =>
+        expect(
+          config().speech_presets.find((p) => p.id === config().active_speech_preset_id),
+        ).toMatchObject({
+          kind: 'qwen_cloud',
+          base_url: 'https://token-plan.maas.qwencloudapi.com/api/v1',
+          name: 'token-plan.maas.qwencloudapi.com',
+          verified_at: expect.any(Number),
+        }),
+      )
+      await waitFor(() =>
+        expect(tauri.getSttRecordingCapability).toHaveBeenLastCalledWith(
+          'auto',
+          600,
+          expect.objectContaining({ kind: 'qwen_cloud' }),
+        ),
+      )
+    })
+
     it('deletes the selected preset after a second click and moves to the next one', async () => {
       render(<SttPane />)
 

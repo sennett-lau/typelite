@@ -54,6 +54,41 @@ export function addressHost(baseUrl: string): string {
   return parse(baseUrl)?.host ?? baseUrl.trim()
 }
 
+/**
+ * Plan qwen-cloud-speech: hosts of Qwen's own speech API (Qwen Cloud Token Plan and Alibaba
+ * Model Studio / DashScope). Their speech models do not answer on the OpenAI transcription API,
+ * so a preset with one of these addresses uses the `qwen_cloud` kind.
+ */
+export function isQwenCloudAddress(baseUrl: string): boolean {
+  const host = addressHostname(baseUrl).toLowerCase()
+  return (
+    host === 'qwencloudapi.com' ||
+    host.endsWith('.qwencloudapi.com') ||
+    /^dashscope(-[a-z0-9]+)?\.aliyuncs\.com$/.test(host)
+  )
+}
+
+/**
+ * The address Qwen shows next to a key ends in `/compatible-mode/v1`; its speech model only
+ * works on the native `/api/v1`, so that part is rewritten.
+ */
+function qwenNativeAddress(baseUrl: string): string {
+  return baseUrl.trim().replace(/\/compatible-mode\/v1\/?$/, '/api/v1')
+}
+
+/**
+ * The preset as it is tested and saved: the kind follows from the address (Qwen's own API or an
+ * OpenAI-compatible service), and a Qwen compatible-mode address becomes the native one.
+ * Built-in presets are returned unchanged.
+ */
+export function withServerKind(preset: SpeechPreset): SpeechPreset {
+  if (isBuiltinSpeech(preset)) return preset
+  if (isQwenCloudAddress(preset.base_url)) {
+    return { ...preset, kind: 'qwen_cloud', base_url: qwenNativeAddress(preset.base_url) }
+  }
+  return { ...preset, kind: 'openai_compatible' }
+}
+
 /** Formats a Test time: "850 ms" or "1.4 s". */
 export function formatTestTime(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)} ms`
