@@ -348,17 +348,16 @@ describe('Settings tab 切换', () => {
     renderSettings()
 
     expect(screen.getByText('settings.hotkey')).toBeDefined()
-    expect(screen.getByText('settings.dictationHotkey')).toBeDefined()
-    expect(screen.getByText('settings.askHotkey')).toBeDefined()
-    expect(screen.getByText('settings.translateHotkey')).toBeDefined()
-    expect(screen.getByText('settings.dictationMode')).toBeDefined()
+    expect(screen.getByText('home.shortcuts.dictate')).toBeDefined()
+    expect(screen.getByText('home.shortcuts.ask')).toBeDefined()
+    expect(screen.getByText('home.shortcuts.translate')).toBeDefined()
     expect(screen.getAllByRole('button', { name: 'settings.shortcutAdd' })).toHaveLength(3)
     expect(screen.queryByText('settings.askAnything')).toBeNull()
     expect(screen.queryByText('settings.askAnythingDesc')).toBeNull()
     expect(screen.getByLabelText('settings.tryAsk')).toBeDefined()
     expect(screen.queryByText('ask.voiceQuestion')).toBeNull()
-    expect(screen.getByText('settings.outputMode')).toBeDefined()
-    expect(screen.getByText('settings.dictationMode')).toBeDefined()
+    expect(screen.getByText('settings.generalPane.outputBy')).toBeDefined()
+    expect(screen.getByText('settings.generalPane.startStop')).toBeDefined()
     expect(screen.queryByText('settings.diagnostics')).toBeNull()
   })
 
@@ -366,8 +365,12 @@ describe('Settings tab 切换', () => {
     renderSettings()
 
     const cards = screen.getAllByRole('region').map((region) => region.getAttribute('aria-label'))
-    expect(cards).toEqual(['settings.hotkey', 'settings.audio', 'settings.dictation'])
-    expect(screen.getAllByText('settings.askHotkey')).toHaveLength(1)
+    expect(cards).toEqual([
+      'settings.hotkey',
+      'settings.generalPane.recording',
+      'settings.generalPane.output',
+    ])
+    expect(screen.getAllByText('home.shortcuts.ask')).toHaveLength(1)
     expect(screen.queryByText('settings.advancedGeneral')).toBeNull()
     expect(screen.queryByText('settings.saveHistory')).toBeNull()
     expect(screen.queryByText('settings.hideCapsuleWhenIdle')).toBeNull()
@@ -593,7 +596,8 @@ describe('Settings tab 切换', () => {
 
     renderSettings()
 
-    expect(await screen.findByText('Right Alt')).toBeDefined()
+    // Once as the field's text for screen readers and once as its key cap.
+    expect((await screen.findAllByText('Right Alt')).length).toBeGreaterThan(0)
     expect(screen.queryByText('settings.hotkeyInvalid')).toBeNull()
   })
 
