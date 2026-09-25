@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 
 /**
- * A countdown that can pause (plan 0018: the Copy pill's 8 s, paused while hovered).
+ * A countdown that can pause (plan `copy-when-no-field`: the Copy pill's 8 s, paused while
+ * hovered).
  *
  * While `running`, `onExpire` fires once the remaining time is used up. Pausing keeps the
  * remaining time; running again continues from there. A new `resetKey` starts over from

@@ -1,4 +1,5 @@
-//! Plan 0018: the Copy pill. When a Dictate or Translate result is ready and focus is clearly
+//! Plan `copy-when-no-field`: the Copy pill. When a Dictate or Translate result is ready and focus
+//! is clearly
 //! not on a text field, the result is not pasted. It is kept here instead, the clipboard is
 //! left alone, and the pill shows the start of the text with a Copy button. The pill closes on
 //! Copy, on Escape, when its countdown runs out, or when a new run starts.

@@ -27,17 +27,19 @@ export async function abortRecording(): Promise<void> {
   return invoke('abort_recording')
 }
 
-/** Plan 0018: the Copy pill's Copy button; puts the held result on the clipboard. */
+/** Plan `copy-when-no-field`: the Copy pill's Copy button; puts the held result on the clipboard. */
 export async function copyOfferToClipboard(): Promise<void> {
   return invoke('copy_offer_to_clipboard')
 }
 
-/** Plan 0018: the Copy pill closed; the backend drops the held result. */
+/** Plan `copy-when-no-field`: the Copy pill closed; the backend drops the held result. */
 export async function dismissCopyOffer(): Promise<void> {
   return invoke('dismiss_copy_offer')
 }
 
-/** Plan 0008: the last runs' step timings (memory only), oldest first, for the Speed board. */
+/**
+ * Plan `speed-board`: the last runs' step timings (memory only), oldest first, for the Speed board.
+ */
 export async function getRunTimings(): Promise<RunTiming[]> {
   return invoke('get_run_timings')
 }
@@ -297,7 +299,7 @@ export async function testAiPreset(preset: AiPreset, apiKey: string): Promise<nu
   return invoke('test_ai_preset', { preset, apiKey })
 }
 
-// ─── Plan 0012: Quick speech setup (built-in whisper.cpp) ───
+// ─── Plan `quick-speech-setup`: Quick speech setup (built-in whisper.cpp) ───
 
 export type SpeechSetupPhase = 'idle' | 'downloading' | 'verifying' | 'testing' | 'ready' | 'error'
 
@@ -350,7 +352,7 @@ export async function deleteSpeechModel(modelId: string): Promise<void> {
   return invoke('delete_speech_model', { modelId })
 }
 
-// ─── Plan 0015: which built-in models this Mac runs well ───
+// ─── Plan `two-tab-speech`: which built-in models this Mac runs well ───
 
 export type ChipKind = 'apple_silicon' | 'intel' | 'unknown'
 
@@ -449,7 +451,8 @@ export type AskResultOutput =
   | 'openedSearch'
   | 'insertedText'
   | 'copiedFallback'
-  // Plan 0011: the question needs live information; the panel offers Answer anyway.
+  // Plan `ask-translate-and-live-questions`: the question needs live information; the panel offers
+  // Answer anyway.
   | 'needsLiveInfo'
 
 export interface AskDictationResult {
@@ -500,7 +503,9 @@ export async function takePendingAskMessage(): Promise<PendingAskMessage | null>
   return invoke('take_pending_ask_message')
 }
 
-/** Plan 0011: answer a live question from the model's own knowledge. */
+/**
+ * Plan `ask-translate-and-live-questions`: answer a live question from the model's own knowledge.
+ */
 export async function answerAskAnyway(question: string): Promise<AskDictationResult> {
   return invoke('answer_ask_anyway', { question })
 }

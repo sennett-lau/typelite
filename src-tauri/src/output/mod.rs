@@ -55,7 +55,8 @@ pub enum InsertStatus {
     CopiedFallback,
     Failed,
     PartiallyInserted,
-    /// Plan 0018: not pasted because no text field had focus; the Copy pill offers the text.
+    /// Plan `copy-when-no-field`: not pasted because no text field had focus; the Copy pill offers
+    /// the text.
     HeldForCopy,
 }
 
@@ -117,7 +118,7 @@ impl InsertResult {
         }
     }
 
-    /// Plan 0018: the result went to the Copy pill instead of the focused app.
+    /// Plan `copy-when-no-field`: the result went to the Copy pill instead of the focused app.
     pub fn held_for_copy(strategy_used: InsertionStrategy, chars: usize) -> Self {
         Self {
             status: InsertStatus::HeldForCopy,

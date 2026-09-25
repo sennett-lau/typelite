@@ -4,7 +4,7 @@ import { isAiReady, isSpeechReady } from './readiness'
 
 /**
  * The shortcut tour (onboarding's Dictate, Translate and Ask steps) after a skipped setup:
- * offered once both services work, until it is finished (plan 0007).
+ * offered once both services work, until it is finished (plan `setup-without-dead-ends`).
  */
 
 /** Both services work and the shortcut tour is not done yet. */

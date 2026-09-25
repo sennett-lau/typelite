@@ -44,8 +44,8 @@ const EDIT_LEADS: &[&str] = &[
     "呢段",
 ];
 
-/// Edit instructions that replace the selection (plan 0011): shorten, rewrite, polish, fix,
-/// change the tone or the format. Questions ("解釋一下", "總結一下") are not here.
+/// Edit instructions that replace the selection (plan `ask-translate-and-live-questions`): shorten,
+/// rewrite, polish, fix, change the tone or the format. Questions ("解釋一下", "總結一下") are not here.
 const EDIT_VERBS: &[&str] = &[
     "改寫",
     "重寫",

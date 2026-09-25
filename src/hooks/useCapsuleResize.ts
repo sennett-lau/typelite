@@ -6,7 +6,7 @@ export interface CapsuleSize {
   height: number
 }
 
-// Pill sizes from plan 0009 (pill.md). The window adds 12 pt of padding on each side.
+// Pill sizes from plan `aurora-pill` (pill.md). The window adds 12 pt of padding on each side.
 
 /** Dictate recording: red dot, 18-bar waveform and cancel button. */
 export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
@@ -25,7 +25,10 @@ export const WORKING_PILL_SIZE: CapsuleSize = { width: 132, height: 36 }
 export const ERROR_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
 export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
-/** Plan 0018: the Copy pill (language tag, one-line preview, Copy button) for a short result. */
+/**
+ * Plan `copy-when-no-field`: the Copy pill (language tag, one-line preview, Copy button) for a
+ * short result.
+ */
 export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 300, height: 36 }
 /** The Copy pill for a longer result; its preview ends with an ellipsis. */
 export const COPY_PILL_SIZE: CapsuleSize = { width: 360, height: 36 }
@@ -54,7 +57,8 @@ export function copyPillSize(offer: CopyOffer | null): CapsuleSize {
 }
 
 /**
- * Plan 0018 transitions. The pill's width, height and corners animate for `PILL_RESIZE_MS`
+ * Plan `copy-when-no-field` transitions. The pill's width, height and corners animate for
+ * `PILL_RESIZE_MS`
  * (CSS on `.pill`); hiding slides it down and fades it for `PILL_HIDE_MS`. The window grows at
  * once and shrinks only after the pill has animated narrower, so nothing is clipped.
  */
@@ -102,7 +106,7 @@ export interface CapsuleVisibilityInput {
   pipelineState: PipelineState
   /** The brief done flash after pasting keeps the pill up a moment longer. */
   doneFlash?: boolean
-  /** Plan 0018: the Copy pill offers a result. */
+  /** Plan `copy-when-no-field`: the Copy pill offers a result. */
   copyPill?: boolean
 }
 
@@ -296,7 +300,8 @@ export function growFirstSize(current: CapsuleSize, next: CapsuleSize): CapsuleS
  * Sizes, places and shows the capsule window. `doneFlash` is true during the done flash.
  * While the pill is visible it follows the cursor to another screen, fading `fadeTarget`
  * out and in around the move. The window grows before the pill animates larger and shrinks
- * after it animated smaller, and it hides only after the pill's hide animation (plan 0018).
+ * after it animated smaller, and it hides only after the pill's hide animation (plan `copy-when-no-
+ * field`).
  */
 export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLElement | null>) {
   const pipelineState = useAppStore((s) => s.pipelineState)

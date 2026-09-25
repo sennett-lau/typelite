@@ -987,7 +987,7 @@ fn handle_advanced_role_shortcut(
     let _ = handle.emit("hotkey:role", role.as_str());
 }
 
-/// What Escape does right now (plans 0016 and 0018).
+/// What Escape does right now (plans `pill-follows-cursor-and-escape` and `copy-when-no-field`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EscapeAction {
     /// Nothing of Typelite's is up: Escape goes to the focused app as usual.

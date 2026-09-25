@@ -21,7 +21,8 @@ interface CapsuleCopyProps {
 }
 
 /**
- * The Copy pill (plan 0018): the result was not pasted because no text field had focus. One
+ * The Copy pill (plan `copy-when-no-field`): the result was not pasted because no text field had
+ * focus. One
  * line: the target language for a translation, the start of the result, and a Copy button
  * whose border drains as an 8 s countdown. Hovering the pill pauses it; Escape closes it (the
  * native key listener, see `hotkey.rs`); Copy puts the full result on the clipboard, shows

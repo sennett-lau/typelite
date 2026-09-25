@@ -22,9 +22,10 @@ import {
 } from './builtinText'
 
 /**
- * Settings → Speech → Built-in details (plan 0015): the "Model" group with the option cards this
- * Mac is offered (hardware note at the top right), then one status row for the selected model:
- * Not downloaded + Download, Downloading + Cancel, In use + Delete, Download failed + Try again.
+ * Settings → Speech → Built-in details (plan `two-tab-speech`): the "Model" group with the option
+ * cards this Mac is offered (hardware note at the top right), then one status row for the selected
+ * model: Not downloaded + Download, Downloading + Cancel, In use + Delete, Download failed + Try
+ * again.
  */
 export function BuiltinSettings() {
   const { t } = useTranslation()

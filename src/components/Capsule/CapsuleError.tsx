@@ -11,7 +11,8 @@ const SETUP_ERROR_MS = 6000
 interface CapsuleErrorProps {
   /**
    * The message and whether it has a "Set up" button, as last shown. They stay while the pill
-   * hides after the error was cleared (plan 0018), so the text does not change mid-fade.
+   * hides after the error was cleared (plan `copy-when-no-field`), so the text does not change mid-
+   * fade.
    */
   message?: string | null
   hasAction?: boolean

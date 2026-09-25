@@ -4,7 +4,7 @@ Open-source, free, self-hosted alternative to [Typeless](https://www.typeless.co
 shortcut, speak, and get polished text pasted into whatever field has focus. macOS first.
 
 Stack: Tauri 2 (React/TypeScript frontend, Rust backend), MIT. Scope and decisions are in
-`docs/plans/0002-v1-scope/` and later plans. The user is new to macOS development, so keep the
+`docs/plans/2026-09-24-v1-scope/` and later plans. The user is new to macOS development, so keep the
 code plain and explain macOS-specific APIs when you use them.
 
 Local-only notes (sibling folders, machine setup) live in `CLAUDE.local.md`, which is not
@@ -18,8 +18,10 @@ adding code from a reference project and preserve its required licence notices.
 
 ## Plans
 
-Plans live in `docs/plans/NNNN-short-slug/`, one folder per feature, each with an `index.md`
-and small part files. They describe intent and structure, never to-do lists. Follow the rules in
+Plans live in `docs/plans/YYYY-MM-DD-short-slug/` (the date the plan was created), one folder per
+feature, each with an `index.md` and small part files. The slug is unique and identifies the plan;
+there is no running number. Refer to a plan by its slug ("plan `quick-speech-setup`"), never by a
+number. They describe intent and structure, never to-do lists. Follow the rules in
 `docs/plans/README.md` whenever you create or change a plan. Read the relevant plan before
 building a feature.
 

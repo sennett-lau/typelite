@@ -25,7 +25,10 @@ import { CapsuleCopy } from './CapsuleCopy'
 const DRAG_THRESHOLD = 5
 /** How long the done flash stays before the pill hides. */
 const DONE_FLASH_MS = 500
-/** Plan 0018 content cross-fade: the old content fades out while the new one fades in. */
+/**
+ * Plan `copy-when-no-field` content cross-fade: the old content fades out while the new one fades
+ * in.
+ */
 const EASE = [0.2, 0, 0, 1] as const
 const CONTENT_ENTER = { duration: 0.22, delay: 0.06, ease: EASE }
 const CONTENT_EXIT = { duration: 0.14, ease: 'easeIn' as const }
@@ -45,7 +48,9 @@ function offerKey(offer: CopyOffer): number {
   return key
 }
 
-/** What the pill last showed while visible; kept while it slides away (plan 0018). */
+/**
+ * What the pill last showed while visible; kept while it slides away (plan `copy-when-no-field`).
+ */
 interface ShownPill {
   state: string
   size: CapsuleSize

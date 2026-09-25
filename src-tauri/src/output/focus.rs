@@ -1,4 +1,4 @@
-//! Plan 0018: is there a text field to paste into?
+//! Plan `copy-when-no-field`: is there a text field to paste into?
 //!
 //! Before a Dictate or Translate result is pasted, Typelite asks macOS Accessibility for the
 //! focused UI element of the whole system (the element keyboard input goes to, in whatever app

@@ -200,9 +200,9 @@ fn route_ask(
     view: &NormalizedUtterance<'_>,
 ) -> VoiceIntent {
     if request.has_selected_text {
-        // Plan 0011: "translate this into Japanese" on a selection replaces it with the
-        // translation. Only when the language is one Typelite knows, so the target is exact;
-        // anything else stays a nondestructive answer.
+        // Plan `ask-translate-and-live-questions`: "translate this into Japanese" on a selection
+        // replaces it with the translation. Only when the language is one Typelite knows, so the
+        // target is exact; anything else stays a nondestructive answer.
         if request.flags.translate_selection
             && grammar::matches_translation(locale, view)
             && language::spoken_translation_target(request.utterance, &[]).is_some()

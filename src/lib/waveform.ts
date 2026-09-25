@@ -1,4 +1,4 @@
-// Pure helpers for the capsule waveform (see docs/plans/0002-v1-scope/capsule-waveform.md).
+// Pure helpers for the capsule waveform (see docs/plans/2026-09-24-v1-scope/capsule-waveform.md).
 // Kept free of React and the DOM so they can be unit-tested.
 
 /** Number of bars, and so the number of history samples shown. */

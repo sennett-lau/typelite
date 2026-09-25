@@ -113,7 +113,8 @@ export function SttPane() {
     })
   }
 
-  // Plan 0015: the language belongs to the preset in use; edits go through the Save bar.
+  // Plan `two-tab-speech`: the language belongs to the preset in use; edits go through the Save
+  // bar.
   const active = activeSpeechPreset(config)
   const handleLanguageChange = (language: string) => {
     updateConfig({

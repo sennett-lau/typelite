@@ -90,7 +90,7 @@ describe('getCapsuleVisibility', () => {
 describe('getSizeForState', () => {
   const size = (width: number) => ({ width, height: 36 })
 
-  it('uses the narrow plan 0009 sizes while recording', () => {
+  it('uses the narrow plan `aurora-pill` sizes while recording', () => {
     expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(150))
     expect(getSizeForState('recording', false, false, false)).toEqual(size(150))
     expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(150))
@@ -144,7 +144,7 @@ describe('getSizeForState', () => {
   })
 })
 
-describe('Copy pill (plan 0018)', () => {
+describe('Copy pill (plan `copy-when-no-field`)', () => {
   const long = {
     text: 'A result that is much too long for the short pill to show.',
     targetLang: null,
@@ -201,7 +201,7 @@ describe('Copy pill (plan 0018)', () => {
   })
 })
 
-describe('window resize order (plan 0018)', () => {
+describe('window resize order (plan `copy-when-no-field`)', () => {
   it('grows at once when nothing shrinks', () => {
     expect(growFirstSize({ width: 156, height: 60 }, { width: 384, height: 60 })).toBeNull()
     expect(growFirstSize({ width: 156, height: 60 }, { width: 156, height: 60 })).toBeNull()

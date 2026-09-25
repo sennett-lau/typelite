@@ -4,8 +4,8 @@ import { setCredential, updateConfig as saveConfig } from '../../lib/tauri'
 type SpeechChoice = Pick<AppConfig, 'speech_presets' | 'active_speech_preset_id'>
 
 /**
- * Plan 0015: the speech engine, the preset in use and a saved preset are saved at once (not
- * through Settings' Save bar), both in onboarding and in Settings. Only the speech fields are
+ * Plan `two-tab-speech`: the speech engine, the preset in use and a saved preset are saved at once
+ * (not through Settings' Save bar), both in onboarding and in Settings. Only the speech fields are
  * written; other unsaved Settings edits stay unsaved.
  */
 export async function saveSpeechChoice(choice: SpeechChoice): Promise<void> {

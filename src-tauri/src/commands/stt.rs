@@ -52,7 +52,7 @@ pub async fn test_speech_preset(
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<u32, String> {
     if preset.is_builtin_whisper() {
-        // Plan 0012: load the model and run it on a short synthetic clip.
+        // Plan `quick-speech-setup`: load the model and run it on a short synthetic clip.
         let config = stt::config::build_builtin_config(&preset)?;
         let elapsed = stt::builtin::self_test(&config.model_file).await?;
         crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;
