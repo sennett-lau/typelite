@@ -107,12 +107,15 @@ fn window_level_db(window: &[f64]) -> f64 {
 pub enum NoSpeechGuard {
     /// Not enough voiced audio ([`VoiceActivity::has_speech`]); nothing was transcribed.
     VoiceCheck,
+    /// The built-in model marked every segment as probably not speech.
+    WhisperNoSpeech,
 }
 
 impl NoSpeechGuard {
     fn label(self) -> &'static str {
         match self {
             Self::VoiceCheck => "voice check",
+            Self::WhisperNoSpeech => "whisper no-speech",
         }
     }
 }
