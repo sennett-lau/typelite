@@ -10,6 +10,7 @@ Status: agreed — 2026-09-25
 
 - Highlight text anywhere, then translate it in place into a chosen language, never a silent
   English default.
+- Highlight text and say how to change it ("make this shorter"); the edit replaces it in place.
 - A question that needs current information ("AI news today", "Bitcoin price", "weather in
   Tokyo") gets a clear, honest reply instead of an invented answer.
 - The reply for live questions is the same screen a future "set up web search" step will use,
@@ -27,6 +28,7 @@ Status: agreed — 2026-09-25
 | Target language = the language the user names, else the active translation language | The user chooses; no hidden English default. |
 | While the selection translate is pending, the Switch language key cycles the target and the pill shows it | Same control as Translation mode. |
 | Selected text + Ask + "translate this into X" keeps working, including Chinese variants | Matches Typeless, where highlight-translate is part of Ask. |
+| Selected text + Ask + an edit instruction ("make this shorter", "改短一点") replaces the selection; questions about it answer in the panel | Edits are what the user wants in the text; the grammar decides, so it is instant and testable. |
 | Live questions are detected by the AI (a small classification step) with a keyword fallback | Keywords alone miss many cases; the model already runs for Ask. |
 | Live question reply: "This needs live information from the web, which Typelite can't look up yet." with **Answer anyway** and, later, **Set up web search** | Honest now; "Answer anyway" is the skip path the future setup reuses. |
 | "Answer anyway" answers from the model's own knowledge with a visible note that it may be out of date | Useful when the user accepts that. |

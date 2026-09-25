@@ -2554,7 +2554,8 @@ impl PipelineHandle {
     }
 
     /// Runs an Ask command that writes into the focused app: a draft inserted at the cursor, or
-    /// (Plan 0011) a translation that replaces the selection. The Ask caller shows fallbacks.
+    /// (Plan 0011) an edit or a translation that replaces the selection. The Ask caller shows
+    /// fallbacks.
     pub(crate) async fn run_ask_draft(
         &self,
         config: &storage::AppConfig,
@@ -2565,14 +2566,15 @@ impl PipelineHandle {
     ) -> std::result::Result<AskVoiceDraftOutcome, String> {
         let selected_text = match voice_intent.kind {
             crate::voice_intent::VoiceIntentKind::DraftInsert => None,
-            crate::voice_intent::VoiceIntentKind::TranslateSelection
+            crate::voice_intent::VoiceIntentKind::RewriteSelection
+            | crate::voice_intent::VoiceIntentKind::TranslateSelection
                 if selected_text_has_content(selected_text.as_deref()) =>
             {
                 selected_text
             }
             _ => {
                 return Err(
-                    "Ask draft execution requires a draft or selection translation intent"
+                    "Ask draft execution requires a draft, selection edit or selection translation intent"
                         .to_string(),
                 )
             }

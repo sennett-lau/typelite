@@ -351,6 +351,34 @@ async fn selection_translation_into_hong_kong_chinese_uses_traditional_character
     );
 }
 
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn ask_edit_on_a_selection_returns_a_shorter_replacement() {
+    // Plan 0011: Ask + "make this shorter" on a selection is routed as an edit that replaces
+    // the selection, so the AI must return only the shorter text.
+    let selected = "Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.";
+    let instruction = "Make this shorter.";
+    let intent = typelite_lib::commands::ask::route_ask_intent(
+        instruction,
+        true,
+        Some("en"),
+        Default::default(),
+    );
+    assert_eq!(intent.kind, VoiceIntentKind::RewriteSelection);
+
+    let mut req = dictation_request(instruction);
+    req.selected_text = Some(selected.into());
+    req.voice_intent = intent;
+    let (text, took) = polish(&req).await;
+    println!("ask edit (make this shorter): {took:?} -> {text:?}");
+    assert!(!text.trim().is_empty());
+    assert!(text.trim().len() < selected.len(), "not shorter: {text:?}");
+    assert!(
+        !text.to_lowercase().contains("here is"),
+        "not a bare replacement: {text:?}"
+    );
+}
+
 /// Plan 0012: the model file for the in-process test. Defaults to the developer's copy used by
 /// the local whisper.cpp server.
 fn builtin_model_path() -> Option<PathBuf> {
