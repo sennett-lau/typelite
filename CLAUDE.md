@@ -67,7 +67,26 @@ Mac client ──audio──> whisper.cpp server on the Mac (127.0.0.1:8178, lar
 MIT. Keep the required copyright and permission notices in `LICENSE` and
 `THIRD_PARTY_NOTICES.md` intact. Do not copy code from GPL projects.
 
+## Testing and logs
+
+- Offline gate: `cd src-tauri && cargo test --lib`, `cargo fmt --check`, `npx vitest run`,
+  `npx tsc --noEmit`, `npx eslint src/`, `npx prettier --check src`.
+- End-to-end against real servers: `bash scripts/e2e.sh` (whisper.cpp + an OpenAI-compatible
+  chat server; set `TYPELITE_E2E_AI_URL` etc., see `src-tauri/tests/e2e_services.rs`). Speech
+  audio is synthesised with macOS `say`.
+- The app logs to `~/Library/Logs/Typelite/typelite.log` (timings, sizes, errors; never dictated
+  text). Each speech request logs endpoint, status and duration; `[Pipeline Timing]` lines give
+  the per-step breakdown. Ask the user for this file when debugging a report.
+- Drive a dictation without the keyboard: `/Applications/Typelite.app/Contents/MacOS/typelite
+  toggle` starts, a second call stops. The result is pasted into the frontmost app, so open an
+  empty TextEdit document first.
+
 ## Lessons learned (do not relearn these)
+
+- CoreAudio can keep an input stream's callback alive after the stream is dropped. Never rely on
+  that drop to close a channel; close it explicitly (see `audio/capture.rs`).
+- Whisper invents text ("Thank you.") for silent audio; silent recordings are skipped before the
+  request (`SILENCE_THRESHOLD_DB` in `stt/whisper_compat.rs`).
 
 - **macOS permissions and rebuilds:** an ad-hoc-signed app gets a new cdhash on every build, so
   macOS silently ignores the old Accessibility grant (it still shows "on"). Check the grant's
