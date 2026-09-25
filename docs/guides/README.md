@@ -6,5 +6,6 @@ your own key.
 
 | Guide | Covers |
 |---|---|
-| [Speech recognition](speech-recognition.md) | whisper.cpp on this Mac, a GPU server on your network, or a cloud key. |
+| [Speech services](speech-services.md) | Supported services, what the address looks like, getting an API key. |
+| [Speech recognition](speech-recognition.md) | Running whisper.cpp on this Mac or a GPU server on your network. |
 | [AI polish](ai-polish.md) | Ollama on this Mac or another computer, or a cloud key. |
