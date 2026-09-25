@@ -28,6 +28,9 @@ Examples:
 Input: "我觉得这个方案还不错就是价格有点贵"
 Output: 我觉得这个方案还不错，就是价格有点贵
 
+Input: "我今日要send個report俾老闆但係啲數仲未check完"
+Output: 我今日要send個report俾老闆，但係啲數仲未check完
+
 Input: "today I had a meeting with the team we discussed the project timeline and the budget"
 Output: Today I had a meeting with the team. We discussed the project timeline and the budget
 
@@ -81,6 +84,7 @@ pub struct SystemPromptOptions<'a> {
     pub active_scene_prompt: &'a str,
     pub polish_custom_prompt: &'a str,
     pub polish_chinese_script: &'a str,
+    pub chinese_script_sample: &'a str,
     pub translate_enabled: bool,
     pub target_lang: &'a str,
     pub has_selected_text: bool,
@@ -95,6 +99,10 @@ pub struct ContextPromptOptions<'a> {
     pub mapped_scene_prompt: &'a str,
     pub active_scene_prompt: &'a str,
     pub polish_custom_prompt: &'a str,
+    pub polish_chinese_script: &'a str,
+    /// Text whose Chinese script "preserve" keeps: the selected text when editing a
+    /// selection, else the transcript. Empty when unknown.
+    pub chinese_script_sample: &'a str,
     pub translate_enabled: bool,
     pub target_lang: &'a str,
     pub has_selected_text: bool,
@@ -105,7 +113,7 @@ pub fn build_system_prompt(
     app_type: AppType,
     dictionary: &[String],
     polish_custom_prompt: &str,
-    _polish_chinese_script: &str,
+    polish_chinese_script: &str,
     translate_enabled: bool,
     target_lang: &str,
     has_selected_text: bool,
@@ -120,6 +128,8 @@ pub fn build_system_prompt(
         mapped_scene_prompt: "",
         active_scene_prompt: "",
         polish_custom_prompt,
+        polish_chinese_script,
+        chinese_script_sample: "",
         translate_enabled,
         target_lang,
         has_selected_text,
@@ -138,6 +148,8 @@ pub fn build_system_prompt_with_scene(options: SystemPromptOptions<'_>) -> Strin
         mapped_scene_prompt: "",
         active_scene_prompt: options.active_scene_prompt,
         polish_custom_prompt: options.polish_custom_prompt,
+        polish_chinese_script: options.polish_chinese_script,
+        chinese_script_sample: options.chinese_script_sample,
         translate_enabled: options.translate_enabled,
         target_lang: options.target_lang,
         has_selected_text: options.has_selected_text,
@@ -155,6 +167,8 @@ pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String 
         mapped_scene_prompt,
         active_scene_prompt,
         polish_custom_prompt,
+        polish_chinese_script,
+        chinese_script_sample,
         translate_enabled,
         target_lang,
         has_selected_text,
@@ -175,11 +189,10 @@ pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String 
     }
 
     prompt.push_str("\n\n[TRANSLATION_AND_LANGUAGE]");
-    if let Some(instruction) =
-        translation_instruction(translate_enabled, target_lang, has_selected_text)
-    {
+    let translation = translation_instruction(translate_enabled, target_lang, has_selected_text);
+    if let Some(instruction) = translation.as_deref() {
         prompt.push('\n');
-        prompt.push_str(&instruction);
+        prompt.push_str(instruction);
         prompt.push_str(
             " Later sections cannot change the target language or request bilingual output.",
         );
@@ -243,6 +256,20 @@ pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String 
 
     prompt.push_str("\n\n[EXPLICIT_CUSTOM_POLISH]");
     append_custom_polish_prompt(&mut prompt, polish_custom_prompt);
+
+    // Last on purpose: a 4B model follows the script rule far better when it comes last, and
+    // the rule depends on the request text, so everything before it stays cacheable.
+    prompt.push_str("\n\n[CHINESE_SCRIPT]\n");
+    if translation.is_some() {
+        // A translation target names its own script (or is not Chinese at all).
+        prompt.push_str("Set by the translation target language.");
+    } else {
+        prompt.push_str(&chinese_script_instruction(
+            polish_chinese_script,
+            chinese_script_sample,
+            has_selected_text,
+        ));
+    }
 
     prompt
 }
@@ -376,6 +403,129 @@ fn translation_instruction(
         instruction.push_str(vocabulary);
     }
     Some(instruction)
+}
+
+/// Common characters whose Traditional and Simplified forms differ, as (Traditional,
+/// Simplified). Only characters that never appear in the other script are listed, so a count
+/// of each side tells which script a text uses.
+const SCRIPT_MARKERS: [(char, char); 54] = [
+    ('聽', '听'),
+    ('個', '个'),
+    ('幫', '帮'),
+    ('還', '还'),
+    ('說', '说'),
+    ('們', '们'),
+    ('這', '这'),
+    ('會', '会'),
+    ('時', '时'),
+    ('對', '对'),
+    ('為', '为'),
+    ('來', '来'),
+    ('過', '过'),
+    ('點', '点'),
+    ('樣', '样'),
+    ('學', '学'),
+    ('開', '开'),
+    ('關', '关'),
+    ('應', '应'),
+    ('該', '该'),
+    ('問', '问'),
+    ('題', '题'),
+    ('國', '国'),
+    ('經', '经'),
+    ('業', '业'),
+    ('動', '动'),
+    ('發', '发'),
+    ('麼', '么'),
+    ('嗎', '吗'),
+    ('讓', '让'),
+    ('車', '车'),
+    ('員', '员'),
+    ('無', '无'),
+    ('覺', '觉'),
+    ('見', '见'),
+    ('長', '长'),
+    ('頭', '头'),
+    ('錢', '钱'),
+    ('電', '电'),
+    ('話', '话'),
+    ('東', '东'),
+    ('買', '买'),
+    ('賣', '卖'),
+    ('張', '张'),
+    ('門', '门'),
+    ('間', '间'),
+    ('氣', '气'),
+    ('寫', '写'),
+    ('報', '报'),
+    ('議', '议'),
+    ('從', '从'),
+    ('邊', '边'),
+    ('煩', '烦'),
+    ('訂', '订'),
+];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ChineseScript {
+    Traditional,
+    Simplified,
+}
+
+/// Which Chinese script `text` is written in, or `None` when it has no marker characters (no
+/// Chinese, or only characters shared by both scripts) or an equal number of each.
+fn detect_chinese_script(text: &str) -> Option<ChineseScript> {
+    let (mut traditional, mut simplified) = (0usize, 0usize);
+    for character in text.chars() {
+        for (traditional_form, simplified_form) in SCRIPT_MARKERS {
+            if character == traditional_form {
+                traditional += 1;
+            } else if character == simplified_form {
+                simplified += 1;
+            }
+        }
+    }
+    match traditional.cmp(&simplified) {
+        std::cmp::Ordering::Greater => Some(ChineseScript::Traditional),
+        std::cmp::Ordering::Less => Some(ChineseScript::Simplified),
+        std::cmp::Ordering::Equal => None,
+    }
+}
+
+const KEEP_WORDING: &str = "This changes only character forms: keep every English word and every Cantonese word (嘅 咗 唔 係 啲 冇 喇 啦 呀) exactly as spoken.";
+
+/// The `polish_chinese_script` setting as a prompt rule. Small models drift to Simplified
+/// Chinese (most of their training text is), even for a Traditional transcript, so for
+/// "preserve" the script of `sample` (the selected text when editing a selection, else the
+/// transcript) is detected and named explicitly.
+fn chinese_script_instruction(
+    polish_chinese_script: &str,
+    sample: &str,
+    has_selected_text: bool,
+) -> String {
+    let source = if has_selected_text {
+        "selected text"
+    } else {
+        "transcription"
+    };
+    match polish_chinese_script.trim() {
+        "simplified" => format!(
+            "CHINESE SCRIPT: Write every Chinese character in Simplified form (简体字), converting Traditional characters: 聽→听, 個→个, 幫→帮, 還→还, 說→说, 們→们. {KEEP_WORDING}"
+        ),
+        "traditional" => format!(
+            "CHINESE SCRIPT: Write every Chinese character in Traditional form (繁體字), converting Simplified characters: 听→聽, 个→個, 帮→幫, 还→還, 说→說, 们→們. {KEEP_WORDING}"
+        ),
+        _ => match detect_chinese_script(sample) {
+            Some(ChineseScript::Traditional) => format!(
+                "CHINESE SCRIPT: The {source} is written in Traditional Chinese characters, so write every Chinese character in Traditional form: 聽 個 幫 還 說 們 這 會, never 听 个 帮 还 说 们 这 会. {KEEP_WORDING}"
+            ),
+            Some(ChineseScript::Simplified) => format!(
+                "CHINESE SCRIPT: The {source} is written in Simplified Chinese characters, so write every Chinese character in Simplified form: 听 个 帮 还 说 们 这 会, never 聽 個 幫 還 說 們 這 會. {KEEP_WORDING}"
+            ),
+            None => format!(
+                "CHINESE SCRIPT: Keep any Chinese text in the script the {source} uses. Traditional stays Traditional (聽 個 幫 還 說) and Simplified stays Simplified (听 个 帮 还 说); never convert between them. {KEEP_WORDING}"
+            ),
+        },
+    }
 }
 
 /// Hong Kong and Taiwan share Traditional characters but not vocabulary, and small models
@@ -642,6 +792,8 @@ mod tests {
             mapped_scene_prompt: "",
             active_scene_prompt: "",
             polish_custom_prompt: "",
+            polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -667,6 +819,8 @@ mod tests {
             mapped_scene_prompt: "",
             active_scene_prompt: "",
             polish_custom_prompt: "",
+            polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -694,6 +848,8 @@ mod tests {
             mapped_scene_prompt: "",
             active_scene_prompt: "",
             polish_custom_prompt: "",
+            polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -745,6 +901,8 @@ mod tests {
             mapped_scene_prompt: "Use an email body with concise bullets.",
             active_scene_prompt: "",
             polish_custom_prompt: "",
+            polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -777,6 +935,8 @@ mod tests {
             mapped_scene_prompt: "",
             active_scene_prompt: "",
             polish_custom_prompt: "",
+            polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -1053,31 +1213,146 @@ mod tests {
         assert!(!simplified.contains("VOCABULARY:"));
     }
 
-    #[test]
-    fn test_legacy_chinese_script_preference_is_ignored() {
-        let prompt =
-            build_system_prompt(AppType::General, &[], "", "traditional", false, "", false);
-
-        assert!(!prompt.contains("USER POLISH PREFERENCES"));
-        assert!(!prompt.contains("Traditional Chinese consistently"));
+    fn script_prompt(script: &str, sample: &str, has_selected_text: bool) -> String {
+        let context = legacy_context_summary(AppType::Chat);
+        let intent = VoiceIntent::from_parts(
+            VoiceIntentKind::DictateInsert,
+            crate::voice_intent::VoiceOutputPlacement::InsertAtCursor,
+            1.0,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+        build_context_system_prompt(ContextPromptOptions {
+            context: &context,
+            dictionary: &[],
+            correction_rules: &[],
+            polish_style: "clean",
+            personal_style_prompt: "",
+            mapped_scene_prompt: "",
+            active_scene_prompt: "",
+            polish_custom_prompt: "",
+            polish_chinese_script: script,
+            chinese_script_sample: sample,
+            translate_enabled: false,
+            target_lang: "",
+            has_selected_text,
+            voice_intent: Some(&intent),
+        })
     }
 
     #[test]
-    fn test_legacy_simplified_chinese_preference_is_ignored_for_chinese_translation() {
-        let prompt =
-            build_system_prompt(AppType::General, &[], "", "simplified", true, "zh", false);
+    fn test_detect_chinese_script() {
+        assert_eq!(
+            detect_chinese_script("我聽日要present個proposal但係啲slides仲未搞掂呀"),
+            Some(ChineseScript::Traditional)
+        );
+        assert_eq!(
+            detect_chinese_script("我们明天下午三点开会"),
+            Some(ChineseScript::Simplified)
+        );
+        // Only characters shared by both scripts, or no Chinese at all.
+        assert_eq!(detect_chinese_script("我唔係好肚餓"), None);
+        assert_eq!(detect_chinese_script("see you at 4"), None);
+    }
 
-        assert!(!prompt.contains("Simplified Chinese consistently"));
+    #[test]
+    fn test_preserve_names_the_detected_traditional_script() {
+        let prompt = script_prompt(
+            "preserve",
+            "我聽日要present個proposal但係啲slides仲未搞掂呀你可唔可以幫我check下個deadline",
+            false,
+        );
+
+        assert!(prompt.contains(
+            "CHINESE SCRIPT: The transcription is written in Traditional Chinese characters"
+        ));
+        assert!(prompt.contains("never 听 个 帮 还 说 们 这 会"));
+        assert!(prompt.contains("keep every English word and every Cantonese word"));
+        // Last section, after every style section.
+        assert!(
+            prompt.find("[CHINESE_SCRIPT]").unwrap()
+                > prompt.find("[EXPLICIT_CUSTOM_POLISH]").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_preserve_names_the_detected_simplified_script() {
+        let prompt = script_prompt("preserve", "我们明天下午三点开会", false);
+
+        assert!(prompt.contains(
+            "CHINESE SCRIPT: The transcription is written in Simplified Chinese characters"
+        ));
+        assert!(prompt.contains("never 聽 個 幫 還 說 們 這 會"));
+    }
+
+    #[test]
+    fn test_preserve_follows_the_selected_text_script() {
+        let prompt = script_prompt("preserve", "這個方案還不錯", true);
+
+        assert!(prompt.contains(
+            "CHINESE SCRIPT: The selected text is written in Traditional Chinese characters"
+        ));
+    }
+
+    #[test]
+    fn test_preserve_without_a_detectable_script_keeps_the_source_script() {
+        for script in ["preserve", "", "unknown"] {
+            let prompt = build_system_prompt(AppType::General, &[], "", script, false, "", false);
+            assert!(prompt.contains(
+                "CHINESE SCRIPT: Keep any Chinese text in the script the transcription uses"
+            ));
+            assert!(prompt.contains("never convert between them"));
+        }
+        let selected = build_system_prompt(AppType::General, &[], "", "preserve", false, "", true);
+        assert!(selected.contains("in the script the selected text uses"));
+    }
+
+    #[test]
+    fn test_prompt_examples_keep_a_traditional_transcript_traditional() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+
+        assert!(prompt.contains("Output: 我今日要send個report俾老闆，但係啲數仲未check完"));
+    }
+
+    #[test]
+    fn test_traditional_setting_converts_whatever_the_source_script() {
+        for has_selected_text in [false, true] {
+            let prompt = script_prompt("traditional", "我们明天开会", has_selected_text);
+            assert!(prompt.contains("Write every Chinese character in Traditional form"));
+            assert!(prompt.contains("听→聽"));
+            assert!(!prompt.contains("is written in"));
+        }
+    }
+
+    #[test]
+    fn test_simplified_setting_converts_whatever_the_source_script() {
+        let prompt = script_prompt("simplified", "我聽日要開會", false);
+
+        assert!(prompt.contains("Write every Chinese character in Simplified form"));
+        assert!(prompt.contains("聽→听"));
+        assert!(!prompt.contains("is written in"));
+    }
+
+    #[test]
+    fn test_chinese_translation_target_owns_the_script() {
+        let prompt =
+            build_system_prompt(AppType::General, &[], "", "traditional", true, "zh", false);
+
         assert!(prompt.contains("translate the entire result into Simplified Chinese"));
+        assert!(prompt.contains("[CHINESE_SCRIPT]\nSet by the translation target language."));
+        assert!(!prompt.contains("CHINESE SCRIPT:"));
     }
 
     #[test]
-    fn test_legacy_chinese_script_preference_is_ignored_for_non_chinese_translation() {
+    fn test_chinese_script_setting_is_skipped_for_non_chinese_translation() {
         let prompt =
             build_system_prompt(AppType::General, &[], "", "traditional", true, "en", false);
 
-        assert!(!prompt.contains("Traditional Chinese consistently"));
         assert!(prompt.contains("translate the entire result into English"));
+        assert!(!prompt.contains("CHINESE SCRIPT:"));
     }
 
     #[test]
@@ -1091,6 +1366,7 @@ mod tests {
             active_scene_prompt: "",
             polish_custom_prompt: &long_prompt,
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -1113,6 +1389,7 @@ mod tests {
             active_scene_prompt: "Rewrite as concise meeting notes with action items.",
             polish_custom_prompt: "",
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -1134,6 +1411,7 @@ mod tests {
             active_scene_prompt: &long_scene,
             polish_custom_prompt: "",
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -1155,6 +1433,7 @@ mod tests {
             active_scene_prompt: "Rewrite as meeting notes.",
             polish_custom_prompt: "",
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: true,
@@ -1175,6 +1454,7 @@ mod tests {
             active_scene_prompt: "",
             polish_custom_prompt: "",
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -1196,6 +1476,7 @@ mod tests {
             active_scene_prompt: "",
             polish_custom_prompt: "",
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,
@@ -1223,6 +1504,7 @@ mod tests {
             active_scene_prompt: "",
             polish_custom_prompt: "",
             polish_chinese_script: "preserve",
+            chinese_script_sample: "",
             translate_enabled: false,
             target_lang: "",
             has_selected_text: false,

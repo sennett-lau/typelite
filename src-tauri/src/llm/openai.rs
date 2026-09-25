@@ -52,6 +52,12 @@ impl LlmProvider for OpenAiProvider {
             mapped_scene_prompt: &req.mapped_scene_prompt,
             active_scene_prompt: &req.active_scene_prompt,
             polish_custom_prompt: &req.polish_custom_prompt,
+            polish_chinese_script: &req.polish_chinese_script,
+            chinese_script_sample: if has_selected_text {
+                req.selected_text.as_deref().unwrap_or_default()
+            } else {
+                &req.raw_text
+            },
             translate_enabled: req.translate_enabled,
             target_lang: &req.target_lang,
             has_selected_text,
