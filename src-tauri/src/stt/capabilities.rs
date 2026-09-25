@@ -29,7 +29,7 @@ pub enum SttTransport {
 #[serde(rename_all = "camelCase")]
 pub enum RecordingLimitSource {
     ClientBuffer,
-    /// The speech service's own maximum audio length (plan 0015).
+    /// The speech service's own maximum audio length (plan `qwen-cloud-speech`).
     Provider,
 }
 
@@ -56,7 +56,8 @@ pub struct ResolvedRecordingLimit {
 }
 
 /// Every speech preset uploads a WAV file after recording. The limit comes from the
-/// client-side upload buffer, or from the service's own maximum for Qwen Cloud (plan 0015).
+/// client-side upload buffer, or from the service's own maximum for Qwen Cloud (plan
+/// `qwen-cloud-speech`).
 fn speech_capability(preset: &SpeechPreset) -> SttRecordingCapability {
     let preset_id = preset.id.as_str();
     if preset.is_qwen_cloud() {
@@ -85,7 +86,7 @@ fn speech_capability(preset: &SpeechPreset) -> SttRecordingCapability {
 
 /// A custom limit kept in the app's widest range, whatever the active preset allows. The
 /// per-preset clamp happens when the limit is resolved, so switching to a service with a
-/// shorter maximum (Qwen Cloud, plan 0015) and back does not lose the user's choice.
+/// shorter maximum (Qwen Cloud, plan `qwen-cloud-speech`) and back does not lose the user's choice.
 pub fn clamp_custom_seconds_to_app_range(seconds: u32) -> u32 {
     seconds.clamp(MIN_CUSTOM_SECONDS, HARD_MAX_SECONDS)
 }
@@ -95,7 +96,7 @@ pub fn resolve_recording_limit(config: &AppConfig) -> ResolvedRecordingLimit {
 }
 
 /// The limit for `preset` with the mode and custom value from `config`. Settings passes the
-/// preset on screen, which may not be saved yet (plan 0015).
+/// preset on screen, which may not be saved yet (plan `qwen-cloud-speech`).
 pub fn resolve_recording_limit_for(
     preset: &SpeechPreset,
     config: &AppConfig,

@@ -1,4 +1,4 @@
-//! Qwen Cloud speech recognition (plan 0015).
+//! Qwen Cloud speech recognition (plan `qwen-cloud-speech`).
 //!
 //! `qwen-audio-3.0-asr-flash` only answers on Qwen's native multimodal endpoint, not on the
 //! OpenAI-compatible `/audio/transcriptions`, so it has its own uploader. The recording is sent
@@ -8,7 +8,7 @@
 //! with `{"model", "input": {"messages": [...input_audio...]}, "parameters": {...}}`.
 //!
 //! The endpoint answers audio without speech with a bare `400 {}`; that is "no speech", not an
-//! error. See `docs/plans/0015-qwen-cloud-speech/api.md` for the probed behaviour.
+//! error. See `docs/plans/2026-09-25-qwen-cloud-speech/api.md` for the probed behaviour.
 
 use async_trait::async_trait;
 use base64::engine::general_purpose::STANDARD;

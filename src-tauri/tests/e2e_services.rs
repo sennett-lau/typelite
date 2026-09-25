@@ -11,8 +11,7 @@
 //! - `TYPELITE_E2E_SPEECH_URL` [`http://127.0.0.1:8178/v1`], `TYPELITE_E2E_SPEECH_MODEL`
 //! [`large-v3-turbo`]
 //! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL`
-//! [`qwen3:4b-instruct-2507-q4_K_M`]
-//!   `TYPELITE_E2E_AI_KEY` [empty: no `Authorization` header]
+//! [`qwen3:4b-instruct-2507-q4_K_M`], `TYPELITE_E2E_AI_KEY` [empty: no `Authorization` header]
 //!
 //! - `TYPELITE_E2E_BUILTIN_MODEL` [`~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin`]: model
 //!   file for the in-process (built-in) speech test; the test is skipped when it is missing.
@@ -21,7 +20,8 @@
 //! `scripts/build-llama-server.sh`.
 //! - `TYPELITE_E2E_DOWNLOAD=1`: also run the Quick setup download test (190 MB from Hugging Face).
 //! - `TYPELITE_E2E_QWEN_KEY`: a Qwen Cloud Token Plan key for the Qwen Cloud speech tests
-//!   (plan 0015); they are skipped without it. `TYPELITE_E2E_QWEN_URL` overrides the address.
+//!   (plan `qwen-cloud-speech`); they are skipped without it. `TYPELITE_E2E_QWEN_URL` overrides
+//!   the address.
 //!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
 
@@ -700,7 +700,7 @@ async fn builtin_ai_server_starts_and_polishes_a_sentence() {
     assert!(!text.contains("<think>"), "thinking was not off: {text:?}");
 }
 
-/// Plan 0015: a Qwen Cloud speech preset, or `None` when no key is set.
+/// Plan `qwen-cloud-speech`: a Qwen Cloud speech preset, or `None` when no key is set.
 fn qwen_preset_and_key() -> Option<(SpeechPreset, String)> {
     let key = std::env::var("TYPELITE_E2E_QWEN_KEY")
         .ok()

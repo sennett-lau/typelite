@@ -59,8 +59,8 @@ pub trait SttProvider: Send + Sync {
 }
 
 /// Creates the provider for a speech preset: whisper.cpp in the app for built-in presets
-/// (plan `quick-speech-setup`), Qwen Cloud's own API for `qwen_cloud` presets (plan 0015),
-/// otherwise an OpenAI-compatible transcription upload.
+/// (plan `quick-speech-setup`), Qwen Cloud's own API for `qwen_cloud` presets (plan
+/// `qwen-cloud-speech`), otherwise an OpenAI-compatible transcription upload.
 pub fn provider_for_preset(
     preset: &crate::storage::SpeechPreset,
     client: Option<reqwest::Client>,

@@ -84,7 +84,7 @@ describe('speech engines (plan `two-tab-speech`)', () => {
     expect(formatTestTime(1400)).toBe('1.4 s')
   })
 
-  it('picks the Qwen Cloud kind from the address (plan qwen-cloud-speech)', () => {
+  it('picks the Qwen Cloud kind from the address (plan `qwen-cloud-speech`)', () => {
     expect(isQwenCloudAddress('https://token-plan.maas.qwencloudapi.com/api/v1')).toBe(true)
     expect(isQwenCloudAddress('https://dashscope.aliyuncs.com/compatible-mode/v1')).toBe(true)
     expect(isQwenCloudAddress('https://dashscope-intl.aliyuncs.com/api/v1')).toBe(true)

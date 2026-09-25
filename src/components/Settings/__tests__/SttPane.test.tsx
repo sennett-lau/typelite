@@ -342,7 +342,7 @@ describe('SttPane', () => {
       expect(JSON.stringify(config())).not.toContain('sk-1')
     })
 
-    it('a Qwen address tests and saves as Qwen Cloud, with the native address (plan qwen-cloud-speech)', async () => {
+    it('a Qwen address tests and saves as Qwen Cloud, with the native address (plan `qwen-cloud-speech`)', async () => {
       vi.mocked(tauri.testSpeechPreset).mockResolvedValue(700)
       render(<SttPane />)
       fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: '__add__' } })
@@ -416,7 +416,7 @@ describe('SttPane', () => {
       expect(tauri.getSttRecordingCapability).toHaveBeenCalledWith('auto', 600, expect.anything())
     })
 
-    it('asks again when the preset in use changes (plan 0015)', async () => {
+    it('asks again when the preset in use changes (plan `qwen-cloud-speech`)', async () => {
       const qwen: SpeechPreset = {
         ...serverPreset(
           'qwen',

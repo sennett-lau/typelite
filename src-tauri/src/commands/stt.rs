@@ -70,7 +70,8 @@ pub async fn test_speech_preset(
     let api_key = resolve_config_secret(&api_key, "stt", &preset.id, &SystemCredentialVault)
         .map_err(|e| e.to_string())?;
     if preset.is_qwen_cloud() {
-        // Plan 0015: Qwen's own API; an empty `400 {}` for the silent clip is a pass.
+        // Plan `qwen-cloud-speech`: Qwen's own API; an empty `400 {}` for the silent clip is a
+        // pass.
         let cfg = stt::config::build_qwen_cloud_config(&preset)?;
         let elapsed = stt::qwen_cloud::check_connection(&client, &cfg, &api_key).await?;
         crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;

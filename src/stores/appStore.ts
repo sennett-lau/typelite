@@ -16,7 +16,7 @@ export type VoiceMode = 'dictate' | 'ask' | 'translate'
 /**
  * How a speech preset runs: an OpenAI-compatible `POST {base_url}/audio/transcriptions`
  * server, whisper.cpp inside the app with a downloaded model (plan `quick-speech-setup`), or Qwen
- * Cloud's own API with the user's key (plan 0015).
+ * Cloud's own API with the user's key (plan `qwen-cloud-speech`).
  */
 export type SpeechProviderKind = 'openai_compatible' | 'builtin' | 'qwen_cloud'
 

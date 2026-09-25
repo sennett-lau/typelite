@@ -55,7 +55,7 @@ export function addressHost(baseUrl: string): string {
 }
 
 /**
- * Plan qwen-cloud-speech: hosts of Qwen's own speech API (Qwen Cloud Token Plan and Alibaba
+ * Plan `qwen-cloud-speech`: hosts of Qwen's own speech API (Qwen Cloud Token Plan and Alibaba
  * Model Studio / DashScope). Their speech models do not answer on the OpenAI transcription API,
  * so a preset with one of these addresses uses the `qwen_cloud` kind.
  */

@@ -170,8 +170,8 @@ export interface ResolvedSttRecordingLimit {
 
 /**
  * Resolves the recording limit for the chosen mode and seconds. The limit also depends on the
- * speech preset's kind (Qwen Cloud has a shorter maximum, plan 0015), so Settings passes the
- * preset on screen, which may not be saved yet.
+ * speech preset's kind (Qwen Cloud has a shorter maximum, plan `qwen-cloud-speech`), so Settings
+ * passes the preset in use.
  */
 export async function getSttRecordingCapability(
   mode: RecordingLimitMode,

@@ -44,7 +44,7 @@ unicode-normalization = "0.1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = "0.4"
 url = "2"
-# Plan 0015: Qwen Cloud takes the recording as a base64 data URI inside JSON.
+# Plan `qwen-cloud-speech`: Qwen Cloud takes the recording as a base64 data URI inside JSON.
 base64 = "0.22"
 tauri-plugin-process = "2"
 # Plan `quick-speech-setup`: in-process whisper.cpp for the "Built-in (this Mac)" speech provider

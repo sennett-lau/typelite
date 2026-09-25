@@ -509,7 +509,8 @@ pub enum SpeechProviderKind {
     OpenaiCompatible,
     /// Run whisper.cpp inside the app with a downloaded model file (plan `quick-speech-setup`).
     Builtin,
-    /// Upload to Qwen Cloud's native multimodal endpoint with the user's key (plan 0015).
+    /// Upload to Qwen Cloud's native multimodal endpoint with the user's key (plan
+    /// `qwen-cloud-speech`).
     QwenCloud,
 }
 
@@ -587,7 +588,7 @@ impl SpeechPreset {
         Self::builtin_whisper(crate::stt::models::DEFAULT_MODEL_ID, "")
     }
 
-    /// A Qwen Cloud preset made by the user (plan 0015).
+    /// A Qwen Cloud preset made by the user (plan `qwen-cloud-speech`).
     pub fn qwen_cloud(id: &str, name: &str, base_url: &str, model: &str) -> Self {
         Self {
             kind: SpeechProviderKind::QwenCloud,
@@ -595,7 +596,7 @@ impl SpeechPreset {
         }
     }
 
-    /// True when the preset uploads to Qwen Cloud's native endpoint (plan 0015).
+    /// True when the preset uploads to Qwen Cloud's native endpoint (plan `qwen-cloud-speech`).
     pub fn is_qwen_cloud(&self) -> bool {
         self.kind == SpeechProviderKind::QwenCloud
     }

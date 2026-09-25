@@ -2,7 +2,8 @@
 //!
 //! Server presets talk to an OpenAI-compatible endpoint:
 //! `POST {base_url}/audio/transcriptions` with a multipart WAV upload. Built-in presets run
-//! whisper.cpp in the app (plan 0012); Qwen Cloud presets use Qwen's own API (plan 0015).
+//! whisper.cpp in the app (plan `quick-speech-setup`); Qwen Cloud presets use Qwen's own API
+//! (plan `qwen-cloud-speech`).
 
 use super::whisper_compat::WhisperCompatConfig;
 use crate::storage::SpeechPreset;
@@ -69,7 +70,7 @@ pub fn build_builtin_config(
     })
 }
 
-/// Builds the Qwen Cloud uploader settings for a `qwen_cloud` preset (plan 0015).
+/// Builds the Qwen Cloud uploader settings for a `qwen_cloud` preset (plan `qwen-cloud-speech`).
 pub fn build_qwen_cloud_config(
     preset: &SpeechPreset,
 ) -> Result<super::qwen_cloud::QwenCloudConfig, String> {
