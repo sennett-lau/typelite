@@ -6,5 +6,14 @@
 #
 # See src-tauri/tests/e2e_services.rs for every variable. Tests print timings for each step.
 set -euo pipefail
-cd "$(dirname "$0")/../src-tauri"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Optional machine-specific servers, e.g. TYPELITE_E2E_AI_URL=http://<ip>:11434/v1.
+# `.env.e2e` is git-ignored, so private addresses stay on this machine.
+if [[ -f "$ROOT/.env.e2e" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env.e2e"
+  set +a
+fi
+cd "$ROOT/src-tauri"
 exec cargo test --test e2e_services -- --ignored --nocapture --test-threads=1 "$@"
