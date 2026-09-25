@@ -1,4 +1,4 @@
-//! Plan 0019: export and import presets as a `*.typelite-presets.json` file.
+//! Plan `preset-sharing`: export and import presets as a `*.typelite-presets.json` file.
 //!
 //! The file holds a format name, a format version and two lists, `speech` and `ai`. Each entry
 //! has a kind, a name, a base URL and a model; speech entries also have a language, AI entries

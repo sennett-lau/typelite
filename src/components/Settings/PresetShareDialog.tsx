@@ -9,7 +9,7 @@ interface PresetShareDialogProps {
   footer: ReactNode
 }
 
-/** The modal frame of the preset Export and Import dialogs (plan 0019). Escape cancels. */
+/** The modal frame of the preset Export and Import dialogs (plan `preset-sharing`). Escape cancels. */
 export function PresetShareDialog({
   title,
   subtitle,

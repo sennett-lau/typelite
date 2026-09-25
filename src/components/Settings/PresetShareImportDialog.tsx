@@ -14,7 +14,7 @@ interface Props {
 }
 
 /**
- * Plan 0019: what a presets file holds for this page (name and host of each preset), with a
+ * Plan `preset-sharing`: what a presets file holds for this page (name and host of each preset), with a
  * checkbox each (all ticked). Only the ticked ones are added; nothing is replaced or selected.
  */
 export function PresetShareImportDialog({

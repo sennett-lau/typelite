@@ -15,7 +15,7 @@ interface Props {
 }
 
 /**
- * Plan 0019: choose which saved presets go into the file (all by default) and whether their API
+ * Plan `preset-sharing`: choose which saved presets go into the file (all by default) and whether their API
  * keys go with them (off by default, with a warning when on).
  */
 export function PresetShareExportDialog({

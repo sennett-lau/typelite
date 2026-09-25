@@ -110,7 +110,7 @@ export function ServerSettings() {
         </p>
       )}
 
-      {/* Plan 0019: export and import speech presets. */}
+      {/* Plan `preset-sharing`: export and import speech presets. */}
       <PresetShareButtons service="speech" />
     </div>
   )

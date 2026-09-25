@@ -50,7 +50,7 @@ tauri-plugin-process = "2"
 whisper-rs = { version = "0.16", features = ["tracing_backend"] }
 sha2 = "0.10"
 fs4 = { version = "0.13", features = ["sync"] }
-# Plan 0019: native save and open dialogs for preset Export and Import, called from Rust.
+# Plan `preset-sharing`: native save and open dialogs for preset Export and Import, called from Rust.
 tauri-plugin-dialog = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]

@@ -31,7 +31,7 @@ function hasUnsavedPresets(service: ShareService): boolean {
 }
 
 /**
- * Plan 0019: "Import…" and "Export…" for the saved presets of one Settings page. The backend
+ * Plan `preset-sharing`: "Import…" and "Export…" for the saved presets of one Settings page. The backend
  * shows the system open and save dialogs; these buttons show what is in a file (Import) or what
  * goes into it (Export) and report the result.
  */

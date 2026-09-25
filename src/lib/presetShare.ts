@@ -3,7 +3,7 @@ import type { AiPreset, AppConfig, SpeechPreset } from '../stores/appStore'
 import { useAppStore } from '../stores/appStore'
 
 /**
- * Plan 0019: export and import presets as a `*.typelite-presets.json` file. The backend shows
+ * Plan `preset-sharing`: export and import presets as a `*.typelite-presets.json` file. The backend shows
  * the system save and open dialogs and reads and writes the file (see
  * `src-tauri/src/commands/preset_share.rs`), so file paths and API keys stay out of the web view.
  */

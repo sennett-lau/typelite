@@ -955,7 +955,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_opener::init())
-        // Plan 0019: the save and open dialogs of preset Export and Import (used from Rust only).
+        // Plan `preset-sharing`: the save and open dialogs of preset Export and Import (used from Rust only).
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if let Some(action) = parse_cli_action(&args) {

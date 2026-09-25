@@ -94,7 +94,7 @@ export function LlmPane() {
   return (
     <div>
       <AiPresetEditor />
-      {/* Plan 0019: export and import AI presets. */}
+      {/* Plan `preset-sharing`: export and import AI presets. */}
       <PresetShareButtons service="ai" />
 
       <Group label={t('settings.groupPolish')}>

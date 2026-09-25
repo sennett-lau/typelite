@@ -1,4 +1,4 @@
-//! Plan 0019: Export and Import buttons of Settings → Speech and Settings → AI.
+//! Plan `preset-sharing`: Export and Import buttons of Settings → Speech and Settings → AI.
 //!
 //! The system save and open dialogs are shown from Rust (`tauri-plugin-dialog`), and the file
 //! is read and written here, so the web view never sees a file path or a file's API keys.
