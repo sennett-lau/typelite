@@ -16,7 +16,7 @@ use base64::Engine as _;
 
 use crate::error::AppError;
 
-use super::silence::{peak_window_level_db, SILENCE_THRESHOLD_DB};
+use super::silence::{accept_transcript, log_decision, NoSpeechGuard, VoiceActivity};
 use super::transcript::normalize_transcript;
 use super::whisper_compat::WhisperCompatProvider;
 use super::{SttConfig, SttProvider, TranscriptEvent};
@@ -348,12 +348,14 @@ impl SttProvider for QwenCloudProvider {
         if let Some(probe) = &self.upload_probe {
             probe.note_audio(self.audio_buffer.len(), config.sample_rate);
         }
-        let peak_db = peak_window_level_db(&self.audio_buffer, config.sample_rate);
-        if peak_db < SILENCE_THRESHOLD_DB {
-            tracing::info!(
-                "{}: no speech detected (loudest 50 ms at {:.0} dBFS), skipping the request",
-                self.config.provider_name,
-                peak_db
+        // The shared voice check (`stt/silence.rs`): a key click or a mic bump is not speech,
+        // so nothing is sent.
+        let activity = VoiceActivity::measure(&self.audio_buffer, config.sample_rate);
+        if !activity.has_speech() {
+            log_decision(
+                &self.config.provider_name,
+                &activity,
+                Some(NoSpeechGuard::VoiceCheck),
             );
             self.audio_buffer.clear();
             return Ok(None);
@@ -374,7 +376,14 @@ impl SttProvider for QwenCloudProvider {
         if let Some(probe) = &self.upload_probe {
             probe.mark_finished();
         }
-        result
+        // The service's "no speech" answer (`400 {}`) arrives here as `None`; a short recording
+        // whose whole transcript is a known invented phrase is dropped by the hallucination
+        // guard, as for every provider.
+        Ok(accept_transcript(
+            &self.config.provider_name,
+            &activity,
+            result?,
+        ))
     }
 
     fn name(&self) -> &str {
@@ -388,8 +397,80 @@ impl SttProvider for QwenCloudProvider {
 
 #[cfg(test)]
 mod tests {
-    use super::super::silence::pcm_tone;
+    use super::super::silence::{pcm_tone, test_audio};
     use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
+    /// A one-endpoint stand-in for Qwen Cloud that answers every request with `status` and
+    /// `body`. Returns its endpoint URL and the number of requests it received.
+    async fn fake_service(
+        status: u16,
+        body: &'static str,
+    ) -> (String, std::sync::Arc<std::sync::atomic::AtomicUsize>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!(
+            "http://{}/api/v1/services/aigc/multimodal-generation/generation",
+            listener.local_addr().unwrap()
+        );
+        let hits = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let counter = hits.clone();
+        tokio::spawn(async move {
+            while let Ok((mut socket, _)) = listener.accept().await {
+                counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                tokio::spawn(async move {
+                    // Read the headers, then the body, before answering.
+                    let mut request = Vec::new();
+                    let mut buf = [0u8; 8192];
+                    let header_end = loop {
+                        let Ok(n) = socket.read(&mut buf).await else {
+                            return;
+                        };
+                        if n == 0 {
+                            return;
+                        }
+                        request.extend_from_slice(&buf[..n]);
+                        if let Some(at) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+                            break at + 4;
+                        }
+                    };
+                    let headers = String::from_utf8_lossy(&request[..header_end]).to_lowercase();
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|line| line.strip_prefix("content-length:"))
+                        .and_then(|value| value.trim().parse().ok())
+                        .unwrap_or(0);
+                    while request.len() < header_end + length {
+                        match socket.read(&mut buf).await {
+                            Ok(0) | Err(_) => return,
+                            Ok(n) => request.extend_from_slice(&buf[..n]),
+                        }
+                    }
+                    let reply = format!(
+                        "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+                        body.len()
+                    );
+                    let _ = socket.write_all(reply.as_bytes()).await;
+                });
+            }
+        });
+        (url, hits)
+    }
+
+    /// Two seconds of a clear tone between quiet stretches: passes the voice check.
+    fn speech_like() -> Vec<u8> {
+        let mut audio = vec![0u8; 16_000];
+        audio.extend(pcm_tone(0.3, 2.0, 16_000));
+        audio.extend(vec![0u8; 16_000]);
+        audio
+    }
+
+    async fn transcribe(endpoint: &str, audio: &[u8]) -> Result<Option<String>, AppError> {
+        let mut provider = QwenCloudProvider::new(config(endpoint), None);
+        provider.connect(&stt_config()).await.unwrap();
+        provider.send_audio(audio).await.unwrap();
+        provider.disconnect().await
+    }
 
     fn config(endpoint: &str) -> QwenCloudConfig {
         QwenCloudConfig {
@@ -518,16 +599,53 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_key_click_in_a_quiet_room_is_not_uploaded() {
+        let (endpoint, hits) = fake_service(200, r#"{"output":{"text":"Hello."}}"#).await;
+        let mut samples = test_audio::hiss(-60.0, 2.0);
+        test_audio::add_click(&mut samples, 1000);
+        let result = transcribe(&endpoint, &test_audio::to_pcm(&samples)).await;
+        assert!(matches!(result, Ok(None)));
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn speech_is_uploaded_and_its_transcript_returned() {
+        let (endpoint, hits) =
+            fake_service(200, r#"{"output":{"text":"Send the notes by Friday."}}"#).await;
+        let result = transcribe(&endpoint, &speech_like()).await.unwrap();
+        assert_eq!(result.as_deref(), Some("Send the notes by Friday."));
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn an_empty_400_after_the_voice_check_is_still_no_speech() {
+        let (endpoint, hits) = fake_service(400, "{}").await;
+        let result = transcribe(&endpoint, &speech_like()).await;
+        assert!(matches!(result, Ok(None)));
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn a_short_invented_phrase_is_dropped_by_the_hallucination_guard() {
+        // Well under 1.5 s voiced, and the whole transcript is a phrase Whisper-style models
+        // invent for noise.
+        let mut audio = vec![0u8; 16_000];
+        audio.extend(pcm_tone(0.3, 0.4, 16_000));
+        audio.extend(vec![0u8; 16_000]);
+        let (endpoint, hits) = fake_service(200, r#"{"output":{"text":"Thank you."}}"#).await;
+        let result = transcribe(&endpoint, &audio).await;
+        assert!(matches!(result, Ok(None)));
+        assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
     async fn failed_upload_still_marks_the_probe() {
         // Port 9 on localhost refuses the connection at once, so there is no retry wait.
         let mut provider = QwenCloudProvider::new(config("http://127.0.0.1:9/x"), None);
         let probe = crate::timing::UploadProbe::default();
         provider.set_upload_probe(probe.clone());
         provider.connect(&stt_config()).await.unwrap();
-        provider
-            .send_audio(&pcm_tone(0.3, 1.0, 16_000))
-            .await
-            .unwrap();
+        provider.send_audio(&speech_like()).await.unwrap();
 
         assert!(provider.disconnect().await.is_err());
         let marks = probe.snapshot();

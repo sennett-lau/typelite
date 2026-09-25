@@ -25,9 +25,12 @@ There is no template and no service picker.
 ## Provider
 
 - Buffers the recording like the other providers and uploads it when recording stops.
-- Skips silent recordings before any request (`stt/silence.rs`), like every speech provider.
+- Runs the shared voice check (`stt/silence.rs`) before any request, like every speech
+  provider: a key click, a mic bump or silence is not sent.
 - Treats an empty `400 {}` (or a result with only result fields and no text) as "no speech", so
-  a quiet recording that passes the local silence check does not show an error.
+  a quiet recording that passes the voice check does not show an error.
+- Passes the transcript through the shared hallucination guard (`stt/hallucination.rs`): a short
+  recording whose whole transcript is a known invented phrase counts as no speech.
 - Retries `5xx` answers and timeouts twice (1 s, 2 s). Other errors show at once with the
   service's message.
 - Times out after 60 s. A 5-minute recording takes about 25 s.
