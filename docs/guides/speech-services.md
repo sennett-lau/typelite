@@ -64,3 +64,18 @@ services receive your audio.
 | Speech server timed out | The server is busy or too slow; try a smaller model or a GPU server. |
 | HTTP 401 / rejected the API key | The key is correct and has billing or credit. |
 | HTTP 404 | The address ends with `/v1` (or the service's base path), not the full `/audio/transcriptions` path. |
+
+## Share presets
+
+**Settings → Speech → Your server or API key** has **Import…** and **Export…** under the form.
+
+- **Export…** lists your saved speech presets; untick the ones to leave out and pick where to
+  save the `.typelite-presets.json` file. The Built-in preset is never exported (it is a model
+  file on this Mac).
+- API keys are left out. Tick **Include API keys** only if the person who gets the file may use
+  your key: anyone who has the file can.
+- **Import…** opens such a file and lists its presets (name and address). The ticked ones are
+  added; a name that is taken gets a number, like "Groq (2)". Nothing is replaced, and the
+  preset in use does not change. Pick an imported preset and press **Test** before you use it.
+- A file from a newer Typelite, or one with an address that is not `http://` or `https://`,
+  is rejected. Presets of a kind this version does not know are skipped.

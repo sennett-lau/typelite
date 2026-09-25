@@ -62,3 +62,19 @@ non-thinking (instruct) model, or add this to the preset's **Extra request field
 ```json
 {"reasoning_effort": "none"}
 ```
+
+## Share presets
+
+**Settings → AI** has **Import…** and **Export…** under the preset's server fields.
+
+- **Export…** lists your saved AI presets (with their extra request fields); untick the ones to
+  leave out and pick where to save the `.typelite-presets.json` file. Shipped presets you have
+  not changed, and addresses that still hold `<computer-ip>`, are not offered. Only saved
+  presets are exported, so save your edits first.
+- API keys are left out. Tick **Include API keys** only if the person who gets the file may use
+  your key: anyone who has the file can.
+- **Import…** opens such a file and lists its presets (name and address). The ticked ones are
+  added; a name that is taken gets a number, like "Groq (2)". Nothing is replaced, and the
+  preset in use does not change. Pick an imported preset and press **Test** before you use it.
+- A file from a newer Typelite, or one with an address that is not `http://` or `https://`,
+  is rejected. Presets of a kind this version does not know are skipped.
