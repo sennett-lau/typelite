@@ -61,7 +61,7 @@ function check(
   }
 }
 
-describe('speech engines (plan 0015)', () => {
+describe('speech engines (plan `two-tab-speech`)', () => {
   it('ships only the Built-in preset, and tells the two engines apart', () => {
     expect(BUILTIN_SPEECH_PRESETS.map((p) => p.id)).toEqual(['builtin-speech-this-mac'])
     const builtin = BUILTIN_SPEECH_PRESETS[0]
@@ -107,7 +107,7 @@ describe('speech engines (plan 0015)', () => {
   })
 })
 
-describe('Quick setup formatting (plan 0012)', () => {
+describe('Quick setup formatting (plan `quick-speech-setup`)', () => {
   const downloading = {
     ...IDLE_SETUP_STATUS,
     phase: 'downloading' as const,

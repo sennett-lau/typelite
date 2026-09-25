@@ -680,7 +680,7 @@ describe('Settings tab 切换', () => {
   it('点击 Speech Recognition 后显示 speech preset 字段', () => {
     renderSettings()
     clickSettingsTab('settings.speechRecognition')
-    // Plan 0015: the engine choice, its details, then Language and Recording.
+    // Plan `two-tab-speech`: the engine choice, its details, then Language and Recording.
     const engines = screen.getByRole('radiogroup', { name: 'speech.engineLabel' })
     expect(within(engines).getAllByRole('radio')).toHaveLength(2)
     expect(screen.getByTestId('builtin-settings')).toBeDefined()
@@ -714,7 +714,7 @@ describe('Settings tab 切换', () => {
       'aria-selected',
       'true',
     )
-    // Plan 0015: toolbar tabs, each an icon above its label (no segmented control).
+    // Plan `two-tab-speech`: toolbar tabs, each an icon above its label (no segmented control).
     for (const tab of screen.getAllByRole('tab')) {
       expect(tab).toHaveClass('toolbar-tab')
       expect(tab.querySelector('svg')).not.toBeNull()

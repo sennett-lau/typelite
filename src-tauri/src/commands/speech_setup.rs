@@ -1,5 +1,5 @@
-//! Plan 0012: Quick speech setup. Downloads a Whisper model, creates and selects the
-//! "Built-in (this Mac)" preset, tests it, and marks it ready.
+//! Plan `quick-speech-setup`: Quick speech setup. Downloads a Whisper model, creates and selects
+//! the "Built-in (this Mac)" preset, tests it, and marks it ready.
 //!
 //! The work runs in a background task owned by the backend, so it keeps going when the user
 //! leaves the onboarding step or Settings. Every change of the status is sent to all windows
@@ -178,8 +178,8 @@ pub fn list_speech_models(app: tauri::AppHandle) -> Result<Vec<SpeechModelInfo>,
         .collect())
 }
 
-/// Plan 0015: the chip, memory and free disk space of this Mac, and the built-in models the
-/// speech screens offer on it (see `stt::hardware::offer_models`).
+/// Plan `two-tab-speech`: the chip, memory and free disk space of this Mac, and the built-in models
+/// the speech screens offer on it (see `stt::hardware::offer_models`).
 #[tauri::command]
 pub async fn get_speech_hardware(
     app: tauri::AppHandle,

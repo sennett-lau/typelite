@@ -9,15 +9,18 @@ import {
 } from '../lib/tauri'
 
 /**
- * Plan 0012: the Quick speech setup as the frontend sees it. The backend owns the download;
- * this store mirrors its `speech-setup:status` events, so the progress survives leaving the
- * onboarding step or Settings and also shows on Home.
+ * Plan `quick-speech-setup`: the Quick speech setup as the frontend sees it. The backend owns the
+ * download; this store mirrors its `speech-setup:status` events, so the progress survives leaving
+ * the onboarding step or Settings and also shows on Home.
  */
 interface SpeechSetupStore {
   status: SpeechSetupStatus
   /** Known models and whether each is installed; null until loaded. */
   models: SpeechModelInfo[] | null
-  /** Plan 0015: chip, memory, free disk and the models this Mac is offered; null until read. */
+  /**
+   * Plan `two-tab-speech`: chip, memory, free disk and the models this Mac is offered; null until
+   * read.
+   */
   hardware: SpeechHardwareCheck | null
   applyStatus: (status: SpeechSetupStatus) => void
   /** Asks the backend for the current status and model list (after a window opens). */

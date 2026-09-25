@@ -3,7 +3,9 @@ import type { SpeechPreset } from '../stores/appStore'
 
 const SIZES: Record<string, number> = { 'large-v3-turbo': 574_041_195, small: 190_085_487 }
 
-/** A hardware check result offering `models` (plan 0015), as the backend would send it. */
+/**
+ * A hardware check result offering `models` (plan `two-tab-speech`), as the backend would send it.
+ */
 export function hardwareCheck(
   models: string[],
   options: Partial<SpeechHardwareCheck['hardware']> & {
