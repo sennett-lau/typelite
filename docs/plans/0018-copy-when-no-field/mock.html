@@ -1,0 +1,305 @@
+<title>Typelite Copy Pill</title>
+<style>
+  :root {
+    --page: #eef1f6; --ink: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.1); --seg: rgba(0,0,0,.05); --seg-on: #fff;
+    --accent: #0a84ff; --aur-a: #0a84ff; --aur-b: #af52de;
+    --desk-a: #cfd9ea; --desk-b: #e9e1f2; --winbg: rgba(255,255,255,.82); --winline: rgba(0,0,0,.08); --wintext: #3a3a3c; --rowline: rgba(0,0,0,.06);
+    --pill-bg: rgba(30,30,32,.72); --pill-line: rgba(255,255,255,.14);
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark;
+    --page: #0c0d10; --ink: #f2f2f5; --muted: #9a9aa3; --line: rgba(255,255,255,.1); --seg: rgba(255,255,255,.06); --seg-on: rgba(255,255,255,.14); --accent: #3fd8c2; } }
+  :root[data-theme="dark"] { color-scheme: dark;
+    --page: #0c0d10; --ink: #f2f2f5; --muted: #9a9aa3; --line: rgba(255,255,255,.1); --seg: rgba(255,255,255,.06); --seg-on: rgba(255,255,255,.14); --accent: #3fd8c2; }
+  body { background: var(--page); color: var(--ink); font-family: var(--ui); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+  .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h1 { margin: 4px 0 6px; font-size: 22px; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); max-width: 65ch; line-height: 1.5; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .label { font-size: 12px; color: var(--muted); }
+  .seg { display: inline-flex; background: var(--seg); border-radius: 8px; padding: 2px; flex-wrap: wrap; }
+  .seg button { all: unset; cursor: pointer; font-size: 12px; padding: 5px 10px; border-radius: 6px; color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--seg-on); box-shadow: 0 1px 2px rgba(0,0,0,.12); font-weight: 600; }
+  .seg button:focus-visible, .replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .replay { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--accent); padding: 5px 4px; }
+
+  /* The desktop */
+  .desk { position: relative; height: 420px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
+    background: radial-gradient(80% 90% at 15% 10%, var(--desk-a), transparent 70%), radial-gradient(70% 80% at 90% 90%, var(--desk-b), transparent 70%), #dde3ee; }
+  .desk.dk { --desk-a: #1b2a3a; --desk-b: #2a1d3a; --winbg: rgba(30,31,36,.86); --winline: rgba(255,255,255,.08); --wintext: #d9d9de; --rowline: rgba(255,255,255,.06);
+    --aur-a: #3fd8c2; background: radial-gradient(80% 90% at 15% 10%, var(--desk-a), transparent 70%), radial-gradient(70% 80% at 90% 90%, var(--desk-b), transparent 70%), #0e1015; }
+  .appwin { position: absolute; left: 50%; top: 34px; transform: translateX(-50%); width: min(560px, 86%); border-radius: 10px; background: var(--winbg);
+    border: 1px solid var(--winline); box-shadow: 0 18px 50px rgba(0,0,0,.18); color: var(--wintext); font-size: 12.5px; overflow: hidden; }
+  .appwin .top { display: flex; align-items: center; gap: 6px; padding: 9px 12px; border-bottom: 1px solid var(--rowline); }
+  .appwin .top i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .appwin .top span { margin-left: 8px; font-weight: 600; }
+  .appwin .body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 150px; }
+  .fakerow { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--rowline); }
+  .fakerow span:last-child { opacity: .6; }
+  .field { border: 1px solid var(--accent); border-radius: 6px; padding: 8px 10px; min-height: 42px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); background: rgba(255,255,255,.04); }
+  .field .caret { display: inline-block; width: 1px; height: 14px; background: currentColor; vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .clipnote { position: absolute; right: 12px; top: 10px; font-size: 11px; padding: 4px 8px; border-radius: 6px; background: var(--winbg); color: var(--wintext); border: 1px solid var(--winline); }
+
+  /* The pill (matches src/styles/globals.css .pill) */
+  .stage { position: absolute; left: 0; right: 0; bottom: 26px; display: flex; justify-content: center; pointer-events: none; }
+  .pill { pointer-events: auto; position: relative; height: 36px; border-radius: 18px; background: var(--pill-bg); border: 1px solid var(--pill-line);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6); box-shadow: 0 10px 30px rgba(20,20,40,.22);
+    color: #fff; overflow: hidden; font-size: 11px; font-weight: 500; line-height: 16px;
+    transition: width .28s cubic-bezier(.2,0,0,1), height .28s cubic-bezier(.2,0,0,1), border-radius .28s cubic-bezier(.2,0,0,1), opacity .22s ease, transform .22s cubic-bezier(.2,0,0,1), filter .22s ease; }
+  .pill.gone { opacity: 0; transform: translateY(6px) scale(.96); filter: blur(2px); }
+  /* Content layers cross-fade: the old one fades out on top while the new one fades in. */
+  .content { position: absolute; left: 0; top: 0; right: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 0 5px 0 14px; height: 36px; min-width: 0; }
+  .content.center { justify-content: center; padding: 0 12px; }
+  .content.enter { animation: enter .22s cubic-bezier(.2,0,0,1) .06s both; }
+  .content.leave { animation: leave .14s ease-in both; pointer-events: none; }
+  @keyframes enter { from { opacity: 0; filter: blur(3px); transform: translateY(2px); } to { opacity: 1; filter: none; transform: none; } }
+  @keyframes leave { to { opacity: 0; filter: blur(3px); } }
+  .fx { position: absolute; inset: 0; transition: opacity .3s ease; }
+  .fx.off { opacity: 0; }
+  .sweep { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--aur-a) 55%, transparent), color-mix(in srgb, var(--aur-b) 45%, transparent), transparent);
+    width: 60%; filter: blur(8px); animation: sweep 1.4s linear infinite; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(200%); } }
+  .flash { position: absolute; inset: 0; background: color-mix(in srgb, var(--aur-a) 45%, transparent); animation: flash .6s ease-out forwards; }
+  @keyframes flash { from { opacity: 1; } to { opacity: 0; } }
+  .pv { position: relative; min-width: 0; flex: 1; display: flex; }
+  .preview { min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgba(255,255,255,.92); }
+  .lang { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgba(255,255,255,.16); flex: none; }
+  .copy { all: unset; position: relative; cursor: pointer; flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 26px; padding: 0 11px; border-radius: 13px;
+    background: rgba(255,255,255,.16); font-weight: 600; font-size: 11px; color: #fff; transition: background .2s, width .2s; }
+  .copy:hover { background: rgba(255,255,255,.24); }
+  .copy:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .copy.done { background: color-mix(in srgb, var(--aur-a) 60%, transparent); }
+  .copy .lbl { display: inline-flex; align-items: center; gap: 5px; animation: enter .18s cubic-bezier(.2,0,0,1) both; }
+  .copy svg, .content svg { width: 13px; height: 13px; flex: none; }
+  .copy.small { height: 22px; padding: 0 9px; font-size: 10.5px; border-radius: 11px; }
+  .copy.small svg { width: 11px; height: 11px; }
+  .ring { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); overflow: visible; pointer-events: none; }
+  .ring rect { fill: none; stroke: rgba(255,255,255,.85); stroke-width: 1.6; stroke-linecap: round; }
+  .ring .track { stroke: rgba(255,255,255,.12); }
+  /* Countdown lines */
+  .timer { position: absolute; height: 2px; border-radius: 2px; background: rgba(255,255,255,.1); overflow: hidden; z-index: 2; }
+  .timer i { display: block; height: 100%; width: 100%; background: rgba(255,255,255,.5); transform-origin: left; }
+  .timer.full { left: 14px; right: 14px; bottom: 2px; }
+  .timer.under { left: 0; right: 0; bottom: -5px; }
+
+  .notes { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; line-height: 1.55; }
+  .notes ul { margin: 6px 0 0; padding-left: 18px; max-width: 72ch; }
+  .notes li + li { margin-top: 4px; }
+  @media (prefers-reduced-motion: reduce) { .sweep, .flash, .field .caret, .content.enter, .content.leave, .copy .lbl { animation: none; } .pill { transition: opacity .15s; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · design iteration</div>
+    <h1>When there's nowhere to paste</h1>
+    <p class="lead">If no text field has focus when the result is ready, the pill stays up and shows the start of the text with a Copy button instead of pasting into nothing.</p>
+  </header>
+
+  <div class="bar">
+    <span class="label">Focus</span>
+    <div class="seg" role="group" aria-label="Focus">
+      <button type="button" data-focus="field" aria-pressed="false">Text field</button>
+      <button type="button" data-focus="none" aria-pressed="true">No text field</button>
+    </div>
+    <span class="label">Mode</span>
+    <div class="seg" role="group" aria-label="Mode">
+      <button type="button" data-mode="dictate" aria-pressed="true">Dictate</button>
+      <button type="button" data-mode="translate" aria-pressed="false">Translate</button>
+    </div>
+    <span class="label">Result</span>
+    <div class="seg" role="group" aria-label="Result length">
+      <button type="button" data-len="short" aria-pressed="false">Short</button>
+      <button type="button" data-len="long" aria-pressed="true">Long</button>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="label">Countdown</span>
+    <div class="seg" role="group" aria-label="Countdown">
+      <button type="button" data-cd="gap" aria-pressed="false">1 · Line under the text</button>
+      <button type="button" data-cd="small" aria-pressed="false">2 · Smaller button</button>
+      <button type="button" data-cd="ring" aria-pressed="true">3 · Button border</button>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="label">Theme</span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="true">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+    <button class="replay" type="button" id="replay">↻ Replay</button>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="appwin" id="appwin"></div>
+    <div class="clipnote" id="clipnote" hidden>Clipboard: “…”</div>
+    <div class="stage"><div class="pill gone" id="pill" aria-live="polite"><div class="fx" id="fx"></div></div></div>
+  </div>
+
+  <div class="notes">
+    <b>How it behaves</b>
+    <ul>
+      <li><b>Text field focused:</b> no change. Paste, a short "Done" flash, the pill hides.</li>
+      <li><b>No text field:</b> Typelite doesn't paste. The pill grows, shows the start of the result and a Copy button. It stays 8 s; hovering pauses it, Esc closes it.</li>
+      <li><b>Countdown options:</b> 1 draws the line only under the text, so it never reaches the button; 2 keeps the full-width line and shrinks the button so they no longer touch; 3 drops the line and runs the countdown around the Copy button's border (recommended: nothing extra in the pill, and the timer sits where your eye already is).</li>
+      <li><b>Transitions:</b> the pill's width, height and corners animate together; the old label fades out while the new one fades in (a slight blur, 0.2 s); the working light fades rather than cutting; hiding slides down and fades.</li>
+      <li><b>Copy</b> puts the full result on the clipboard, shows "Copied", and the pill hides a moment later. The clipboard is not restored afterwards, since you asked for it.</li>
+      <li>Clicking the pill never takes focus away from the app you're in.</li>
+      <li>Hover to pause, then try the Copy button. Replay runs the sequence again.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var TEXT = {
+    dictate: { short: "Let's meet at 4 pm tomorrow.", long: "Let's meet at 4 pm tomorrow in the second-floor room. Please bring the updated budget and the list of open questions from last week, so we can close them before Friday." },
+    translate: { short: "我哋聽日四點開會。", long: "我哋聽日下晝四點喺二樓會議室開會。麻煩帶埋更新咗嘅預算，同埋上星期未解決嘅問題清單，等我哋星期五之前搞掂佢哋。" }
+  };
+  var st = { focus: 'none', mode: 'dictate', len: 'long', cd: 'ring' };
+  var desk = document.getElementById('desk'), pill = document.getElementById('pill'), fx = document.getElementById('fx'), appwin = document.getElementById('appwin'), clip = document.getElementById('clipnote');
+  var timers = [], hideAt = 0, remaining = 0, paused = false, raf = 0, counting = false;
+  var HOLD_MS = 8000;
+  function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+  function clearAll() { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); counting = false; }
+  function icon(id) { return '<svg aria-hidden="true"><use href="#' + id + '"/></svg>'; }
+  function text() { return TEXT[st.mode][st.len]; }
+  function esc(t) { return t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+  function renderApp(pasted) {
+    var head = '<div class="top"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i>';
+    if (st.focus === 'field') {
+      appwin.innerHTML = head + '<span>Messages</span></div><div class="body"><div class="fakerow"><span>Alex</span><span>Are we still on for tomorrow?</span></div>' +
+        '<div class="field">' + (pasted ? esc(text()) : '') + '<span class="caret"></span></div></div>';
+    } else {
+      appwin.innerHTML = head + '<span>Finder — Downloads</span></div><div class="body">' +
+        '<div class="fakerow"><span>budget-q3.xlsx</span><span>Today, 10:12</span></div>' +
+        '<div class="fakerow"><span>meeting-notes.pdf</span><span>Yesterday</span></div>' +
+        '<div class="fakerow"><span>screenshot.png</span><span>Mon</span></div>' +
+        '<div class="fakerow"><span>invoice-0921.pdf</span><span>Sep 21</span></div></div>';
+    }
+  }
+
+  /* Swap the pill's content with a cross-fade, and animate its size to fit the new content. */
+  function swap(html, opts) {
+    opts = opts || {};
+    pill.querySelectorAll('.content').forEach(function (old) {
+      old.classList.remove('enter'); old.classList.add('leave');
+      setTimeout(function () { old.remove(); }, 160);
+    });
+    var box = document.createElement('div');
+    box.className = 'content enter' + (opts.center ? ' center' : '');
+    box.innerHTML = html;
+    pill.appendChild(box);
+    pill.style.width = opts.width + 'px';
+    pill.style.height = 36 + 'px';
+    pill.classList.remove('gone');
+    return box;
+  }
+  function effect(kind) {
+    if (!kind) { fx.classList.add('off'); return; }
+    fx.classList.remove('off');
+    var cls = kind === 'sweep' ? 'sweep' : 'flash';
+    if (fx.firstChild && fx.firstChild.className === cls) return;
+    fx.innerHTML = '<div class="' + cls + '"></div>';
+  }
+  function working(label) { effect('sweep'); swap(label, { center: true, width: 132 }); }
+  function hide() { counting = false; pill.classList.add('gone'); effect(null); }
+
+  function run() {
+    clearAll(); clip.hidden = true; renderApp(false);
+    pill.classList.add('gone');
+    later(function () { working('Transcribing'); }, 250);
+    later(function () { working('Polishing'); }, 1150);
+    later(function () {
+      if (st.focus === 'field') {
+        working('Pasting');
+        later(function () {
+          renderApp(true); effect('flash');
+          swap(icon('i-check') + '&nbsp;Done', { center: true, width: 132 });
+          later(hide, 650);
+        }, 400);
+      } else showResult();
+    }, 2150);
+  }
+
+  function copyButton() {
+    var small = st.cd === 'small' ? ' small' : '';
+    var ring = st.cd === 'ring'
+      ? '<svg class="ring" aria-hidden="true"><rect class="track" x="1" y="1" rx="13" /><rect id="ring" x="1" y="1" rx="13" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0" /></svg>' : '';
+    return '<button class="copy' + small + '" type="button" id="copy" aria-label="Copy the result">' + ring + '<span class="lbl">' + icon('i-copy') + 'Copy</span></button>';
+  }
+  function sizeRing() {
+    var btn = document.getElementById('copy'); if (!btn) return;
+    var w = btn.offsetWidth, h = btn.offsetHeight;
+    btn.querySelectorAll('.ring rect').forEach(function (r) { r.setAttribute('width', w); r.setAttribute('height', h); r.setAttribute('rx', h / 2); });
+  }
+
+  function showResult() {
+    effect(null);
+    var lang = st.mode === 'translate' ? '<span class="lang">粵</span>' : '';
+    var under = st.cd === 'gap' ? '<span class="timer under"><i id="timer"></i></span>' : '';
+    var full = st.cd === 'small' ? '<span class="timer full"><i id="timer"></i></span>' : '';
+    var box;
+    box = swap(lang + '<span class="pv"><span class="preview" title="' + esc(text()) + '">' + esc(text()) + '</span>' + under + '</span>' + copyButton(), { width: st.len === 'short' ? 300 : 360 });
+    if (full) box.insertAdjacentHTML('beforeend', full);
+    sizeRing();
+    document.getElementById('copy').onclick = function (e) {
+      e.stopPropagation(); var b = e.currentTarget;
+      clearAll();
+      b.classList.add('done');
+      b.querySelectorAll('.ring').forEach(function (r) { r.remove(); });
+      b.querySelector('.lbl').outerHTML = '<span class="lbl">' + icon('i-check') + 'Copied</span>';
+      var t = document.getElementById('timer'); if (t) t.parentNode.style.opacity = '0';
+      clip.hidden = false; clip.textContent = 'Clipboard: “' + text().slice(0, 28) + '…”';
+      later(hide, 1000);
+    };
+    remaining = HOLD_MS; hideAt = performance.now() + remaining; paused = false; counting = true; tick();
+  }
+  function setProgress(p) {
+    var bar = document.getElementById('timer'); if (bar) bar.style.transform = 'scaleX(' + p + ')';
+    var ring = document.getElementById('ring'); if (ring) ring.setAttribute('stroke-dashoffset', String(100 - p * 100));
+  }
+  function tick() {
+    raf = requestAnimationFrame(function () {
+      if (!counting) return;
+      if (!paused) {
+        var left = hideAt - performance.now();
+        setProgress(Math.max(0, left / HOLD_MS));
+        if (left <= 0) { hide(); return; }
+      }
+      tick();
+    });
+  }
+  pill.addEventListener('mouseenter', function () { if (!counting) return; paused = true; remaining = hideAt - performance.now(); });
+  pill.addEventListener('mouseleave', function () { if (!paused) return; paused = false; hideAt = performance.now() + remaining; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && counting) { clearAll(); hide(); } });
+
+  function bind(attr, key) {
+    document.querySelectorAll('[' + attr + ']').forEach(function (b) {
+      b.onclick = function () {
+        b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        st[key] = b.getAttribute(attr); run();
+      };
+    });
+  }
+  bind('data-focus', 'focus'); bind('data-mode', 'mode'); bind('data-len', 'len'); bind('data-cd', 'cd');
+  document.getElementById('replay').onclick = run;
+
+  function theme(dark) {
+    desk.classList.toggle('dk', dark);
+    document.getElementById('t-light').setAttribute('aria-pressed', String(!dark));
+    document.getElementById('t-dark').setAttribute('aria-pressed', String(dark));
+  }
+  document.getElementById('t-light').onclick = function () { theme(false); };
+  document.getElementById('t-dark').onclick = function () { theme(true); };
+  try { if (matchMedia('(prefers-color-scheme: dark)').matches) theme(true); } catch (e) {}
+  run();
+})();
+</script>
