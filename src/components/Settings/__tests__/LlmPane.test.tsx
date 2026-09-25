@@ -85,19 +85,21 @@ vi.mock('react-i18next', () => ({
 const builtinAiPreset: AiPreset = {
   id: 'builtin-ollama-pc',
   name: 'PC Ollama — Qwen3 4B Instruct',
-  base_url: 'http://100.90.208.26:11434/v1',
+  base_url: 'http://192.0.2.10:11434/v1',
   model: 'qwen3:4b-instruct-2507-q4_K_M',
   extra_request_fields: {},
   builtin: true,
+  verified_at: null,
 }
 
 const thinkingPreset: AiPreset = {
   id: 'pc-qwen35',
   name: 'PC Ollama — Qwen3.5',
-  base_url: 'http://100.90.208.26:11434/v1',
+  base_url: 'http://192.0.2.10:11434/v1',
   model: 'qwen3.5:4b',
   extra_request_fields: { reasoning_effort: 'none' },
   builtin: false,
+  verified_at: null,
 }
 
 function baseConfig() {
@@ -131,6 +133,7 @@ const mockAppStore = {
   setLlmLatencyMs: vi.fn(),
   llmModels: [] as string[],
   setLlmModels: vi.fn(),
+  setAiHealth: vi.fn(),
   lastContext: null as any,
 }
 
@@ -138,12 +141,15 @@ vi.mock('../../../stores/appStore', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../stores/appStore')>()
   return {
     ...actual,
-    useAppStore: (selector: any) => {
-      if (typeof selector === 'function') {
-        return selector(mockAppStore)
-      }
-      return mockAppStore
-    },
+    useAppStore: Object.assign(
+      (selector: any) => {
+        if (typeof selector === 'function') {
+          return selector(mockAppStore)
+        }
+        return mockAppStore
+      },
+      { getState: () => mockAppStore, setState: vi.fn() },
+    ),
   }
 })
 
@@ -182,7 +188,7 @@ describe('LlmPane', () => {
       render(<LlmPane />)
 
       expect(screen.getByLabelText('Preset')).toHaveValue('builtin-ollama-pc')
-      expect(screen.getByLabelText('Base URL')).toHaveValue('http://100.90.208.26:11434/v1')
+      expect(screen.getByLabelText('Base URL')).toHaveValue('http://192.0.2.10:11434/v1')
       expect(screen.getByLabelText('Model')).toHaveValue('qwen3:4b-instruct-2507-q4_K_M')
       expect(screen.getByLabelText('Extra request fields (JSON object)')).toHaveValue('')
     })
@@ -288,7 +294,7 @@ describe('LlmPane', () => {
 
       await waitFor(
         () => {
-          expect(tauri.fetchAiModels).toHaveBeenCalledWith('http://100.90.208.26:11434/v1', '')
+          expect(tauri.fetchAiModels).toHaveBeenCalledWith('http://192.0.2.10:11434/v1', '')
         },
         { timeout: 1500 },
       )

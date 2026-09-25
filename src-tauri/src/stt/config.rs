@@ -80,6 +80,7 @@ mod tests {
             model: model.to_string(),
             language: "auto".to_string(),
             builtin: false,
+            verified_at: None,
         }
     }
 

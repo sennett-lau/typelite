@@ -2,26 +2,42 @@ import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
+import { openSettingsPane } from '../../lib/tauri'
+
+/** How long a plain error stays; a setup message with a button stays longer to be clicked. */
+const ERROR_MS = 2500
+const SETUP_ERROR_MS = 6000
 
 export function CapsuleError() {
   const { t } = useTranslation()
   const pipelineError = useAppStore((s) => s.pipelineError)
+  const action = useAppStore((s) => s.pipelineErrorAction)
   const setPipelineError = useAppStore((s) => s.setPipelineError)
   const resetRecording = useAppStore((s) => s.resetRecording)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPipelineError(null)
-      // Only reset recording state if the pipeline is actually idle.
-      // If the user started a new recording during the 2.5s error window,
-      // don't overwrite the active pipeline state.
-      const currentState = useAppStore.getState().pipelineState
-      if (currentState === 'idle') {
-        resetRecording()
-      }
-    }, 2500)
+    const timer = setTimeout(
+      () => {
+        setPipelineError(null)
+        // Only reset recording state if the pipeline is actually idle.
+        // If the user started a new recording during the error window,
+        // don't overwrite the active pipeline state.
+        const currentState = useAppStore.getState().pipelineState
+        if (currentState === 'idle') {
+          resetRecording()
+        }
+      },
+      action ? SETUP_ERROR_MS : ERROR_MS,
+    )
     return () => clearTimeout(timer)
-  }, [setPipelineError, resetRecording, pipelineError])
+  }, [setPipelineError, resetRecording, pipelineError, action])
+
+  const handleSetUp = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    if (!action) return
+    openSettingsPane(action).catch((error) => console.error('Failed to open Settings:', error))
+    setPipelineError(null)
+  }
 
   return (
     <motion.div
@@ -35,6 +51,16 @@ export function CapsuleError() {
       <p className="text-[11px] text-white truncate flex-1">
         {pipelineError || t('capsule.errors.unknown')}
       </p>
+      {action && (
+        <button
+          type="button"
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={handleSetUp}
+          className="flex-none cursor-pointer rounded-full border-none bg-[var(--color-pill-chip)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-pill-chip-text)]"
+        >
+          {t('capsule.setUp')}
+        </button>
+      )}
     </motion.div>
   )
 }

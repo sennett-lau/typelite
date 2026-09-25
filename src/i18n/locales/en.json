@@ -80,7 +80,18 @@
       "openApp": "Open Typelite",
       "openAppDesc": "Bring up the main window"
     },
-    "subtitle": "Press a shortcut anywhere, speak, and polished text is typed for you."
+    "subtitle": "Press a shortcut anywhere, speak, and polished text is typed for you.",
+    "takeTour": "Take the shortcut tour",
+    "setup": {
+      "title": "Finish setup",
+      "speech": "Speech recognition",
+      "ai": "AI polish service",
+      "notReady": "Not set up yet",
+      "failed": "The last test failed",
+      "speechImpact": "Dictate, Translate and Ask need it.",
+      "aiImpact": "Dictate pastes the raw transcript; Translate and Ask need it.",
+      "setUp": "Set up"
+    }
   },
   "onboarding": {
     "welcome": {
@@ -104,18 +115,6 @@
     },
     "microphone": {
       "intro": "Pick the microphone Typelite should use. Speak and watch the meter move."
-    },
-    "stt": {
-      "serviceLabel": "Speech Recognition Service",
-      "testButton": "Test Connection",
-      "connectionOk": "Connection successful",
-      "connectionFail": "Connection failed"
-    },
-    "llm": {
-      "serviceLabel": "AI Polish Service",
-      "testButton": "Test Connection",
-      "connectionOk": "Connection successful",
-      "connectionFail": "Connection failed"
     },
     "shortcut": {
       "label": "Shortcut",
@@ -158,8 +157,8 @@
       "microphoneSub": "Choose your microphone",
       "speechRecognition": "Speech recognition",
       "speechRecognitionSub": "Pick a speech service and test it",
-      "aiModel": "AI model",
-      "aiModelSub": "Pick an AI service and test it",
+      "aiPolish": "AI Polish Service",
+      "aiPolishSub": "Pick an AI service and test it",
       "dictate": "Dictate",
       "dictateSub": "Set your shortcut and try it once",
       "translate": "Translate",
@@ -172,6 +171,28 @@
       "next": "Next",
       "finish": "Finish",
       "close": "Close"
+    },
+    "guide": {
+      "howTo": "How to set this up",
+      "thisMac": "This Mac",
+      "otherComputer": "Another computer on your network",
+      "cloud": "A cloud service with your own key",
+      "openFullGuide": "Open full guide",
+      "copy": "Copy command",
+      "copied": "Copied",
+      "speech": {
+        "thisMac": "Run this in Terminal. It installs whisper.cpp with Homebrew, downloads the speech model and starts the server.",
+        "fromRepository": "Or run {{script}} from the repository.",
+        "thisMacThen": "Then pick “whisper.cpp on this Mac” and press Test.",
+        "otherComputer": "Start an OpenAI-compatible speech server there (for example Speaches on port 8000). Pick “Speech server on another computer”, replace <computer-ip> with that computer’s address, then press Test.",
+        "cloud": "Pick “OpenAI (your key)” or “Groq (your key)”, paste your API key and press Test. Your recordings are then sent to that service."
+      },
+      "ai": {
+        "thisMac": "Run these in Terminal: install Ollama, download the model, then start Ollama.",
+        "thisMacThen": "Then pick “Ollama on this Mac” and press Test.",
+        "otherComputer": "Install Ollama there, set OLLAMA_HOST=0.0.0.0:11434 so this Mac can reach it, and pull the same model. Pick “Ollama on another computer”, replace <computer-ip> with its address, then press Test.",
+        "cloud": "Pick “OpenAI (your key)” or “Groq (your key)”, paste your API key and press Test. Your transcripts are then sent to that service."
+      }
     }
   },
   "capsule": {
@@ -201,13 +222,16 @@
       "output_failed": "Output failed",
       "unknown": "Error",
       "output_wayland_clipboard_copy_only": "Copied",
-      "stt_unreachable": "Speech server offline"
+      "stt_unreachable": "Speech server offline",
+      "speech_not_ready": "Set up speech recognition first",
+      "ai_not_ready": "Set up the AI polish service first"
     },
     "menu": {
       "openMainWindow": "Open Main Window",
       "settings": "Settings",
       "exit": "Exit"
-    }
+    },
+    "setUp": "Set up"
   },
   "settings": {
     "title": "Settings",
@@ -609,7 +633,8 @@
     "extraFields": "Extra request fields (JSON object)",
     "extraFieldsHint": "Added to every chat request. Thinking models such as Qwen3.5 need {\"reasoning_effort\": \"none\"}.",
     "extraFieldsInvalid": "This is not a JSON object, so it is not saved. The last valid value is kept.",
-    "latency": "{{ms}} ms"
+    "latency": "{{ms}} ms",
+    "placeholderUrl": "Replace <computer-ip> in the base URL with the address of the computer that runs the server."
   },
   "shortcutCapture": {
     "pressKeys": "Press keys…",
@@ -637,5 +662,11 @@
     "ok": "Working",
     "error": "The last test or request failed",
     "unknown": "Not checked yet"
+  },
+  "tour": {
+    "title": "Speech and AI are ready. Try the three shortcuts now?",
+    "body": "One short try each of Dictate, Translate and Ask anything.",
+    "start": "Start",
+    "later": "Later"
   }
 }

@@ -41,13 +41,19 @@ fn silent_test_form(
 /// milliseconds. Any 2xx answer counts as success (silence usually gives empty text).
 ///
 /// `api_key` is the key typed in Settings; when it is empty the key stored in the
-/// Keychain for this preset is used.
+/// Keychain for this preset is used. A pass is saved as the preset's `verified_at` when the
+/// stored preset has the tested connection (see `record_speech_test_passed`).
 #[tauri::command]
 pub async fn test_speech_preset(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, storage::ConfigManager>,
     preset: storage::SpeechPreset,
     api_key: String,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<u32, String> {
+    if storage::base_url_has_placeholder(&preset.base_url) {
+        return Err(storage::PLACEHOLDER_URL_ERROR.to_string());
+    }
     let api_key = resolve_config_secret(&api_key, "stt", &preset.id, &SystemCredentialVault)
         .map_err(|e| e.to_string())?;
     let cfg = stt::config::build_whisper_config(&preset)?;
@@ -79,6 +85,7 @@ pub async fn test_speech_preset(
             format!("HTTP {status}: {details}")
         });
     }
+    crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;
     Ok(elapsed)
 }
 
@@ -88,7 +95,7 @@ mod tests {
 
     #[test]
     fn silent_test_form_builds_for_auto_and_explicit_language() {
-        let mut preset = storage::SpeechPreset::builtin_whisper_local();
+        let mut preset = storage::SpeechPreset::builtin_local();
         assert!(silent_test_form(&preset, "large-v3-turbo").is_ok());
 
         preset.language = "en".to_string();

@@ -12,7 +12,12 @@ import type {
   VoiceMode,
 } from '../stores/appStore'
 import { toast } from '../components/toast-service'
-import { capsuleErrorKeyFromPayload, type PipelineErrorPayload } from '../lib/capsuleError'
+import {
+  capsuleErrorKeyFromPayload,
+  setupPaneForError,
+  type PipelineErrorPayload,
+} from '../lib/capsuleError'
+import { applyVerificationEvent, type PresetVerificationEvent } from '../lib/readiness'
 import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/connectionStatus'
 
 type Unlisten = () => void | Promise<void>
@@ -136,7 +141,7 @@ export function useTauriEvents() {
     addListener<ContextProfileSummary>('pipeline:context', setLastContext)
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
       const capsuleErrorKey = capsuleErrorKeyFromPayload(payload)
-      setPipelineError(t(`capsule.errors.${capsuleErrorKey}`))
+      setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), setupPaneForError(capsuleErrorKey))
       const endpoint = endpointForError(capsuleErrorKey)
       if (endpoint === 'speech') recordSpeechResult(false)
       if (endpoint === 'ai') {
@@ -164,6 +169,8 @@ export function useTauriEvents() {
         localStorage.setItem('ui_language', patch.ui_language)
       }
     })
+
+    addListener<PresetVerificationEvent>('preset:verification', applyVerificationEvent)
 
     addListener<void>('tray:settings', () => {
       window.location.hash = '#/settings'

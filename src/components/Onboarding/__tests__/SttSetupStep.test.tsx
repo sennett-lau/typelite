@@ -1,27 +1,24 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { SttSetupStep } from '../SttSetupStep'
 import * as tauri from '../../../lib/tauri'
-import { useAppStore, type SpeechPreset } from '../../../stores/appStore'
+import { useAppStore } from '../../../stores/appStore'
 
 vi.mock('../../../lib/tauri')
+vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl: vi.fn() }))
 
 vi.mock('react-i18next', async () => {
   const { translate } = await import('../../../test-utils/i18nMock')
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const pcPreset: SpeechPreset = {
-  id: 'pc-speaches',
-  name: 'PC Speaches',
-  base_url: 'http://100.90.208.26:8000/v1',
-  model: 'Systran/faster-whisper-large-v3',
-  language: 'auto',
-  builtin: false,
-}
-
 function config() {
   return useAppStore.getState().config
+}
+
+function activePreset() {
+  return config().speech_presets.find((preset) => preset.id === config().active_speech_preset_id)
 }
 
 beforeEach(() => {
@@ -29,69 +26,94 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(tauri.readCredential).mockResolvedValue(null)
   vi.mocked(tauri.setCredential).mockResolvedValue(undefined)
+  vi.mocked(openUrl).mockResolvedValue(undefined)
 })
 
 afterEach(() => cleanup())
 
 describe('SttSetupStep', () => {
-  it('preselects the built-in preset and shows its endpoint and model', () => {
-    render(<SttSetupStep />)
+  it('shows the same editable preset fields as Settings, starting on the local template', () => {
+    render(<SttSetupStep onSkip={vi.fn()} />)
 
-    expect(screen.getByLabelText('Speech Recognition Service')).toHaveValue('builtin-whisper-local')
-    expect(screen.getByText('http://127.0.0.1:8178/v1')).toBeInTheDocument()
-    expect(screen.getByText('large-v3-turbo')).toBeInTheDocument()
+    expect(screen.getByLabelText('Preset')).toHaveValue('builtin-speech-local')
+    expect(screen.getByLabelText('Base URL')).toHaveValue('http://127.0.0.1:8178/v1')
+    expect(screen.getByLabelText('Model')).toHaveValue('large-v3-turbo')
+    expect(screen.getByLabelText('Language')).toHaveValue('auto')
     expect(screen.getByLabelText('API key (optional)')).toHaveValue('')
+    expect(screen.getByRole('button', { name: /Save as new preset/ })).toBeInTheDocument()
   })
 
-  it('marks the step passed with the latency after a successful test', async () => {
-    vi.mocked(tauri.testSpeechPreset).mockResolvedValue(2100)
-    render(<SttSetupStep />)
+  it('lets the user edit the URL, for example for another computer', () => {
+    render(<SttSetupStep onSkip={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }))
+    fireEvent.change(screen.getByLabelText('Preset'), { target: { value: 'builtin-speech-lan' } })
+    fireEvent.change(screen.getByLabelText('Base URL'), {
+      target: { value: 'http://192.0.2.10:8000/v1' },
+    })
+
+    expect(activePreset()).toMatchObject({
+      id: 'builtin-speech-lan',
+      base_url: 'http://192.0.2.10:8000/v1',
+    })
+  })
+
+  it('a passing test makes speech ready and hides "Skip for now"', async () => {
+    vi.mocked(tauri.testSpeechPreset).mockResolvedValue(2100)
+    render(<SttSetupStep onSkip={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Test' }))
 
     expect(await screen.findByText(/2100 ms/)).toBeInTheDocument()
-    expect(tauri.testSpeechPreset).toHaveBeenCalledWith(config().speech_presets[0], '')
-    expect(useAppStore.getState().sttTestStatus).toBe('success')
+    expect(activePreset()?.verified_at).toEqual(expect.any(Number))
+    expect(screen.queryByRole('button', { name: 'Skip for now' })).not.toBeInTheDocument()
   })
 
-  it('keeps the step blocked and shows why when the test fails', async () => {
+  it('a failing test keeps the step open and shows why', async () => {
     vi.mocked(tauri.testSpeechPreset).mockRejectedValue('connection refused')
-    render(<SttSetupStep />)
+    render(<SttSetupStep onSkip={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Test' }))
 
-    expect(await screen.findByText('Connection failed: connection refused')).toBeInTheDocument()
-    expect(useAppStore.getState().sttTestStatus).toBe('error')
+    expect(await screen.findByText('connection refused')).toBeInTheDocument()
+    expect(activePreset()?.verified_at).toBeNull()
   })
 
-  it('switching presets activates it and requires a new test', async () => {
-    useAppStore.getState().updateConfig({
-      speech_presets: [...config().speech_presets, pcPreset],
-    })
-    useAppStore.getState().setSttTestStatus('success')
-    render(<SttSetupStep />)
+  it('"Skip for now" always leaves the step', () => {
+    const onSkip = vi.fn()
+    render(<SttSetupStep onSkip={onSkip} />)
 
-    fireEvent.change(screen.getByLabelText('Speech Recognition Service'), {
-      target: { value: 'pc-speaches' },
-    })
+    fireEvent.click(screen.getByRole('button', { name: 'Skip for now' }))
 
-    expect(config().active_speech_preset_id).toBe('pc-speaches')
-    expect(useAppStore.getState().sttTestStatus).toBe('idle')
-    expect(screen.getByText('http://100.90.208.26:8000/v1')).toBeInTheDocument()
+    expect(onSkip).toHaveBeenCalledTimes(1)
   })
 
-  it('tests with the typed API key and saves it in the Keychain', async () => {
-    vi.mocked(tauri.testSpeechPreset).mockResolvedValue(50)
-    render(<SttSetupStep />)
+  it('"How to set this up" opens the guide with copyable commands and the full guide', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    render(<SttSetupStep onSkip={vi.fn()} />)
+    expect(screen.queryByTestId('setup-guide-speech')).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('API key (optional)'), {
-      target: { value: 'sk-speech' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }))
+    fireEvent.click(screen.getByRole('button', { name: /How to set this up/ }))
 
-    await waitFor(() => {
-      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(config().speech_presets[0], 'sk-speech')
-      expect(tauri.setCredential).toHaveBeenCalledWith('stt', 'builtin-whisper-local', 'sk-speech')
-    })
+    const guide = screen.getByTestId('setup-guide-speech')
+    expect(within(guide).getByText('This Mac')).toBeInTheDocument()
+    expect(within(guide).getByText('Another computer on your network')).toBeInTheDocument()
+    expect(within(guide).getByText('A cloud service with your own key')).toBeInTheDocument()
+    expect(
+      within(guide).getByText(/scripts\/setup-local-whisper\.sh from the repository/),
+    ).toBeInTheDocument()
+
+    fireEvent.click(within(guide).getByRole('button', { name: 'Copy command' }))
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        'curl -fsSL https://raw.githubusercontent.com/sennett-lau/typelite/main/scripts/setup-local-whisper.sh | bash',
+      ),
+    )
+
+    fireEvent.click(within(guide).getByRole('button', { name: /Open full guide/ }))
+    expect(openUrl).toHaveBeenCalledWith(
+      'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-recognition.md',
+    )
   })
 })

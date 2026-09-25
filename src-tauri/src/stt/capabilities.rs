@@ -117,7 +117,7 @@ mod tests {
             resolved.capability.explanation_key,
             "recordingLimits.reasons.clientBuffer"
         );
-        assert_eq!(resolved.capability.provider_id, "builtin-whisper-local");
+        assert_eq!(resolved.capability.provider_id, "builtin-speech-local");
         assert_eq!(resolved.effective_max_seconds, 600);
     }
 

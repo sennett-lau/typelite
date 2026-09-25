@@ -530,6 +530,25 @@ export async function openPrivacySettings(pane: PrivacyPane): Promise<void> {
   return invoke('open_privacy_settings', { pane })
 }
 
+/**
+ * Saves the shortcut tour flags without touching anything else in the config (so unsaved
+ * Settings edits are not saved with them). Leave a flag undefined to keep it.
+ */
+export async function setShortcutTourState(state: {
+  completed?: boolean
+  promptDismissed?: boolean
+}): Promise<void> {
+  return invoke('set_shortcut_tour_state', {
+    completed: state.completed ?? null,
+    promptDismissed: state.promptDismissed ?? null,
+  })
+}
+
+/** Shows the main window on a Settings pane (the capsule's "Set up" button). */
+export async function openSettingsPane(pane: 'stt' | 'llm'): Promise<void> {
+  return invoke('open_settings_pane', { pane })
+}
+
 // Onboarding persistence via tauri-plugin-store
 export async function loadOnboardingCompleted(): Promise<boolean> {
   try {

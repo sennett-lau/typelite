@@ -15,6 +15,8 @@ export const ASK_RECORDING_SIZE: CapsuleSize = { width: 248, height: 36 }
  * transcribing, polishing and error states that share its width.
  */
 export const DICTATION_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
+/** A setup message ("Set up speech recognition first") with its "Set up" button. */
+export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
 
 export interface CapsuleVisibilityInput {
   contextMenuOpen: boolean
@@ -107,9 +109,10 @@ export function getSizeForState(
   hasError: boolean,
   contextMenuOpen: boolean,
   activeVoiceMode: VoiceMode | null = null,
+  errorHasAction = false,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
-  if (hasError) return DICTATION_PILL_SIZE
+  if (hasError) return errorHasAction ? SETUP_ERROR_SIZE : DICTATION_PILL_SIZE
   if (expanded) return { width: 220, height: 90 }
   switch (state) {
     case 'idle':
@@ -136,6 +139,7 @@ export function useCapsuleResize() {
   const pipelineState = useAppStore((s) => s.pipelineState)
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const pipelineError = useAppStore((s) => s.pipelineError)
+  const errorHasAction = useAppStore((s) => s.pipelineErrorAction !== null)
   const contextMenuOpen = useAppStore((s) => s.contextMenuOpen)
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
@@ -152,6 +156,7 @@ export function useCapsuleResize() {
       hasError,
       contextMenuOpen,
       activeVoiceMode,
+      errorHasAction,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
@@ -224,8 +229,16 @@ export function useCapsuleResize() {
     hasError,
     contextMenuOpen,
     activeVoiceMode,
+    errorHasAction,
     setContextMenuReady,
   ])
 
-  return getSizeForState(pipelineState, capsuleExpanded, hasError, contextMenuOpen, activeVoiceMode)
+  return getSizeForState(
+    pipelineState,
+    capsuleExpanded,
+    hasError,
+    contextMenuOpen,
+    activeVoiceMode,
+    errorHasAction,
+  )
 }

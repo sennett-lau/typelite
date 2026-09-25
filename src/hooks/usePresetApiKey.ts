@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { readCredential, setCredential } from '../lib/tauri'
+import { clearTestResult } from '../lib/readiness'
 
 /**
  * The optional API key of one preset. Keys never go into the config file: they are read
@@ -7,6 +8,8 @@ import { readCredential, setCredential } from '../lib/tauri'
  * under `namespace` ('stt' or 'llm') plus the preset id.
  *
  * Typing is saved after a short pause; `saveNow` saves at once (for example on blur).
+ * Typing also forgets the preset's passed Test, because that Test used the old key (the
+ * backend does the same when the saved key changes).
  */
 export function usePresetApiKey(namespace: 'stt' | 'llm', presetId: string) {
   const [apiKey, setApiKeyState] = useState('')
@@ -52,9 +55,10 @@ export function usePresetApiKey(namespace: 'stt' | 'llm', presetId: string) {
     (value: string) => {
       edited.current = true
       setApiKeyState(value)
+      clearTestResult(namespace === 'stt' ? 'speech' : 'ai', presetId)
       save(value, 350)
     },
-    [save],
+    [namespace, presetId, save],
   )
 
   const saveNow = useCallback(() => {

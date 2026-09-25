@@ -134,13 +134,13 @@ mod tests {
     #[test]
     fn chat_endpoint_appends_path_once() {
         for base_url in [
-            "http://100.90.208.26:11434/v1",
-            "http://100.90.208.26:11434/v1/",
-            "http://100.90.208.26:11434/v1/chat/completions",
+            "http://127.0.0.1:11434/v1",
+            "http://127.0.0.1:11434/v1/",
+            "http://127.0.0.1:11434/v1/chat/completions",
         ] {
             assert_eq!(
                 chat_endpoint(base_url).unwrap(),
-                "http://100.90.208.26:11434/v1/chat/completions"
+                "http://127.0.0.1:11434/v1/chat/completions"
             );
         }
     }

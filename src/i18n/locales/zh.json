@@ -80,7 +80,18 @@
       "openApp": "打开 Typelite",
       "openAppDesc": "显示主窗口"
     },
-    "subtitle": "在任何地方按下快捷键说话，润色后的文字会替你输入。"
+    "subtitle": "在任何地方按下快捷键说话，润色后的文字会替你输入。",
+    "takeTour": "体验快捷键教程",
+    "setup": {
+      "title": "完成设置",
+      "speech": "语音识别",
+      "ai": "AI 润色服务",
+      "notReady": "尚未设置",
+      "failed": "上次测试失败",
+      "speechImpact": "听写、翻译和随便问都需要它。",
+      "aiImpact": "听写会粘贴原始转写；翻译和随便问需要它。",
+      "setUp": "去设置"
+    }
   },
   "onboarding": {
     "welcome": {
@@ -104,18 +115,6 @@
     },
     "microphone": {
       "intro": "选择 Typelite 使用的麦克风。说话时音量条会跳动。"
-    },
-    "stt": {
-      "serviceLabel": "语音识别服务",
-      "testButton": "测试连接",
-      "connectionOk": "连接成功",
-      "connectionFail": "连接失败"
-    },
-    "llm": {
-      "serviceLabel": "AI 润色服务",
-      "testButton": "测试连接",
-      "connectionOk": "连接成功",
-      "connectionFail": "连接失败"
     },
     "shortcut": {
       "label": "快捷键",
@@ -158,8 +157,8 @@
       "microphoneSub": "选择你的麦克风",
       "speechRecognition": "语音识别",
       "speechRecognitionSub": "选择语音服务并测试",
-      "aiModel": "AI 模型",
-      "aiModelSub": "选择 AI 服务并测试",
+      "aiPolish": "AI 润色服务",
+      "aiPolishSub": "选择 AI 服务并测试",
       "dictate": "听写",
       "dictateSub": "设置快捷键并试用一次",
       "translate": "翻译",
@@ -172,6 +171,28 @@
       "next": "下一步",
       "finish": "完成",
       "close": "关闭"
+    },
+    "guide": {
+      "howTo": "如何设置",
+      "thisMac": "这台 Mac",
+      "otherComputer": "局域网中的另一台电脑",
+      "cloud": "使用你自己密钥的云服务",
+      "openFullGuide": "打开完整指南",
+      "copy": "复制命令",
+      "copied": "已复制",
+      "speech": {
+        "thisMac": "在“终端”中运行以下命令。它会用 Homebrew 安装 whisper.cpp、下载语音模型并启动服务。",
+        "fromRepository": "或者在代码仓库中运行 {{script}}。",
+        "thisMacThen": "然后选择“whisper.cpp on this Mac”并点击“测试”。",
+        "otherComputer": "在那台电脑上启动兼容 OpenAI 的语音服务（例如端口 8000 上的 Speaches）。选择“Speech server on another computer”，把 <computer-ip> 换成那台电脑的地址，然后点击“测试”。",
+        "cloud": "选择“OpenAI (your key)”或“Groq (your key)”，粘贴你的 API Key 并点击“测试”。之后录音会发送到该服务。"
+      },
+      "ai": {
+        "thisMac": "在“终端”中运行以下命令：安装 Ollama、下载模型，然后启动 Ollama。",
+        "thisMacThen": "然后选择“Ollama on this Mac”并点击“测试”。",
+        "otherComputer": "在那台电脑上安装 Ollama，设置 OLLAMA_HOST=0.0.0.0:11434 让这台 Mac 可以连接，并下载同一个模型。选择“Ollama on another computer”，把 <computer-ip> 换成它的地址，然后点击“测试”。",
+        "cloud": "选择“OpenAI (your key)”或“Groq (your key)”，粘贴你的 API Key 并点击“测试”。之后转写文字会发送到该服务。"
+      }
     }
   },
   "capsule": {
@@ -201,13 +222,16 @@
       "output_failed": "输出失败",
       "unknown": "出错了",
       "output_wayland_clipboard_copy_only": "已复制",
-      "stt_unreachable": "语音服务离线"
+      "stt_unreachable": "语音服务离线",
+      "speech_not_ready": "请先设置语音识别",
+      "ai_not_ready": "请先设置 AI 润色服务"
     },
     "menu": {
       "openMainWindow": "打开主窗口",
       "settings": "设置",
       "exit": "退出"
-    }
+    },
+    "setUp": "去设置"
   },
   "settings": {
     "title": "设置",
@@ -609,7 +633,8 @@
     "extraFields": "额外请求字段（JSON 对象）",
     "extraFieldsHint": "会加入每个对话请求。Qwen3.5 等思考模型需要 {\"reasoning_effort\": \"none\"}。",
     "extraFieldsInvalid": "这不是 JSON 对象，因此不会保存。仍使用上一次有效的值。",
-    "latency": "{{ms}} 毫秒"
+    "latency": "{{ms}} 毫秒",
+    "placeholderUrl": "请把服务地址中的 <computer-ip> 换成运行服务的那台电脑的地址。"
   },
   "shortcutCapture": {
     "pressKeys": "按下按键…",
@@ -637,5 +662,11 @@
     "ok": "正常",
     "error": "上次测试或请求失败",
     "unknown": "尚未检查"
+  },
+  "tour": {
+    "title": "语音和 AI 已就绪。现在试试三个快捷键吗？",
+    "body": "听写、翻译和随便问各试一次。",
+    "start": "开始",
+    "later": "稍后"
   }
 }

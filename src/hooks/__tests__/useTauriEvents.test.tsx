@@ -72,6 +72,36 @@ describe('useTauriEvents', () => {
     expect(useAppStore.getState().hotkeyRegistrationError).toBeNull()
   })
 
+  it('shows a setup message with its Settings pane and leaves the status dots alone', async () => {
+    useAppStore.setState({ speechHealth: null })
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:error')).toBe(true))
+
+    act(() => {
+      eventListeners.get('pipeline:error')?.({
+        payload: { code: 'speech_not_ready', details: 'stt', retry_count: 0 },
+      })
+    })
+
+    expect(useAppStore.getState().pipelineError).toBe('capsule.errors.speech_not_ready')
+    expect(useAppStore.getState().pipelineErrorAction).toBe('stt')
+    expect(useAppStore.getState().speechHealth).toBeNull()
+  })
+
+  it('mirrors preset test results saved by the backend', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('preset:verification')).toBe(true))
+    const id = useAppStore.getState().config.speech_presets[0].id
+
+    act(() => {
+      eventListeners.get('preset:verification')?.({
+        payload: { kind: 'speech', presetId: id, verifiedAt: 99 },
+      })
+    })
+
+    expect(useAppStore.getState().config.speech_presets[0].verified_at).toBe(99)
+  })
+
   it('clears stale capsule errors when a new pipeline run starts preparing', async () => {
     useAppStore.setState({ pipelineError: 'Previous failure' })
     render(<HookHarness />)
@@ -145,7 +175,7 @@ describe('useTauriEvents', () => {
       sessionId: 7,
       recordingKind: 'dictation',
       effectiveMaxSeconds: 600,
-      providerId: 'builtin-whisper-local',
+      providerId: 'builtin-speech-local',
       explanationKey: 'recordingLimits.reasons.clientBuffer',
     }
     act(() => {

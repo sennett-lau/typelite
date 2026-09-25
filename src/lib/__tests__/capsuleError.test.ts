@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { capsuleErrorKeyFromPayload } from '../capsuleError'
+import { capsuleErrorKeyFromPayload, setupPaneForError } from '../capsuleError'
 
 describe('capsuleErrorKeyFromPayload', () => {
   it('keeps structured STT quota errors short', () => {
@@ -75,5 +75,17 @@ describe('capsuleErrorKeyFromPayload', () => {
         retry_count: 0,
       }),
     ).toBe('unknown')
+  })
+})
+
+describe('setup messages', () => {
+  it('maps the backend readiness codes to their Settings panes', () => {
+    const speech = capsuleErrorKeyFromPayload({ code: 'speech_not_ready', details: 'stt' })
+    const ai = capsuleErrorKeyFromPayload({ code: 'ai_not_ready', details: 'llm' })
+    expect(speech).toBe('speech_not_ready')
+    expect(ai).toBe('ai_not_ready')
+    expect(setupPaneForError(speech)).toBe('stt')
+    expect(setupPaneForError(ai)).toBe('llm')
+    expect(setupPaneForError('stt_failed')).toBeNull()
   })
 })

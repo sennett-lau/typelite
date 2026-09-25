@@ -2,7 +2,7 @@ use crate::credentials::{
     CredentialSecretReader, CredentialSecretRemover, CredentialVault, SystemCredentialVault,
 };
 use serde::Serialize;
-use tauri::{Emitter, Window};
+use tauri::{Emitter, Manager, Window};
 
 const CREDENTIALS_CHANGED_EVENT: &str = "credentials:changed";
 
@@ -46,9 +46,12 @@ pub fn read_credential(
         .map_err(|e| e.to_string())
 }
 
+/// Saves (or, when empty, removes) a preset's API key. A key that differs from the stored one
+/// clears the preset's passed Test, because the Test was made with the old key.
 #[tauri::command]
-pub fn set_credential(
+pub async fn set_credential(
     window: Window,
+    state: tauri::State<'_, crate::storage::ConfigManager>,
     namespace: String,
     provider: String,
     value: String,
@@ -56,17 +59,45 @@ pub fn set_credential(
     ensure_main_window(&window)?;
     let (namespace, provider) = validate_credential_target(namespace, provider)?;
     let vault = SystemCredentialVault;
-    if value.trim().is_empty() {
-        vault
-            .remove_secret(&namespace, &provider)
-            .map_err(|e| e.to_string())?;
-    } else {
-        vault
-            .set_secret(&namespace, &provider, &value)
-            .map_err(|e| e.to_string())?;
+    let previous = vault.get_secret(&namespace, &provider).ok().flatten();
+    let changed = key_changed(previous.as_deref(), &value);
+    save_secret(&vault, &namespace, &provider, &value)?;
+    if changed {
+        if let Some(kind) = crate::storage::ServiceKind::from_credential_namespace(&namespace) {
+            crate::commands::config::clear_preset_verification(
+                window.app_handle(),
+                &state,
+                kind,
+                &provider,
+            )
+            .await;
+        }
     }
     let _ = window.emit(CREDENTIALS_CHANGED_EVENT, ());
     Ok(())
+}
+
+/// True when saving `value` changes the stored key (an empty value removes it).
+fn key_changed(previous: Option<&str>, value: &str) -> bool {
+    let next = Some(value).filter(|value| !value.trim().is_empty());
+    previous.filter(|value| !value.trim().is_empty()) != next
+}
+
+fn save_secret(
+    vault: &SystemCredentialVault,
+    namespace: &str,
+    provider: &str,
+    value: &str,
+) -> Result<(), String> {
+    if value.trim().is_empty() {
+        vault
+            .remove_secret(namespace, provider)
+            .map_err(|e| e.to_string())
+    } else {
+        vault
+            .set_secret(namespace, provider, value)
+            .map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
@@ -164,6 +195,16 @@ fn validate_credential_target(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn key_changed_ignores_saving_the_same_key_again() {
+        assert!(!key_changed(Some("sk-1"), "sk-1"));
+        assert!(!key_changed(None, ""));
+        assert!(!key_changed(None, "  "));
+        assert!(key_changed(None, "sk-1"));
+        assert!(key_changed(Some("sk-1"), "sk-2"));
+        assert!(key_changed(Some("sk-1"), ""));
+    }
     use anyhow::Result;
     use std::collections::HashMap;
     use std::sync::Mutex;

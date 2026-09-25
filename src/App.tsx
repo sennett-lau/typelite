@@ -22,6 +22,7 @@ import { MainLayout } from './components/MainLayout'
 import { HomePage } from './components/HomePage'
 import { AskPanel } from './components/AskPanel'
 import { ToastContainer } from './components/Toast'
+import { ShortcutTourPrompt } from './components/ShortcutTourPrompt'
 
 function CapsuleApp() {
   useTauriEvents()
@@ -173,6 +174,7 @@ function MainApp() {
       {route === 'settings' && <Settings />}
       {route === 'dictionary' && <DictionaryPage />}
       {route === 'about' && <AboutPage />}
+      <ShortcutTourPrompt />
       <ToastContainer />
     </MainLayout>
   )
