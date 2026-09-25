@@ -159,6 +159,7 @@ describe('ShortcutStep translate language', () => {
     expect(useAppStore.getState().config.translation).toEqual({
       targets: ['fr'],
       active_target: 'fr',
+      languages: {},
     })
     await waitFor(() => expect(tauri.updateConfig).toHaveBeenCalled())
     expect(lastSaved().translation.active_target).toBe('fr')
