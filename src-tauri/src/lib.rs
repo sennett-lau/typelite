@@ -1,6 +1,7 @@
 pub mod app_detector;
 pub mod audio;
 pub mod commands;
+pub mod copy_pill;
 pub mod credentials;
 pub mod dictionary_io;
 pub mod error;
@@ -546,6 +547,20 @@ async fn stop_recording(state: tauri::State<'_, pipeline::PipelineHandle>) -> Re
 fn abort_recording(state: tauri::State<'_, pipeline::PipelineHandle>) -> Result<(), String> {
     state.abort();
     Ok(())
+}
+
+/// Plan 0018: the Copy pill's Copy button. Puts the held result on the clipboard.
+#[tauri::command]
+async fn copy_offer_to_clipboard(
+    state: tauri::State<'_, pipeline::PipelineHandle>,
+) -> Result<(), String> {
+    state.copy_offer_to_clipboard().await
+}
+
+/// Plan 0018: the Copy pill closed (its countdown ran out, or after "Copied").
+#[tauri::command]
+fn dismiss_copy_offer(state: tauri::State<'_, pipeline::PipelineHandle>) {
+    state.dismiss_copy_offer();
 }
 
 #[cfg(any(target_os = "linux", test))]
@@ -1238,6 +1253,8 @@ pub fn run() {
             start_recording,
             stop_recording,
             abort_recording,
+            copy_offer_to_clipboard,
+            dismiss_copy_offer,
             commands::ask::ask_anything,
             commands::ask::start_ask_dictation,
             commands::ask::stop_ask_dictation,

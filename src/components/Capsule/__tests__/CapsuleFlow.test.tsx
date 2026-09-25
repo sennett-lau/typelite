@@ -114,7 +114,9 @@ describe('Capsule flow states', () => {
       act(() => {
         vi.advanceTimersByTime(600)
       })
-      expect(screen.queryByText('capsule.done')).toBeNull()
+      // Plan 0018: the pill slides away as it was (still "Done"), and its light fades.
+      expect(screen.getByTestId('capsule-shell')).toHaveClass('pill-gone')
+      expect(screen.getByTestId('capsule-shell')).toHaveAttribute('data-visible', 'false')
       expect(screen.queryByTestId('capsule-aurora')).toBeNull()
     } finally {
       vi.useRealTimers()

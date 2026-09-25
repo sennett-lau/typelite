@@ -183,7 +183,13 @@ export type InsertionStrategy =
   | 'clipboardPaste'
   | 'clipboardCopyOnly'
   | 'windowsSendInput'
-export type InsertStatus = 'inserted' | 'copiedFallback' | 'failed' | 'partiallyInserted'
+export type InsertStatus =
+  | 'inserted'
+  | 'copiedFallback'
+  | 'failed'
+  | 'partiallyInserted'
+  /** Plan 0018: not pasted because no text field had focus; the Copy pill offers it. */
+  | 'heldForCopy'
 export type HotkeyMode = 'hold' | 'toggle'
 export type Theme = 'light' | 'dark' | 'system'
 export type PolishChineseScript = 'preserve' | 'simplified' | 'traditional'
@@ -251,6 +257,15 @@ export interface InsertResult {
   charsCopied: number
   warningCode: string | null
   message: string | null
+}
+
+/**
+ * Plan 0018: a result that was not pasted because no text field had focus. The pill shows it
+ * with a Copy button. `targetLang` is the language code of a translation, else null.
+ */
+export interface CopyOffer {
+  text: string
+  targetLang: string | null
 }
 
 export interface DictionaryEntry {
@@ -405,6 +420,9 @@ interface AppState {
   setLastInsertResult: (result: InsertResult | null) => void
   lastContext: ContextProfileSummary | null
   setLastContext: (context: ContextProfileSummary | null) => void
+  /** Plan 0018: the result shown in the Copy pill, or null when the pill offers nothing. */
+  copyOffer: CopyOffer | null
+  setCopyOffer: (offer: CopyOffer | null) => void
 
   // Config
   config: AppConfig
@@ -1160,6 +1178,8 @@ export const useAppStore = create<AppState>((set) => ({
   setLastInsertResult: (lastInsertResult) => set({ lastInsertResult }),
   lastContext: null,
   setLastContext: (lastContext) => set({ lastContext }),
+  copyOffer: null,
+  setCopyOffer: (copyOffer) => set({ copyOffer }),
 
   config: defaultConfig,
   setConfig: (config) => set((s) => ({ config: syncHotkeyConfig(s.config, config) })),

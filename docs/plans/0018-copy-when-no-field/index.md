@@ -5,7 +5,7 @@ into nothing. The pill widens, shows the start of the result and a **Copy** butt
 countdown runs around the button's border. Also: smoother changes between every pill state. The
 visual reference is [mock.html](mock.html) (countdown option 3, one-line pill).
 
-Status: building — 2026-09-25
+Status: done — 2026-09-25
 
 ## Goals
 
@@ -30,12 +30,21 @@ Status: building — 2026-09-25
 | After Copy the clipboard is not restored | The user asked for the text. |
 | Clicking the pill never takes focus from the frontmost app | The pill is already a non-activating panel. |
 | Transitions: width, height and corners animate together (about 0.28 s); the old content fades out with a slight blur while the new fades in; the aurora light and the done flash fade; hiding slides down 6 pt and fades; reduced motion keeps only fades | User: "as smooth as possible". |
+| Unknown focus covers every role apps also use for custom text views (groups, scroll areas, windows, web areas, tables, canvases); see [focus-check.md](focus-check.md) | A wrong "no text field" loses a paste; a wrong "unknown" only pastes into nothing, as before. |
+| Streaming insertion checks focus once before it starts and does not stream when there is no text field; the final result takes the normal check | Streaming cannot be taken back once typed. |
+| A changed target app keeps its copy-to-clipboard fallback; copy-only output never checks | Those results are already on the clipboard, nothing is lost. |
+| The pill is 300 pt for a short result and 360 pt for a longer one (CJK characters and the language tag count) | Short results do not leave an empty gap. |
+| The pill keeps its left edge, as every other state does, so it grows to the right | Moving the window while resizing it is two steps and would jump for a frame. |
+| The window grows before the pill animates larger and shrinks only after it animated smaller; it hides after the hide animation | The native window must never clip the pill mid-animation. |
+| While hiding, the pill keeps what it last showed (for example "Done" or the Copy pill) | It slides away as it was instead of shrinking to a dot. |
+| The countdown ring still drains with reduced motion | It is information, not decoration. |
 
 ## Parts
 
 | File | Covers |
 |---|---|
 | [mock.html](mock.html) | Interactive reference (choose "3 · Button border"). |
+| [focus-check.md](focus-check.md) | How the focus is judged, when it is checked, and the held result. |
 
 ## Open questions
 
