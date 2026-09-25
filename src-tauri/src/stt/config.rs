@@ -1,7 +1,8 @@
-//! Turns a speech preset into the settings the Whisper-compatible uploader needs.
+//! Turns a speech preset into the settings its provider needs.
 //!
-//! Every speech preset talks to one OpenAI-compatible endpoint:
-//! `POST {base_url}/audio/transcriptions` with a multipart WAV upload.
+//! Server presets talk to an OpenAI-compatible endpoint:
+//! `POST {base_url}/audio/transcriptions` with a multipart WAV upload. Built-in presets run
+//! whisper.cpp in the app (plan 0012); Qwen Cloud presets use Qwen's own API (plan 0015).
 
 use super::whisper_compat::WhisperCompatConfig;
 use crate::storage::SpeechPreset;
@@ -68,10 +69,28 @@ pub fn build_builtin_config(
     })
 }
 
+/// Builds the Qwen Cloud uploader settings for a `qwen_cloud` preset (plan 0015).
+pub fn build_qwen_cloud_config(
+    preset: &SpeechPreset,
+) -> Result<super::qwen_cloud::QwenCloudConfig, String> {
+    let model = preset.model.trim();
+    if model.is_empty() {
+        return Err("Model is required for the speech preset".to_string());
+    }
+    Ok(super::qwen_cloud::QwenCloudConfig {
+        provider_name: preset.name.clone(),
+        endpoint: super::qwen_cloud::generation_endpoint(&preset.base_url)?,
+        model: model.to_string(),
+    })
+}
+
 /// Builds the uploader settings for a speech preset.
 pub fn build_whisper_config(preset: &SpeechPreset) -> Result<WhisperCompatConfig, String> {
     if preset.is_builtin_whisper() {
         return Err("This preset runs on this Mac and has no server".to_string());
+    }
+    if preset.is_qwen_cloud() {
+        return Err("This preset uses the Qwen Cloud API".to_string());
     }
     let model = preset.model.trim();
     if model.is_empty() {

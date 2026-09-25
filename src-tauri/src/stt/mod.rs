@@ -4,6 +4,7 @@ pub mod config;
 pub mod hallucination;
 pub mod hardware;
 pub mod models;
+pub mod qwen_cloud;
 pub mod silence;
 pub mod transcript;
 pub mod whisper_compat;
@@ -58,7 +59,8 @@ pub trait SttProvider: Send + Sync {
 }
 
 /// Creates the provider for a speech preset: whisper.cpp in the app for built-in presets
-/// (plan `quick-speech-setup`), otherwise an OpenAI-compatible transcription upload.
+/// (plan `quick-speech-setup`), Qwen Cloud's own API for `qwen_cloud` presets (plan 0015),
+/// otherwise an OpenAI-compatible transcription upload.
 pub fn provider_for_preset(
     preset: &crate::storage::SpeechPreset,
     client: Option<reqwest::Client>,
@@ -66,6 +68,12 @@ pub fn provider_for_preset(
     if preset.is_builtin_whisper() {
         return Ok(Box::new(builtin::BuiltinProvider::new(
             config::build_builtin_config(preset)?,
+        )));
+    }
+    if preset.is_qwen_cloud() {
+        return Ok(Box::new(qwen_cloud::QwenCloudProvider::new(
+            config::build_qwen_cloud_config(preset)?,
+            client,
         )));
     }
     Ok(create_provider(
@@ -107,6 +115,19 @@ mod tests {
             provider_for_preset(&preset, None).unwrap().name(),
             "My whisper"
         );
+    }
+
+    #[test]
+    fn qwen_cloud_presets_get_their_own_provider() {
+        let preset = crate::storage::SpeechPreset::qwen_cloud(
+            "qwen",
+            "Qwen Cloud",
+            qwen_cloud::DEFAULT_BASE_URL,
+            qwen_cloud::DEFAULT_MODEL,
+        );
+        let provider = provider_for_preset(&preset, None).unwrap();
+        assert_eq!(provider.name(), "Qwen Cloud");
+        assert!(config::build_whisper_config(&preset).is_err());
     }
 
     #[test]

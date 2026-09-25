@@ -3,16 +3,22 @@ use crate::storage;
 use crate::stt;
 
 /// Recording limit for the given mode, used by Settings → Speech to show the limit.
+/// `preset` is the speech preset on screen (it may not be saved yet); without it the saved
+/// active preset is used.
 #[tauri::command]
 pub async fn get_stt_recording_capability(
     state: tauri::State<'_, storage::ConfigManager>,
     mode: stt::capabilities::RecordingLimitMode,
     custom_seconds: u32,
+    preset: Option<storage::SpeechPreset>,
 ) -> Result<stt::capabilities::ResolvedRecordingLimit, String> {
     let mut config = state.load().await.map_err(|error| error.to_string())?;
     config.recording_limit_mode = mode;
     config.custom_recording_limit_seconds = custom_seconds;
-    Ok(stt::capabilities::resolve_recording_limit(&config))
+    Ok(match &preset {
+        Some(preset) => stt::capabilities::resolve_recording_limit_for(preset, &config),
+        None => stt::capabilities::resolve_recording_limit(&config),
+    })
 }
 
 /// Builds the multipart form the Test button sends: 0.1 s of silence as a WAV file.
@@ -63,6 +69,13 @@ pub async fn test_speech_preset(
     }
     let api_key = resolve_config_secret(&api_key, "stt", &preset.id, &SystemCredentialVault)
         .map_err(|e| e.to_string())?;
+    if preset.is_qwen_cloud() {
+        // Plan 0015: Qwen's own API; an empty `400 {}` for the silent clip is a pass.
+        let cfg = stt::config::build_qwen_cloud_config(&preset)?;
+        let elapsed = stt::qwen_cloud::check_connection(&client, &cfg, &api_key).await?;
+        crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;
+        return Ok(elapsed);
+    }
     let cfg = stt::config::build_whisper_config(&preset)?;
     let form = silent_test_form(&preset, &cfg.model)?;
 

@@ -509,6 +509,8 @@ pub enum SpeechProviderKind {
     OpenaiCompatible,
     /// Run whisper.cpp inside the app with a downloaded model file (plan `quick-speech-setup`).
     Builtin,
+    /// Upload to Qwen Cloud's native multimodal endpoint with the user's key (plan 0015).
+    QwenCloud,
 }
 
 /// A saved speech-to-text setup. Usually an OpenAI-compatible
@@ -583,6 +585,19 @@ impl SpeechPreset {
     /// template (plan `two-tab-speech`).
     pub fn builtin_default() -> Self {
         Self::builtin_whisper(crate::stt::models::DEFAULT_MODEL_ID, "")
+    }
+
+    /// A Qwen Cloud preset made by the user (plan 0015).
+    pub fn qwen_cloud(id: &str, name: &str, base_url: &str, model: &str) -> Self {
+        Self {
+            kind: SpeechProviderKind::QwenCloud,
+            ..Self::server(id, name, base_url, model)
+        }
+    }
+
+    /// True when the preset uploads to Qwen Cloud's native endpoint (plan 0015).
+    pub fn is_qwen_cloud(&self) -> bool {
+        self.kind == SpeechProviderKind::QwenCloud
     }
 
     /// The speech templates of a new config.
@@ -1658,7 +1673,10 @@ impl AppConfig {
     pub(crate) fn clamp_recording_limit_intent_for_save(&mut self) {
         self.recompute_recording_limit_mirror();
         if self.recording_limit_mode == crate::stt::capabilities::RecordingLimitMode::Custom {
-            self.custom_recording_limit_seconds = self.max_recording_seconds;
+            self.custom_recording_limit_seconds =
+                crate::stt::capabilities::clamp_custom_seconds_to_app_range(
+                    self.custom_recording_limit_seconds,
+                );
         } else if self.custom_recording_limit_seconds == 0 {
             self.custom_recording_limit_seconds = 600;
         }
@@ -2849,6 +2867,26 @@ mod tests {
         assert!(saved.get("llm_base_url").is_none());
     }
 
+    fn qwen_cloud_preset() -> SpeechPreset {
+        SpeechPreset::qwen_cloud(
+            "qwen",
+            "Qwen Cloud",
+            crate::stt::qwen_cloud::DEFAULT_BASE_URL,
+            crate::stt::qwen_cloud::DEFAULT_MODEL,
+        )
+    }
+
+    #[test]
+    fn qwen_cloud_kind_round_trips_as_snake_case() {
+        let template = qwen_cloud_preset();
+        assert!(template.is_qwen_cloud());
+
+        let value = serde_json::to_value(&template).unwrap();
+        assert_eq!(value["kind"], "qwen_cloud");
+        let back: SpeechPreset = serde_json::from_value(value).unwrap();
+        assert_eq!(back.kind, SpeechProviderKind::QwenCloud);
+    }
+
     #[test]
     fn app_config_seeds_empty_preset_lists() {
         let config = AppConfig::from_stored_value(serde_json::json!({
@@ -3418,6 +3456,28 @@ mod tests {
         );
         assert_eq!(config.custom_recording_limit_seconds, 120);
         assert_eq!(config.max_recording_seconds, 120);
+    }
+
+    #[test]
+    fn saving_with_qwen_cloud_keeps_a_longer_custom_limit_for_other_presets() {
+        let mut config = AppConfig {
+            recording_limit_mode: crate::stt::capabilities::RecordingLimitMode::Custom,
+            custom_recording_limit_seconds: 600,
+            active_speech_preset_id: "qwen".to_string(),
+            ..AppConfig::default()
+        };
+        config.speech_presets.push(qwen_cloud_preset());
+        config.clamp_recording_limit_intent_for_save();
+        assert_eq!(config.max_recording_seconds, 290);
+        assert_eq!(config.custom_recording_limit_seconds, 600);
+
+        config.active_speech_preset_id = BUILTIN_WHISPER_PRESET_ID.to_string();
+        config.clamp_recording_limit_intent_for_save();
+        assert_eq!(config.max_recording_seconds, 600);
+
+        config.custom_recording_limit_seconds = 9_999;
+        config.clamp_recording_limit_intent_for_save();
+        assert_eq!(config.custom_recording_limit_seconds, 720);
     }
 
     #[test]

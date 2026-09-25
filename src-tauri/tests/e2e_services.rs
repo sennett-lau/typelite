@@ -12,6 +12,7 @@
 //! [`large-v3-turbo`]
 //! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL`
 //! [`qwen3:4b-instruct-2507-q4_K_M`]
+//!   `TYPELITE_E2E_AI_KEY` [empty: no `Authorization` header]
 //!
 //! - `TYPELITE_E2E_BUILTIN_MODEL` [`~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin`]: model
 //!   file for the in-process (built-in) speech test; the test is skipped when it is missing.
@@ -19,6 +20,8 @@
 //! `ai-polish-setup`); it also   needs `src-tauri/binaries/llama-server-<triple>` from
 //! `scripts/build-llama-server.sh`.
 //! - `TYPELITE_E2E_DOWNLOAD=1`: also run the Quick setup download test (190 MB from Hugging Face).
+//! - `TYPELITE_E2E_QWEN_KEY`: a Qwen Cloud Token Plan key for the Qwen Cloud speech tests
+//!   (plan 0015); they are skipped without it. `TYPELITE_E2E_QWEN_URL` overrides the address.
 //!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
 
@@ -62,7 +65,7 @@ fn ai_config() -> LlmConfig {
         model: env_or("TYPELITE_E2E_AI_MODEL", "qwen3:4b-instruct-2507-q4_K_M"),
         ..Default::default()
     };
-    LlmConfig::from_preset(&preset, String::new())
+    LlmConfig::from_preset(&preset, env_or("TYPELITE_E2E_AI_KEY", ""))
 }
 
 /// Speak `text` with macOS `say` into a 16 kHz mono WAV and return its PCM samples as bytes.
@@ -695,4 +698,100 @@ async fn builtin_ai_server_starts_and_polishes_a_sentence() {
     let words = normalised(&text);
     assert!(words.contains("tuesday"), "self-correction lost: {text:?}");
     assert!(!text.contains("<think>"), "thinking was not off: {text:?}");
+}
+
+/// Plan 0015: a Qwen Cloud speech preset, or `None` when no key is set.
+fn qwen_preset_and_key() -> Option<(SpeechPreset, String)> {
+    let key = std::env::var("TYPELITE_E2E_QWEN_KEY")
+        .ok()
+        .filter(|v| !v.trim().is_empty())?;
+    let preset = SpeechPreset::qwen_cloud(
+        "e2e-qwen-cloud",
+        "Qwen Cloud",
+        &env_or("TYPELITE_E2E_QWEN_URL", stt::qwen_cloud::DEFAULT_BASE_URL),
+        stt::qwen_cloud::DEFAULT_MODEL,
+    );
+    Some((preset, key))
+}
+
+/// Runs a recording through the Qwen Cloud provider the way the pipeline does.
+async fn transcribe_qwen(
+    preset: &SpeechPreset,
+    key: &str,
+    pcm: &[u8],
+) -> (Option<String>, Duration) {
+    let mut provider = stt::provider_for_preset(preset, None).expect("Qwen Cloud provider");
+    let stt_config = SttConfig {
+        api_key: key.to_string(),
+        language: None,
+        sample_rate: SAMPLE_RATE,
+    };
+    provider.connect(&stt_config).await.expect("connect");
+    for chunk in pcm.chunks(CHUNK_BYTES) {
+        provider.send_audio(chunk).await.expect("send audio");
+    }
+    let started = Instant::now();
+    let text = provider
+        .disconnect()
+        .await
+        .expect("Qwen Cloud transcription");
+    (text, started.elapsed())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs TYPELITE_E2E_QWEN_KEY (Qwen Cloud Token Plan)"]
+async fn qwen_cloud_transcribes_english_and_cantonese() {
+    let Some((preset, key)) = qwen_preset_and_key() else {
+        println!("qwen cloud: TYPELITE_E2E_QWEN_KEY not set, skipping");
+        return;
+    };
+
+    let pcm = synthesise(
+        "Please send the design review notes to the team by Friday.",
+        None,
+    );
+    let (text, took) = transcribe_qwen(&preset, &key, &pcm).await;
+    let text = text.expect("English transcript should not be empty");
+    println!(
+        "qwen cloud (en): {took:?} for {:.1}s of audio -> {text:?}",
+        pcm.len() as f64 / 32_000.0
+    );
+    let words = normalised(&text);
+    for expected in ["design", "review", "notes", "friday"] {
+        assert!(words.contains(expected), "missing {expected:?} in {text:?}");
+    }
+
+    let pcm = synthesise("聽日下晝三點開會得唔得", Some("Sinji"));
+    let (text, took) = transcribe_qwen(&preset, &key, &pcm).await;
+    let text = text.expect("Cantonese transcript should not be empty");
+    println!("qwen cloud (yue): {took:?} -> {text:?}");
+    assert!(
+        text.contains("得唔得") && (text.contains('3') || text.contains('三')),
+        "unexpected transcript {text:?}"
+    );
+
+    // Silence is skipped before any request, as with the other providers.
+    let (silent, _) = transcribe_qwen(&preset, &key, &vec![0u8; SAMPLE_RATE as usize * 2]).await;
+    assert_eq!(silent, None);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs TYPELITE_E2E_QWEN_KEY (Qwen Cloud Token Plan)"]
+async fn qwen_cloud_connection_test_passes_and_rejects_a_wrong_key() {
+    let Some((preset, key)) = qwen_preset_and_key() else {
+        println!("qwen cloud: TYPELITE_E2E_QWEN_KEY not set, skipping");
+        return;
+    };
+    let config = stt::config::build_qwen_cloud_config(&preset).expect("valid preset");
+    let client = reqwest::Client::new();
+
+    let ms = stt::qwen_cloud::check_connection(&client, &config, &key)
+        .await
+        .expect("Test with the real key should pass");
+    println!("qwen cloud test: {ms} ms");
+
+    let error = stt::qwen_cloud::check_connection(&client, &config, "sk-wrong")
+        .await
+        .expect_err("a wrong key must fail");
+    assert!(error.contains("401"), "unexpected error {error:?}");
 }

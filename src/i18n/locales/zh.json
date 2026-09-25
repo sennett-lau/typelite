@@ -701,7 +701,8 @@
     "durationMinute": "{{count}} 分钟",
     "durationMinutes": "{{count}} 分钟",
     "reasons": {
-      "clientBuffer": "受应用本地音频缓冲区的安全上限限制。"
+      "clientBuffer": "受应用本地音频缓冲区的安全上限限制。",
+      "provider": "受该服务的最长音频时长限制。"
     }
   },
   "mic": {

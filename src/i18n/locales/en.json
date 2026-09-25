@@ -701,7 +701,8 @@
     "durationMinute": "{{count}} minute",
     "durationMinutes": "{{count}} minutes",
     "reasons": {
-      "clientBuffer": "Limited by the app’s safe local audio buffer."
+      "clientBuffer": "Limited by the app’s safe local audio buffer.",
+      "provider": "Limited by this service’s maximum audio length."
     }
   },
   "mic": {

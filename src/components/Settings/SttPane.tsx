@@ -27,11 +27,18 @@ export function SttPane() {
   const { t } = useTranslation()
   const [recordingLimit, setRecordingLimit] = useState<ResolvedSttRecordingLimit | null>(null)
   const [customDurationEntryRequested, setCustomDurationEntryRequested] = useState(false)
+  // Plan 0015: the preset in use; its kind decides the recording limit and its language is
+  // edited below.
+  const active = activeSpeechPreset(config)
 
   useEffect(() => {
     let cancelled = false
     setRecordingLimit(null)
-    getSttRecordingCapability(config.recording_limit_mode, config.custom_recording_limit_seconds)
+    getSttRecordingCapability(
+      config.recording_limit_mode,
+      config.custom_recording_limit_seconds,
+      active,
+    )
       .then((resolved) => {
         if (!cancelled) setRecordingLimit(resolved)
       })
@@ -43,7 +50,9 @@ export function SttPane() {
     return () => {
       cancelled = true
     }
-  }, [config.custom_recording_limit_seconds, config.recording_limit_mode])
+    // The limit depends on the preset's kind (plan 0015), not on its other fields.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.custom_recording_limit_seconds, config.recording_limit_mode, active.id, active.kind])
 
   useEffect(() => {
     if (config.recording_limit_mode === 'auto') {
@@ -115,7 +124,6 @@ export function SttPane() {
 
   // Plan `two-tab-speech`: the language belongs to the preset in use; edits go through the Save
   // bar.
-  const active = activeSpeechPreset(config)
   const handleLanguageChange = (language: string) => {
     updateConfig({
       speech_presets: config.speech_presets.map((preset) =>

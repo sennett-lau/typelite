@@ -365,7 +365,34 @@ describe('SttPane', () => {
         await screen.findByRole('option', { name: /Auto \(recommended,.*10 minutes/i }),
       ).toBeInTheDocument()
       expect(screen.getByText('Limited by the app’s safe local audio buffer.')).toBeInTheDocument()
-      expect(tauri.getSttRecordingCapability).toHaveBeenCalledWith('auto', 600)
+      expect(tauri.getSttRecordingCapability).toHaveBeenCalledWith('auto', 600, expect.anything())
+    })
+
+    it('asks again when the preset in use changes (plan 0015)', async () => {
+      const qwen: SpeechPreset = {
+        ...serverPreset(
+          'qwen',
+          'Qwen',
+          'https://token-plan.maas.qwencloudapi.com/api/v1',
+          'qwen-audio-3.0-asr-flash',
+        ),
+        kind: 'qwen_cloud',
+      }
+      setPresets(
+        [installedBuiltin(), serverPreset('groq', 'Groq', 'https://api.groq.com/openai/v1'), qwen],
+        'groq',
+      )
+      render(<SttPane />)
+      await screen.findByRole('option', { name: /Auto \(recommended/i })
+      fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: 'qwen' } })
+
+      await waitFor(() =>
+        expect(tauri.getSttRecordingCapability).toHaveBeenLastCalledWith(
+          'auto',
+          600,
+          expect.objectContaining({ id: 'qwen', kind: 'qwen_cloud' }),
+        ),
+      )
     })
 
     it('offers presets up to the hard maximum and a bounded custom entry', async () => {
@@ -401,7 +428,7 @@ describe('SttPane', () => {
           'Selected: 10 minutes; app limit: 12 minutes. Limited by the app’s safe local audio buffer.',
         ),
       ).toBeInTheDocument()
-      expect(tauri.getSttRecordingCapability).toHaveBeenCalledWith('custom', 600)
+      expect(tauri.getSttRecordingCapability).toHaveBeenCalledWith('custom', 600, expect.anything())
     })
 
     it('stores a preset duration from the single selector', async () => {

@@ -169,14 +169,16 @@ export interface ResolvedSttRecordingLimit {
 }
 
 /**
- * Resolves the recording limit. There is one speech provider type (file upload to an
- * OpenAI-compatible server), so the limit depends only on the chosen mode and seconds.
+ * Resolves the recording limit for the chosen mode and seconds. The limit also depends on the
+ * speech preset's kind (Qwen Cloud has a shorter maximum, plan 0015), so Settings passes the
+ * preset on screen, which may not be saved yet.
  */
 export async function getSttRecordingCapability(
   mode: RecordingLimitMode,
   customSeconds: number,
+  preset?: SpeechPreset,
 ): Promise<ResolvedSttRecordingLimit> {
-  return invoke('get_stt_recording_capability', { mode, customSeconds })
+  return invoke('get_stt_recording_capability', { mode, customSeconds, preset: preset ?? null })
 }
 
 export interface CredentialStatus {
