@@ -5,12 +5,13 @@ import { BUILTIN_WHISPER_PRESET_ID, useAppStore } from '../../stores/appStore'
 import { deleteServerPreset, selectSpeechPreset } from './saveSpeech'
 import { LearnMoreLink } from './LearnMoreLink'
 import { ServerPresetForm } from './ServerPresetForm'
+import { PresetShareButtons } from '../Settings/PresetShareButtons'
 
 const ADD = '__add__'
 
 /**
- * Settings → Speech → "Your server or API key" details (plan 0015). With saved presets: a
- * "Preset" header with the picker at the upper right (saved presets and "+ Add preset…"), the
+ * Settings → Speech → "Your server or API key" details (plan `two-tab-speech`). With saved presets:
+ * a "Preset" header with the picker at the upper right (saved presets and "+ Add preset…"), the
  * four fields of the selected preset, Test and Save on one line, "Delete this preset", and a
  * "Learn more" line. With none: "Add your server or API key" + Learn more, and the empty form.
  */
@@ -108,6 +109,9 @@ export function ServerSettings() {
           <LearnMoreLink /> {t('speech.learnMoreAbout')}
         </p>
       )}
+
+      {/* Plan `preset-sharing`: export and import speech presets. */}
+      <PresetShareButtons service="speech" />
     </div>
   )
 }

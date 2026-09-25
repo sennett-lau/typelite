@@ -1,5 +1,6 @@
-//! Plan 0011: which language a spoken instruction asks for ("translate this into Japanese",
-//! "翻譯成廣東話"), mapped to the translation codes in `storage::SUPPORTED_TRANSLATION_LANGUAGES`.
+//! Plan `ask-translate-and-live-questions`: which language a spoken instruction asks for
+//! ("translate this into Japanese", "翻譯成廣東話"), mapped to the translation codes in
+//! `storage::SUPPORTED_TRANSLATION_LANGUAGES`.
 //!
 //! Chinese variants map to one of three codes: plain "Chinese" is Simplified (`zh-Hans`),
 //! "Cantonese" / "Hong Kong" is `zh-Hant-HK` and "Taiwan(ese)" is `zh-Hant-TW`. A bare

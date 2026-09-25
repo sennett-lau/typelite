@@ -9,7 +9,7 @@ interface Props {
 
 /**
  * macOS-style segmented control: a tinted track with the selected item raised. Exposed as a
- * group of toggle buttons. (Settings sections use toolbar tabs instead, plan 0015.)
+ * group of toggle buttons. (Settings sections use toolbar tabs instead, plan `two-tab-speech`.)
  */
 export function SegmentedControl({ options, value, onChange, ariaLabel, className = '' }: Props) {
   return (

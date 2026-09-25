@@ -1,12 +1,12 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { useAppStore, type PipelineState, type VoiceMode } from '../stores/appStore'
+import { useAppStore, type CopyOffer, type PipelineState, type VoiceMode } from '../stores/appStore'
 
 export interface CapsuleSize {
   width: number
   height: number
 }
 
-// Pill sizes from plan 0009 (pill.md). The window adds 12 pt of padding on each side.
+// Pill sizes from plan `aurora-pill` (pill.md). The window adds 12 pt of padding on each side.
 
 /** Dictate recording: red dot, 18-bar waveform and cancel button. */
 export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
@@ -25,19 +25,61 @@ export const WORKING_PILL_SIZE: CapsuleSize = { width: 132, height: 36 }
 export const ERROR_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
 export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
+/**
+ * Plan `copy-when-no-field`: the Copy pill (language tag, one-line preview, Copy button) for a
+ * short result.
+ */
+export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 300, height: 36 }
+/** The Copy pill for a longer result; its preview ends with an ellipsis. */
+export const COPY_PILL_SIZE: CapsuleSize = { width: 360, height: 36 }
 const IDLE_SIZE: CapsuleSize = { width: 36, height: 36 }
+
+/** Up to this visual length (CJK characters count double) a result fits the short Copy pill. */
+const COPY_PILL_SHORT_TEXT = 34
+
+/** Rough visual length of `text`: wide (CJK, Hangul, fullwidth) characters count as two. */
+function visualLength(text: string): number {
+  let length = 0
+  for (const char of text) {
+    length += (char.codePointAt(0) ?? 0) >= 0x2e80 ? 2 : 1
+    if (length > COPY_PILL_SHORT_TEXT * 2) break
+  }
+  return length
+}
+
+/** The Copy pill's size: short results get the narrower pill (the language tag takes room too). */
+export function copyPillSize(offer: CopyOffer | null): CapsuleSize {
+  if (!offer) return COPY_PILL_SIZE
+  const tag = offer.targetLang ? 4 : 0
+  return visualLength(offer.text.trim()) + tag <= COPY_PILL_SHORT_TEXT
+    ? COPY_PILL_SHORT_SIZE
+    : COPY_PILL_SIZE
+}
+
+/**
+ * Plan `copy-when-no-field` transitions. The pill's width, height and corners animate for
+ * `PILL_RESIZE_MS`
+ * (CSS on `.pill`); hiding slides it down and fades it for `PILL_HIDE_MS`. The window grows at
+ * once and shrinks only after the pill has animated narrower, so nothing is clipped.
+ */
+export const PILL_RESIZE_MS = 280
+export const PILL_HIDE_MS = 220
 
 /**
  * The pill's own size (without the context menu or window padding) for a capsule state.
- * `capsuleState` is the pipeline state, `error`, or `done` (the brief flash after pasting).
+ * `capsuleState` is the pipeline state, `error`, `done` (the brief flash after pasting) or
+ * `copy` (the Copy pill, sized by `copyOffer`).
  */
 export function getPillSize(
   capsuleState: string,
   activeVoiceMode: VoiceMode | null,
   errorHasAction: boolean,
   translateTargetCount: number,
+  copyOffer: CopyOffer | null = null,
 ): CapsuleSize {
   switch (capsuleState) {
+    case 'copy':
+      return copyPillSize(copyOffer)
     case 'error':
       return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
     case 'recording':
@@ -64,6 +106,8 @@ export interface CapsuleVisibilityInput {
   pipelineState: PipelineState
   /** The brief done flash after pasting keeps the pill up a moment longer. */
   doneFlash?: boolean
+  /** Plan `copy-when-no-field`: the Copy pill offers a result. */
+  copyPill?: boolean
 }
 
 /** The idle capsule is always hidden; it shows only while working, or for an error or menu. */
@@ -73,8 +117,32 @@ export function getCapsuleVisibility({
   hasError,
   pipelineState,
   doneFlash = false,
+  copyPill = false,
 }: CapsuleVisibilityInput): boolean {
-  return contextMenuOpen || capsuleExpanded || hasError || doneFlash || pipelineState !== 'idle'
+  return (
+    contextMenuOpen ||
+    capsuleExpanded ||
+    hasError ||
+    doneFlash ||
+    copyPill ||
+    pipelineState !== 'idle'
+  )
+}
+
+/**
+ * The state the pill shows: an error first, then the done flash or the Copy pill once the
+ * pipeline is idle, else the pipeline state.
+ */
+export function getCapsuleState(
+  pipelineState: string,
+  hasError: boolean,
+  doneFlash: boolean,
+  copyPill = false,
+): string {
+  if (hasError) return 'error'
+  if (doneFlash && pipelineState === 'idle') return 'done'
+  if (copyPill && pipelineState === 'idle') return 'copy'
+  return pipelineState
 }
 
 export function getCapsuleFocusable(): boolean {
@@ -206,18 +274,34 @@ export function getSizeForState(
   errorHasAction = false,
   translateTargetCount = 3,
   doneFlash = false,
+  copyOffer: CopyOffer | null = null,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
   if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translateTargetCount)
   if (expanded) return { width: 220, height: 90 }
-  const capsuleState = doneFlash && state === 'idle' ? 'done' : state
-  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount)
+  const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null)
+  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount, copyOffer)
+}
+
+/**
+ * The window size to set first when the window goes from `current` to `next`: any dimension
+ * that grows grows at once, one that shrinks keeps its size until the pill has animated
+ * smaller. Returns null when nothing shrinks (the next size can be set directly).
+ */
+export function growFirstSize(current: CapsuleSize, next: CapsuleSize): CapsuleSize | null {
+  if (next.width >= current.width && next.height >= current.height) return null
+  return {
+    width: Math.max(current.width, next.width),
+    height: Math.max(current.height, next.height),
+  }
 }
 
 /**
  * Sizes, places and shows the capsule window. `doneFlash` is true during the done flash.
  * While the pill is visible it follows the cursor to another screen, fading `fadeTarget`
- * out and in around the move.
+ * out and in around the move. The window grows before the pill animates larger and shrinks
+ * after it animated smaller, and it hides only after the pill's hide animation (plan `copy-when-no-
+ * field`).
  */
 export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLElement | null>) {
   const pipelineState = useAppStore((s) => s.pipelineState)
@@ -228,12 +312,18 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
+  const copyOffer = useAppStore((s) => s.copyOffer)
   const anchor = useRef<CapsuleAnchor | null>(null)
   /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
   const anchorMonitor = useRef<string | null>(null)
   const anchorSize = useRef<CapsuleSize>({ width: 0, height: 0 })
   const windowHeightNow = useRef(0)
+  const windowSizeNow = useRef<CapsuleSize>({ width: 0, height: 0 })
   const visible = useRef(false)
+  /** Counts window updates; a waiting update gives up when a newer one was scheduled. */
+  const generation = useRef(0)
+  /** Ends the current wait early (a newer update is waiting in the queue). */
+  const wake = useRef<() => void>(() => {})
   const queue = useRef<Promise<void>>(Promise.resolve())
   const followQueued = useRef(false)
 
@@ -244,6 +334,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     hasError,
     pipelineState,
     doneFlash,
+    copyPill: copyOffer !== null,
   })
 
   useEffect(() => {
@@ -256,11 +347,26 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       errorHasAction,
       translateTargetCount,
       doneFlash,
+      copyOffer,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
+    const myGeneration = ++generation.current
+    wake.current()
+
+    /** Waits `ms`; false when a newer update arrived meanwhile (it then does the work). */
+    const pause = (ms: number) =>
+      new Promise<boolean>((resolve) => {
+        if (generation.current !== myGeneration) return resolve(false)
+        const timer = setTimeout(() => resolve(generation.current === myGeneration), ms)
+        wake.current = () => {
+          clearTimeout(timer)
+          resolve(false)
+        }
+      })
 
     const run = async () => {
+      if (generation.current !== myGeneration) return
       const {
         getCurrentWindow,
         LogicalSize,
@@ -290,14 +396,32 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
         }
       }
 
-      windowHeightNow.current = windowHeight
-      await win.setSize(new LogicalSize(windowWidth, windowHeight)).catch(() => {})
-      if (anchor.current) {
-        // Left edge and vertical centre stay fixed. Content is padded 12px each side,
-        // so the mic icon never moves while the capsule grows or shrinks.
-        const origin = capsuleOrigin(anchor.current, windowHeight)
-        await win.setPosition(new LogicalPosition(origin.x, origin.y)).catch(() => {})
+      const applySize = async (width: number, height: number) => {
+        windowHeightNow.current = height
+        windowSizeNow.current = { width, height }
+        await win.setSize(new LogicalSize(width, height)).catch(() => {})
+        if (anchor.current) {
+          // Left edge and vertical centre stay fixed. Content is padded 12px each side,
+          // so the mic icon never moves while the capsule grows or shrinks.
+          const origin = capsuleOrigin(anchor.current, height)
+          await win.setPosition(new LogicalPosition(origin.x, origin.y)).catch(() => {})
+        }
       }
+
+      // Hiding: keep the window while the pill slides down and fades out.
+      if (!shouldShow && visible.current && !(await pause(PILL_HIDE_MS))) return
+
+      // Shrinking while visible: grow what grows now, shrink the rest after the pill animated.
+      const next = { width: windowWidth, height: windowHeight }
+      const first =
+        shouldShow && visible.current && !appearing && !prefersReducedMotion()
+          ? growFirstSize(windowSizeNow.current, next)
+          : null
+      if (first) {
+        await applySize(first.width, first.height)
+        if (!(await pause(PILL_RESIZE_MS))) return
+      }
+      await applySize(windowWidth, windowHeight)
 
       // Signal that the window has finished resizing for context menu
       if (contextMenuOpen) {
@@ -323,6 +447,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     errorHasAction,
     translateTargetCount,
     doneFlash,
+    copyOffer,
     shouldShow,
     setContextMenuReady,
   ])
@@ -391,5 +516,6 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     errorHasAction,
     translateTargetCount,
     doneFlash,
+    copyOffer,
   )
 }

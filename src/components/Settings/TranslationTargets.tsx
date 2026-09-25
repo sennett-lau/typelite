@@ -10,8 +10,8 @@ interface TranslationTargetsProps {
 }
 
 /**
- * The translation languages the user chose (plan 0010): English by default, up to three.
- * Each row has a "use by default" radio and a remove button; the last language cannot be
+ * The translation languages the user chose (plan `translate-controls`): English by default, up to
+ * three. Each row has a "use by default" radio and a remove button; the last language cannot be
  * removed. "Add language" shows while fewer than three are chosen. The pill shows exactly
  * these languages, and the Switch language shortcut cycles through them in this order.
  */

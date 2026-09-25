@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react'
 import {
   bindingFromHotkey,
   DEFAULT_SWITCH_LANGUAGE_HOTKEY,
+  displayBinding,
   hotkeyBindingIdentity,
 } from '../../stores/appStore'
 import type { ShortcutBinding } from '../../stores/appStore'
@@ -18,9 +19,9 @@ interface SwitchLanguageShortcutProps {
 }
 
 /**
- * Settings → General → Shortcuts: the Switch language key (plan 0010), recorded by pressing
- * keys like the other shortcuts. It only listens while a Translate recording runs, so a bare
- * key such as Shift is fine. It may be part of the Translate shortcut (Fn + Shift with Shift);
+ * Settings → General → Shortcuts: the Switch language key (plan `translate-controls`), recorded by
+ * pressing keys like the other shortcuts. It only listens while a Translate recording runs, so a
+ * bare key such as Shift is fine. It may be part of the Translate shortcut (Fn + Shift with Shift);
  * it may not be the same as another shortcut.
  */
 export function SwitchLanguageShortcut({
@@ -47,7 +48,10 @@ export function SwitchLanguageShortcut({
   }
 
   return (
-    <Row label={t('settings.switchLanguageHotkey')} help={t('settings.switchLanguageHint')}>
+    <Row
+      label={t('settings.switchLanguageHotkey')}
+      help={t('settings.generalPane.switchLanguageDesc')}
+    >
       <div
         data-hotkey-role="switchLanguage"
         className="flex w-[280px] max-w-full min-w-0 items-start gap-1"
@@ -55,6 +59,7 @@ export function SwitchLanguageShortcut({
         <div className="min-w-0 flex-1">
           <HotkeyRecorder
             value={switchLanguageLabel(binding, t)}
+            keycaps={binding ? displayBinding(binding).split(' + ') : undefined}
             validateHotkey={validate}
             onSaved={(hotkey) => {
               const next = bindingFromHotkey(hotkey)

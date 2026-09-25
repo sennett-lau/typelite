@@ -7,8 +7,8 @@ import { BuiltinSetupCard } from '../Speech/BuiltinSetupCard'
 import { ServerPresetSheet } from '../Speech/ServerPresetSheet'
 
 /**
- * Onboarding → Speech recognition (plan 0015): the Built-in card with its one main button,
- * then "Use your own server or API key…" (opens the sheet) and "Skip for now". Next unlocks
+ * Onboarding → Speech recognition (plan `two-tab-speech`): the Built-in card with its one main
+ * button, then "Use your own server or API key…" (opens the sheet) and "Skip for now". Next unlocks
  * once Built-in is ready or a preset passed Test.
  */
 export function SttSetupStep({ onSkip }: { onSkip: () => void }) {

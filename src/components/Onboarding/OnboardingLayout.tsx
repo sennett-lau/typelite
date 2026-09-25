@@ -16,7 +16,7 @@ interface Props {
   onClose?: () => void
   /** Centre the step content vertically in the step area (the welcome step). */
   centerContent?: boolean
-  /** A wider step area (the speech step's Built-in card, plan 0015). */
+  /** A wider step area (the speech step's Built-in card, plan `two-tab-speech`). */
   wideContent?: boolean
   children: React.ReactNode
 }
@@ -46,7 +46,7 @@ export function OnboardingLayout({
 
   return (
     <div className="app-window flex h-full w-full flex-col">
-      {/* No title bar (plan 0005): this strip drags the window. */}
+      {/* No title bar (plan `glass-main-window`): this strip drags the window. */}
       <div className="drag-strip" data-tauri-drag-region aria-hidden="true" />
 
       <div className="content-surface flex min-h-0 flex-1 flex-col border-l-0">

@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   capsuleAnchorForMonitor,
   capsuleOrigin,
+  copyPillSize,
   cursorLogicalPoint,
   getCapsuleFocusable,
+  getCapsuleState,
   getCapsuleVisibility,
+  getPillSize,
   getSizeForState,
+  growFirstSize,
   monitorKey,
   pickFollowTarget,
   pickMonitorForPoint,
@@ -86,7 +90,7 @@ describe('getCapsuleVisibility', () => {
 describe('getSizeForState', () => {
   const size = (width: number) => ({ width, height: 36 })
 
-  it('uses the narrow plan 0009 sizes while recording', () => {
+  it('uses the narrow plan `aurora-pill` sizes while recording', () => {
     expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(150))
     expect(getSizeForState('recording', false, false, false)).toEqual(size(150))
     expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(150))
@@ -137,6 +141,81 @@ describe('getSizeForState', () => {
         doneFlash: true,
       }),
     ).toBe(true)
+  })
+})
+
+describe('Copy pill (plan `copy-when-no-field`)', () => {
+  const long = {
+    text: 'A result that is much too long for the short pill to show.',
+    targetLang: null,
+  }
+  const short = { text: 'See you at 4.', targetLang: null }
+
+  it('is one line, 36 pt high and 300 or 360 pt wide by the length of the result', () => {
+    expect(copyPillSize(short)).toEqual({ width: 300, height: 36 })
+    expect(copyPillSize(long)).toEqual({ width: 360, height: 36 })
+    // CJK characters are wide, and a language tag takes room too.
+    expect(
+      copyPillSize({ text: '我哋聽日下晝四點喺二樓會議室開會啦。', targetLang: null }).width,
+    ).toBe(360)
+    expect(copyPillSize({ text: 'Thirty-two characters, near end.', targetLang: null }).width).toBe(
+      300,
+    )
+    expect(copyPillSize({ text: 'Thirty-two characters, near end.', targetLang: 'ja' }).width).toBe(
+      360,
+    )
+    expect(getPillSize('copy', null, false, 3, short)).toEqual({ width: 300, height: 36 })
+  })
+
+  it('shows once the pipeline is idle, behind errors and the done flash', () => {
+    expect(getCapsuleState('idle', false, false, true)).toBe('copy')
+    expect(getCapsuleState('idle', true, false, true)).toBe('error')
+    expect(getCapsuleState('idle', false, true, true)).toBe('done')
+    expect(getCapsuleState('recording', false, false, true)).toBe('recording')
+    expect(getCapsuleState('idle', false, false, false)).toBe('idle')
+  })
+
+  it('keeps the window visible and sized for the pill', () => {
+    expect(
+      getCapsuleVisibility({
+        contextMenuOpen: false,
+        capsuleExpanded: false,
+        hasError: false,
+        pipelineState: 'idle',
+        copyPill: true,
+      }),
+    ).toBe(true)
+    expect(getSizeForState('idle', false, false, false, null, false, 3, false, long)).toEqual({
+      width: 360,
+      height: 36,
+    })
+    // The context menu and an error still win.
+    expect(getSizeForState('idle', false, false, true, null, false, 3, false, long)).toEqual({
+      width: 220,
+      height: 220,
+    })
+    expect(getSizeForState('idle', false, true, false, null, false, 3, false, long)).toEqual({
+      width: 216,
+      height: 36,
+    })
+  })
+})
+
+describe('window resize order (plan `copy-when-no-field`)', () => {
+  it('grows at once when nothing shrinks', () => {
+    expect(growFirstSize({ width: 156, height: 60 }, { width: 384, height: 60 })).toBeNull()
+    expect(growFirstSize({ width: 156, height: 60 }, { width: 156, height: 60 })).toBeNull()
+  })
+
+  it('keeps a shrinking dimension until the pill animated smaller, growing the other', () => {
+    expect(growFirstSize({ width: 384, height: 60 }, { width: 156, height: 60 })).toEqual({
+      width: 384,
+      height: 60,
+    })
+    expect(growFirstSize({ width: 244, height: 244 }, { width: 384, height: 60 })).toEqual({
+      width: 384,
+      height: 244,
+    })
   })
 })
 

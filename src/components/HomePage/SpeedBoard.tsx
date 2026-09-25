@@ -281,7 +281,7 @@ function Tip({ runs }: { runs: RunTiming[] }) {
 }
 
 /**
- * Plan 0008: where the wait goes between "I stopped talking" and "the text is in my app".
+ * Plan `speed-board`: where the wait goes between "I stopped talking" and "the text is in my app".
  * Shows the last run as a stacked bar, typical medians for the current presets and one tip.
  */
 export function SpeedBoard() {

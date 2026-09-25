@@ -11,8 +11,8 @@ interface CapsuleWorkingProps {
 }
 
 /**
- * A working state of the pill (plan 0009): a short white label over the aurora sweep, which
- * `Capsule` draws behind the content. No timer and no spinner; the sweep shows progress.
+ * A working state of the pill (plan `aurora-pill`): a short white label over the aurora sweep,
+ * which `Capsule` draws behind the content. No timer and no spinner; the sweep shows progress.
  */
 export function CapsuleWorking({ label, cancelLabel, icon }: CapsuleWorkingProps) {
   const { t } = useTranslation()

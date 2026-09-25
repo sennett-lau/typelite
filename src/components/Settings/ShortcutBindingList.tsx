@@ -62,6 +62,33 @@ interface HotkeyRecorderProps {
   disabled?: boolean
   autoStart?: boolean
   onCancel?: () => void
+  /**
+   * Draw the idle value as key caps, one per key (Settings → General). The plain `value` text
+   * stays in the field for screen readers.
+   */
+  keycaps?: string[]
+}
+
+/** The idle field content: key caps when given, else the plain text. */
+function IdleValue({ value, keycaps }: { value: string; keycaps?: string[] }) {
+  if (!keycaps || keycaps.length === 0) return <>{value}</>
+  return (
+    <>
+      <span className="sr-only">{value}</span>
+      <span aria-hidden="true" className="inline-flex flex-wrap items-center gap-1 font-sans">
+        {keycaps.map((key, index) => (
+          <kbd key={`${key}-${index}`} className="kbd">
+            {key}
+          </kbd>
+        ))}
+      </span>
+    </>
+  )
+}
+
+/** Key cap labels for a binding, in display order. */
+function bindingKeycaps(binding: ShortcutBinding): string[] {
+  return displayBinding(binding).split(' + ')
 }
 
 /**
@@ -89,6 +116,7 @@ function NativeHotkeyRecorder({
   disabled = false,
   autoStart = false,
   onCancel,
+  keycaps,
 }: HotkeyRecorderProps) {
   const { t } = useTranslation()
   const [recording, setRecording] = useState(false)
@@ -205,11 +233,15 @@ function NativeHotkeyRecorder({
               : 'border-transparent bg-bg-secondary text-text-primary hover:border-border'
           }`}
         >
-          {recording
-            ? live.length > 0
-              ? displayHotkey(live)
-              : t('shortcutCapture.pressKeys')
-            : value}
+          {recording ? (
+            live.length > 0 ? (
+              displayHotkey(live)
+            ) : (
+              t('shortcutCapture.pressKeys')
+            )
+          ) : (
+            <IdleValue value={value} keycaps={keycaps} />
+          )}
         </button>
         {recording && onCancel && (
           <button
@@ -239,6 +271,7 @@ function WebHotkeyRecorder({
   disabled = false,
   autoStart = false,
   onCancel,
+  keycaps,
 }: HotkeyRecorderProps) {
   const { t } = useTranslation()
   const isMac = isMacPlatform()
@@ -397,7 +430,11 @@ function WebHotkeyRecorder({
               : 'border-transparent bg-bg-secondary text-text-primary hover:border-border'
           }`}
         >
-          {recording ? pending || modifierHint || t('settings.pressKeyCombination') : value}
+          {recording ? (
+            pending || modifierHint || t('settings.pressKeyCombination')
+          ) : (
+            <IdleValue value={value} keycaps={keycaps} />
+          )}
         </button>
         {recording && onCancel && (
           <button
@@ -428,6 +465,10 @@ interface ShortcutBindingListProps {
   onChange: (bindings: ShortcutBinding[]) => void
   disabled?: boolean
   trailingAction?: React.ReactNode
+  /** One line under the label saying what the shortcut does. */
+  description?: string
+  /** Draw each binding as key caps (Settings → General). */
+  showKeycaps?: boolean
 }
 
 const bindingIdentity = hotkeyBindingIdentity
@@ -441,6 +482,8 @@ export function ShortcutBindingList({
   onChange,
   disabled = false,
   trailingAction,
+  description,
+  showKeycaps = false,
 }: ShortcutBindingListProps) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
@@ -498,6 +541,7 @@ export function ShortcutBindingList({
     <div data-hotkey-role={role} className="row items-start">
       <div className="row-label pt-1">
         <span>{label}</span>
+        {description && <span className="row-help">{description}</span>}
         {atLimit && <span className="row-help">{t('settings.shortcutMax')}</span>}
       </div>
 
@@ -511,6 +555,7 @@ export function ShortcutBindingList({
               <div className="min-w-0 flex-1">
                 <HotkeyRecorder
                   value={displayBinding(binding)}
+                  keycaps={showKeycaps ? bindingKeycaps(binding) : undefined}
                   disabled={disabled}
                   validateHotkey={(hotkey) => validate(hotkey, index)}
                   onSaved={(hotkey) => saveAt(index, hotkey)}

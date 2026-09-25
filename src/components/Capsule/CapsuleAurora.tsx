@@ -11,7 +11,7 @@ const GLOW_BASE_OPACITY = 0.35
 const GLOW_VOICE_BOOST = 0.3
 
 /**
- * The aurora light inside the dark glass pill (plan 0009). Colours come from
+ * The aurora light inside the dark glass pill (plan `aurora-pill`). Colours come from
  * `--color-aurora-a` (teal in dark mode, blue in light mode) and `--color-aurora-b` (violet).
  *
  * - `listening`: two blurred blobs drift slowly (CSS animation). One requestAnimationFrame

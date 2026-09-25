@@ -4,16 +4,33 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
 import { openSettingsPane } from '../../lib/tauri'
 
-/** How long a plain error stays; a setup message with a button stays longer to be clicked. */
+/**
+ * How long a plain error stays; a setup message with a button stays longer to be clicked, and
+ * the "Didn't catch that" notice (a run that heard no speech) goes quickly.
+ */
 const ERROR_MS = 2500
 const SETUP_ERROR_MS = 6000
+const NO_SPEECH_MS = 1500
 
-export function CapsuleError() {
+interface CapsuleErrorProps {
+  /**
+   * The message and whether it has a "Set up" button, as last shown. They stay while the pill
+   * hides after the error was cleared (plan `copy-when-no-field`), so the text does not change mid-
+   * fade.
+   */
+  message?: string | null
+  hasAction?: boolean
+}
+
+export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
   const { t } = useTranslation()
   const pipelineError = useAppStore((s) => s.pipelineError)
   const action = useAppStore((s) => s.pipelineErrorAction)
+  const shownMessage = pipelineError ?? message ?? null
+  const showAction = action !== null || hasAction === true
   const setPipelineError = useAppStore((s) => s.setPipelineError)
   const resetRecording = useAppStore((s) => s.resetRecording)
+  const isNoSpeech = pipelineError === t('capsule.errors.stt_no_speech_detected')
 
   useEffect(() => {
     const timer = setTimeout(
@@ -27,10 +44,10 @@ export function CapsuleError() {
           resetRecording()
         }
       },
-      action ? SETUP_ERROR_MS : ERROR_MS,
+      action ? SETUP_ERROR_MS : isNoSpeech ? NO_SPEECH_MS : ERROR_MS,
     )
     return () => clearTimeout(timer)
-  }, [setPipelineError, resetRecording, pipelineError, action])
+  }, [setPipelineError, resetRecording, pipelineError, action, isNoSpeech])
 
   const handleSetUp = (event: React.MouseEvent) => {
     event.stopPropagation()
@@ -49,9 +66,9 @@ export function CapsuleError() {
       {/* White dot */}
       <motion.div className="w-2 h-2 rounded-full bg-white/80 flex-shrink-0" />
       <p className="text-[11px] leading-4 text-white truncate flex-1">
-        {pipelineError || t('capsule.errors.unknown')}
+        {shownMessage || t('capsule.errors.unknown')}
       </p>
-      {action && (
+      {showAction && (
         <button
           type="button"
           onPointerUp={(event) => event.stopPropagation()}

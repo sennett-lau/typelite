@@ -105,8 +105,8 @@ export function MainLayout({ children }: Props) {
 
   return (
     <div className="app-window flex h-full w-full">
-      {/* No title bar (plan 0005): this strip drags the window. macOS draws the window
-          buttons over the sidebar's top padding. */}
+      {/* No title bar (plan `glass-main-window`): this strip drags the window. macOS draws the
+          window buttons over the sidebar's top padding. */}
       <div className="drag-strip" data-tauri-drag-region aria-hidden="true" />
 
       <aside className="sidebar flex w-[208px] shrink-0 flex-col px-2.5 pt-11 pb-3">

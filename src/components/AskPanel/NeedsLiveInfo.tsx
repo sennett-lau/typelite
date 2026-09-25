@@ -15,7 +15,10 @@ interface NeedsLiveInfoProps {
   setupAction?: ReactNode
 }
 
-/** Plan 0011: the Ask panel state for a question that needs live information. */
+/**
+ * Plan `ask-translate-and-live-questions`: the Ask panel state for a question that needs live
+ * information.
+ */
 export function NeedsLiveInfo({
   onAnswerAnyway,
   onClose,

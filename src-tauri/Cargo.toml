@@ -45,11 +45,13 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = "0.4"
 url = "2"
 tauri-plugin-process = "2"
-# Plan 0012: in-process whisper.cpp for the "Built-in (this Mac)" speech provider (Unlicense).
-# Builds whisper.cpp from source with cmake; logs go through `tracing`.
+# Plan `quick-speech-setup`: in-process whisper.cpp for the "Built-in (this Mac)" speech provider
+# (Unlicense). Builds whisper.cpp from source with cmake; logs go through `tracing`.
 whisper-rs = { version = "0.16", features = ["tracing_backend"] }
 sha2 = "0.10"
 fs4 = { version = "0.13", features = ["sync"] }
+# Plan `preset-sharing`: native save and open dialogs for preset Export and Import, called from Rust.
+tauri-plugin-dialog = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }

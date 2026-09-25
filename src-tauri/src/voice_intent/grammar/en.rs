@@ -26,8 +26,9 @@ const EDIT_LEADS: [&str; 7] = [
     "now ",
 ];
 
-/// Edit instructions on the selection. A match replaces the selection (plan 0011), so each
-/// entry is anchored at the start and ends at a word boundary.
+/// Edit instructions on the selection. A match replaces the selection (plan
+/// `ask-translate-and-live-questions`), so each entry is anchored at the start and ends at a word
+/// boundary.
 const EDIT_PHRASES: &[&str] = &[
     "rewrite",
     "rephrase",

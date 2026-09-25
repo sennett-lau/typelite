@@ -15,10 +15,11 @@ import { ServerSettings } from './ServerSettings'
 const ENGINES: SpeechEngine[] = ['builtin', 'server']
 
 /**
- * Settings → Speech (plan 0015): "Speech recognition uses" is a choice between two option cards,
- * Built-in and "Your server or API key". Picking one makes it the engine in use (saved at once)
- * and shows its details below. With no saved server preset there is nothing to switch to yet,
- * so that card only opens the empty form; saving it makes the new preset the one in use.
+ * Settings → Speech (plan `two-tab-speech`): "Speech recognition uses" is a choice between two
+ * option cards, Built-in and "Your server or API key". Picking one makes it the engine in use
+ * (saved at once) and shows its details below. With no saved server preset there is nothing to
+ * switch to yet, so that card only opens the empty form; saving it makes the new preset the one in
+ * use.
  */
 export function SpeechEngineChoice() {
   const { t } = useTranslation()

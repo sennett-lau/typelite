@@ -26,6 +26,15 @@ static ASK_RECORDING_SESSION_COUNTER: AtomicU64 = AtomicU64::new(1);
 /// Error returned by `stop_ask_dictation` when the run was cancelled (Escape) while Ask was
 /// thinking. Callers show nothing for it.
 pub const ASK_CANCELLED_ERROR: &str = "ask_cancelled";
+/// Error returned by `stop_ask_dictation` when the recording held no speech. Callers show the
+/// capsule's "Didn't catch that" notice ([`show_no_speech`]) instead of the answer window.
+pub const ASK_NO_SPEECH_ERROR: &str = "ask_no_speech";
+
+/// Shows "Didn't catch that" in the capsule: nothing was heard, so nothing is asked.
+pub(crate) fn show_no_speech(app: &tauri::AppHandle) {
+    tracing::info!("Ask: no speech; nothing is asked");
+    let _ = app.emit("pipeline:error", crate::pipeline::no_speech_user_error());
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,8 +43,9 @@ pub enum AskResultOutput {
     OpenedSearch,
     InsertedText,
     CopiedFallback,
-    /// Plan 0011: the question needs live information Typelite cannot look up yet. The panel
-    /// offers "Answer anyway" (see `answer_ask_anyway`) and Close; `answer` is empty.
+    /// Plan `ask-translate-and-live-questions`: the question needs live information Typelite cannot
+    /// look up yet. The panel offers "Answer anyway" (see `answer_ask_anyway`) and Close; `answer`
+    /// is empty.
     NeedsLiveInfo,
 }
 
@@ -178,7 +188,7 @@ pub struct AskDictationSession {
     transcript: Arc<Mutex<String>>,
     error: Arc<Mutex<Option<String>>>,
     done: Arc<Notify>,
-    /// Plan 0008: where the speech provider notes its upload moments.
+    /// Plan `speed-board`: where the speech provider notes its upload moments.
     upload_probe: crate::timing::UploadProbe,
 }
 
@@ -218,8 +228,8 @@ pub struct AskDictationResult {
     requested_placement: crate::voice_intent::VoiceOutputPlacement,
     actual_placement: Option<crate::voice_intent::VoiceOutputPlacement>,
     fallback_reason: Option<crate::voice_intent::executor::VoiceExecutionFallbackReason>,
-    /// Plan 0011: answered with "Answer anyway" for a live question, so the panel notes that
-    /// it may be out of date.
+    /// Plan `ask-translate-and-live-questions`: answered with "Answer anyway" for a live question,
+    /// so the panel notes that it may be out of date.
     may_be_out_of_date: bool,
 }
 
@@ -279,8 +289,9 @@ impl AskDictationResultMetadata {
         }
     }
 
-    /// A draft inserted at the cursor, or (Plan 0011) an edit or a translation that replaced
-    /// the selection. Anything that did not land in the app shows as copied.
+    /// A draft inserted at the cursor, or (Plan `ask-translate-and-live-questions`) an edit or a
+    /// translation that replaced the selection. Anything that did not land in the app shows as
+    /// copied.
     fn from_draft_execution(
         execution: &crate::voice_intent::executor::VoiceExecutionResult,
     ) -> Self {
@@ -761,8 +772,8 @@ async fn ask_via_byok(
     validate_ask_answer(&crate::llm::protocol::response_text(&body))
 }
 
-/// Plan 0011: classifies an open question with the active AI preset (keywords if that fails)
-/// and logs the decision and its reason, never the question.
+/// Plan `ask-translate-and-live-questions`: classifies an open question with the active AI preset
+/// (keywords if that fails) and logs the decision and its reason, never the question.
 async fn check_live_question(
     config: &storage::AppConfig,
     client: &reqwest::Client,
@@ -794,8 +805,8 @@ async fn check_live_question(
     check
 }
 
-/// Plan 0011: "Answer anyway" for a live question. Answers from the model's own knowledge;
-/// the panel notes that the answer may be out of date.
+/// Plan `ask-translate-and-live-questions`: "Answer anyway" for a live question. Answers from the
+/// model's own knowledge; the panel notes that the answer may be out of date.
 #[tauri::command]
 pub async fn answer_ask_anyway(
     question: String,
@@ -879,8 +890,8 @@ pub(crate) async fn start_reserved_ask_dictation(
 ) -> Result<AskDictationStartResult, String> {
     let result = async {
         let config = config_state.load().await.map_err(|e| e.to_string())?;
-        // Plan 0007: Ask needs both services. Show the setup message in the capsule and
-        // start nothing (no answer window, no recording).
+        // Plan `setup-without-dead-ends`: Ask needs both services. Show the setup message in the
+        // capsule and start nothing (no answer window, no recording).
         if let Some(user_error) =
             crate::readiness::start_error(&config, crate::readiness::Feature::Ask)
         {
@@ -1154,7 +1165,7 @@ pub async fn stop_ask_dictation(
     config_state: tauri::State<'_, storage::ConfigManager>,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<AskDictationResult, String> {
-    // Plan 0008: Speed board timing starts when stop is pressed.
+    // Plan `speed-board`: Speed board timing starts when stop is pressed.
     let stop_at = std::time::Instant::now();
     let (mut session, cancel) = {
         let mut guard = state.0.lock().unwrap_or_else(|e| e.into_inner());
@@ -1206,7 +1217,7 @@ pub async fn stop_ask_dictation(
             }
             if transcript.trim().is_empty() {
                 failure_code = "stt_no_speech_detected";
-                return Err("No speech detected. Please try again.".to_string());
+                return Err(ASK_NO_SPEECH_ERROR.to_string());
             }
             tracing::warn!("Ask STT finalize timed out; continuing with collected transcript");
         }
@@ -1225,11 +1236,11 @@ pub async fn stop_ask_dictation(
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clone();
-        failure_code = if transcript.trim().is_empty() {
-            "stt_no_speech_detected"
-        } else {
-            "ask_invalid_question"
-        };
+        if transcript.trim().is_empty() {
+            failure_code = "stt_no_speech_detected";
+            return Err(ASK_NO_SPEECH_ERROR.to_string());
+        }
+        failure_code = "ask_invalid_question";
         let question = validate_ask_question(&transcript)?;
         transcript_at = Some(std::time::Instant::now());
         failure_code = "ask_failed";
@@ -1314,8 +1325,9 @@ pub async fn stop_ask_dictation(
         }
 
         failure_code = "llm_failed";
-        // Plan 0011: an open question that needs live information gets an honest reply
-        // instead of an invented answer. The check counts as part of the AI step.
+        // Plan `ask-translate-and-live-questions`: an open question that needs live information
+        // gets an honest reply instead of an invented answer. The check counts as part of the AI
+        // step.
         let ai_started = std::time::Instant::now();
         if voice_intent.kind == VoiceIntentKind::OpenQuestion {
             let check = check_live_question(&config, &client, &question).await;
@@ -1409,6 +1421,10 @@ pub async fn stop_ask_flow(
         Ok(result) if result.should_show_window() => show_answer_window(&app, result),
         Ok(_) => Ok(()),
         Err(message) if message == ASK_CANCELLED_ERROR => Ok(()),
+        Err(message) if message == ASK_NO_SPEECH_ERROR => {
+            show_no_speech(&app);
+            Ok(())
+        }
         Err(message) => show_error_window(&app, message),
     }
 }

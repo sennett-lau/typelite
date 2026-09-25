@@ -1,5 +1,5 @@
-//! Plan 0012: the "Built-in (this Mac)" speech provider. Runs whisper.cpp inside the app
-//! through the `whisper-rs` binding (GPU through Metal on macOS), so no speech server or
+//! Plan `quick-speech-setup`: the "Built-in (this Mac)" speech provider. Runs whisper.cpp inside
+//! the app through the `whisper-rs` binding (GPU through Metal on macOS), so no speech server or
 //! Homebrew install is needed.
 //!
 //! The model is loaded on first use (a recording start begins loading it while the user
@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
-use super::silence::{peak_window_level_db, SILENCE_THRESHOLD_DB};
+use super::silence::{accept_transcript, log_decision, NoSpeechGuard, VoiceActivity};
 use super::{SttConfig, SttProvider, TranscriptEvent};
 use crate::error::AppError;
 
@@ -25,10 +25,17 @@ const IDLE_CHECK_EVERY: Duration = Duration::from_secs(30);
 const MAX_AUDIO_BYTES: usize = 24 * 1024 * 1024;
 /// whisper.cpp skips input shorter than one second, so shorter clips are padded with silence.
 const MIN_SAMPLES: usize = 16_000 + 1_600;
+/// A segment is dropped as "probably not speech" when whisper's no-speech probability is above
+/// this and its tokens' average log-probability is below [`LOGPROB_THRESHOLD`]. Both are the
+/// values OpenAI's Whisper uses for the same rule.
+pub const NO_SPEECH_THRESHOLD: f32 = 0.6;
+pub const LOGPROB_THRESHOLD: f32 = -1.0;
 
 struct Loaded {
     path: PathBuf,
     state: whisper_rs::WhisperState,
+    /// Token ids from this one up are special (end of text, timestamps, language tags).
+    eot: whisper_rs::WhisperTokenId,
     last_used: Instant,
 }
 
@@ -46,6 +53,8 @@ pub struct Transcription {
     /// Set when this call had to load the model first.
     pub load_ms: Option<u64>,
     pub transcribe_ms: u64,
+    /// Segments dropped as probably not speech (see [`is_probably_not_speech`]).
+    pub dropped_segments: usize,
 }
 
 /// The shared engine.
@@ -129,6 +138,7 @@ impl LocalWhisper {
         let state = context
             .create_state()
             .map_err(|error| load_error_message(&error.to_string()))?;
+        let eot = context.token_eot();
         let took = started.elapsed();
         tracing::info!(
             "Built-in speech: loaded {} in {} ms",
@@ -140,6 +150,7 @@ impl LocalWhisper {
         *slot = Some(Loaded {
             path: path.to_path_buf(),
             state,
+            eot,
             last_used: Instant::now(),
         });
         self.start_idle_watch();
@@ -157,7 +168,7 @@ impl LocalWhisper {
     }
 
     /// Transcribes 16 kHz 16-bit mono PCM (blocking). `language` `None` means auto-detect.
-    /// Greedy decoding. Does not apply the silence gate; the provider does.
+    /// Greedy decoding. Does not apply the voice check; the provider does.
     pub fn transcribe(
         &'static self,
         path: &Path,
@@ -192,14 +203,31 @@ impl LocalWhisper {
         params.set_print_realtime(false);
         params.set_print_timestamps(false);
         params.set_suppress_blank(true);
+        // `suppress_nst` (non-speech tokens) is left off: it also bans ":", "/", quotes,
+        // brackets and 「」, which real dictation needs ("3:00", "and/or").
+        params.set_no_speech_thold(NO_SPEECH_THRESHOLD);
+        params.set_logprob_thold(LOGPROB_THRESHOLD);
 
         let started = Instant::now();
         loaded
             .state
             .full(params, &samples)
             .map_err(|error| format!("Built-in speech recognition failed: {error}"))?;
+        let eot = loaded.eot;
         let mut text = String::new();
+        let mut dropped_segments = 0;
         for segment in loaded.state.as_iter() {
+            let no_speech = segment.no_speech_probability();
+            let logprob = average_logprob(&segment, eot);
+            if is_probably_not_speech(no_speech, logprob) {
+                dropped_segments += 1;
+                tracing::info!(
+                    "Built-in speech: dropped a segment as not speech (no-speech {:.2}, avg log-prob {:.2})",
+                    no_speech,
+                    logprob.unwrap_or(f32::NAN)
+                );
+                continue;
+            }
             if let Ok(piece) = segment.to_str_lossy() {
                 text.push_str(&piece);
             }
@@ -219,6 +247,7 @@ impl LocalWhisper {
             text,
             load_ms: load.map(|d| d.as_millis() as u64),
             transcribe_ms,
+            dropped_segments,
         })
     }
 
@@ -273,6 +302,27 @@ impl LocalWhisper {
             }
         });
     }
+}
+
+/// Average log-probability of a segment's text tokens (special tokens left out). `None` for a
+/// segment without text tokens.
+fn average_logprob(
+    segment: &whisper_rs::WhisperSegment<'_>,
+    eot: whisper_rs::WhisperTokenId,
+) -> Option<f32> {
+    let logprobs: Vec<f32> = (0..segment.n_tokens())
+        .filter_map(|i| segment.get_token(i))
+        .filter(|token| token.token_id() < eot)
+        .map(|token| token.token_data().plog)
+        .collect();
+    (!logprobs.is_empty()).then(|| logprobs.iter().sum::<f32>() / logprobs.len() as f32)
+}
+
+/// OpenAI Whisper's rule: a segment is probably not speech when the model thinks so
+/// (`no_speech` above [`NO_SPEECH_THRESHOLD`]) and is unsure of the words it produced
+/// (average log-probability below [`LOGPROB_THRESHOLD`], or no words at all).
+pub fn is_probably_not_speech(no_speech: f32, avg_logprob: Option<f32>) -> bool {
+    no_speech > NO_SPEECH_THRESHOLD && avg_logprob.is_none_or(|lp| lp < LOGPROB_THRESHOLD)
 }
 
 /// True when a model last used at `last_used` should be freed at `now`.
@@ -365,12 +415,12 @@ impl SttProvider for BuiltinProvider {
         if let Some(probe) = &self.upload_probe {
             probe.note_audio(self.audio_buffer.len(), config.sample_rate);
         }
-        let peak_db = peak_window_level_db(&self.audio_buffer, config.sample_rate);
-        if peak_db < SILENCE_THRESHOLD_DB {
-            tracing::info!(
-                "{}: no speech detected (loudest 50 ms at {:.0} dBFS), skipping recognition",
-                self.config.provider_name,
-                peak_db
+        let activity = VoiceActivity::measure(&self.audio_buffer, config.sample_rate);
+        if !activity.has_speech() {
+            log_decision(
+                &self.config.provider_name,
+                &activity,
+                Some(NoSpeechGuard::VoiceCheck),
             );
             self.audio_buffer.clear();
             return Ok(None);
@@ -411,7 +461,19 @@ impl SttProvider for BuiltinProvider {
             probe.mark_finished();
         }
         let transcription = result.map_err(AppError::Config)?;
-        Ok((!transcription.text.is_empty()).then_some(transcription.text))
+        if transcription.text.is_empty() && transcription.dropped_segments > 0 {
+            log_decision(
+                &self.config.provider_name,
+                &activity,
+                Some(NoSpeechGuard::WhisperNoSpeech),
+            );
+            return Ok(None);
+        }
+        Ok(accept_transcript(
+            &self.config.provider_name,
+            &activity,
+            Some(transcription.text),
+        ))
     }
 
     fn name(&self) -> &str {
@@ -426,6 +488,18 @@ impl SttProvider for BuiltinProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn segments_whisper_thinks_are_not_speech_are_dropped() {
+        // Sure it is not speech and unsure of the words: dropped.
+        assert!(is_probably_not_speech(0.9, Some(-1.5)));
+        assert!(is_probably_not_speech(0.7, None));
+        // Confident words are kept even when the no-speech score is high.
+        assert!(!is_probably_not_speech(0.9, Some(-0.3)));
+        // A low no-speech score always keeps the segment.
+        assert!(!is_probably_not_speech(0.2, Some(-2.0)));
+        assert!(!is_probably_not_speech(NO_SPEECH_THRESHOLD, Some(-2.0)));
+    }
 
     #[test]
     fn a_model_is_freed_after_ten_idle_minutes() {
