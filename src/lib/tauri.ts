@@ -49,6 +49,14 @@ export async function setActiveTranslationTarget(code: string): Promise<Translat
   return invoke('set_active_translation_target', { code })
 }
 
+/**
+ * Plan `translation-language-presets`: the built-in translation instructions of every language,
+ * by code.
+ */
+export async function getTranslationLanguageDefaults(): Promise<Record<string, string>> {
+  return invoke('get_translation_language_defaults')
+}
+
 export type AppMatcherType = 'native_bundle_id' | 'native_executable' | 'exact_web_host'
 
 export interface MappingCandidateView {

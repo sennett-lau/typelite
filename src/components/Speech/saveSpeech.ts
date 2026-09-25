@@ -1,4 +1,4 @@
-import { useAppStore, type AppConfig } from '../../stores/appStore'
+import { useAppStore, withoutTranslationPreset, type AppConfig } from '../../stores/appStore'
 import { setCredential, updateConfig as saveConfig } from '../../lib/tauri'
 import { SPEECH_SERVICE, type AnyPreset, type EngineService } from './services'
 
@@ -54,6 +54,13 @@ export async function deleteServerPreset(
   const next = savedPresetsOf(service).filter((preset) => preset.id !== id)
   const activeId = service.activeIdOf(config) === id ? fallbackId : service.activeIdOf(config)
   await saveChoice(service.choice(next, activeId))
+  // Plan `translation-language-presets`: languages that used this AI preset go back to "Same as
+  // AI polish" (the backend drops the id when it saves).
+  if (service.id === 'ai') {
+    const { savedConfig, applyPersistedTranslationLanguages } = useAppStore.getState()
+    const languages = (savedConfig ?? config).translation.languages ?? {}
+    applyPersistedTranslationLanguages(withoutTranslationPreset(languages, id))
+  }
   await setCredential(service.credential, id, '').catch((error) =>
     console.error(`[${service.id}] failed to remove the API key of a deleted preset`, error),
   )
