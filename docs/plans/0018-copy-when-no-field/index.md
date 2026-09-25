@@ -10,7 +10,7 @@ Status: building — 2026-09-25
 ## Goals
 
 - No result is lost because the user was not in a text field (the pill follows the cursor's
-  screen since [0016](../0016-pill-follows-cursor/index.md), so this happens more often).
+  screen since [0016](../0016-pill-follows-cursor-and-escape/index.md), so this happens more often).
 - Every pill state change animates smoothly.
 
 ## Non-goals
