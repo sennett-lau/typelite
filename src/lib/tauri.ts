@@ -346,7 +346,13 @@ export type VoiceExecutionFallbackReason =
   | 'focus_restore_failed'
   | 'output_failed'
 
-export type AskResultOutput = 'popupAnswer' | 'openedSearch' | 'insertedText' | 'copiedFallback'
+export type AskResultOutput =
+  | 'popupAnswer'
+  | 'openedSearch'
+  | 'insertedText'
+  | 'copiedFallback'
+  // Plan 0011: the question needs live information; the panel offers Answer anyway.
+  | 'needsLiveInfo'
 
 export interface AskDictationResult {
   question: string
@@ -359,6 +365,8 @@ export interface AskDictationResult {
   requestedPlacement: VoiceOutputPlacement
   actualPlacement: VoiceOutputPlacement | null
   fallbackReason: VoiceExecutionFallbackReason | null
+  /** Answered with "Answer anyway" for a live question: may be out of date. */
+  mayBeOutOfDate: boolean
 }
 
 export interface AskDictationStartResult {
@@ -389,6 +397,11 @@ export async function abortAskDictation(): Promise<void> {
 
 export async function takePendingAskMessage(): Promise<PendingAskMessage | null> {
   return invoke('take_pending_ask_message')
+}
+
+/** Plan 0011: answer a live question from the model's own knowledge. */
+export async function answerAskAnyway(question: string): Promise<AskDictationResult> {
+  return invoke('answer_ask_anyway', { question })
 }
 
 // Dictionary

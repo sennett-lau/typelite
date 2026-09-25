@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
   abortAskDictation,
+  answerAskAnyway,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
 } from '../../lib/tauri'
 import type { AskDictationResult, AskDictationStartResult } from '../../lib/tauri'
+import { NeedsLiveInfo } from './NeedsLiveInfo'
 
 interface AskPanelProps {
   embedded?: boolean
@@ -40,6 +42,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [answeringAnyway, setAnsweringAnyway] = useState(false)
   const [recordingContext, setRecordingContext] = useState<AskDictationStartResult | null>(null)
   const [dictationState, setDictationState] = useState<'idle' | 'recording' | 'processing'>('idle')
   const loadingRef = useRef(loading)
@@ -287,6 +290,37 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   }, [beginDictation, dictationState, finishDictation])
 
   const answer = result?.answer ?? ''
+  const needsLiveInfo = !error && result?.output === 'needsLiveInfo'
+
+  // Plan 0011: "Answer anyway" on a live question answers from the model's own knowledge.
+  const answerAnyway = useCallback(() => {
+    if (!result || answeringAnyway) return
+    setAnsweringAnyway(true)
+    answerAskAnyway(result.question)
+      .then(applyResult)
+      .catch((e: unknown) => applyError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setAnsweringAnyway(false))
+  }, [answeringAnyway, applyError, applyResult, result])
+
+  const closeLiveInfo = useCallback(() => {
+    if (embedded) {
+      setResult(null)
+      return
+    }
+    dismissStandalone(true)
+  }, [dismissStandalone, embedded])
+
+  const liveInfoPanel = needsLiveInfo ? (
+    <NeedsLiveInfo
+      onAnswerAnyway={answerAnyway}
+      onClose={closeLiveInfo}
+      answering={answeringAnyway}
+    />
+  ) : null
+  const outOfDateNote =
+    result?.mayBeOutOfDate && !error ? (
+      <p className="mt-2 text-[11px] leading-4 text-text-tertiary">{t('ask.outOfDateNote')}</p>
+    ) : null
 
   const copyAnswer = useCallback(() => {
     if (!answer) return
@@ -315,6 +349,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   const capsuleActive = dictationState === 'recording' || dictationState === 'processing'
   const displayTitle = title === 'Ask' ? t('ask.title') : title
   const resultText = error || answer
+  const hasContent = Boolean(resultText) || needsLiveInfo
   const canCopyAnswer = Boolean(answer && !error && result?.output !== 'openedSearch')
   const recordingContextLabel = recordingContext?.usedSelectedText
     ? recordingContext.selectedTextTruncated
@@ -416,7 +451,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
           className="flex max-h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-[18px] border border-border/80 bg-bg-primary/95 shadow-[0_4px_14px_rgba(15,23,42,0.08)] backdrop-blur"
         >
           <div className="flex min-h-0 flex-col gap-2.5 p-3">
-            {!resultText && (
+            {!hasContent && (
               <div className="flex items-center justify-between gap-2 px-1">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-text-tertiary/50" />
@@ -427,7 +462,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
                 {standaloneCloseButton}
               </div>
             )}
-            {resultText && (
+            {hasContent && (
               <>
                 <div className="flex items-center justify-between gap-2 px-1">
                   <div className="flex min-w-0 items-center gap-2">
@@ -439,7 +474,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
                     <span className="truncate text-[12px] font-medium text-text-primary">
                       {displayTitle}
                     </span>
-                    {result && (
+                    {result && !needsLiveInfo && (
                       <span className="truncate text-[11px] text-text-tertiary">
                         {contextLabel}
                       </span>
@@ -456,13 +491,16 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
                       {result.question}
                     </p>
                   )}
-                  <p
-                    className={`whitespace-pre-wrap text-[13px] leading-5 ${
-                      error ? 'text-error' : 'text-text-primary'
-                    }`}
-                  >
-                    {resultText}
-                  </p>
+                  {liveInfoPanel ?? (
+                    <p
+                      className={`whitespace-pre-wrap text-[13px] leading-5 ${
+                        error ? 'text-error' : 'text-text-primary'
+                      }`}
+                    >
+                      {resultText}
+                    </p>
+                  )}
+                  {outOfDateNote}
                 </div>
               </>
             )}
@@ -489,7 +527,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
           {recordingContextLabel ?? t('ask.voiceQuestionDesc')}
         </p>
 
-        {resultText && (
+        {hasContent && (
           <div className="min-h-0 flex-1 overflow-y-auto rounded-[8px] border border-border bg-bg-secondary px-3 py-2">
             {canCopyAnswer && (
               <div className="mb-2 flex items-center justify-between gap-2">
@@ -502,13 +540,16 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
             {result && !error && result.output !== 'openedSearch' && (
               <p className="mb-2 text-[12px] leading-5 text-text-secondary">{result.question}</p>
             )}
-            <p
-              className={`text-[13px] leading-5 whitespace-pre-wrap ${
-                error ? 'text-error' : 'text-text-primary'
-              }`}
-            >
-              {resultText}
-            </p>
+            {liveInfoPanel ?? (
+              <p
+                className={`text-[13px] leading-5 whitespace-pre-wrap ${
+                  error ? 'text-error' : 'text-text-primary'
+                }`}
+              >
+                {resultText}
+              </p>
+            )}
+            {outOfDateNote}
           </div>
         )}
       </div>

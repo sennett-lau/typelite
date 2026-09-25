@@ -261,3 +261,88 @@ async fn polish_keeps_one_topic_in_one_paragraph() {
     println!("polish (one paragraph): {took:?} -> {text:?}");
     assert!(!text.contains('\n'), "unexpected line break: {text:?}");
 }
+
+// ─── Plan 0011: selection translate and live questions ───
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn ai_classifies_live_and_timeless_questions() {
+    use typelite_lib::llm::live_question::{classify, classify_with_timeout, LiveCheckSource};
+
+    let client = reqwest::Client::new();
+    let config = ai_config();
+    // Warm the model so the 2 s budget measures the classification, not a cold load.
+    let _ = classify_with_timeout(&client, &config, "hello", Duration::from_secs(60)).await;
+
+    for (question, expected) in [
+        ("what's the AI news today", true),
+        ("what is the capital of France", false),
+    ] {
+        let started = Instant::now();
+        let check = classify(&client, &config, question).await;
+        println!(
+            "live check: {:?} for {question:?} -> live={} reason={} source={}",
+            started.elapsed(),
+            check.live,
+            check.reason,
+            check.source.as_str()
+        );
+        assert_eq!(
+            check.source,
+            LiveCheckSource::Ai,
+            "the AI should decide within the time budget"
+        );
+        assert_eq!(check.live, expected, "{question:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn selection_translation_into_hong_kong_chinese_uses_traditional_characters() {
+    use typelite_lib::voice_intent::language::{
+        resolve_selection_translation_target, SELECTION_TRANSLATE_INSTRUCTION,
+    };
+
+    // Selected text + Translate with no speech: the built-in instruction, and the active
+    // language as the target (here Hong Kong Traditional Chinese).
+    let (target, _) = resolve_selection_translation_target("", "zh-Hant-HK", &[]);
+    let mut req = dictation_request(SELECTION_TRANSLATE_INSTRUCTION);
+    req.selected_text = Some(
+        "The meeting has moved to next Tuesday. Please bring your laptop and the software update notes."
+            .into(),
+    );
+    req.translate_enabled = true;
+    req.target_lang = target;
+    req.voice_intent = VoiceIntent::from_parts(
+        VoiceIntentKind::TranslateSelection,
+        VoiceOutputPlacement::ReplaceSelection,
+        1.0,
+        None,
+        None,
+        None,
+        None,
+    )
+    .expect("valid selection translation intent");
+
+    let (text, took) = polish(&req).await;
+    println!("selection translate (zh-Hant-HK): {took:?} -> {text:?}");
+    // Characters whose Simplified and Traditional forms differ.
+    let traditional = [
+        '會', '議', '請', '帶', '腦', '軟', '體', '們', '筆', '記', '這', '將',
+    ];
+    let simplified = [
+        '会', '议', '请', '带', '脑', '软', '体', '们', '笔', '记', '这', '将',
+    ];
+    assert!(
+        text.chars().any(|c| traditional.contains(&c)),
+        "no Traditional characters in {text:?}"
+    );
+    assert!(
+        !text.chars().any(|c| simplified.contains(&c)),
+        "Simplified characters in {text:?}"
+    );
+    assert!(
+        !text.to_lowercase().contains("meeting"),
+        "not translated: {text:?}"
+    );
+}

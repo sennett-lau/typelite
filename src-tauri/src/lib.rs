@@ -1239,6 +1239,7 @@ pub fn run() {
             commands::ask::stop_ask_flow,
             commands::ask::abort_ask_dictation,
             commands::ask::take_pending_ask_message,
+            commands::ask::answer_ask_anyway,
             commands::audio::list_input_devices,
             commands::audio::start_mic_level_monitor,
             commands::audio::stop_mic_level_monitor,

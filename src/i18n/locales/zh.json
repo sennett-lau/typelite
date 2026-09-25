@@ -34,6 +34,11 @@
     "copiedInstead": "未插入，结果已复制",
     "routeDisabled": "此功能路径已停用",
     "searchOpened": "已打开 {{provider}} 搜索",
+    "liveTitle": "需要实时信息",
+    "liveBody": "这个问题需要来自网络的最新信息。Typelite 目前还不能联网查找。",
+    "answerAnyway": "仍然回答",
+    "close": "关闭",
+    "outOfDateNote": "可能已过时——未使用网络搜索",
     "send": "提问"
   },
   "errors": {

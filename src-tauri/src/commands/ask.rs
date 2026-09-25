@@ -31,6 +31,9 @@ pub enum AskResultOutput {
     OpenedSearch,
     InsertedText,
     CopiedFallback,
+    /// Plan 0011: the question needs live information Typelite cannot look up yet. The panel
+    /// offers "Answer anyway" (see `answer_ask_anyway`) and Close; `answer` is empty.
+    NeedsLiveInfo,
 }
 
 #[derive(Default)]
@@ -186,6 +189,9 @@ pub struct AskDictationResult {
     requested_placement: crate::voice_intent::VoiceOutputPlacement,
     actual_placement: Option<crate::voice_intent::VoiceOutputPlacement>,
     fallback_reason: Option<crate::voice_intent::executor::VoiceExecutionFallbackReason>,
+    /// Plan 0011: answered with "Answer anyway" for a live question, so the panel notes that
+    /// it may be out of date.
+    may_be_out_of_date: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -197,6 +203,7 @@ pub(crate) struct AskDictationResultMetadata {
     requested_placement: crate::voice_intent::VoiceOutputPlacement,
     actual_placement: Option<crate::voice_intent::VoiceOutputPlacement>,
     fallback_reason: Option<crate::voice_intent::executor::VoiceExecutionFallbackReason>,
+    may_be_out_of_date: bool,
 }
 
 impl AskDictationResultMetadata {
@@ -209,6 +216,24 @@ impl AskDictationResultMetadata {
             requested_placement: crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
             actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::PopupAnswer),
             fallback_reason: None,
+            may_be_out_of_date: false,
+        }
+    }
+
+    /// The live-question panel: nothing answered yet.
+    fn needs_live_info() -> Self {
+        Self {
+            output: AskResultOutput::NeedsLiveInfo,
+            actual_placement: None,
+            ..Self::popup(false, false)
+        }
+    }
+
+    /// An "Answer anyway" reply.
+    fn answered_anyway() -> Self {
+        Self {
+            may_be_out_of_date: true,
+            ..Self::popup(false, false)
         }
     }
 
@@ -221,29 +246,38 @@ impl AskDictationResultMetadata {
             requested_placement: crate::voice_intent::VoiceOutputPlacement::OpenUrl,
             actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::OpenUrl),
             fallback_reason: None,
+            may_be_out_of_date: false,
         }
     }
 
+    /// A draft inserted at the cursor, or (Plan 0011) a translation that replaced the
+    /// selection. Anything that did not land in the app shows as copied.
     fn from_draft_execution(
         execution: &crate::voice_intent::executor::VoiceExecutionResult,
     ) -> Self {
         let output = if execution.status
             == crate::voice_intent::executor::VoiceExecutionStatus::Completed
-            && execution.actual_placement
-                == Some(crate::voice_intent::VoiceOutputPlacement::InsertAtCursor)
-        {
+            && matches!(
+                execution.actual_placement,
+                Some(
+                    crate::voice_intent::VoiceOutputPlacement::InsertAtCursor
+                        | crate::voice_intent::VoiceOutputPlacement::ReplaceSelection
+                )
+            ) {
             AskResultOutput::InsertedText
         } else {
             AskResultOutput::CopiedFallback
         };
         Self {
             output,
-            used_selected_text: false,
+            used_selected_text: execution.requested_placement
+                == crate::voice_intent::VoiceOutputPlacement::ReplaceSelection,
             selected_text_truncated: false,
             search_provider: None,
             requested_placement: execution.requested_placement,
             actual_placement: execution.actual_placement,
             fallback_reason: execution.fallback_reason,
+            may_be_out_of_date: false,
         }
     }
 }
@@ -266,6 +300,7 @@ impl AskDictationResult {
             requested_placement: metadata.requested_placement,
             actual_placement: metadata.actual_placement,
             fallback_reason: metadata.fallback_reason,
+            may_be_out_of_date: metadata.may_be_out_of_date,
         }
     }
 
@@ -695,6 +730,64 @@ async fn ask_via_byok(
 
     let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
     validate_ask_answer(&crate::llm::protocol::response_text(&body))
+}
+
+/// Plan 0011: classifies an open question with the active AI preset (keywords if that fails)
+/// and logs the decision and its reason, never the question.
+async fn check_live_question(
+    config: &storage::AppConfig,
+    client: &reqwest::Client,
+    question: &str,
+) -> crate::llm::live_question::LiveCheck {
+    let started = std::time::Instant::now();
+    let check = match resolve_llm_config_secret(config, &SystemCredentialVault) {
+        Ok(api_key) => {
+            let llm_config = crate::llm::LlmConfig::from_preset(config.active_ai_preset(), api_key);
+            crate::llm::live_question::classify(client, &llm_config, question).await
+        }
+        Err(error) => {
+            tracing::warn!("Live-question check has no AI credential ({error}); using keywords");
+            let (live, reason) = crate::llm::live_question::keyword_check(question);
+            crate::llm::live_question::LiveCheck {
+                live,
+                reason,
+                source: crate::llm::live_question::LiveCheckSource::KeywordsAfterError,
+            }
+        }
+    };
+    tracing::info!(
+        "Ask live check: live={} reason={} source={} ({} ms)",
+        check.live,
+        check.reason,
+        check.source.as_str(),
+        started.elapsed().as_millis()
+    );
+    check
+}
+
+/// Plan 0011: "Answer anyway" for a live question. Answers from the model's own knowledge;
+/// the panel notes that the answer may be out of date.
+#[tauri::command]
+pub async fn answer_ask_anyway(
+    question: String,
+    config_state: tauri::State<'_, storage::ConfigManager>,
+    client: tauri::State<'_, reqwest::Client>,
+) -> Result<AskDictationResult, String> {
+    let question = validate_ask_question(&question)?;
+    let config = config_state.load().await.map_err(|e| e.to_string())?;
+    if !config.ai_ready() {
+        return Err("Set up the AI polish service first.".to_string());
+    }
+    tracing::info!("Ask live question: answering anyway");
+    let answer = answer_question(&config, &client, &question, None)
+        .await
+        .map_err(ask_app_error_message)?;
+    Ok(AskDictationResult::new(
+        question,
+        answer,
+        VoiceIntentKind::OpenQuestion,
+        AskDictationResultMetadata::answered_anyway(),
+    ))
 }
 
 #[tauri::command]
@@ -1159,7 +1252,10 @@ pub async fn stop_ask_dictation(
             ));
         }
 
-        if voice_intent.kind == VoiceIntentKind::DraftInsert {
+        if matches!(
+            voice_intent.kind,
+            VoiceIntentKind::DraftInsert | VoiceIntentKind::TranslateSelection
+        ) {
             failure_code = "llm_failed";
             pastes = true;
             let draft_started = std::time::Instant::now();
@@ -1169,6 +1265,7 @@ pub async fn stop_ask_dictation(
                     &config,
                     &session.recording_context,
                     &question,
+                    session.selected_text.clone(),
                     voice_intent.clone(),
                 )
                 .await;
@@ -1187,7 +1284,21 @@ pub async fn stop_ask_dictation(
         }
 
         failure_code = "llm_failed";
-        let answer_started = std::time::Instant::now();
+        // Plan 0011: an open question that needs live information gets an honest reply
+        // instead of an invented answer. The check counts as part of the AI step.
+        let ai_started = std::time::Instant::now();
+        if voice_intent.kind == VoiceIntentKind::OpenQuestion {
+            let check = check_live_question(&config, &client, &question).await;
+            if check.live {
+                ai_elapsed = Some(ai_started.elapsed());
+                return Ok(AskDictationResult::new(
+                    question,
+                    String::new(),
+                    voice_intent.kind,
+                    AskDictationResultMetadata::needs_live_info(),
+                ));
+            }
+        }
         let answer = answer_question(
             &config,
             &client,
@@ -1195,7 +1306,7 @@ pub async fn stop_ask_dictation(
             session.selected_text.as_deref(),
         )
         .await;
-        ai_elapsed = Some(answer_started.elapsed());
+        ai_elapsed = Some(ai_started.elapsed());
         let answer = answer.map_err(ask_app_error_message)?;
 
         Ok(AskDictationResult::new(
@@ -1359,7 +1470,7 @@ mod tests {
         let flags = crate::voice_intent::VoiceRoutingFlags::default();
         for question in [
             "rewrite this",
-            "translate this to French",
+            "translate this to Klingon",
             "do not rewrite this",
         ] {
             let route = route_ask_intent(question, true, Some("en"), flags);
@@ -1372,6 +1483,92 @@ mod tests {
                 crate::voice_intent::VoiceOutputPlacement::PopupAnswer
             );
         }
+    }
+
+    #[test]
+    fn ask_translate_this_into_a_language_replaces_the_selection() {
+        let flags = crate::voice_intent::VoiceRoutingFlags::default();
+        for question in [
+            "translate this to French",
+            "translate this into Traditional Chinese",
+            "把這段翻譯成台灣中文",
+        ] {
+            let route = route_ask_intent(question, true, None, flags);
+            assert_eq!(
+                route.kind,
+                VoiceIntentKind::TranslateSelection,
+                "{question}"
+            );
+        }
+        // With the selection route turned off it stays an answer.
+        let off = crate::voice_intent::VoiceRoutingFlags {
+            translate_selection: false,
+            ..flags
+        };
+        assert_eq!(
+            route_ask_intent("translate this to French", true, Some("en"), off).kind,
+            VoiceIntentKind::AskSelection
+        );
+
+        let replaced = crate::voice_intent::executor::VoiceExecutionResult {
+            intent_kind: VoiceIntentKind::TranslateSelection,
+            requested_placement: crate::voice_intent::VoiceOutputPlacement::ReplaceSelection,
+            actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::ReplaceSelection),
+            status: crate::voice_intent::executor::VoiceExecutionStatus::Completed,
+            fallback_reason: None,
+        };
+        let result = AskDictationResult::new(
+            "translate this to French".to_string(),
+            "Bonjour".to_string(),
+            VoiceIntentKind::TranslateSelection,
+            AskDictationResultMetadata::from_draft_execution(&replaced),
+        );
+        assert!(!result.should_show_window());
+
+        let lost = crate::voice_intent::executor::VoiceExecutionResult {
+            actual_placement: None,
+            status: crate::voice_intent::executor::VoiceExecutionStatus::CopiedFallback,
+            fallback_reason: Some(
+                crate::voice_intent::executor::VoiceExecutionFallbackReason::SelectionLost,
+            ),
+            ..replaced
+        };
+        let result = AskDictationResult::new(
+            "translate this to French".to_string(),
+            "Bonjour".to_string(),
+            VoiceIntentKind::TranslateSelection,
+            AskDictationResultMetadata::from_draft_execution(&lost),
+        );
+        assert!(result.should_show_window());
+        let value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["output"], "copiedFallback");
+        assert_eq!(value["usedSelectedText"], true);
+    }
+
+    #[test]
+    fn live_question_results_show_the_panel_and_answer_anyway_is_marked() {
+        let live = AskDictationResult::new(
+            "what's the AI news today".to_string(),
+            String::new(),
+            VoiceIntentKind::OpenQuestion,
+            AskDictationResultMetadata::needs_live_info(),
+        );
+        assert!(live.should_show_window());
+        let value = serde_json::to_value(&live).unwrap();
+        assert_eq!(value["output"], "needsLiveInfo");
+        assert_eq!(value["answer"], "");
+        assert_eq!(value["mayBeOutOfDate"], false);
+        assert!(value["actualPlacement"].is_null());
+
+        let anyway = AskDictationResult::new(
+            "what's the AI news today".to_string(),
+            "Some answer".to_string(),
+            VoiceIntentKind::OpenQuestion,
+            AskDictationResultMetadata::answered_anyway(),
+        );
+        let value = serde_json::to_value(&anyway).unwrap();
+        assert_eq!(value["output"], "popupAnswer");
+        assert_eq!(value["mayBeOutOfDate"], true);
     }
 
     #[test]

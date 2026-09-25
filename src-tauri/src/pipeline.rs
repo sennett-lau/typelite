@@ -294,6 +294,36 @@ fn route_pipeline_voice_intent(
     })
 }
 
+/// Whether the AI request translates, and into which language. Plan 0011: a selection
+/// translation goes into the language named in speech, else the active translation language
+/// (after any Switch language presses). Everything else keeps the configured behaviour.
+fn request_translation(
+    intent: &crate::voice_intent::VoiceIntent,
+    utterance: &str,
+    config: &storage::AppConfig,
+) -> (bool, String) {
+    if intent.kind == crate::voice_intent::VoiceIntentKind::TranslateSelection {
+        let (target, source) = crate::voice_intent::language::resolve_selection_translation_target(
+            utterance,
+            &config.translation.active_target,
+            &config.translation.targets,
+        );
+        let spoken = source == crate::voice_intent::language::TargetSource::Speech;
+        if spoken || config.translate_enabled {
+            tracing::info!(
+                "Selection translation target: {} (from {})",
+                target,
+                source.as_str()
+            );
+            return (true, target);
+        }
+    }
+    (
+        config.translate_enabled,
+        config.translation.active_target.clone(),
+    )
+}
+
 fn streaming_insert_strategy_for_config(
     config: &storage::AppConfig,
     has_selected_text: bool,
@@ -723,6 +753,9 @@ enum SttWait {
     Cancelled,
     /// Recognition failed or heard nothing; carries the error code.
     Failed(String),
+    /// Nothing was heard, and the caller asked to handle that itself (Plan 0011: a selection
+    /// translation needs no speech). No error was shown.
+    NoSpeech,
 }
 
 struct PipelineVoiceExecutionBackend<'a> {
@@ -1795,8 +1828,19 @@ impl PipelineHandle {
         drop(guard);
 
         // ── Phase 1: Wait for STT ──────────────────────────────────────
-        let raw_text = match self.wait_for_stt(stt_control.clone()).await? {
+        // Plan 0011: selected text + Translate needs no speech; silence means "translate the
+        // selection into the target language".
+        let selection_translate = voice_mode == crate::voice_intent::VoiceMode::Translate
+            && selected_text_has_content(selected_text.as_deref());
+        let raw_text = match self
+            .wait_for_stt(stt_control.clone(), selection_translate)
+            .await?
+        {
             SttWait::Text(text) => text,
+            SttWait::NoSpeech => {
+                tracing::info!("Translate: no speech with a selection; translating the selection");
+                crate::voice_intent::language::SELECTION_TRANSLATE_INSTRUCTION.to_string()
+            }
             SttWait::Cancelled => {
                 if let Some(control) = &stt_control {
                     self.clear_stt_session(control.id);
@@ -1931,7 +1975,13 @@ impl PipelineHandle {
     /// Wait for the STT task to complete and return the transcribed text.
     /// Returns `SttWait::Text` on success, `Cancelled` if aborted or stale, and `Failed` with
     /// the error code when recognition failed or heard nothing.
-    async fn wait_for_stt(&self, stt_control: Option<SttTaskControl>) -> Result<SttWait> {
+    /// With `allow_no_speech`, an empty transcript (silence, or no recording at all) returns
+    /// `SttWait::NoSpeech` instead of showing the "no speech" error.
+    async fn wait_for_stt(
+        &self,
+        stt_control: Option<SttTaskControl>,
+        allow_no_speech: bool,
+    ) -> Result<SttWait> {
         if let Some(control) = &stt_control {
             let timed_out = tokio::select! {
                 _ = control.done.notified() => {
@@ -1990,6 +2040,9 @@ impl PipelineHandle {
             .trim()
             .to_string();
 
+        if raw_text.is_empty() && allow_no_speech {
+            return Ok(SttWait::NoSpeech);
+        }
         if raw_text.is_empty() {
             let user_error = no_speech_user_error();
             let code = user_error.code.clone();
@@ -2133,6 +2186,8 @@ impl PipelineHandle {
         });
 
         let selected_text_for_execution = selected_text.clone();
+        let (translate_enabled, target_lang) =
+            request_translation(&voice_intent, provider_text, config);
         let mapped_scene_prompt = storage::automatic_scene_prompt(
             config,
             app_ctx.profile.family,
@@ -2152,8 +2207,8 @@ impl PipelineHandle {
                 .map(|scene| scene.prompt_template.clone())
                 .unwrap_or_default(),
             polish_custom_prompt: config.polish_custom_prompt.clone(),
-            translate_enabled: config.translate_enabled,
-            target_lang: config.translation.active_target.clone(),
+            translate_enabled,
+            target_lang,
             selected_text,
             voice_intent: voice_intent.clone(),
         };
@@ -2498,16 +2553,30 @@ impl PipelineHandle {
         polish_outcome
     }
 
+    /// Runs an Ask command that writes into the focused app: a draft inserted at the cursor, or
+    /// (Plan 0011) a translation that replaces the selection. The Ask caller shows fallbacks.
     pub(crate) async fn run_ask_draft(
         &self,
         config: &storage::AppConfig,
         app_ctx: &RecordingContext,
         utterance: &str,
+        selected_text: Option<String>,
         voice_intent: crate::voice_intent::VoiceIntent,
     ) -> std::result::Result<AskVoiceDraftOutcome, String> {
-        if voice_intent.kind != crate::voice_intent::VoiceIntentKind::DraftInsert {
-            return Err("Ask draft execution requires a draft intent".to_string());
-        }
+        let selected_text = match voice_intent.kind {
+            crate::voice_intent::VoiceIntentKind::DraftInsert => None,
+            crate::voice_intent::VoiceIntentKind::TranslateSelection
+                if selected_text_has_content(selected_text.as_deref()) =>
+            {
+                selected_text
+            }
+            _ => {
+                return Err(
+                    "Ask draft execution requires a draft or selection translation intent"
+                        .to_string(),
+                )
+            }
+        };
         if self.current_state() != PipelineState::Idle {
             return Err("Another voice operation is already active".to_string());
         }
@@ -2534,7 +2603,7 @@ impl PipelineHandle {
                 app_ctx,
                 dictionary_words,
                 correction_rules,
-                selected_text: None,
+                selected_text,
                 voice_intent,
                 popup_fallback_enabled: false,
             })
@@ -3314,6 +3383,121 @@ mod tests {
         assert_eq!(
             err.details.as_deref(),
             Some("Auth error: LLM access denied")
+        );
+    }
+
+    fn translate_run_config(active: &str) -> storage::AppConfig {
+        let mut config = apply_pipeline_start_options(
+            storage::AppConfig::default(),
+            PipelineStartOptions {
+                force_translate: true,
+            },
+        );
+        config.translation.targets = ["en", "zh-Hant-HK", "ja"].map(str::to_string).to_vec();
+        config.translation.active_target = active.to_string();
+        config
+    }
+
+    fn translate_selection_intent(
+        utterance: &str,
+        config: &storage::AppConfig,
+    ) -> crate::voice_intent::VoiceIntent {
+        route_pipeline_voice_intent(
+            crate::voice_intent::VoiceMode::Translate,
+            utterance,
+            Some("Selected paragraph"),
+            config,
+        )
+    }
+
+    #[test]
+    fn selection_translate_without_speech_uses_the_active_language() {
+        let config = translate_run_config("ja");
+        let instruction = crate::voice_intent::language::SELECTION_TRANSLATE_INSTRUCTION;
+        let intent = translate_selection_intent(instruction, &config);
+        assert_eq!(
+            intent.kind,
+            crate::voice_intent::VoiceIntentKind::TranslateSelection
+        );
+        assert_eq!(
+            intent.placement,
+            crate::voice_intent::VoiceOutputPlacement::ReplaceSelection
+        );
+        assert_eq!(
+            request_translation(&intent, instruction, &config),
+            (true, "ja".to_string())
+        );
+    }
+
+    #[test]
+    fn selection_translate_prefers_a_language_named_in_speech() {
+        let config = translate_run_config("ja");
+        for (speech, expected) in [
+            ("translate this into Cantonese", "zh-Hant-HK"),
+            ("into Taiwanese Chinese please", "zh-Hant-TW"),
+            ("把這段翻譯成簡體中文", "zh-Hans"),
+            ("Chinese", "zh-Hans"),
+        ] {
+            let intent = translate_selection_intent(speech, &config);
+            assert_eq!(
+                request_translation(&intent, speech, &config),
+                (true, expected.to_string()),
+                "{speech}"
+            );
+        }
+        // Speech without a language keeps today's behaviour: it is the instruction, and the
+        // result goes into the active language.
+        let intent = translate_selection_intent("make it shorter", &config);
+        assert_eq!(
+            request_translation(&intent, "make it shorter", &config),
+            (true, "ja".to_string())
+        );
+    }
+
+    #[test]
+    fn switch_language_during_a_selection_translate_changes_the_target() {
+        let mut config = translate_run_config("en");
+        let mut operation =
+            TranslationOperationState::new("en".to_string(), &config.translation.targets);
+        operation.cycle_target().unwrap();
+        // stop() copies the finalized target into the run's config.
+        config.translation.active_target = operation.finalize();
+        assert!(operation.cycle_target().is_err());
+
+        let instruction = crate::voice_intent::language::SELECTION_TRANSLATE_INSTRUCTION;
+        let intent = translate_selection_intent(instruction, &config);
+        assert_eq!(
+            request_translation(&intent, instruction, &config),
+            (true, "zh-Hant-HK".to_string())
+        );
+    }
+
+    #[test]
+    fn dictate_selection_translation_uses_the_named_variant_only_when_known() {
+        let config = storage::AppConfig::default();
+        let intent = route_pipeline_voice_intent(
+            crate::voice_intent::VoiceMode::Dictate,
+            "translate this into Hong Kong Chinese",
+            Some("Selected paragraph"),
+            &config,
+        );
+        assert_eq!(
+            intent.kind,
+            crate::voice_intent::VoiceIntentKind::TranslateSelection
+        );
+        assert_eq!(
+            request_translation(&intent, "translate this into Hong Kong Chinese", &config),
+            (true, "zh-Hant-HK".to_string())
+        );
+        let unknown = route_pipeline_voice_intent(
+            crate::voice_intent::VoiceMode::Dictate,
+            "translate this into Klingon",
+            Some("Selected paragraph"),
+            &config,
+        );
+        assert_eq!(
+            request_translation(&unknown, "translate this into Klingon", &config),
+            (false, "en".to_string())
         );
     }
 

@@ -1,6 +1,7 @@
 pub mod executor;
 pub mod grammar;
 mod guards;
+pub mod language;
 mod normalize;
 pub mod search;
 pub mod types;
@@ -199,6 +200,23 @@ fn route_ask(
     view: &NormalizedUtterance<'_>,
 ) -> VoiceIntent {
     if request.has_selected_text {
+        // Plan 0011: "translate this into Japanese" on a selection replaces it with the
+        // translation. Only when the language is one Typelite knows, so the target is exact;
+        // anything else stays a nondestructive answer.
+        if request.flags.translate_selection
+            && grammar::matches_translation(locale, view)
+            && language::spoken_translation_target(request.utterance, &[]).is_some()
+        {
+            return intent(
+                VoiceIntentKind::TranslateSelection,
+                VoiceOutputPlacement::ReplaceSelection,
+                grammar::exact_confidence(view),
+                None,
+                None,
+                Some(locale),
+                None,
+            );
+        }
         return fallback_intent(
             VoiceMode::Ask,
             true,
@@ -527,8 +545,8 @@ mod tests {
     fn voice_intent_grammar_keeps_ask_with_selection_nondestructive() {
         for utterance in [
             "rewrite this",
-            "translate this to French",
             "make this warmer",
+            "translate this to Klingon",
         ] {
             let routed = VoiceIntentRouter::route(request(
                 VoiceMode::Ask,
@@ -539,6 +557,55 @@ mod tests {
             assert_eq!(routed.kind, VoiceIntentKind::AskSelection);
             assert_eq!(routed.placement, VoiceOutputPlacement::PopupAnswer);
         }
+    }
+
+    #[test]
+    fn ask_with_selection_translates_in_place_when_a_known_language_is_named() {
+        for (utterance, language) in [
+            ("translate this into Japanese", "en"),
+            ("translate this to Hong Kong Chinese", "en"),
+            ("translate the selection into Taiwanese Chinese", "en"),
+            ("把这段翻译成日文", "zh"),
+            ("把這段翻譯成廣東話", "zh-hk"),
+        ] {
+            let routed = VoiceIntentRouter::route(request(
+                VoiceMode::Ask,
+                utterance,
+                true,
+                SpeechLanguageMode::Explicit(language),
+            ));
+            assert_eq!(
+                routed.kind,
+                VoiceIntentKind::TranslateSelection,
+                "{utterance}"
+            );
+            assert_eq!(routed.placement, VoiceOutputPlacement::ReplaceSelection);
+        }
+        // Negated or reported commands stay answers.
+        for utterance in [
+            "please don't translate this to French",
+            "quote: translate this to French",
+        ] {
+            let routed = VoiceIntentRouter::route(request(
+                VoiceMode::Ask,
+                utterance,
+                true,
+                SpeechLanguageMode::Explicit("en"),
+            ));
+            assert_ne!(
+                routed.kind,
+                VoiceIntentKind::TranslateSelection,
+                "{utterance}"
+            );
+        }
+        // Without a selection it is an ordinary question.
+        let routed = VoiceIntentRouter::route(request(
+            VoiceMode::Ask,
+            "translate this into Japanese",
+            false,
+            SpeechLanguageMode::Explicit("en"),
+        ));
+        assert_eq!(routed.kind, VoiceIntentKind::OpenQuestion);
     }
 
     #[test]

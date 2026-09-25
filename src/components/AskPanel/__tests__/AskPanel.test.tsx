@@ -4,6 +4,7 @@ import i18n from '../../../i18n'
 import { AskPanel } from '../AskPanel'
 import {
   abortAskDictation,
+  answerAskAnyway,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
@@ -56,6 +57,7 @@ const tauriWindowMock = vi.hoisted(() => {
 })
 
 vi.mock('../../../lib/tauri', () => ({
+  answerAskAnyway: vi.fn(),
   startAskDictation: vi.fn(),
   stopAskDictation: vi.fn(),
   abortAskDictation: vi.fn(),
@@ -93,6 +95,7 @@ function askResult(
     requestedPlacement: 'popup_answer' as const,
     actualPlacement: 'popup_answer' as const,
     fallbackReason: null,
+    mayBeOutOfDate: false,
     ...overrides,
   }
 }
@@ -426,6 +429,96 @@ describe('AskPanel', () => {
       requestedPlacement: 'popup_answer',
       actualPlacement: 'popup_answer',
       fallbackReason: null,
+      mayBeOutOfDate: false,
+    })
+  })
+
+  describe('live questions (Plan 0011)', () => {
+    const liveResult = () =>
+      askResult({
+        question: "What's the AI news today?",
+        answer: '',
+        output: 'needsLiveInfo',
+        actualPlacement: null,
+      })
+
+    async function showLiveResult() {
+      render(<AskPanel />)
+      await waitFor(() => {
+        expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
+      })
+      act(() => tauriEventMock.emit('ask:result', liveResult()))
+      return screen.findByTestId('ask-needs-live-info')
+    }
+
+    it('shows the needs-live-information state with Answer anyway and Close', async () => {
+      await showLiveResult()
+
+      expect(screen.getByText('Needs live information')).toBeDefined()
+      expect(
+        screen.getByText(
+          "This question needs up-to-date information from the web. Typelite can't look things up yet.",
+        ),
+      ).toBeDefined()
+      expect(screen.getByText("What's the AI news today?")).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Answer anyway' })).toBeDefined()
+      expect(screen.getAllByRole('button', { name: 'Close' }).length).toBeGreaterThan(0)
+      // No web-search setup yet, and nothing to copy.
+      expect(screen.queryByText(/set up web search/i)).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Copy answer' })).toBeNull()
+    })
+
+    it('answers anyway with the out-of-date note', async () => {
+      vi.mocked(answerAskAnyway).mockResolvedValue(
+        askResult({
+          question: "What's the AI news today?",
+          answer: 'Here is what I knew at training time.',
+          mayBeOutOfDate: true,
+        }),
+      )
+      await showLiveResult()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Answer anyway' }))
+
+      expect(await screen.findByText('Here is what I knew at training time.')).toBeDefined()
+      expect(answerAskAnyway).toHaveBeenCalledWith("What's the AI news today?")
+      expect(screen.getByText('May be out of date — no web search was used')).toBeDefined()
+      expect(screen.queryByTestId('ask-needs-live-info')).toBeNull()
+    })
+
+    it('shows an error when answering anyway fails', async () => {
+      vi.mocked(answerAskAnyway).mockRejectedValue(new Error('AI unreachable'))
+      await showLiveResult()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Answer anyway' }))
+
+      expect(await screen.findByText('AI unreachable')).toBeDefined()
+      expect(screen.queryByText('May be out of date — no web search was used')).toBeNull()
+    })
+
+    it('Close hides the live-information panel', async () => {
+      await showLiveResult()
+      const panel = screen.getByTestId('ask-needs-live-info')
+      const close = Array.from(panel.querySelectorAll('button')).find(
+        (button) => button.textContent === 'Close',
+      )
+      expect(close).toBeDefined()
+
+      fireEvent.click(close!)
+
+      await waitFor(() => expect(screen.queryByTestId('ask-needs-live-info')).toBeNull())
+      expect(tauriWindowMock.hide).toHaveBeenCalled()
+      expect(answerAskAnyway).not.toHaveBeenCalled()
+    })
+
+    it('normal answers carry no out-of-date note', async () => {
+      render(<AskPanel />)
+      await waitFor(() => {
+        expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
+      })
+      act(() => tauriEventMock.emit('ask:result', askResult()))
+      expect(await screen.findByText('It turns speech into useful text.')).toBeDefined()
+      expect(screen.queryByText('May be out of date — no web search was used')).toBeNull()
     })
   })
 
