@@ -299,6 +299,8 @@ export type SpeechSetupError =
   | { code: 'cancelled' }
   | { code: 'io'; reason: string }
   | { code: 'load'; reason: string }
+  /** Plan 0017: this copy of Typelite has no llama-server, so Built-in AI cannot run. */
+  | { code: 'server_missing' }
 
 /** Payload of `speech-setup:status` and the result of `get_speech_setup_status`. */
 export interface SpeechSetupStatus {
@@ -354,7 +356,7 @@ export interface OfferedModel {
   recommended: boolean
 }
 
-/** Result of `get_speech_hardware`. */
+/** Result of `get_speech_hardware` (and, with `serverAvailable`, of `get_ai_hardware`). */
 export interface SpeechHardwareCheck {
   hardware: {
     chipKind: ChipKind
@@ -368,6 +370,8 @@ export interface SpeechHardwareCheck {
     /** Set when no model fits on the disk: the free space the smallest one needs. */
     neededBytes: number | null
   }
+  /** AI only (plan 0017): false when this copy of Typelite has no llama-server. */
+  serverAvailable?: boolean
 }
 
 /** Reads the chip, memory and free disk space, and the models this Mac is offered. */
@@ -375,9 +379,31 @@ export async function getSpeechHardware(): Promise<SpeechHardwareCheck> {
   return invoke('get_speech_hardware')
 }
 
-// Lists model ids from an OpenAI-compatible `GET {baseUrl}/models`.
-export async function fetchAiModels(baseUrl: string, apiKey: string): Promise<string[]> {
-  return invoke('fetch_ai_models', { baseUrl, apiKey })
+// ─── Plan 0017: Built-in AI setup (llama-server started by Typelite) ───
+// Same shapes as the speech setup; progress arrives as `ai-setup:status` events.
+
+export async function getAiSetupStatus(): Promise<SpeechSetupStatus> {
+  return invoke('get_ai_setup_status')
+}
+
+export async function startAiSetup(modelId?: string): Promise<void> {
+  return invoke('start_ai_setup', { modelId: modelId ?? null })
+}
+
+export async function cancelAiSetup(): Promise<boolean> {
+  return invoke('cancel_ai_setup')
+}
+
+export async function listAiModels(): Promise<SpeechModelInfo[]> {
+  return invoke('list_ai_models')
+}
+
+export async function deleteAiModel(modelId: string): Promise<void> {
+  return invoke('delete_ai_model', { modelId })
+}
+
+export async function getAiHardware(): Promise<SpeechHardwareCheck> {
+  return invoke('get_ai_hardware')
 }
 
 // Hotkey

@@ -1,22 +1,11 @@
-import { useAppStore } from '../../stores/appStore'
-import { isAiReady } from '../../lib/readiness'
-import { AiPresetEditor } from '../Settings/AiPresetEditor'
-import { SetupGuide, SkipLink } from './SetupGuide'
+import { AI_SERVICE } from '../Speech/services'
+import { EngineSetupStep } from './SttSetupStep'
 
 /**
- * Onboarding step "AI Polish Service": the same AI preset editor as Settings → AI, the in-app
- * setup guide, and "Skip for now". Next unlocks once the active preset passed a Test.
+ * Onboarding → AI polish (plan 0017): the same card, sheet and links as the speech step, for
+ * Built-in AI and "your own server or API key". Skipping keeps dictation working; it pastes
+ * the raw transcript.
  */
 export function LlmSetupStep({ onSkip }: { onSkip: () => void }) {
-  const ready = useAppStore((s) => isAiReady(s.config))
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <AiPresetEditor />
-      </div>
-      <SetupGuide />
-      {!ready && <SkipLink onSkip={onSkip} />}
-    </div>
-  )
+  return <EngineSetupStep service={AI_SERVICE} onSkip={onSkip} />
 }

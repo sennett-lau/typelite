@@ -1,51 +1,54 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
-import { readCredential, testSpeechPreset } from '../../lib/tauri'
-import { recordSpeechResult } from '../../lib/connectionStatus'
-import { sameSpeechConnection, type SpeechPreset } from '../../stores/appStore'
-import { SERVER_PLACEHOLDERS, addressHostname, formatTestTime } from '../../lib/speechTypes'
+import { readCredential } from '../../lib/tauri'
+import { parseExtraFields } from '../../lib/extraFields'
+import { addressHostname, formatTestTime } from '../../lib/speechTypes'
+import type { AiPreset } from '../../stores/appStore'
 import { saveServerPreset } from './saveSpeech'
+import { SPEECH_SERVICE, type AnyPreset, type EngineService } from './services'
 
 type TestState =
   | { status: 'idle' }
   | { status: 'testing' }
-  | { status: 'ok'; ms: number; tested: SpeechPreset; key: string }
+  | { status: 'ok'; ms: number; tested: AnyPreset; key: string }
   | { status: 'error'; message: string }
-
-function newPreset(): SpeechPreset {
-  return {
-    id: crypto.randomUUID(),
-    name: '',
-    kind: 'openai_compatible',
-    base_url: '',
-    model: '',
-    model_file: '',
-    language: 'auto',
-    builtin: false,
-    verified_at: null,
-  }
-}
 
 interface Props {
   /** The saved preset to edit, or null for a new one. */
-  preset: SpeechPreset | null
+  preset: AnyPreset | null
   /** "Save and use" in the sheet, "Save" in Settings. */
   saveLabel: string
   /** The quiet action at the left of the button line (Cancel, ← Saved presets, Delete). */
   secondary?: React.ReactNode
   /** Called after the preset was saved and made the one in use. */
-  onSaved?: (preset: SpeechPreset) => void
+  onSaved?: (preset: AnyPreset) => void
+  /** Speech (default) or AI. */
+  service?: EngineService
+}
+
+/** Shows extra request fields as editable JSON; an empty object shows as an empty box. */
+function formatExtraFields(fields: Record<string, unknown> | undefined): string {
+  return !fields || Object.keys(fields).length === 0 ? '' : JSON.stringify(fields, null, 2)
 }
 
 /**
- * Plan 0015: the form for a server or API key (any OpenAI-compatible speech service). Four
- * fields with the OpenAI example as placeholders; Name fills itself with the address's host
- * until the user types a name. Test shows its result on the same line as the buttons.
+ * Plan 0015 (speech) and 0017 (AI): the form for a server or API key (any OpenAI-compatible
+ * service). Four fields with the OpenAI example as placeholders; Name fills itself with the
+ * address's host until the user types a name. AI presets also have "Extra fields" (JSON) under
+ * a collapsed Advanced. Test shows its result on the same line as the buttons.
  */
-export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Props) {
+export function ServerPresetForm({
+  preset,
+  saveLabel,
+  secondary,
+  onSaved,
+  service = SPEECH_SERVICE,
+}: Props) {
   const { t } = useTranslation()
-  const [draft, setDraft] = useState<SpeechPreset>(() => (preset ? { ...preset } : newPreset()))
+  const [draft, setDraft] = useState<AnyPreset>(() =>
+    preset ? { ...preset } : service.newPreset(),
+  )
   // A saved name that is not simply the host counts as typed by the user.
   const [nameEdited, setNameEdited] = useState(
     () => preset !== null && preset.name !== addressHostname(preset.base_url),
@@ -55,25 +58,29 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
   const [test, setTest] = useState<TestState>({ status: 'idle' })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const savedExtra = (preset as AiPreset | null)?.extra_request_fields
+  const [extraText, setExtraText] = useState(() => formatExtraFields(savedExtra))
+  const [advancedOpen, setAdvancedOpen] = useState(() => formatExtraFields(savedExtra) !== '')
+  const extraInvalid = service.extraFields && parseExtraFields(extraText) === null
 
   useEffect(() => {
     let cancelled = false
     savedKey.current = ''
     if (!preset) return
-    readCredential('stt', preset.id)
+    readCredential(service.credential, preset.id)
       .then((secret) => {
         if (cancelled) return
         savedKey.current = secret ?? ''
         setApiKey((typed) => typed || (secret ?? ''))
       })
-      .catch((error) => console.error('[speech] failed to read the API key', error))
+      .catch((error) => console.error(`[${service.id}] failed to read the API key`, error))
     return () => {
       cancelled = true
     }
-  }, [preset])
+  }, [preset, service])
 
-  const change = (patch: Partial<SpeechPreset>) => {
-    setDraft((previous) => ({ ...previous, ...patch }))
+  const change = (patch: Partial<AnyPreset>) => {
+    setDraft((previous) => ({ ...previous, ...patch }) as AnyPreset)
     setTest({ status: 'idle' })
     setSaveError(null)
   }
@@ -82,15 +89,22 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
     change(nameEdited ? { base_url } : { base_url, name: addressHostname(base_url) })
   }
 
-  const complete = Boolean(draft.base_url.trim() && draft.model.trim())
+  const changeExtra = (text: string) => {
+    setExtraText(text)
+    const parsed = parseExtraFields(text)
+    // Keep the last valid value in the draft; the error shows under the box.
+    if (parsed) change({ extra_request_fields: parsed } as Partial<AiPreset>)
+  }
+
+  const complete = Boolean(draft.base_url.trim() && draft.model.trim()) && !extraInvalid
 
   const handleTest = async () => {
     setTest({ status: 'testing' })
     const tested = { ...draft }
     try {
-      const ms = await testSpeechPreset(tested, apiKey)
+      const ms = await service.test(tested, apiKey)
       setTest({ status: 'ok', ms, tested, key: apiKey })
-      recordSpeechResult(true)
+      service.recordResult(true)
     } catch (error) {
       setTest({
         status: 'error',
@@ -101,7 +115,7 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
               ? error
               : t('settings.connectionFailed'),
       })
-      recordSpeechResult(false)
+      service.recordResult(false)
     }
   }
 
@@ -109,19 +123,19 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
     const name =
       draft.name.trim() || addressHostname(draft.base_url) || draft.model.trim() || draft.id
     const passed =
-      test.status === 'ok' && test.key === apiKey && sameSpeechConnection(test.tested, draft)
+      test.status === 'ok' && test.key === apiKey && service.sameConnection(test.tested, draft)
     const keyChanged = apiKey !== savedKey.current
-    const unchanged = preset !== null && !keyChanged && sameSpeechConnection(preset, draft)
-    const saved: SpeechPreset = {
+    const unchanged = preset !== null && !keyChanged && service.sameConnection(preset, draft)
+    const saved = {
       ...draft,
       name,
       builtin: false,
       verified_at: passed ? Date.now() : unchanged ? preset.verified_at : null,
-    }
+    } as AnyPreset
     setSaving(true)
     setSaveError(null)
     try {
-      await saveServerPreset(saved, { value: apiKey, changed: keyChanged })
+      await saveServerPreset(service, saved, { value: apiKey, changed: keyChanged })
       savedKey.current = apiKey
       setDraft(saved)
       onSaved?.(saved)
@@ -133,7 +147,7 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
   }
 
   const fieldClass = 'field font-mono text-[12px]'
-  const id = (field: string) => `speech-${field}-${draft.id}`
+  const id = (field: string) => `${service.textNs}-${field}-${draft.id}`
 
   return (
     <div>
@@ -143,7 +157,7 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
           id={id('address')}
           value={draft.base_url}
           onChange={(event) => changeAddress(event.target.value)}
-          placeholder={SERVER_PLACEHOLDERS.address}
+          placeholder={service.placeholders.address}
           spellCheck={false}
           className={fieldClass}
         />
@@ -152,7 +166,7 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
           id={id('model')}
           value={draft.model}
           onChange={(event) => change({ model: event.target.value })}
-          placeholder={SERVER_PLACEHOLDERS.model}
+          placeholder={service.placeholders.model}
           spellCheck={false}
           className={fieldClass}
         />
@@ -180,6 +194,39 @@ export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Prop
           className="field text-[12.5px]"
         />
       </div>
+      {service.extraFields && (
+        <div className="mt-2.5">
+          <button
+            type="button"
+            aria-expanded={advancedOpen}
+            onClick={() => setAdvancedOpen((open) => !open)}
+            className="disclosure"
+          >
+            {t('ai.advanced')}
+          </button>
+          {advancedOpen && (
+            <div className="form-grid mt-2">
+              <label htmlFor={id('extra')}>{t('ai.extraFields')}</label>
+              <div className="min-w-0">
+                <textarea
+                  id={id('extra')}
+                  value={extraText}
+                  onChange={(event) => changeExtra(event.target.value)}
+                  rows={2}
+                  spellCheck={false}
+                  placeholder={'{"reasoning_effort": "none"}'}
+                  className={`${fieldClass} w-full resize-y`}
+                />
+                <span
+                  className={`block text-[11.5px] ${extraInvalid ? 'text-error' : 'text-text-secondary'}`}
+                >
+                  {extraInvalid ? t('presets.extraFieldsInvalid') : t('ai.extraFieldsHint')}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
         {secondary}
         <span className="flex-1" />

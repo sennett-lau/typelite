@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
-import { testSpeechPreset } from '../../lib/tauri'
-import { recordSpeechResult } from '../../lib/connectionStatus'
-import { addressHost, formatTestTime, serverPresets } from '../../lib/speechTypes'
+import { addressHost, formatTestTime } from '../../lib/speechTypes'
 import { useAppStore } from '../../stores/appStore'
-import { saveSpeechChoice } from './saveSpeech'
+import { saveChoice } from './saveSpeech'
 import { LearnMoreLink } from './LearnMoreLink'
 import { ServerPresetForm } from './ServerPresetForm'
+import { SPEECH_SERVICE, serverPresetsOf, type EngineService } from './services'
 
 type UseResult =
   | { status: 'idle' }
@@ -16,20 +15,24 @@ type UseResult =
   | { status: 'error'; message: string }
 
 /**
- * Plan 0015: "Your own server or API key", the sheet the onboarding step opens. With saved
- * presets it lists them (name + host) with "+ Add preset", Cancel and "Test and use"; with none
- * it opens straight on the form.
+ * Plan 0015 (speech) and 0017 (AI): "Your own server or API key", the sheet the onboarding step
+ * opens. With saved presets it lists them (name + host) with "+ Add preset", Cancel and "Test
+ * and use"; with none it opens straight on the form.
  */
-export function ServerPresetSheet({ onClose }: { onClose: () => void }) {
+export function ServerPresetSheet({
+  onClose,
+  service = SPEECH_SERVICE,
+}: {
+  onClose: () => void
+  service?: EngineService
+}) {
   const { t } = useTranslation()
   const config = useAppStore((s) => s.config)
-  const saved = serverPresets(config.speech_presets)
+  const saved = serverPresetsOf(service, config)
   const [view, setView] = useState<'list' | 'form'>(() => (saved.length > 0 ? 'list' : 'form'))
   const [selectedId, setSelectedId] = useState<string | null>(
     () =>
-      saved.find((preset) => preset.id === config.active_speech_preset_id)?.id ??
-      saved[0]?.id ??
-      null,
+      saved.find((preset) => preset.id === service.activeIdOf(config))?.id ?? saved[0]?.id ?? null,
   )
   const [result, setResult] = useState<UseResult>({ status: 'idle' })
 
@@ -54,20 +57,22 @@ export function ServerPresetSheet({ onClose }: { onClose: () => void }) {
     if (!selected) return
     setResult({ status: 'testing' })
     try {
-      const ms = await testSpeechPreset(selected, '')
-      recordSpeechResult(true)
+      const ms = await service.test(selected, '')
+      service.recordResult(true)
       setResult({ status: 'ok', ms })
       const { savedConfig } = useAppStore.getState()
-      const presets = (savedConfig ?? config).speech_presets
-      await saveSpeechChoice({
-        speech_presets: presets.map((preset) =>
-          preset.id === selected.id ? { ...preset, verified_at: Date.now() } : preset,
+      const presets = service.presetsOf(savedConfig ?? config)
+      await saveChoice(
+        service.choice(
+          presets.map((preset) =>
+            preset.id === selected.id ? { ...preset, verified_at: Date.now() } : preset,
+          ),
+          selected.id,
         ),
-        active_speech_preset_id: selected.id,
-      })
+      )
       onClose()
     } catch (error) {
-      recordSpeechResult(false)
+      service.recordResult(false)
       setResult({
         status: 'error',
         message:
@@ -91,7 +96,7 @@ export function ServerPresetSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h3 className="m-0 text-[15px] font-bold text-text-primary">{title}</h3>
-          <LearnMoreLink />
+          <LearnMoreLink url={service.guideUrl} />
         </div>
 
         {view === 'list' ? (
@@ -148,6 +153,7 @@ export function ServerPresetSheet({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <ServerPresetForm
+            service={service}
             preset={null}
             saveLabel={t('speech.saveAndUse')}
             onSaved={onClose}

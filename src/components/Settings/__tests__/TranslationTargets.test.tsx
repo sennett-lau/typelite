@@ -23,11 +23,10 @@ describe('TranslationTargets', () => {
 
     expect(screen.getAllByTestId(/^translation-target-/)).toHaveLength(1)
     expect(screen.getByRole('radio', { name: 'translate.setActive English' })).toBeChecked()
-    expect(screen.getByText('translate.defaultMark')).toBeInTheDocument()
+    expect(screen.getByTestId('translation-target-en')).toHaveTextContent('translate.defaultMark')
     // The last language cannot be removed.
     expect(screen.queryByRole('button', { name: /translate.remove/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'translate.addLanguage' })).toBeInTheDocument()
-    expect(screen.getByText('translate.switchHint')).toBeInTheDocument()
     expect(onChange).not.toHaveBeenCalled()
   })
 

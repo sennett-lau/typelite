@@ -133,7 +133,7 @@ describe('SttSetupStep', () => {
       expect(tauri.startSpeechSetup).toHaveBeenCalledWith('small')
     })
 
-    it('with no room for any model, says how much space is needed and cannot start', async () => {
+    it('with no room for any model, says how much space is needed and has no button', async () => {
       vi.mocked(tauri.getSpeechHardware).mockResolvedValue(
         hardwareCheck([], { freeBytes: 100_000_000, neededBytes: 209_094_035 }),
       )
@@ -142,7 +142,9 @@ describe('SttSetupStep', () => {
       expect(
         within(card()).getByText('Not enough free space for a model: 0.2 GB needed, 0.1 GB free.'),
       ).toBeInTheDocument()
-      expect(within(card()).getByRole('button', { name: 'Set up' })).toBeDisabled()
+      // Plan 0017: no model cards, no status and no Set up button, only the note.
+      expect(within(card()).queryByRole('radiogroup')).not.toBeInTheDocument()
+      expect(within(card()).queryAllByRole('button')).toEqual([])
     })
 
     it('downloading: a neutral badge, size, bar, speed and time left, and Cancel', async () => {

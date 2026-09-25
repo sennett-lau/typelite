@@ -165,7 +165,7 @@ describe('Onboarding flow', () => {
       ['Welcome', 'Welcome step'],
       ['Voice input', 'Microphone step'],
       ['Speech recognition', 'Speech step'],
-      ['AI Polish Service', 'AI step'],
+      ['AI polish', 'AI step'],
       ['Dictate', 'Shortcut step dictation pending'],
       ['Translate', 'Shortcut step translate pending'],
       ['Ask Anything', 'Shortcut step ask pending'],

@@ -131,7 +131,7 @@ describe('HomePage', () => {
 
     it('shows only the missing service and says when its last test failed', () => {
       setReady(true, false)
-      useAppStore.setState({ aiHealth: { presetId: 'builtin-ai-ollama-local', ok: false } })
+      useAppStore.setState({ aiHealth: { presetId: 'builtin-ai-this-mac', ok: false } })
       render(<HomePage />)
 
       expect(screen.queryByTestId('finish-setup-speech')).not.toBeInTheDocument()
@@ -278,7 +278,7 @@ describe('HomePage', () => {
     const card = screen.getByRole('region', { name: 'Your setup' })
     expect(within(card).getByTestId('config-row-microphone')).toHaveTextContent('USB Mic')
     expect(within(card).getByTestId('config-row-speech')).toHaveTextContent('Built-in (this Mac)')
-    expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('qwen3:4b-instruct')
+    expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('qwen3-4b')
     expect(within(card).getByTestId('config-row-polish')).toHaveTextContent('Disabled')
     expect(within(card).getByTestId('config-row-output')).toHaveTextContent('Paste from clipboard')
     expect(card.querySelectorAll('kbd')).toHaveLength(0)

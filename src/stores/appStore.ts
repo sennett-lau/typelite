@@ -46,15 +46,26 @@ export interface SpeechPreset {
 }
 
 /**
- * A named AI (chat) endpoint. Every preset talks to an OpenAI-compatible
- * `POST {base_url}/chat/completions` server (for example Ollama).
+ * How an AI preset runs: an OpenAI-compatible chat server, or llama.cpp's `llama-server` that
+ * Typelite starts on this Mac with a downloaded model (plan 0017).
+ */
+export type AiProviderKind = 'openai_compatible' | 'builtin'
+
+/**
+ * A named AI (chat) endpoint: an OpenAI-compatible `POST {base_url}/chat/completions` server
+ * (for example Ollama), or with `kind: 'builtin'` a model file that Typelite's own server runs.
  * The API key lives in the macOS Keychain under ('llm', id).
  */
 export interface AiPreset {
   id: string
   name: string
+  /** Missing in configs from before plan 0017; means 'openai_compatible'. */
+  kind?: AiProviderKind
+  /** Empty for the built-in preset: its address is only known while its server runs. */
   base_url: string
   model: string
+  /** Built-in preset only: the model file in the app's models folder. */
+  model_file?: string
   /** Extra JSON fields merged into every chat request, e.g. { reasoning_effort: 'none' }. */
   extra_request_fields: Record<string, unknown>
   builtin: boolean
@@ -70,8 +81,12 @@ export function isBuiltinSpeech(preset: Pick<SpeechPreset, 'kind'>): boolean {
   return preset.kind === 'builtin'
 }
 
-function aiTemplate(id: string, name: string, base_url: string, model: string): AiPreset {
-  return { id, name, base_url, model, extra_request_fields: {}, builtin: true, verified_at: null }
+/** Id of the "Built-in (this Mac)" AI preset (plan 0017). Every config has it. */
+export const BUILTIN_AI_PRESET_ID = 'builtin-ai-this-mac'
+
+/** True when Typelite's own llama-server runs this AI preset. */
+export function isBuiltinAi(preset: Pick<AiPreset, 'kind'>): boolean {
+  return preset.kind === 'builtin'
 }
 
 /**
@@ -92,33 +107,28 @@ export const BUILTIN_SPEECH_PRESETS: readonly SpeechPreset[] = [
   },
 ]
 
-/** Built-in AI templates. Mirrors `AiPreset::builtin_templates` in the backend. */
+/**
+ * AI templates of a new config: only the Built-in preset, before a model is downloaded
+ * (plan 0017). Mirrors `AiPreset::builtin_templates` in the backend.
+ */
 export const BUILTIN_AI_PRESETS: readonly AiPreset[] = [
-  aiTemplate(
-    'builtin-ai-ollama-local',
-    'Ollama on this Mac',
-    'http://127.0.0.1:11434/v1',
-    'qwen3:4b-instruct-2507-q4_K_M',
-  ),
-  aiTemplate(
-    'builtin-ai-ollama-lan',
-    'Ollama on another computer',
-    'http://<computer-ip>:11434/v1',
-    'qwen3:4b-instruct-2507-q4_K_M',
-  ),
-  aiTemplate('builtin-ai-openai', 'OpenAI (your key)', 'https://api.openai.com/v1', 'gpt-4.1-mini'),
-  aiTemplate(
-    'builtin-ai-groq',
-    'Groq (your key)',
-    'https://api.groq.com/openai/v1',
-    'llama-3.1-8b-instant',
-  ),
+  {
+    id: BUILTIN_AI_PRESET_ID,
+    name: 'Built-in (this Mac)',
+    kind: 'builtin',
+    base_url: '',
+    model: 'qwen3-4b',
+    model_file: '',
+    extra_request_fields: {},
+    builtin: true,
+    verified_at: null,
+  },
 ]
 
 /** The Built-in speech preset without a model; the fallback. */
 export const BUILTIN_SPEECH_PRESET: SpeechPreset = BUILTIN_SPEECH_PRESETS[0]
 
-/** The first built-in AI preset (Ollama on this Mac); the fallback. */
+/** The Built-in AI preset without a model; the fallback. */
 export const BUILTIN_AI_PRESET: AiPreset = BUILTIN_AI_PRESETS[0]
 
 /** Fields whose change makes an earlier Test result void (the API key is handled apart). */
@@ -135,6 +145,8 @@ export function sameSpeechConnection(a: SpeechPreset, b: SpeechPreset): boolean 
 
 export function sameAiConnection(a: AiPreset, b: AiPreset): boolean {
   return (
+    (a.kind ?? 'openai_compatible') === (b.kind ?? 'openai_compatible') &&
+    (a.model_file ?? '') === (b.model_file ?? '') &&
     a.base_url === b.base_url &&
     a.model === b.model &&
     JSON.stringify(a.extra_request_fields ?? {}) === JSON.stringify(b.extra_request_fields ?? {})
@@ -454,8 +466,6 @@ interface AppState {
   setAiHealth: (health: EndpointHealth | null) => void
 
   // LLM model list cache (persists across tab switches)
-  llmModels: string[]
-  setLlmModels: (models: string[]) => void
 
   // Pipeline error
   pipelineError: string | null
@@ -1207,9 +1217,6 @@ export const useAppStore = create<AppState>((set) => ({
   setSpeechHealth: (speechHealth) => set({ speechHealth }),
   aiHealth: null,
   setAiHealth: (aiHealth) => set({ aiHealth }),
-
-  llmModels: [],
-  setLlmModels: (llmModels) => set({ llmModels }),
 
   pipelineError: null,
   pipelineErrorAction: null,

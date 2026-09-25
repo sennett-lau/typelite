@@ -1,111 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { LlmPane } from '../LlmPane'
 import * as tauri from '../../../lib/tauri'
 import type { AiPreset } from '../../../stores/appStore'
+import { IDLE_SETUP_STATUS } from '../../../stores/modelSetupStore'
+import { useAiSetupStore } from '../../../stores/aiSetupStore'
+import {
+  aiServerPreset,
+  hardwareCheck,
+  installedAiBuiltin,
+} from '../../../test-utils/speechHardware'
 
-// Mock Tauri
 vi.mock('../../../lib/tauri')
+vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl: vi.fn() }))
 
-// Mock i18n
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, params?: any) => {
-      const translations: Record<string, string> = {
-        'settings.model': 'Model',
-        'settings.baseUrl': 'Base URL',
-        'settings.test': 'Test',
-        'settings.connectionSuccess': 'Connection successful',
-        'settings.connectionFailed': 'Connection failed',
-        'settings.storedLocally': 'Stored locally',
-        'settings.fetchModels': 'Fetch models',
-        'settings.modelsAvailable': `${params?.count || 0} models available`,
-        'settings.enableAiPolish': 'AI cleanup for dictation',
-        'settings.enableAiPolishDesc': 'Cleans up dictation before output',
-        'settings.contextAdaptation': 'Adapt writing to the current app',
-        'settings.contextAdaptationHint': 'Uses a private local app category',
-        'settings.contextAdaptationApps': 'Apps adapted by context',
-        'settings.lastDictationContext': 'Last dictation context',
-        'settings.browserAccessHint':
-          'Allow browser access to use Gmail, Docs, and Slack Web modes.',
-        'settings.appStyleMenu': 'App writing style',
-        'settings.useDifferentWritingStyle': 'Use a different writing style',
-        'settings.manageAppMappings': 'Manage app mappings',
-        'settings.appStyleDialogTitle': 'Writing style for this app',
-        'settings.polishStyle': 'Polish style',
-        'settings.polishStyleMinimal': 'Minimal',
-        'settings.polishStyleClean': 'Clean',
-        'settings.polishStyleStructured': 'Structured',
-        'settings.polishStyleProfessional': 'Professional',
-        'settings.advancedPolishSettings': 'Advanced polish settings',
-        'settings.advancedPolishSettingsDesc': 'Optional writing rules',
-        'settings.customPolishInstructions': 'Custom polish instructions',
-        'settings.customPolishInstructionsPlaceholder': 'Example prompt',
-        'settings.customPolishInstructionsCount': `${params?.count || 0} / 2000 characters`,
-        'settings.activeScene': `Active scene: ${params?.name || ''}`,
-        'settings.clearActiveScene': 'Clear scene',
-        'settings.translationMode': 'Always translate output',
-        'settings.translationModeDesc': 'Translate each dictation result',
-        'settings.selectedTextContext': 'Use selected text as context',
-        'settings.selectedTextContextDesc': 'Use selected text for context',
-        'settings.targetLanguage': 'Translate to',
-        'settings.manageTranslationTargets': 'Manage languages',
-        'settings.askAnything': 'Ask Anything',
-        'settings.askAnythingDesc': 'Voice question, one-shot answer. No chat history.',
-        'ask.ready': 'Ready to ask',
-        'ask.listening': 'Listening',
-        'ask.thinking': 'Thinking',
-        'ask.voiceQuestion': 'Voice question',
-        'ask.voiceQuestionDesc': 'Speak your question. Stop recording to answer.',
-        'ask.transcriptLabel': 'Question transcript',
-        'ask.answerLabel': 'Answer',
-        'ask.manualFallback': 'Type instead',
-        'ask.placeholder': 'Type a question, or use the capsule above.',
-        'ask.recordQuestion': 'Record question',
-        'ask.stopAndAsk': 'Stop and ask',
-        'ask.send': 'Ask',
-        'presets.preset': 'Preset',
-        'presets.name': 'Preset name',
-        'presets.saveAsNew': 'Save as new preset',
-        'presets.delete': 'Delete',
-        'presets.copyName': `${params?.name} copy`,
-        'presets.builtinHint': 'Built-in preset.',
-        'presets.apiKeyOptional': 'API key (optional)',
-        'presets.apiKeyPlaceholder': 'Leave empty for local servers',
-        'presets.extraFields': 'Extra request fields (JSON object)',
-        'presets.extraFieldsHint': 'Added to every chat request.',
-        'presets.extraFieldsInvalid': 'This is not a JSON object, so it is not saved.',
-        'presets.latency': `${params?.ms} ms`,
-      }
-      return translations[key] || key
-    },
-  }),
-}))
+vi.mock('react-i18next', async () => {
+  const { translate } = await import('../../../test-utils/i18nMock')
+  return { useTranslation: () => ({ t: translate }) }
+})
 
-const builtinAiPreset: AiPreset = {
-  id: 'builtin-ollama-pc',
-  name: 'PC Ollama — Qwen3 4B Instruct',
-  base_url: 'http://192.0.2.10:11434/v1',
-  model: 'qwen3:4b-instruct-2507-q4_K_M',
-  extra_request_fields: {},
-  builtin: true,
-  verified_at: null,
-}
+const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md'
 
 const thinkingPreset: AiPreset = {
-  id: 'pc-qwen35',
-  name: 'PC Ollama — Qwen3.5',
-  base_url: 'http://192.0.2.10:11434/v1',
-  model: 'qwen3.5:4b',
+  ...aiServerPreset('pc-qwen35', 'PC Ollama — Qwen3.5', 'http://192.0.2.10:11434/v1', 'qwen3.5:4b'),
   extra_request_fields: { reasoning_effort: 'none' },
-  builtin: false,
-  verified_at: null,
 }
 
 function baseConfig() {
   return {
-    ai_presets: [builtinAiPreset] as AiPreset[],
-    active_ai_preset_id: 'builtin-ollama-pc',
+    ai_presets: [installedAiBuiltin('qwen3-4b', null)] as AiPreset[],
+    active_ai_preset_id: 'builtin-ai-this-mac',
     polish_enabled: true,
     context_adaptation_enabled: true,
     polish_style: 'clean',
@@ -117,22 +42,18 @@ function baseConfig() {
     translate_enabled: false,
     selected_text_enabled: false,
     target_lang: 'en',
-    translation: { targets: ['en', 'zh', 'ja'], active_target: 'en' },
+    translation: { targets: ['en', 'zh-Hans', 'ja'], active_target: 'en' },
   }
 }
 
 // Mock stores - must be done before importing the component
 const mockAppStore = {
   config: baseConfig(),
+  savedConfig: null as any,
   updateConfig: vi.fn(),
   setConfig: vi.fn(),
   setSavedConfig: vi.fn(),
-  llmTestStatus: 'idle' as 'idle' | 'testing' | 'success' | 'error',
-  setLlmTestStatus: vi.fn(),
-  llmLatencyMs: null as number | null,
-  setLlmLatencyMs: vi.fn(),
-  llmModels: [] as string[],
-  setLlmModels: vi.fn(),
+  applyPersistedConfigPatch: vi.fn(),
   setAiHealth: vi.fn(),
   lastContext: null as any,
 }
@@ -153,29 +74,49 @@ vi.mock('../../../stores/appStore', async (importOriginal) => {
   }
 })
 
-/** The ai_presets list from the last updateConfig call. */
-function lastPresetUpdate(): AiPreset[] {
-  const calls = mockAppStore.updateConfig.mock.calls
-  for (let i = calls.length - 1; i >= 0; i--) {
-    if (calls[i][0].ai_presets) return calls[i][0].ai_presets
-  }
-  throw new Error('updateConfig was not called with ai_presets')
+function engineCards() {
+  return screen.getByRole('radiogroup', { name: 'AI polish uses' })
+}
+
+async function renderPane() {
+  render(<LlmPane />)
+  await waitFor(() => expect(useAiSetupStore.getState().hardware).not.toBeNull())
 }
 
 describe('LlmPane', () => {
   beforeEach(() => {
     mockAppStore.config = baseConfig()
-    mockAppStore.llmTestStatus = 'idle'
-    mockAppStore.llmLatencyMs = null
-    mockAppStore.llmModels = []
+    mockAppStore.savedConfig = null
     mockAppStore.lastContext = null
+    useAiSetupStore.setState({ status: IDLE_SETUP_STATUS, models: null, hardware: null })
 
     vi.clearAllMocks()
     vi.mocked(tauri.readCredential).mockResolvedValue(null)
     vi.mocked(tauri.setCredential).mockResolvedValue(undefined)
-    vi.mocked(tauri.fetchAiModels).mockResolvedValue([])
+    vi.mocked(tauri.updateConfig).mockResolvedValue(undefined)
     vi.mocked(tauri.getLatestMappingCandidate).mockResolvedValue(null)
     vi.mocked(tauri.listCustomAppMappings).mockResolvedValue([])
+    vi.mocked(tauri.getAiSetupStatus).mockResolvedValue(IDLE_SETUP_STATUS)
+    vi.mocked(tauri.listAiModels).mockResolvedValue([
+      {
+        id: 'qwen3-4b',
+        fileName: 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+        sizeBytes: 2_497_281_120,
+        installed: false,
+      },
+      {
+        id: 'qwen3-1.7b',
+        fileName: 'Qwen3-1.7B-Q4_K_M.gguf',
+        sizeBytes: 1_107_409_472,
+        installed: false,
+      },
+    ])
+    vi.mocked(tauri.getAiHardware).mockResolvedValue(
+      hardwareCheck(['qwen3-4b', 'qwen3-1.7b'], { serverAvailable: true }),
+    )
+    vi.mocked(tauri.startAiSetup).mockResolvedValue(undefined)
+    vi.mocked(tauri.deleteAiModel).mockResolvedValue(undefined)
+    vi.mocked(openUrl).mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -183,280 +124,216 @@ describe('LlmPane', () => {
     vi.clearAllMocks()
   })
 
-  describe('Preset picker', () => {
-    it('shows the built-in PC Ollama preset', () => {
-      render(<LlmPane />)
+  describe('AI polish uses', () => {
+    it('has one Learn more on the header and Built-in picked for the Built-in preset', async () => {
+      await renderPane()
 
-      expect(screen.getByLabelText('Preset')).toHaveValue('builtin-ollama-pc')
-      expect(screen.getByLabelText('Base URL')).toHaveValue('http://192.0.2.10:11434/v1')
-      expect(screen.getByLabelText('Model')).toHaveValue('qwen3:4b-instruct-2507-q4_K_M')
-      expect(screen.getByLabelText('Extra request fields (JSON object)')).toHaveValue('')
-    })
-
-    it('switches the active preset and clears the cached model list', () => {
-      mockAppStore.config.ai_presets = [builtinAiPreset, thinkingPreset]
-      render(<LlmPane />)
-
-      fireEvent.change(screen.getByLabelText('Preset'), { target: { value: 'pc-qwen35' } })
-
-      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
-        ai_presets: [builtinAiPreset, thinkingPreset],
-        active_ai_preset_id: 'pc-qwen35',
-      })
-      expect(mockAppStore.setLlmTestStatus).toHaveBeenCalledWith('idle')
-      expect(mockAppStore.setLlmModels).toHaveBeenCalledWith([])
-    })
-
-    it('shows the extra fields of the active preset as JSON', () => {
-      mockAppStore.config.ai_presets = [builtinAiPreset, thinkingPreset]
-      mockAppStore.config.active_ai_preset_id = 'pc-qwen35'
-      render(<LlmPane />)
-
-      const extras = screen.getByLabelText(
-        'Extra request fields (JSON object)',
-      ) as HTMLTextAreaElement
-      expect(JSON.parse(extras.value)).toEqual({ reasoning_effort: 'none' })
-      expect(tauri.readCredential).toHaveBeenCalledWith('llm', 'pc-qwen35')
-    })
-
-    it('saves a copy, including its extra fields, as the new active preset', () => {
-      mockAppStore.config.ai_presets = [thinkingPreset]
-      mockAppStore.config.active_ai_preset_id = 'pc-qwen35'
-      render(<LlmPane />)
-
-      fireEvent.click(screen.getByRole('button', { name: /Save as new preset/ }))
-
-      const update = mockAppStore.updateConfig.mock.calls[0][0]
-      expect(update.ai_presets).toHaveLength(2)
-      const created = update.ai_presets[1]
-      expect(created).toMatchObject({
-        name: 'PC Ollama — Qwen3.5 copy',
-        model: 'qwen3.5:4b',
-        extra_request_fields: { reasoning_effort: 'none' },
-        builtin: false,
-      })
-      expect(created.id).not.toBe('pc-qwen35')
-      expect(update.active_ai_preset_id).toBe(created.id)
-    })
-
-    it('deletes the active preset and activates the first remaining one', () => {
-      mockAppStore.config.ai_presets = [builtinAiPreset, thinkingPreset]
-      mockAppStore.config.active_ai_preset_id = 'pc-qwen35'
-      render(<LlmPane />)
-
-      fireEvent.click(screen.getByRole('button', { name: /Delete/ }))
-
-      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
-        ai_presets: [builtinAiPreset],
-        active_ai_preset_id: 'builtin-ollama-pc',
-      })
-    })
-
-    it('keeps Delete disabled for the last preset', () => {
-      render(<LlmPane />)
-      expect(screen.getByRole('button', { name: /Delete/ })).toBeDisabled()
-    })
-  })
-
-  describe('Preset fields', () => {
-    it('updates the model of the active preset and resets latency', () => {
-      render(<LlmPane />)
-
-      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'qwen3:8b' } })
-
-      expect(lastPresetUpdate()).toEqual([{ ...builtinAiPreset, model: 'qwen3:8b' }])
-      expect(mockAppStore.setLlmLatencyMs).toHaveBeenCalledWith(null)
-    })
-
-    it('updates the base URL and clears the cached model list', () => {
-      render(<LlmPane />)
-
-      fireEvent.change(screen.getByLabelText('Base URL'), {
-        target: { value: 'http://127.0.0.1:11434/v1' },
-      })
-
-      expect(lastPresetUpdate()).toEqual([
-        { ...builtinAiPreset, base_url: 'http://127.0.0.1:11434/v1' },
-      ])
-      expect(mockAppStore.setLlmModels).toHaveBeenCalledWith([])
-    })
-
-    it('displays available models count', () => {
-      mockAppStore.llmModels = ['qwen3:4b', 'qwen3:8b', 'llama3.2']
-
-      render(<LlmPane />)
-      expect(screen.getByText('3 models available')).toBeInTheDocument()
-    })
-
-    it('auto-fetches models from the preset base URL without an API key', async () => {
-      vi.mocked(tauri.fetchAiModels).mockResolvedValue(['qwen3:4b'])
-      render(<LlmPane />)
-
-      await waitFor(
-        () => {
-          expect(tauri.fetchAiModels).toHaveBeenCalledWith('http://192.0.2.10:11434/v1', '')
-        },
-        { timeout: 1500 },
+      expect(within(engineCards()).getByRole('radio', { name: /Built-in/ })).toHaveAttribute(
+        'aria-checked',
+        'true',
       )
-      await waitFor(() => {
-        expect(mockAppStore.setLlmModels).toHaveBeenCalledWith(['qwen3:4b'])
-      })
-    })
-
-    it('does not auto-fetch when models are already cached', async () => {
-      mockAppStore.llmModels = ['cached']
-      render(<LlmPane />)
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-      expect(tauri.fetchAiModels).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Extra request fields', () => {
-    it('writes a valid JSON object into the active preset', () => {
-      render(<LlmPane />)
-
-      fireEvent.change(screen.getByLabelText('Extra request fields (JSON object)'), {
-        target: { value: '{"reasoning_effort": "none", "temperature": 0.2}' },
-      })
-
-      expect(lastPresetUpdate()[0].extra_request_fields).toEqual({
-        reasoning_effort: 'none',
-        temperature: 0.2,
-      })
       expect(
-        screen.queryByText('This is not a JSON object, so it is not saved.'),
-      ).not.toBeInTheDocument()
+        within(engineCards()).getByRole('radio', { name: /Your server or API key/ }),
+      ).toHaveTextContent('Ollama, OpenAI, Groq, OpenRouter…')
+      const learnMore = screen.getAllByRole('button', { name: 'Learn more' })
+      expect(learnMore).toHaveLength(1)
+      fireEvent.click(learnMore[0])
+      expect(openUrl).toHaveBeenCalledWith(GUIDE)
+      // "Fetch available models" is gone.
+      expect(screen.queryByRole('button', { name: /Fetch/ })).not.toBeInTheDocument()
     })
 
-    it.each([
-      ['broken JSON', '{"reasoning_effort": '],
-      ['an array', '["reasoning_effort"]'],
-      ['a string', '"none"'],
-      ['null', 'null'],
-    ])('rejects %s without writing it into the config', (_label, text) => {
-      render(<LlmPane />)
+    it('Built-in details: the model cards, the hardware note and Not downloaded + Download', async () => {
+      await renderPane()
 
-      fireEvent.change(screen.getByLabelText('Extra request fields (JSON object)'), {
-        target: { value: text },
-      })
-
-      expect(screen.getByText('This is not a JSON object, so it is not saved.')).toBeInTheDocument()
-      expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
-      expect(screen.getByRole('button', { name: 'Test' })).toBeDisabled()
+      const settings = screen.getByTestId('builtin-settings')
+      expect(within(settings).getByText('Apple M1 Pro · 32 GB')).toBeInTheDocument()
+      expect(within(settings).getByRole('radio', { name: /Best quality/ })).toBeInTheDocument()
+      const status = await within(settings).findByTestId('builtin-status')
+      expect(within(status).getByText('Not downloaded')).toBeInTheDocument()
+      expect(within(status).getByText('Best quality · 2.5 GB')).toBeInTheDocument()
+      fireEvent.click(within(status).getByRole('button', { name: 'Download' }))
+      expect(tauri.startAiSetup).toHaveBeenCalledWith('qwen3-4b')
     })
 
-    it('treats an empty box as no extra fields', () => {
-      mockAppStore.config.ai_presets = [thinkingPreset]
-      mockAppStore.config.active_ai_preset_id = 'pc-qwen35'
-      render(<LlmPane />)
+    it('a model in use shows In use, its detail and Delete (confirmed with a second click)', async () => {
+      mockAppStore.config.ai_presets = [installedAiBuiltin('qwen3-4b', 7)]
+      vi.mocked(tauri.listAiModels).mockResolvedValue([
+        {
+          id: 'qwen3-4b',
+          fileName: 'Qwen3-4B-Instruct-2507-Q4_K_M.gguf',
+          sizeBytes: 2_497_281_120,
+          installed: true,
+        },
+      ])
+      await renderPane()
 
-      fireEvent.change(screen.getByLabelText('Extra request fields (JSON object)'), {
-        target: { value: '   ' },
-      })
-
-      expect(lastPresetUpdate()[0].extra_request_fields).toEqual({})
+      const status = await screen.findByTestId('builtin-status')
+      await waitFor(() => expect(within(status).getByText('In use')).toBeInTheDocument())
+      expect(within(status).getByText('Qwen3 4B Instruct · 2.5 GB')).toBeInTheDocument()
+      fireEvent.click(within(status).getByRole('button', { name: 'Delete' }))
+      fireEvent.click(within(status).getByRole('button', { name: 'Click again to delete' }))
+      await waitFor(() => expect(tauri.deleteAiModel).toHaveBeenCalledWith('qwen3-4b'))
     })
 
-    it('shows the example as placeholder', () => {
-      render(<LlmPane />)
-      expect(screen.getByPlaceholderText('{"reasoning_effort": "none"}')).toBeInTheDocument()
+    it('when no model suits this Mac, Built-in is dimmed and the server form shows', async () => {
+      vi.mocked(tauri.getAiHardware).mockResolvedValue(
+        hardwareCheck([], {
+          chipKind: 'intel',
+          chipName: 'Intel Core i7',
+          leftOut: 'needs_apple_silicon',
+          serverAvailable: true,
+        }),
+      )
+      await renderPane()
+
+      const builtin = within(engineCards()).getByRole('radio', { name: /Built-in/ })
+      expect(builtin).toBeDisabled()
+      expect(builtin).toHaveTextContent('Not available on this Mac')
+      expect(
+        within(engineCards()).getByRole('radio', { name: /Your server or API key/ }),
+      ).toHaveAttribute('aria-checked', 'true')
+      expect(screen.queryByTestId('builtin-settings')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument()
+      expect(screen.getByTestId('server-settings')).toHaveTextContent('Add your server or API key')
+    })
+
+    it('picking the server option with a saved preset makes it the one in use', async () => {
+      mockAppStore.config.ai_presets = [installedAiBuiltin('qwen3-4b', null), thinkingPreset]
+      await renderPane()
+
+      fireEvent.click(within(engineCards()).getByRole('radio', { name: /Your server or API key/ }))
+      await waitFor(() =>
+        expect(tauri.updateConfig).toHaveBeenCalledWith(
+          expect.objectContaining({ active_ai_preset_id: 'pc-qwen35' }),
+        ),
+      )
     })
   })
 
-  describe('API key', () => {
-    it('loads the key for the active preset from the Keychain', async () => {
-      vi.mocked(tauri.readCredential).mockResolvedValue('sk-stored')
-      render(<LlmPane />)
+  describe('Server details', () => {
+    beforeEach(() => {
+      mockAppStore.config.ai_presets = [installedAiBuiltin('qwen3-4b', null), thinkingPreset]
+      mockAppStore.config.active_ai_preset_id = 'pc-qwen35'
+    })
 
-      await waitFor(() => {
-        expect(screen.getByLabelText('API key (optional)')).toHaveValue('sk-stored')
-      })
-      expect(tauri.readCredential).toHaveBeenCalledWith('llm', 'builtin-ollama-pc')
-      expect((screen.getByLabelText('API key (optional)') as HTMLInputElement).type).toBe(
-        'password',
+    it('shows the preset picker, the four fields and the extra fields under Advanced', async () => {
+      await renderPane()
+
+      const server = screen.getByTestId('server-settings')
+      expect(within(server).getByRole('combobox', { name: 'Saved presets' })).toHaveValue(
+        'pc-qwen35',
+      )
+      expect(within(server).getByLabelText('Address')).toHaveValue('http://192.0.2.10:11434/v1')
+      expect(within(server).getByLabelText('Model')).toHaveValue('qwen3.5:4b')
+      // Saved extra fields open Advanced so they are visible.
+      expect(within(server).getByRole('button', { name: 'Advanced' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      )
+      expect(within(server).getByLabelText('Extra fields')).toHaveValue(
+        JSON.stringify({ reasoning_effort: 'none' }, null, 2),
       )
     })
 
-    it('stores the key under the preset id and resets the test state', async () => {
-      render(<LlmPane />)
+    it('tests the preset with its extra fields and the typed key', async () => {
+      vi.mocked(tauri.testAiPreset).mockResolvedValue(230)
+      await renderPane()
+      const server = screen.getByTestId('server-settings')
 
-      fireEvent.change(screen.getByLabelText('API key (optional)'), {
-        target: { value: 'sk-new-key' },
-      })
-
-      await waitFor(() => {
-        expect(tauri.setCredential).toHaveBeenCalledWith('llm', 'builtin-ollama-pc', 'sk-new-key')
-      })
-      expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
-      expect(mockAppStore.setLlmTestStatus).toHaveBeenCalledWith('idle')
+      fireEvent.change(within(server).getByLabelText('API key'), { target: { value: 'sk-1' } })
+      fireEvent.click(within(server).getByRole('button', { name: 'Test' }))
+      expect(await within(server).findByText('Works · 230 ms')).toBeInTheDocument()
+      expect(tauri.testAiPreset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'pc-qwen35',
+          extra_request_fields: { reasoning_effort: 'none' },
+        }),
+        'sk-1',
+      )
     })
 
-    it('shows an inline error when the Keychain save fails', async () => {
-      vi.mocked(tauri.setCredential).mockRejectedValueOnce(new Error('vault locked'))
-      render(<LlmPane />)
+    it('saves edited extra fields and the key under the preset id', async () => {
+      await renderPane()
+      const server = screen.getByTestId('server-settings')
 
-      fireEvent.change(screen.getByLabelText('API key (optional)'), {
-        target: { value: 'sk-new-key' },
+      fireEvent.change(within(server).getByLabelText('Extra fields'), {
+        target: { value: '{"temperature": 0.1}' },
       })
-
-      expect(await screen.findByText('settings.credentialSaveFailed')).toBeInTheDocument()
+      fireEvent.change(within(server).getByLabelText('API key'), { target: { value: 'sk-2' } })
+      fireEvent.click(within(server).getByRole('button', { name: 'Save' }))
+      await waitFor(() => expect(tauri.updateConfig).toHaveBeenCalled())
+      expect(tauri.setCredential).toHaveBeenCalledWith('llm', 'pc-qwen35', 'sk-2')
+      const saved = vi.mocked(tauri.updateConfig).mock.calls[0][0]
+      expect(saved.ai_presets.find((preset) => preset.id === 'pc-qwen35')).toMatchObject({
+        extra_request_fields: { temperature: 0.1 },
+        verified_at: null,
+      })
     })
   })
 
-  describe('Test button and latency display', () => {
-    it('is enabled without an API key', () => {
-      render(<LlmPane />)
-      expect(screen.getByRole('button', { name: 'Test' })).not.toBeDisabled()
+  describe('Polish', () => {
+    it('shows the four styles as option cards with Clean picked', async () => {
+      await renderPane()
+
+      const styles = screen.getByRole('radiogroup', { name: 'Polish style' })
+      expect(within(styles).getAllByRole('radio')).toHaveLength(4)
+      expect(within(styles).getByRole('radio', { name: /Clean/ })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      )
+      fireEvent.click(within(styles).getByRole('radio', { name: /Structured/ }))
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({ polish_style: 'structured' })
+      expect(screen.queryByText('Custom polish instructions')).not.toBeInTheDocument()
     })
 
-    it('tests the active preset, extras included, and reports the latency', async () => {
-      mockAppStore.config.ai_presets = [thinkingPreset]
-      mockAppStore.config.active_ai_preset_id = 'pc-qwen35'
-      vi.mocked(tauri.testAiPreset).mockResolvedValue(142)
-      render(<LlmPane />)
+    it('"Clean up dictation" switches polish off and hides the styles', async () => {
+      mockAppStore.config.polish_enabled = false
+      await renderPane()
 
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+      expect(screen.getByRole('switch', { name: 'Clean up dictation' })).not.toBeChecked()
+      expect(screen.getByText('Off pastes exactly what you said')).toBeInTheDocument()
+      expect(screen.queryByRole('radiogroup', { name: 'Polish style' })).not.toBeInTheDocument()
+    })
+  })
 
-      await waitFor(() => {
-        expect(tauri.testAiPreset).toHaveBeenCalledWith(thinkingPreset, '')
-        expect(mockAppStore.setLlmLatencyMs).toHaveBeenCalledWith(142)
-        expect(mockAppStore.setLlmTestStatus).toHaveBeenCalledWith('success')
+  describe('Advanced', () => {
+    it('is collapsed and holds selected text and custom instructions', async () => {
+      await renderPane()
+
+      const toggle = screen.getByRole('button', { name: 'Advanced' })
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByText('Custom instructions')).not.toBeInTheDocument()
+      fireEvent.click(toggle)
+      expect(
+        screen.getByRole('switch', { name: 'Use selected text in Ask/polish' }),
+      ).toBeInTheDocument()
+      fireEvent.change(screen.getByRole('textbox', { name: 'Custom polish instructions' }), {
+        target: { value: 'Keep a concise professional tone.' },
+      })
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+        polish_custom_prompt: 'Keep a concise professional tone.',
       })
     })
 
-    it('shows loading state during test', () => {
-      mockAppStore.llmTestStatus = 'testing'
-      render(<LlmPane />)
-      expect(screen.getByRole('button', { name: 'Test' })).toBeDisabled()
+    it('keeps selected text reachable when cleanup is off', async () => {
+      mockAppStore.config.polish_enabled = false
+      await renderPane()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
+      expect(
+        screen.getByRole('switch', { name: 'Use selected text in Ask/polish' }),
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('textbox', { name: 'Custom polish instructions' })).toBeNull()
     })
 
-    it('displays latency in milliseconds when test succeeds', () => {
-      mockAppStore.llmTestStatus = 'success'
-      mockAppStore.llmLatencyMs = 142
-      render(<LlmPane />)
-      expect(screen.getByText('142 ms')).toBeInTheDocument()
-    })
+    it('opens by itself when custom instructions exist', async () => {
+      mockAppStore.config.polish_custom_prompt = 'Keep it concise.'
+      await renderPane()
 
-    it('displays generic success message when latency is null', () => {
-      mockAppStore.llmTestStatus = 'success'
-      mockAppStore.llmLatencyMs = null
-      render(<LlmPane />)
-      expect(screen.getByText('Connection successful')).toBeInTheDocument()
-    })
-
-    it('shows backend error details when the test fails', async () => {
-      vi.mocked(tauri.testAiPreset).mockRejectedValueOnce('HTTP 404: model not found')
-      const view = render(<LlmPane />)
-
-      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
-      await waitFor(() => {
-        expect(mockAppStore.setLlmTestStatus).toHaveBeenCalledWith('error')
-      })
-      mockAppStore.llmTestStatus = 'error'
-      view.rerender(<LlmPane />)
-
-      expect(screen.getByText('HTTP 404: model not found')).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'Custom polish instructions' })).toHaveValue(
+        'Keep it concise.',
+      )
     })
   })
 
@@ -464,88 +341,8 @@ describe('LlmPane', () => {
     it('keeps Ask Anything out of AI Polish settings', () => {
       render(<LlmPane />)
 
-      expect(screen.queryByText('Ask Anything')).not.toBeInTheDocument()
+      expect(screen.queryByText('Ask anything')).not.toBeInTheDocument()
       expect(screen.queryByText('Voice question')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('AI polish behavior settings', () => {
-    it('shows Clean as the default polish style outside advanced settings', () => {
-      render(<LlmPane />)
-
-      expect(screen.getByText('Polish style')).toBeInTheDocument()
-      expect(screen.getByDisplayValue('Clean')).toBeInTheDocument()
-    })
-
-    it('updates the selected polish style without opening advanced settings', () => {
-      render(<LlmPane />)
-
-      fireEvent.change(screen.getByDisplayValue('Clean'), { target: { value: 'structured' } })
-
-      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({ polish_style: 'structured' })
-      expect(screen.queryByText('Custom polish instructions')).not.toBeInTheDocument()
-    })
-
-    it('keeps custom instruction controls inside advanced settings', () => {
-      render(<LlmPane />)
-
-      expect(screen.getByText('Advanced polish settings')).toBeInTheDocument()
-      expect(screen.queryByText('Optional writing rules')).not.toBeInTheDocument()
-      expect(screen.queryByText('Chinese output')).not.toBeInTheDocument()
-      expect(screen.queryByText('Custom polish instructions')).not.toBeInTheDocument()
-      expect(screen.queryByText('Use selected text as context')).not.toBeInTheDocument()
-
-      fireEvent.click(screen.getByRole('button', { name: /advanced polish settings/i }))
-
-      expect(screen.getByText('Custom polish instructions')).toBeInTheDocument()
-      expect(screen.getByText('Use selected text as context')).toBeInTheDocument()
-      expect(screen.getByText('Use selected text for context')).toBeInTheDocument()
-      expect(screen.queryByText('Chinese output')).not.toBeInTheDocument()
-    })
-
-    it('keeps selected-text controls reachable when cleanup is disabled', () => {
-      mockAppStore.config.polish_enabled = false
-      render(<LlmPane />)
-
-      fireEvent.click(screen.getByRole('button', { name: /advanced polish settings/i }))
-
-      expect(screen.getByText('Use selected text as context')).toBeInTheDocument()
-      expect(screen.queryByText('Custom polish instructions')).not.toBeInTheDocument()
-    })
-
-    it('updates custom polish instructions from advanced settings', () => {
-      render(<LlmPane />)
-
-      fireEvent.click(screen.getByRole('button', { name: /advanced polish settings/i }))
-      const textarea = screen.getByPlaceholderText('Example prompt')
-      fireEvent.change(textarea, { target: { value: 'Keep a concise professional tone.' } })
-
-      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
-        polish_custom_prompt: 'Keep a concise professional tone.',
-      })
-    })
-
-    it('opens advanced settings automatically when custom instructions exist', () => {
-      mockAppStore.config.polish_custom_prompt = 'Keep it concise.'
-
-      render(<LlmPane />)
-
-      expect(screen.getByText('Custom polish instructions')).toBeInTheDocument()
-      expect(screen.queryByText('Chinese output')).not.toBeInTheDocument()
-    })
-
-    it('does not expose legacy global active scenes in AI Polish', () => {
-      mockAppStore.config.active_scene = {
-        id: 'custom_meeting',
-        source: 'custom',
-        name: 'Meeting Notes',
-        prompt_template: 'Use bullets.',
-      }
-
-      render(<LlmPane />)
-
-      expect(screen.queryByText('Active scene: Meeting Notes')).not.toBeInTheDocument()
-      expect(screen.queryByText('Clear scene')).not.toBeInTheDocument()
     })
   })
 
@@ -555,7 +352,7 @@ describe('LlmPane', () => {
       render(<LlmPane />)
 
       const contextSwitch = screen.getByRole('switch', {
-        name: 'Adapt writing to the current app',
+        name: 'Match the app you’re in',
       })
       expect(contextSwitch).toBeDisabled()
     })
@@ -563,7 +360,7 @@ describe('LlmPane', () => {
     it('updates the context adaptation preference', () => {
       render(<LlmPane />)
       const contextSwitch = screen.getByRole('switch', {
-        name: 'Adapt writing to the current app',
+        name: 'Match the app you’re in',
       })
       fireEvent.click(contextSwitch)
       expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
@@ -609,14 +406,11 @@ describe('LlmPane', () => {
       )
     })
 
-    it('keeps helper copy and advanced toggles out of the default flow', () => {
+    it('keeps the advanced toggles out of the default flow', () => {
       render(<LlmPane />)
 
-      expect(screen.queryByText('Cleans up dictation before output')).not.toBeInTheDocument()
-      expect(screen.queryByText('Translate each dictation result')).not.toBeInTheDocument()
-      expect(screen.queryByText('Uses a private local app category')).not.toBeInTheDocument()
-      expect(screen.queryByText('Use selected text as context')).not.toBeInTheDocument()
-      expect(screen.queryByText('Use selected text for context')).not.toBeInTheDocument()
+      expect(screen.getByText('Email, chat and docs each get their own tone')).toBeInTheDocument()
+      expect(screen.queryByText('Use selected text in Ask/polish')).not.toBeInTheDocument()
     })
 
     it('hides last context until an operation snapshot exists', () => {
@@ -726,9 +520,13 @@ describe('LlmPane', () => {
 
       render(<LlmPane />)
 
+      // A link under "Match the app you're in", and the same item in the app's menu.
+      const link = await screen.findByRole('button', { name: 'Manage app mappings' })
       fireEvent.click(await screen.findByRole('button', { name: 'App writing style' }))
-      expect(screen.getByText('Manage app mappings')).toBeInTheDocument()
+      expect(screen.getAllByText('Manage app mappings')).toHaveLength(2)
       expect(screen.queryByText('Use a different writing style')).not.toBeInTheDocument()
+      fireEvent.click(link)
+      expect(await screen.findByRole('dialog', { name: 'Manage app mappings' })).toBeVisible()
       expect(screen.queryByText('Gmail')).not.toBeInTheDocument()
     })
 
@@ -737,7 +535,7 @@ describe('LlmPane', () => {
       mockAppStore.config.translation = { targets: ['en'], active_target: 'en' }
 
       render(<LlmPane />)
-      expect(screen.getByRole('radiogroup', { name: 'translate.targetsLabel' })).toBeInTheDocument()
+      expect(screen.getByRole('radiogroup', { name: 'Translation languages' })).toBeInTheDocument()
       // A single language stays single: no padding with other languages.
       expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
     })
@@ -746,7 +544,7 @@ describe('LlmPane', () => {
       mockAppStore.config.translate_enabled = false
 
       render(<LlmPane />)
-      expect(screen.getByRole('radiogroup', { name: 'translate.targetsLabel' })).toBeInTheDocument()
+      expect(screen.getByRole('radiogroup', { name: 'Translation languages' })).toBeInTheDocument()
     })
   })
 })

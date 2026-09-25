@@ -1,29 +1,35 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { builtinWhisperPreset, serverPresets } from '../../lib/speechTypes'
-import { BUILTIN_WHISPER_PRESET_ID, useAppStore } from '../../stores/appStore'
-import { deleteServerPreset, selectSpeechPreset } from './saveSpeech'
-import { LearnMoreLink } from './LearnMoreLink'
+import { useAppStore } from '../../stores/appStore'
+import { deleteServerPreset, selectPreset } from './saveSpeech'
 import { ServerPresetForm } from './ServerPresetForm'
+import {
+  SPEECH_SERVICE,
+  activePresetOf,
+  builtinPresetOf,
+  serverPresetsOf,
+  type EngineService,
+} from './services'
 
 const ADD = '__add__'
 
 /**
- * Settings → Speech → "Your server or API key" details (plan 0015). With saved presets: a
- * "Preset" header with the picker at the upper right (saved presets and "+ Add preset…"), the
- * four fields of the selected preset, Test and Save on one line, "Delete this preset", and a
- * "Learn more" line. With none: "Add your server or API key" + Learn more, and the empty form.
+ * Settings → Speech / AI → "Your server or API key" details (plans 0015 and 0017). With saved
+ * presets: a "Preset" header with the picker at the upper right (saved presets and "+ Add
+ * preset…"), the fields of the selected preset, Test and Save on one line, and "Delete this
+ * preset". With none: "Add your server or API key" and the empty form. ("Learn more" sits on
+ * the page's "… uses" header.)
  */
-export function ServerSettings() {
+export function ServerSettings({ service = SPEECH_SERVICE }: { service?: EngineService }) {
   const { t } = useTranslation()
   const config = useAppStore((s) => s.config)
-  const saved = serverPresets(config.speech_presets)
+  const saved = serverPresetsOf(service, config)
   const [adding, setAdding] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selected =
-    saved.find((preset) => preset.id === config.active_speech_preset_id) ?? saved[0] ?? null
+  const activeId = activePresetOf(service, config)?.id
+  const selected = saved.find((preset) => preset.id === activeId) ?? saved[0] ?? null
   const showForm = adding || selected === null ? null : selected
 
   const run = (action: Promise<void>) =>
@@ -39,7 +45,7 @@ export function ServerSettings() {
       return
     }
     setAdding(false)
-    void run(selectSpeechPreset(value))
+    void run(selectPreset(service, value))
   }
 
   const handleDelete = () => {
@@ -50,40 +56,39 @@ export function ServerSettings() {
     }
     setConfirmDelete(false)
     const next = saved.find((preset) => preset.id !== selected.id)
-    const fallback =
-      next?.id ?? builtinWhisperPreset(config.speech_presets)?.id ?? BUILTIN_WHISPER_PRESET_ID
-    void run(deleteServerPreset(selected.id, fallback))
+    const fallback = next?.id ?? builtinPresetOf(service, config)?.id ?? service.builtinId
+    void run(deleteServerPreset(service, selected.id, fallback))
   }
 
   return (
     <div data-testid="server-settings">
-      {saved.length > 0 ? (
-        <div className="mx-1 mt-5 mb-[7px] flex flex-wrap items-end justify-between gap-2.5">
-          <span className="group-label m-0">{t('speech.presetLabel')}</span>
-          <select
-            aria-label={t('speech.savedPresets')}
-            value={adding ? ADD : (selected?.id ?? '')}
-            onChange={(event) => handlePick(event.target.value)}
-            className="popup max-w-[220px] text-[12px]"
-          >
-            {saved.map((preset) => (
-              <option key={preset.id} value={preset.id}>
-                {preset.name}
-              </option>
-            ))}
-            <option value={ADD}>{t('speech.addPresetMenu')}</option>
-          </select>
-        </div>
-      ) : (
-        <div className="mx-1 mt-5 mb-[7px] flex flex-wrap items-end justify-between gap-2.5">
+      <div className="mx-1 mt-5 mb-[7px] flex flex-wrap items-end justify-between gap-2.5">
+        {saved.length > 0 ? (
+          <>
+            <span className="group-label m-0">{t('speech.presetLabel')}</span>
+            <select
+              aria-label={t('speech.savedPresets')}
+              value={adding ? ADD : (selected?.id ?? '')}
+              onChange={(event) => handlePick(event.target.value)}
+              className="popup max-w-[220px] text-[12px]"
+            >
+              {saved.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.name}
+                </option>
+              ))}
+              <option value={ADD}>{t('speech.addPresetMenu')}</option>
+            </select>
+          </>
+        ) : (
           <span className="group-label m-0">{t('speech.addTitle')}</span>
-          <LearnMoreLink />
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="row-group px-3.5 py-3">
         <ServerPresetForm
           key={showForm?.id ?? 'new'}
+          service={service}
           preset={showForm}
           saveLabel={t('speech.save')}
           onSaved={() => setAdding(false)}
@@ -102,12 +107,6 @@ export function ServerSettings() {
         />
         {error && <p className="m-0 mt-2 text-[12px] text-error">{error}</p>}
       </div>
-
-      {saved.length > 0 && (
-        <p className="m-0 mx-1 mt-2 text-[12px] text-text-secondary">
-          <LearnMoreLink /> {t('speech.learnMoreAbout')}
-        </p>
-      )}
     </div>
   )
 }

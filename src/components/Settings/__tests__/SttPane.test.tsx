@@ -104,6 +104,32 @@ describe('SttPane', () => {
       expect(await screen.findByLabelText('Single recording duration')).toBeInTheDocument()
     })
 
+    it('has one Learn more, on the "Speech recognition uses" header (plan 0017)', async () => {
+      const pc = serverPreset('pc', 'Speech server on my PC', 'http://192.0.2.10:8000/v1')
+      setPresets([...BUILTIN_SPEECH_PRESETS.map((p) => ({ ...p })), pc], 'pc')
+      render(<SttPane />)
+
+      expect(screen.getAllByRole('button', { name: 'Learn more' })).toHaveLength(1)
+      expect(screen.queryByText(/about supported services/)).not.toBeInTheDocument()
+      fireEvent.click(engine(/^Built-in/))
+      await waitFor(() => expect(screen.getByTestId('builtin-settings')).toBeInTheDocument())
+      expect(screen.getAllByRole('button', { name: 'Learn more' })).toHaveLength(1)
+    })
+
+    it('when no model fits, Built-in is dimmed and the download section is hidden', async () => {
+      vi.mocked(tauri.getSpeechHardware).mockResolvedValue(
+        hardwareCheck([], { freeBytes: 100_000_000, neededBytes: 209_094_035 }),
+      )
+      render(<SttPane />)
+
+      await waitFor(() => expect(engine(/^Built-in/)).toBeDisabled())
+      expect(engine(/^Built-in/)).toHaveTextContent('Not available on this Mac')
+      expect(engine(/Your server or API key/)).toHaveAttribute('aria-checked', 'true')
+      expect(screen.queryByTestId('builtin-settings')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument()
+      expect(screen.getByTestId('server-settings')).toBeInTheDocument()
+    })
+
     it('with no saved preset, "Your server" shows the empty form and keeps Built-in in use', () => {
       render(<SttPane />)
       fireEvent.click(engine(/Your server or API key/))

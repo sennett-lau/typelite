@@ -71,7 +71,13 @@ describe('service readiness', () => {
   })
 
   it('never records a pass for a placeholder URL', () => {
-    const lan = state().config.ai_presets[1]
+    const lan = {
+      ...state().config.ai_presets[0],
+      id: 'lan',
+      kind: 'openai_compatible' as const,
+      base_url: 'http://<computer-ip>:11434/v1',
+    }
+    state().updateConfig({ ai_presets: [...state().config.ai_presets, lan] })
     expect(hasPlaceholder(lan.base_url)).toBe(true)
     recordTestPassed('ai', lan)
     expect(state().config.ai_presets[1].verified_at).toBeNull()
@@ -85,11 +91,11 @@ describe('service readiness', () => {
   })
 
   it('mirrors backend results, but not onto a preset that is being edited', () => {
-    applyVerificationEvent({ kind: 'ai', presetId: 'builtin-ai-ollama-local', verifiedAt: 42 })
+    applyVerificationEvent({ kind: 'ai', presetId: 'builtin-ai-this-mac', verifiedAt: 42 })
     expect(state().config.ai_presets[0].verified_at).toBe(42)
     expect(state().savedConfig?.ai_presets[0].verified_at).toBe(42)
 
-    applyVerificationEvent({ kind: 'ai', presetId: 'builtin-ai-ollama-local', verifiedAt: null })
+    applyVerificationEvent({ kind: 'ai', presetId: 'builtin-ai-this-mac', verifiedAt: null })
     expect(state().config.ai_presets[0].verified_at).toBeNull()
 
     state().updateConfig({
@@ -97,7 +103,7 @@ describe('service readiness', () => {
         index === 0 ? { ...preset, model: 'edited' } : preset,
       ),
     })
-    applyVerificationEvent({ kind: 'ai', presetId: 'builtin-ai-ollama-local', verifiedAt: 50 })
+    applyVerificationEvent({ kind: 'ai', presetId: 'builtin-ai-this-mac', verifiedAt: 50 })
     expect(state().config.ai_presets[0].verified_at).toBeNull()
     expect(state().savedConfig?.ai_presets[0].verified_at).toBe(50)
   })
