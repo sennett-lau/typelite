@@ -37,6 +37,15 @@ Status: agreed — 2026-09-25
 |---|---|
 | [behaviour.md](behaviour.md) | Flows, detection, panel states. |
 
+## Later: web search
+
+When search is picked up again, the planned default is TinyFish (hosted, free search and fetch
+with a free API key, live results, pages as Markdown) as a bring-your-own-key option in the
+"Set up web search" step, with "Answer anyway" as the skip and a clear note that the question is
+sent to TinyFish. A self-hosted SearXNG option stays available for users who want nothing to
+leave their network. To check then: fetch latency, data retention in their privacy policy, and
+whether the free tier still exists.
+
 ## Open questions
 
 - None.
