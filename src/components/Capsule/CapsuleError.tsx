@@ -8,10 +8,21 @@ import { openSettingsPane } from '../../lib/tauri'
 const ERROR_MS = 2500
 const SETUP_ERROR_MS = 6000
 
-export function CapsuleError() {
+interface CapsuleErrorProps {
+  /**
+   * The message and whether it has a "Set up" button, as last shown. They stay while the pill
+   * hides after the error was cleared (plan 0018), so the text does not change mid-fade.
+   */
+  message?: string | null
+  hasAction?: boolean
+}
+
+export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
   const { t } = useTranslation()
   const pipelineError = useAppStore((s) => s.pipelineError)
   const action = useAppStore((s) => s.pipelineErrorAction)
+  const shownMessage = pipelineError ?? message ?? null
+  const showAction = action !== null || hasAction === true
   const setPipelineError = useAppStore((s) => s.setPipelineError)
   const resetRecording = useAppStore((s) => s.resetRecording)
 
@@ -49,9 +60,9 @@ export function CapsuleError() {
       {/* White dot */}
       <motion.div className="w-2 h-2 rounded-full bg-white/80 flex-shrink-0" />
       <p className="text-[11px] leading-4 text-white truncate flex-1">
-        {pipelineError || t('capsule.errors.unknown')}
+        {shownMessage || t('capsule.errors.unknown')}
       </p>
-      {action && (
+      {showAction && (
         <button
           type="button"
           onPointerUp={(event) => event.stopPropagation()}

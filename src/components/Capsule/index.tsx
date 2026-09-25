@@ -1,8 +1,14 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useAppStore, type PipelineState } from '../../stores/appStore'
 import { useRecording } from '../../hooks/useRecording'
-import { getPillSize, useCapsuleResize } from '../../hooks/useCapsuleResize'
+import {
+  getCapsuleState,
+  getCapsuleVisibility,
+  getPillSize,
+  useCapsuleResize,
+  type CapsuleSize,
+} from '../../hooks/useCapsuleResize'
 import { stopAskFlow } from '../../lib/tauri'
 import { CapsulePreparing } from './CapsulePreparing'
 import { CapsuleRecording } from './CapsuleRecording'
@@ -18,11 +24,20 @@ import { CapsuleAurora, type AuroraMode } from './CapsuleAurora'
 const DRAG_THRESHOLD = 5
 /** How long the done flash stays before the pill hides. */
 const DONE_FLASH_MS = 500
+/** Plan 0018 content cross-fade: the old content fades out while the new one fades in. */
+const EASE = [0.2, 0, 0, 1] as const
+const CONTENT_ENTER = { duration: 0.22, delay: 0.06, ease: EASE }
+const CONTENT_EXIT = { duration: 0.14, ease: 'easeIn' as const }
+/** The aurora light fades in quickly and out slowly instead of cutting. */
+const AURORA_FADE_IN = { duration: 0.15, ease: 'easeOut' as const }
+const AURORA_FADE_OUT = { duration: 0.3, ease: 'easeOut' as const }
 
-function getCapsuleState(pipelineState: string, hasError: boolean, doneFlash: boolean) {
-  if (hasError) return 'error'
-  if (doneFlash && pipelineState === 'idle') return 'done'
-  return pipelineState
+/** What the pill last showed while visible; kept while it slides away (plan 0018). */
+interface ShownPill {
+  state: string
+  size: CapsuleSize
+  error: string | null
+  errorHasAction: boolean
 }
 
 function auroraModeFor(capsuleState: string): AuroraMode | null {
@@ -93,7 +108,9 @@ export function Capsule() {
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const errorHasAction = useAppStore((s) => s.pipelineErrorAction !== null)
   const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
+  const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const { stopRecording, isRecording } = useRecording()
+  const reducedMotion = useReducedMotion()
 
   const dragStart = useRef<{ x: number; y: number } | null>(null)
   const isDragging = useRef(false)
@@ -104,14 +121,42 @@ export function Capsule() {
   const doneFlash = useDoneFlash(pipelineState, hasError)
   useCapsuleResize(doneFlash, rootRef)
 
-  const capsuleState = getCapsuleState(pipelineState, hasError, doneFlash)
-  const capsuleShellSize = getPillSize(
-    capsuleState,
-    activeVoiceMode,
+  const liveState = getCapsuleState(pipelineState, hasError, doneFlash)
+  const liveSize = getPillSize(liveState, activeVoiceMode, errorHasAction, translateTargetCount)
+  const visible = getCapsuleVisibility({
+    contextMenuOpen,
+    capsuleExpanded,
+    hasError,
+    pipelineState,
+    doneFlash,
+  })
+
+  // While visible the pill shows the live state. While it hides it keeps what it last showed,
+  // so it slides away as it was instead of shrinking to the idle dot.
+  const shown = useRef<ShownPill>({
+    state: liveState,
+    size: liveSize,
+    error: pipelineError,
     errorHasAction,
-    translateTargetCount,
-  )
-  const auroraMode = auroraModeFor(capsuleState)
+  })
+  if (visible) {
+    shown.current = {
+      state: liveState,
+      size: liveSize,
+      error: pipelineError,
+      errorHasAction,
+    }
+  }
+  const capsuleState = shown.current.state
+  const capsuleShellSize = shown.current.size
+  const auroraMode = visible ? auroraModeFor(capsuleState) : null
+
+  // The render that shows the pill again takes the new size at once; later changes animate.
+  const committedVisible = useRef(visible)
+  const appearing = visible && !committedVisible.current
+  useEffect(() => {
+    committedVisible.current = visible
+  }, [visible])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return
@@ -176,27 +221,52 @@ export function Capsule() {
       style={{ background: 'transparent' }}
       onContextMenu={handleContextMenu}
     >
-      {/* Persistent outer shell — the dark glass pill */}
-      <motion.div
-        layout
-        transition={{ layout: { duration: 0.2, ease: [0.2, 0, 0, 1] } }}
+      {/* Persistent outer shell — the dark glass pill. Its width, height and corners animate
+          with CSS (`.pill` in globals.css); hiding slides it down and fades it (`.pill-gone`). */}
+      <div
         className={`pill absolute left-3 rounded-full pointer-events-auto shrink-0 ${
           capsuleState === 'error' ? 'pill-error' : ''
-        }`}
-        style={capsuleShellSize}
+        } ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
+        style={{ ...capsuleShellSize, borderRadius: capsuleShellSize.height / 2 }}
+        data-testid="capsule-shell"
+        data-visible={visible}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        {auroraMode && <CapsuleAurora key={auroraMode} mode={auroraMode} />}
+        <AnimatePresence initial={false}>
+          {auroraMode && (
+            <motion.div
+              key={auroraMode}
+              className="absolute inset-0"
+              style={{ borderRadius: 'inherit' }}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: 1,
+                transition: auroraMode === 'done' ? { duration: 0 } : AURORA_FADE_IN,
+              }}
+              exit={{ opacity: 0, transition: AURORA_FADE_OUT }}
+            >
+              <CapsuleAurora mode={auroraMode} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <AnimatePresence mode="sync" initial={false}>
           <motion.div
             key={capsuleState}
             className="absolute inset-0"
-            initial={{ opacity: 0, filter: 'blur(2px)' }}
-            animate={{ opacity: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, filter: 'blur(2px)' }}
-            transition={{ duration: 0.12, ease: [0.2, 0, 0, 1] }}
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, filter: 'blur(3px)', y: 2 }}
+            animate={{
+              opacity: 1,
+              filter: 'blur(0px)',
+              y: 0,
+              transition: reducedMotion ? { duration: 0.15 } : CONTENT_ENTER,
+            }}
+            exit={{
+              opacity: 0,
+              ...(reducedMotion ? {} : { filter: 'blur(3px)' }),
+              transition: CONTENT_EXIT,
+            }}
           >
             {capsuleState === 'preparing' && <CapsulePreparing />}
             {capsuleState === 'recording' && <CapsuleRecording />}
@@ -206,10 +276,15 @@ export function Capsule() {
             {capsuleState === 'done' && <CapsuleDone />}
             {capsuleState === 'ask_recording' && <CapsuleAskRecording />}
             {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
-            {capsuleState === 'error' && <CapsuleError />}
+            {capsuleState === 'error' && (
+              <CapsuleError
+                message={shown.current.error}
+                hasAction={shown.current.errorHasAction}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Context menu appears to the right of capsule */}
       {contextMenuOpen && contextMenuReady && (

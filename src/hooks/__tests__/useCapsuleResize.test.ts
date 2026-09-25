@@ -6,6 +6,7 @@ import {
   getCapsuleFocusable,
   getCapsuleVisibility,
   getSizeForState,
+  growFirstSize,
   monitorKey,
   pickFollowTarget,
   pickMonitorForPoint,
@@ -137,6 +138,24 @@ describe('getSizeForState', () => {
         doneFlash: true,
       }),
     ).toBe(true)
+  })
+})
+
+describe('window resize order (plan 0018)', () => {
+  it('grows at once when nothing shrinks', () => {
+    expect(growFirstSize({ width: 156, height: 60 }, { width: 384, height: 60 })).toBeNull()
+    expect(growFirstSize({ width: 156, height: 60 }, { width: 156, height: 60 })).toBeNull()
+  })
+
+  it('keeps a shrinking dimension until the pill animated smaller, growing the other', () => {
+    expect(growFirstSize({ width: 384, height: 60 }, { width: 156, height: 60 })).toEqual({
+      width: 384,
+      height: 60,
+    })
+    expect(growFirstSize({ width: 244, height: 244 }, { width: 384, height: 60 })).toEqual({
+      width: 384,
+      height: 244,
+    })
   })
 })
 

@@ -28,6 +28,14 @@ export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
 const IDLE_SIZE: CapsuleSize = { width: 36, height: 36 }
 
 /**
+ * Plan 0018 transitions. The pill's width, height and corners animate for `PILL_RESIZE_MS`
+ * (CSS on `.pill`); hiding slides it down and fades it for `PILL_HIDE_MS`. The window grows at
+ * once and shrinks only after the pill has animated narrower, so nothing is clipped.
+ */
+export const PILL_RESIZE_MS = 280
+export const PILL_HIDE_MS = 220
+
+/**
  * The pill's own size (without the context menu or window padding) for a capsule state.
  * `capsuleState` is the pipeline state, `error`, or `done` (the brief flash after pasting).
  */
@@ -75,6 +83,13 @@ export function getCapsuleVisibility({
   doneFlash = false,
 }: CapsuleVisibilityInput): boolean {
   return contextMenuOpen || capsuleExpanded || hasError || doneFlash || pipelineState !== 'idle'
+}
+
+/** The state the pill shows: an error first, then the done flash once idle, else the pipeline state. */
+export function getCapsuleState(pipelineState: string, hasError: boolean, doneFlash: boolean) {
+  if (hasError) return 'error'
+  if (doneFlash && pipelineState === 'idle') return 'done'
+  return pipelineState
 }
 
 export function getCapsuleFocusable(): boolean {
@@ -210,14 +225,28 @@ export function getSizeForState(
   if (contextMenuOpen) return { width: 220, height: 220 }
   if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translateTargetCount)
   if (expanded) return { width: 220, height: 90 }
-  const capsuleState = doneFlash && state === 'idle' ? 'done' : state
+  const capsuleState = getCapsuleState(state, false, doneFlash)
   return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount)
+}
+
+/**
+ * The window size to set first when the window goes from `current` to `next`: any dimension
+ * that grows grows at once, one that shrinks keeps its size until the pill has animated
+ * smaller. Returns null when nothing shrinks (the next size can be set directly).
+ */
+export function growFirstSize(current: CapsuleSize, next: CapsuleSize): CapsuleSize | null {
+  if (next.width >= current.width && next.height >= current.height) return null
+  return {
+    width: Math.max(current.width, next.width),
+    height: Math.max(current.height, next.height),
+  }
 }
 
 /**
  * Sizes, places and shows the capsule window. `doneFlash` is true during the done flash.
  * While the pill is visible it follows the cursor to another screen, fading `fadeTarget`
- * out and in around the move.
+ * out and in around the move. The window grows before the pill animates larger and shrinks
+ * after it animated smaller, and it hides only after the pill's hide animation (plan 0018).
  */
 export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLElement | null>) {
   const pipelineState = useAppStore((s) => s.pipelineState)
@@ -233,7 +262,12 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const anchorMonitor = useRef<string | null>(null)
   const anchorSize = useRef<CapsuleSize>({ width: 0, height: 0 })
   const windowHeightNow = useRef(0)
+  const windowSizeNow = useRef<CapsuleSize>({ width: 0, height: 0 })
   const visible = useRef(false)
+  /** Counts window updates; a waiting update gives up when a newer one was scheduled. */
+  const generation = useRef(0)
+  /** Ends the current wait early (a newer update is waiting in the queue). */
+  const wake = useRef<() => void>(() => {})
   const queue = useRef<Promise<void>>(Promise.resolve())
   const followQueued = useRef(false)
 
@@ -259,8 +293,22 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
+    const myGeneration = ++generation.current
+    wake.current()
+
+    /** Waits `ms`; false when a newer update arrived meanwhile (it then does the work). */
+    const pause = (ms: number) =>
+      new Promise<boolean>((resolve) => {
+        if (generation.current !== myGeneration) return resolve(false)
+        const timer = setTimeout(() => resolve(generation.current === myGeneration), ms)
+        wake.current = () => {
+          clearTimeout(timer)
+          resolve(false)
+        }
+      })
 
     const run = async () => {
+      if (generation.current !== myGeneration) return
       const {
         getCurrentWindow,
         LogicalSize,
@@ -290,14 +338,32 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
         }
       }
 
-      windowHeightNow.current = windowHeight
-      await win.setSize(new LogicalSize(windowWidth, windowHeight)).catch(() => {})
-      if (anchor.current) {
-        // Left edge and vertical centre stay fixed. Content is padded 12px each side,
-        // so the mic icon never moves while the capsule grows or shrinks.
-        const origin = capsuleOrigin(anchor.current, windowHeight)
-        await win.setPosition(new LogicalPosition(origin.x, origin.y)).catch(() => {})
+      const applySize = async (width: number, height: number) => {
+        windowHeightNow.current = height
+        windowSizeNow.current = { width, height }
+        await win.setSize(new LogicalSize(width, height)).catch(() => {})
+        if (anchor.current) {
+          // Left edge and vertical centre stay fixed. Content is padded 12px each side,
+          // so the mic icon never moves while the capsule grows or shrinks.
+          const origin = capsuleOrigin(anchor.current, height)
+          await win.setPosition(new LogicalPosition(origin.x, origin.y)).catch(() => {})
+        }
       }
+
+      // Hiding: keep the window while the pill slides down and fades out.
+      if (!shouldShow && visible.current && !(await pause(PILL_HIDE_MS))) return
+
+      // Shrinking while visible: grow what grows now, shrink the rest after the pill animated.
+      const next = { width: windowWidth, height: windowHeight }
+      const first =
+        shouldShow && visible.current && !appearing && !prefersReducedMotion()
+          ? growFirstSize(windowSizeNow.current, next)
+          : null
+      if (first) {
+        await applySize(first.width, first.height)
+        if (!(await pause(PILL_RESIZE_MS))) return
+      }
+      await applySize(windowWidth, windowHeight)
 
       // Signal that the window has finished resizing for context menu
       if (contextMenuOpen) {

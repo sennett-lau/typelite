@@ -894,6 +894,27 @@ body,
     box-shadow: 0 10px 30px rgba(20, 20, 40, 0.22);
     color: var(--color-pill-text);
     overflow: hidden;
+    /* Plan 0018: size and corners animate together; showing and hiding slide and fade. */
+    transition:
+      width 0.28s cubic-bezier(0.2, 0, 0, 1),
+      height 0.28s cubic-bezier(0.2, 0, 0, 1),
+      border-radius 0.28s cubic-bezier(0.2, 0, 0, 1),
+      background-color 0.28s ease,
+      border-color 0.28s ease,
+      opacity 0.22s ease,
+      transform 0.22s cubic-bezier(0.2, 0, 0, 1),
+      filter 0.22s ease;
+  }
+  /* The pill just appeared: take the new size at once (only opacity and position animate). */
+  .pill-size-instant {
+    transition-property: opacity, transform, filter;
+  }
+  /* Hiding (and hidden): slid down 6 pt, a little smaller, faded out. */
+  .pill-gone {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+    filter: blur(2px);
+    pointer-events: none;
   }
   .pill-error {
     background: var(--color-pill-error-bg);
@@ -1026,8 +1047,15 @@ body,
     opacity: 0;
   }
 }
-/* Reduced motion: still gradients, no drift, sweep or flash animation. */
+/* Reduced motion: still gradients, no drift, sweep or flash animation; the pill only fades. */
 @media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: opacity 0.15s ease;
+  }
+  .pill-gone {
+    transform: none;
+    filter: none;
+  }
   .aurora-blob,
   .aurora-sweep,
   .aurora-flash {
