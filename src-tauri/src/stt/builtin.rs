@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
-use super::silence::{peak_window_level_db, SILENCE_THRESHOLD_DB};
+use super::silence::{log_decision, NoSpeechGuard, VoiceActivity};
 use super::{SttConfig, SttProvider, TranscriptEvent};
 use crate::error::AppError;
 
@@ -365,16 +365,17 @@ impl SttProvider for BuiltinProvider {
         if let Some(probe) = &self.upload_probe {
             probe.note_audio(self.audio_buffer.len(), config.sample_rate);
         }
-        let peak_db = peak_window_level_db(&self.audio_buffer, config.sample_rate);
-        if peak_db < SILENCE_THRESHOLD_DB {
-            tracing::info!(
-                "{}: no speech detected (loudest 50 ms at {:.0} dBFS), skipping recognition",
-                self.config.provider_name,
-                peak_db
+        let activity = VoiceActivity::measure(&self.audio_buffer, config.sample_rate);
+        if !activity.has_speech() {
+            log_decision(
+                &self.config.provider_name,
+                &activity,
+                Some(NoSpeechGuard::VoiceCheck),
             );
             self.audio_buffer.clear();
             return Ok(None);
         }
+        log_decision(&self.config.provider_name, &activity, None);
 
         let pcm = std::mem::take(&mut self.audio_buffer);
         if let Some(probe) = &self.upload_probe {

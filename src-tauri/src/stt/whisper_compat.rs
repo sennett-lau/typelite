@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::error::AppError;
 
-use super::silence::{peak_window_level_db, SILENCE_THRESHOLD_DB};
+use super::silence::{log_decision, NoSpeechGuard, VoiceActivity};
 use super::transcript::normalize_transcript;
 use super::{SttConfig, SttProvider, TranscriptEvent};
 
@@ -125,16 +125,17 @@ impl SttProvider for WhisperCompatProvider {
         if let Some(probe) = &self.upload_probe {
             probe.note_audio(self.audio_buffer.len(), config.sample_rate);
         }
-        let peak_db = peak_window_level_db(&self.audio_buffer, config.sample_rate);
-        if peak_db < SILENCE_THRESHOLD_DB {
-            tracing::info!(
-                "{}: no speech detected (loudest 50 ms at {:.0} dBFS), skipping the request",
-                self.provider_config.provider_name,
-                peak_db
+        let activity = VoiceActivity::measure(&self.audio_buffer, config.sample_rate);
+        if !activity.has_speech() {
+            log_decision(
+                &self.provider_config.provider_name,
+                &activity,
+                Some(NoSpeechGuard::VoiceCheck),
             );
             self.audio_buffer.clear();
             return Ok(None);
         }
+        log_decision(&self.provider_config.provider_name, &activity, None);
 
         let audio_len_secs = self.audio_buffer.len() as f64 / (config.sample_rate as f64 * 2.0);
         let wav_data = Self::build_wav(&self.audio_buffer, config.sample_rate);
@@ -323,19 +324,20 @@ mod tests {
         let probe = crate::timing::UploadProbe::default();
         provider.set_upload_probe(probe.clone());
         provider.connect(&SttConfig::default()).await.unwrap();
-        provider
-            .send_audio(&pcm_tone(0.3, 1.0, 16_000))
-            .await
-            .unwrap();
+        // A tone between two quiet stretches passes the voice check.
+        let mut audio = vec![0u8; 16_000];
+        audio.extend(pcm_tone(0.3, 1.0, 16_000));
+        audio.extend(vec![0u8; 16_000]);
+        provider.send_audio(&audio).await.unwrap();
 
         assert!(provider.disconnect().await.is_err());
 
         let marks = probe.snapshot();
         assert!(marks.started_at.is_some());
         assert!(marks.finished_at.is_some());
-        assert_eq!(marks.pcm_bytes, 32_000);
-        assert_eq!(marks.wav_bytes, 32_044);
-        assert!((marks.recording_secs() - 1.0).abs() < f64::EPSILON);
+        assert_eq!(marks.pcm_bytes, 64_000);
+        assert_eq!(marks.wav_bytes, 64_044);
+        assert!((marks.recording_secs() - 2.0).abs() < f64::EPSILON);
     }
 
     #[tokio::test]
