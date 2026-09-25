@@ -1055,6 +1055,24 @@ impl PipelineHandle {
         {
             return Ok(());
         }
+
+        // Plan 0007: a missing service stops the run before anything starts, with one clear
+        // message. Dictate without AI still runs and pastes the raw transcript.
+        let loaded_config = self.load_config().await;
+        let feature = if options.force_translate {
+            crate::readiness::Feature::Translate
+        } else {
+            crate::readiness::Feature::Dictate
+        };
+        if let Some(user_error) = crate::readiness::start_error(&loaded_config, feature) {
+            tracing::info!("Not starting {feature:?}: {}", user_error.code);
+            self.state
+                .store(PipelineState::Idle.as_u8(), Ordering::SeqCst);
+            let _ = self.app_handle.emit("pipeline:error", user_error);
+            return Ok(());
+        }
+        let loaded_config = crate::readiness::without_unready_ai(loaded_config);
+
         self.set_state(PipelineState::Preparing);
 
         // Clear accumulated text
@@ -1065,7 +1083,7 @@ impl PipelineHandle {
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // P0-2: Load config BEFORE starting audio capture — fail fast on missing API key
-        let config_data = apply_pipeline_start_options(self.load_config().await, options);
+        let config_data = apply_pipeline_start_options(loaded_config, options);
         let voice_mode = if options.force_translate {
             crate::voice_intent::VoiceMode::Translate
         } else {
@@ -1682,7 +1700,7 @@ impl PipelineHandle {
             .take();
         let mut config = match preloaded_config {
             Some(c) => c,
-            None => self.load_config().await,
+            None => crate::readiness::without_unready_ai(self.load_config().await),
         };
         if let Some(target) = finalized_translation_target {
             config.translation.active_target = target.clone();

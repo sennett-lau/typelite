@@ -11,6 +11,22 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: translate }),
 }))
 
+/** Marks the active speech and/or AI preset as tested. */
+function setReady(speech: boolean, ai: boolean) {
+  const config = useAppStore.getState().config
+  useAppStore.setState({
+    config: {
+      ...config,
+      speech_presets: config.speech_presets.map((preset, index) =>
+        index === 0 ? { ...preset, verified_at: speech ? 1 : null } : preset,
+      ),
+      ai_presets: config.ai_presets.map((preset, index) =>
+        index === 0 ? { ...preset, verified_at: ai ? 1 : null } : preset,
+      ),
+    },
+  })
+}
+
 function setHotkeys(
   partial: Partial<ReturnType<typeof useAppStore.getState>['config']['hotkeys']>,
 ) {
@@ -28,6 +44,65 @@ afterEach(() => {
 })
 
 describe('HomePage', () => {
+  describe('Finish setup card', () => {
+    it('shows a row per service that is not ready, each opening its Settings tab', () => {
+      render(<HomePage />)
+
+      const card = screen.getByRole('region', { name: 'Finish setup' })
+      expect(within(card).getByTestId('finish-setup-speech')).toHaveTextContent('Not set up yet')
+      expect(within(card).getByTestId('finish-setup-ai')).toHaveTextContent(
+        'Dictate pastes the raw transcript',
+      )
+
+      fireEvent.click(within(card).getByRole('button', { name: 'Set up: Speech recognition' }))
+      expect(window.location.hash).toBe('#/settings?pane=stt')
+      fireEvent.click(within(card).getByRole('button', { name: 'Set up: AI polish service' }))
+      expect(window.location.hash).toBe('#/settings?pane=llm')
+    })
+
+    it('shows only the missing service and says when its last test failed', () => {
+      setReady(true, false)
+      useAppStore.setState({ aiHealth: { presetId: 'builtin-ai-ollama-local', ok: false } })
+      render(<HomePage />)
+
+      expect(screen.queryByTestId('finish-setup-speech')).not.toBeInTheDocument()
+      expect(screen.getByTestId('finish-setup-ai')).toHaveTextContent('The last test failed')
+    })
+
+    it('is hidden when both services are ready', () => {
+      setReady(true, true)
+      render(<HomePage />)
+      expect(screen.queryByRole('region', { name: 'Finish setup' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('shortcut tour link', () => {
+    it('shows while both services work and the tour is not done, and starts the tour', () => {
+      setReady(true, true)
+      useAppStore.setState({ onboardingCompleted: true })
+      render(<HomePage />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Take the shortcut tour' }))
+      expect(useAppStore.getState().onboardingTour).toBe(true)
+      expect(useAppStore.getState().onboardingStep).toBe(4)
+      expect(useAppStore.getState().onboardingCompleted).toBe(false)
+    })
+
+    it('is hidden while a service is missing or once the tour is done', () => {
+      setReady(true, false)
+      const { unmount } = render(<HomePage />)
+      expect(screen.queryByText('Take the shortcut tour')).not.toBeInTheDocument()
+      unmount()
+
+      setReady(true, true)
+      useAppStore.setState({
+        config: { ...useAppStore.getState().config, shortcut_tour_completed: true },
+      })
+      render(<HomePage />)
+      expect(screen.queryByText('Take the shortcut tour')).not.toBeInTheDocument()
+    })
+  })
+
   it('starts with the welcome header and no usage counters', () => {
     render(<HomePage />)
 
@@ -110,7 +185,7 @@ describe('HomePage', () => {
     const card = screen.getByRole('region', { name: 'Your setup' })
     expect(within(card).getByTestId('config-row-microphone')).toHaveTextContent('USB Mic')
     expect(within(card).getByTestId('config-row-speech')).toHaveTextContent(
-      'Local whisper.cpp (Mac)',
+      'whisper.cpp on this Mac',
     )
     expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('qwen3:4b-instruct')
     expect(within(card).getByTestId('config-row-polish')).toHaveTextContent('Disabled')

@@ -22,6 +22,8 @@ export type CapsuleErrorKey =
   | 'stt_connection_failed'
   | 'audio_failed'
   | 'output_failed'
+  | 'speech_not_ready'
+  | 'ai_not_ready'
   | 'unknown'
 
 const structuredCapsuleErrorKeys = new Set<CapsuleErrorKey>([
@@ -40,7 +42,19 @@ const structuredCapsuleErrorKeys = new Set<CapsuleErrorKey>([
   'stt_connection_failed',
   'audio_failed',
   'output_failed',
+  'speech_not_ready',
+  'ai_not_ready',
 ])
+
+/**
+ * Setup messages (plan 0007): the service a feature needs is not ready. The capsule shows them
+ * with a "Set up" button that opens this Settings pane.
+ */
+export function setupPaneForError(key: CapsuleErrorKey): 'stt' | 'llm' | null {
+  if (key === 'speech_not_ready') return 'stt'
+  if (key === 'ai_not_ready') return 'llm'
+  return null
+}
 
 function isStructuredCapsuleErrorKey(code: string): code is CapsuleErrorKey {
   return structuredCapsuleErrorKeys.has(code as CapsuleErrorKey)

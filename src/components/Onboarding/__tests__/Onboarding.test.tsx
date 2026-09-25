@@ -29,6 +29,8 @@ vi.mock('../OnboardingLayout', () => ({
     canBack,
     nextLabel,
     title,
+    onClose,
+    centerContent,
   }: {
     children: React.ReactNode
     onBack: () => void
@@ -38,9 +40,21 @@ vi.mock('../OnboardingLayout', () => ({
     canBack: boolean
     nextLabel: string
     title: string
+    onClose?: () => void
+    centerContent?: boolean
   }) => (
-    <div data-testid="layout" data-total-steps={totalSteps} data-can-next={String(canNext)}>
+    <div
+      data-testid="layout"
+      data-total-steps={totalSteps}
+      data-can-next={String(canNext)}
+      data-centered={String(Boolean(centerContent))}
+    >
       <h1>{title}</h1>
+      {onClose && (
+        <button type="button" onClick={onClose}>
+          Close tour
+        </button>
+      )}
       <button type="button" onClick={onBack} disabled={!canBack}>
         Back
       </button>
@@ -75,8 +89,26 @@ vi.mock('../WelcomeStep', () => ({
   ),
 }))
 vi.mock('../MicrophoneStep', () => ({ MicrophoneStep: () => <div>Microphone step</div> }))
-vi.mock('../SttSetupStep', () => ({ SttSetupStep: () => <div>Speech step</div> }))
-vi.mock('../LlmSetupStep', () => ({ LlmSetupStep: () => <div>AI step</div> }))
+vi.mock('../SttSetupStep', () => ({
+  SttSetupStep: ({ onSkip }: { onSkip: () => void }) => (
+    <div>
+      Speech step
+      <button type="button" onClick={onSkip}>
+        Skip speech
+      </button>
+    </div>
+  ),
+}))
+vi.mock('../LlmSetupStep', () => ({
+  LlmSetupStep: ({ onSkip }: { onSkip: () => void }) => (
+    <div>
+      AI step
+      <button type="button" onClick={onSkip}>
+        Skip AI
+      </button>
+    </div>
+  ),
+}))
 vi.mock('../ShortcutStep', () => ({
   ShortcutStep: ({ role, done, onDone }: { role: string; done: boolean; onDone: () => void }) => (
     <div>
@@ -92,6 +124,20 @@ function layout() {
   return screen.getByTestId('layout')
 }
 
+/** Marks the active speech and/or AI preset as passed a Test. */
+function setReady(speech: boolean, ai: boolean) {
+  const config = useAppStore.getState().config
+  useAppStore.getState().setConfig({
+    ...config,
+    speech_presets: config.speech_presets.map((preset, index) =>
+      index === 0 ? { ...preset, verified_at: speech ? 1 : null } : preset,
+    ),
+    ai_presets: config.ai_presets.map((preset, index) =>
+      index === 0 ? { ...preset, verified_at: ai ? 1 : null } : preset,
+    ),
+  })
+}
+
 function goToStep(step: number) {
   act(() => useAppStore.getState().setOnboardingStep(step))
 }
@@ -103,6 +149,8 @@ beforeEach(() => {
   vi.mocked(tauri.getConfig).mockResolvedValue(useAppStore.getState().config)
   vi.mocked(tauri.updateConfig).mockResolvedValue(undefined)
   vi.mocked(tauri.saveOnboardingCompleted).mockResolvedValue(undefined)
+  vi.mocked(tauri.setShortcutTourState).mockResolvedValue(undefined)
+  window.location.hash = '#/settings'
 })
 
 afterEach(() => cleanup())
@@ -117,7 +165,7 @@ describe('Onboarding flow', () => {
       ['Welcome', 'Welcome step'],
       ['Voice input', 'Microphone step'],
       ['Speech recognition', 'Speech step'],
-      ['AI model', 'AI step'],
+      ['AI Polish Service', 'AI step'],
       ['Dictate', 'Shortcut step dictation pending'],
       ['Translate', 'Shortcut step translate pending'],
       ['Ask Anything', 'Shortcut step ask pending'],
@@ -160,17 +208,70 @@ describe('Onboarding flow', () => {
     expect(layout()).toHaveAttribute('data-can-next', 'true')
   })
 
-  it('requires passing speech and AI tests', () => {
+  it('centres only the welcome step', () => {
+    render(<Onboarding />)
+    expect(layout()).toHaveAttribute('data-centered', 'true')
+    goToStep(1)
+    expect(layout()).toHaveAttribute('data-centered', 'false')
+  })
+
+  it('unlocks Next on the service steps once the active preset passed a test', () => {
     useAppStore.setState({ onboardingStep: 2 })
     render(<Onboarding />)
     expect(layout()).toHaveAttribute('data-can-next', 'false')
-    act(() => useAppStore.getState().setSttTestStatus('success'))
+    act(() => setReady(true, false))
     expect(layout()).toHaveAttribute('data-can-next', 'true')
 
     goToStep(3)
     expect(layout()).toHaveAttribute('data-can-next', 'false')
-    act(() => useAppStore.getState().setLlmTestStatus('success'))
+    act(() => setReady(true, true))
     expect(layout()).toHaveAttribute('data-can-next', 'true')
+  })
+
+  it('"Skip for now" on the speech step moves on to the AI step', async () => {
+    useAppStore.setState({ onboardingStep: 2 })
+    render(<Onboarding />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip speech' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(3))
+    expect(useAppStore.getState().onboardingCompleted).toBe(false)
+  })
+
+  it('skipping the AI step finishes onboarding and opens Home', async () => {
+    useAppStore.setState({ onboardingStep: 3 })
+    render(<Onboarding />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip AI' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
+    expect(tauri.saveOnboardingCompleted).toHaveBeenCalled()
+    expect(tauri.updateConfig).toHaveBeenCalled()
+    expect(tauri.setShortcutTourState).not.toHaveBeenCalled()
+    expect(useAppStore.getState().config.shortcut_tour_completed).toBe(false)
+    expect(window.location.hash).toBe('#/')
+  })
+
+  it('after the AI step, finishes when speech is not ready even though AI is', async () => {
+    act(() => setReady(false, true))
+    useAppStore.setState({ onboardingStep: 3 })
+    render(<Onboarding />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
+    expect(useAppStore.getState().onboardingStep).toBe(3)
+  })
+
+  it('after the AI step, continues to the shortcut steps when both are ready', async () => {
+    act(() => setReady(true, true))
+    useAppStore.setState({ onboardingStep: 3 })
+    render(<Onboarding />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(4))
+    expect(useAppStore.getState().onboardingCompleted).toBe(false)
   })
 
   it('unlocks each shortcut step once its practice worked, and keeps it after Back', async () => {
@@ -204,6 +305,21 @@ describe('Onboarding flow', () => {
 
     await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
     expect(tauri.saveOnboardingCompleted).toHaveBeenCalled()
+    expect(tauri.setShortcutTourState).toHaveBeenCalledWith({ completed: true })
+    expect(useAppStore.getState().config.shortcut_tour_completed).toBe(true)
+  })
+
+  it('the shortcut tour starts at Dictate, cannot go back, and closes to Home', async () => {
+    useAppStore.getState().startShortcutTour()
+    render(<Onboarding />)
+
+    expect(screen.getByText('Shortcut step dictation pending')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close tour' }))
+
+    expect(useAppStore.getState().onboardingCompleted).toBe(true)
+    expect(useAppStore.getState().onboardingTour).toBe(false)
   })
 
   it('shows the error and stays when saving on Finish fails', async () => {

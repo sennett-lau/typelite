@@ -78,28 +78,41 @@ describe('appStore', () => {
       expect(config.active_scene).toBeNull()
       expect(config.translation).toEqual({ targets: ['en', 'zh', 'ja'], active_target: 'en' })
       expect(config.target_lang).toBe('en')
-      expect(config.speech_presets).toEqual([
-        {
-          id: 'builtin-whisper-local',
-          name: 'Local whisper.cpp (Mac)',
-          base_url: 'http://127.0.0.1:8178/v1',
-          model: 'large-v3-turbo',
-          language: 'auto',
-          builtin: true,
-        },
+      expect(config.speech_presets.map((preset) => preset.id)).toEqual([
+        'builtin-speech-local',
+        'builtin-speech-lan',
+        'builtin-speech-openai',
+        'builtin-speech-groq',
       ])
-      expect(config.active_speech_preset_id).toBe('builtin-whisper-local')
-      expect(config.ai_presets).toEqual([
-        {
-          id: 'builtin-ollama-pc',
-          name: 'PC Ollama — Qwen3 4B Instruct',
-          base_url: 'http://100.90.208.26:11434/v1',
-          model: 'qwen3:4b-instruct-2507-q4_K_M',
-          extra_request_fields: {},
-          builtin: true,
-        },
+      expect(config.speech_presets[0]).toEqual({
+        id: 'builtin-speech-local',
+        name: 'whisper.cpp on this Mac',
+        base_url: 'http://127.0.0.1:8178/v1',
+        model: 'large-v3-turbo',
+        language: 'auto',
+        builtin: true,
+        verified_at: null,
+      })
+      expect(config.active_speech_preset_id).toBe('builtin-speech-local')
+      expect(config.ai_presets.map((preset) => preset.id)).toEqual([
+        'builtin-ai-ollama-local',
+        'builtin-ai-ollama-lan',
+        'builtin-ai-openai',
+        'builtin-ai-groq',
       ])
-      expect(config.active_ai_preset_id).toBe('builtin-ollama-pc')
+      expect(config.ai_presets[0]).toEqual({
+        id: 'builtin-ai-ollama-local',
+        name: 'Ollama on this Mac',
+        base_url: 'http://127.0.0.1:11434/v1',
+        model: 'qwen3:4b-instruct-2507-q4_K_M',
+        extra_request_fields: {},
+        builtin: true,
+        verified_at: null,
+      })
+      expect(config.active_ai_preset_id).toBe('builtin-ai-ollama-local')
+      expect(config.ai_presets[1].base_url).toBe('http://<computer-ip>:11434/v1')
+      expect(config.shortcut_tour_completed).toBe(false)
+      expect(config.shortcut_tour_prompt_dismissed).toBe(false)
       expect(JSON.stringify(config)).not.toMatch(/api_key/)
       expect(config.show_in_dock).toBe(true)
       expect(config.mute_output_while_recording).toBe(false)
@@ -130,9 +143,57 @@ describe('appStore', () => {
       })
 
       const { config } = getState()
-      expect(config.ai_presets.map((preset) => preset.id)).toEqual(['builtin-ollama-pc', 'copy'])
+      expect(config.ai_presets.map((preset) => preset.id)).toEqual([
+        'builtin-ai-ollama-local',
+        'builtin-ai-ollama-lan',
+        'builtin-ai-openai',
+        'builtin-ai-groq',
+        'copy',
+      ])
       expect(findActivePreset(config.ai_presets, config.active_ai_preset_id)).toBe(copy)
-      expect(config.speech_presets).toHaveLength(1)
+      expect(config.speech_presets).toHaveLength(4)
+    })
+
+    it('updateConfig clears the test result of a preset whose connection changed', () => {
+      const tested = { ...getState().config.speech_presets[0], verified_at: 100 }
+      getState().setConfig({
+        ...getState().config,
+        speech_presets: [tested, ...getState().config.speech_presets.slice(1)],
+      })
+
+      // A rename keeps it.
+      getState().updateConfig({
+        speech_presets: getState().config.speech_presets.map((preset, index) =>
+          index === 0 ? { ...preset, name: 'Renamed' } : preset,
+        ),
+      })
+      expect(getState().config.speech_presets[0].verified_at).toBe(100)
+
+      // A new model clears it.
+      getState().updateConfig({
+        speech_presets: getState().config.speech_presets.map((preset, index) =>
+          index === 0 ? { ...preset, model: 'other' } : preset,
+        ),
+      })
+      expect(getState().config.speech_presets[0].verified_at).toBeNull()
+    })
+
+    it('updateConfig clears an AI test result when the extra fields change', () => {
+      const tested = { ...getState().config.ai_presets[0], verified_at: 100 }
+      getState().setConfig({ ...getState().config, ai_presets: [tested] })
+
+      getState().updateConfig({
+        ai_presets: [{ ...tested, extra_request_fields: { reasoning_effort: 'none' } }],
+      })
+      expect(getState().config.ai_presets[0].verified_at).toBeNull()
+    })
+
+    it('startShortcutTour opens onboarding at the Dictate step', () => {
+      getState().setOnboardingCompleted(true)
+      getState().startShortcutTour()
+      expect(getState().onboardingCompleted).toBe(false)
+      expect(getState().onboardingTour).toBe(true)
+      expect(getState().onboardingStep).toBe(4)
     })
 
     it('findActivePreset falls back to the first preset for an unknown id', () => {

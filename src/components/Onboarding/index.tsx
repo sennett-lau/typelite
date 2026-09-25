@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '../../stores/appStore'
-import { getConfig, saveOnboardingCompleted, updateConfig as saveConfig } from '../../lib/tauri'
+import { SHORTCUT_TOUR_FIRST_STEP, useAppStore } from '../../stores/appStore'
+import {
+  getConfig,
+  saveOnboardingCompleted,
+  setShortcutTourState,
+  updateConfig as saveConfig,
+} from '../../lib/tauri'
+import { isAiReady, isSpeechReady } from '../../lib/readiness'
 import { OnboardingLayout } from './OnboardingLayout'
 import { WelcomeStep } from './WelcomeStep'
 import { MicrophoneStep } from './MicrophoneStep'
@@ -16,8 +22,15 @@ import { slideRight } from '../../lib/animations'
 /** Welcome + permissions, microphone, speech, AI, then the three shortcut tutorials. */
 export const TOTAL_STEPS = 7
 
+/** Step index of the AI step, the last step before the shortcut tutorials. */
+const AI_STEP = 3
+
 /** Step index of each shortcut tutorial. */
-const SHORTCUT_STEPS: Record<number, ShortcutRole> = { 4: 'dictation', 5: 'translate', 6: 'ask' }
+const SHORTCUT_STEPS: Record<number, ShortcutRole> = {
+  [SHORTCUT_TOUR_FIRST_STEP]: 'dictation',
+  [SHORTCUT_TOUR_FIRST_STEP + 1]: 'translate',
+  [SHORTCUT_TOUR_FIRST_STEP + 2]: 'ask',
+}
 
 type PracticeDone = Record<ShortcutRole, boolean>
 
@@ -27,8 +40,10 @@ export function Onboarding() {
   const setStep = useAppStore((s) => s.setOnboardingStep)
   const setOnboardingCompleted = useAppStore((s) => s.setOnboardingCompleted)
   const setConfig = useAppStore((s) => s.setConfig)
-  const sttTestStatus = useAppStore((s) => s.sttTestStatus)
-  const llmTestStatus = useAppStore((s) => s.llmTestStatus)
+  const applyPersistedConfigPatch = useAppStore((s) => s.applyPersistedConfigPatch)
+  const tour = useAppStore((s) => s.onboardingTour)
+  const speechReady = useAppStore((s) => isSpeechReady(s.config))
+  const aiReady = useAppStore((s) => isAiReady(s.config))
   const permissions = usePermissions(step === 0)
   // Kept here (not in the step) so Back and Next keep a finished tutorial finished.
   const [practiceDone, setPracticeDone] = useState<PracticeDone>({
@@ -54,6 +69,8 @@ export function Onboarding() {
 
   const shortcutRole = SHORTCUT_STEPS[step]
   const isLast = step === TOTAL_STEPS - 1
+  // The tour starts at the Dictate step; the earlier steps are already done.
+  const firstStep = tour ? SHORTCUT_TOUR_FIRST_STEP : 0
 
   const canNext = (() => {
     if (shortcutRole) return practiceDone[shortcutRole]
@@ -63,9 +80,9 @@ export function Onboarding() {
       case 1:
         return true // a device is always chosen; "System default" counts
       case 2:
-        return sttTestStatus === 'success'
-      case 3:
-        return llmTestStatus === 'success'
+        return speechReady
+      case AI_STEP:
+        return aiReady
       default:
         return false
     }
@@ -78,7 +95,7 @@ export function Onboarding() {
       title: t('onboarding.steps.speechRecognition'),
       subtitle: t('onboarding.steps.speechRecognitionSub'),
     },
-    { title: t('onboarding.steps.aiModel'), subtitle: t('onboarding.steps.aiModelSub') },
+    { title: t('onboarding.steps.aiPolish'), subtitle: t('onboarding.steps.aiPolishSub') },
     { title: t('onboarding.steps.dictate'), subtitle: t('onboarding.steps.dictateSub') },
     { title: t('onboarding.steps.translate'), subtitle: t('onboarding.steps.translateSub') },
     { title: t('onboarding.steps.ask'), subtitle: t('onboarding.steps.askSub') },
@@ -97,23 +114,61 @@ export function Onboarding() {
     setStep(next)
   }
 
-  const handleNext = async () => {
-    if (!isLast) {
-      await goTo(step + 1)
-      return
-    }
+  /**
+   * Ends onboarding and opens Home. `tourDone` is true after the Ask step; the tour flag is
+   * saved on its own so a skipped tour can be offered again later.
+   */
+  const finish = async (tourDone: boolean) => {
     setFinishError(null)
     try {
       await saveConfig(useAppStore.getState().config)
       await saveOnboardingCompleted()
+      if (tourDone) {
+        applyPersistedConfigPatch({ shortcut_tour_completed: true })
+        await setShortcutTourState({ completed: true }).catch((error) =>
+          console.error('[onboarding] failed to save the finished tour', error),
+        )
+      }
+      useAppStore.setState({ onboardingTour: false })
+      window.location.hash = '#/'
       setOnboardingCompleted(true)
     } catch (error) {
       setFinishError(String(error))
     }
   }
 
+  /**
+   * After the AI step (Next or Skip): the shortcut tutorials need both services, so they
+   * follow only when both passed a Test. Otherwise onboarding ends here and Home shows what is
+   * left to set up; the tour is offered once both work.
+   */
+  const leaveAiStep = async () => {
+    const { config } = useAppStore.getState()
+    if (isSpeechReady(config) && isAiReady(config)) {
+      await goTo(SHORTCUT_TOUR_FIRST_STEP)
+    } else {
+      await finish(false)
+    }
+  }
+
+  const handleNext = async () => {
+    if (isLast) {
+      await finish(true)
+    } else if (step === AI_STEP) {
+      await leaveAiStep()
+    } else {
+      await goTo(step + 1)
+    }
+  }
+
   const handleBack = async () => {
-    if (step > 0) await goTo(step - 1)
+    if (step > firstStep) await goTo(step - 1)
+  }
+
+  // Closing the tour goes back to Home; closing first-run onboarding quits (the default).
+  const handleCloseTour = () => {
+    useAppStore.setState({ onboardingTour: false })
+    setOnboardingCompleted(true)
   }
 
   const markDone = (role: ShortcutRole) =>
@@ -126,10 +181,12 @@ export function Onboarding() {
       title={titles[step]?.title ?? ''}
       subtitle={titles[step]?.subtitle}
       canNext={canNext}
-      canBack={step > 0}
+      canBack={step > firstStep}
       nextLabel={isLast ? t('onboarding.layout.finish') : t('onboarding.layout.next')}
       onNext={handleNext}
       onBack={handleBack}
+      onClose={tour ? handleCloseTour : undefined}
+      centerContent={step === 0}
     >
       <AnimatePresence mode="wait">
         <motion.div
@@ -142,8 +199,8 @@ export function Onboarding() {
         >
           {step === 0 && <WelcomeStep permissions={permissions} onSkip={() => goTo(1)} />}
           {step === 1 && <MicrophoneStep />}
-          {step === 2 && <SttSetupStep />}
-          {step === 3 && <LlmSetupStep />}
+          {step === 2 && <SttSetupStep onSkip={() => goTo(AI_STEP)} />}
+          {step === AI_STEP && <LlmSetupStep onSkip={leaveAiStep} />}
           {shortcutRole && (
             <ShortcutStep
               key={shortcutRole}
@@ -152,7 +209,7 @@ export function Onboarding() {
               onDone={() => markDone(shortcutRole)}
             />
           )}
-          {isLast && finishError && (
+          {finishError && (
             <p className="mt-3 text-[12px] text-error">
               {t('onboarding.saveFailed', { error: finishError })}
             </p>

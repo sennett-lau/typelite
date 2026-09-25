@@ -9,9 +9,11 @@ import {
   fetchAiModels,
   getCorrectionRules,
   getSttRecordingCapability,
+  openSettingsPane,
   previewDictionaryImport,
   removeCorrectionRule,
   setCorrectionRuleEnabled,
+  setShortcutTourState,
   testAiPreset,
   testSpeechPreset,
   updateCorrectionRule,
@@ -87,20 +89,22 @@ describe('preset commands', () => {
   })
 
   const speechPreset = {
-    id: 'builtin-whisper-local',
-    name: 'Local whisper.cpp (Mac)',
+    id: 'builtin-speech-local',
+    name: 'whisper.cpp on this Mac',
     base_url: 'http://127.0.0.1:8178/v1',
     model: 'large-v3-turbo',
     language: 'auto',
     builtin: true,
+    verified_at: null,
   }
   const aiPreset = {
-    id: 'builtin-ollama-pc',
-    name: 'PC Ollama',
-    base_url: 'http://100.90.208.26:11434/v1',
+    id: 'my-ollama',
+    name: 'My Ollama',
+    base_url: 'http://192.0.2.10:11434/v1',
     model: 'qwen3:4b-instruct-2507-q4_K_M',
     extra_request_fields: { reasoning_effort: 'none' },
-    builtin: true,
+    builtin: false,
+    verified_at: null,
   }
 
   it('tests a speech preset and returns the latency', async () => {
@@ -122,12 +126,31 @@ describe('preset commands', () => {
   it('fetches AI models by base URL', async () => {
     vi.mocked(invoke).mockResolvedValueOnce(['qwen3:4b'])
 
-    await expect(fetchAiModels('http://100.90.208.26:11434/v1', '')).resolves.toEqual(['qwen3:4b'])
+    await expect(fetchAiModels('http://192.0.2.10:11434/v1', '')).resolves.toEqual(['qwen3:4b'])
 
     expect(invoke).toHaveBeenCalledWith('fetch_ai_models', {
-      baseUrl: 'http://100.90.208.26:11434/v1',
+      baseUrl: 'http://192.0.2.10:11434/v1',
       apiKey: '',
     })
+  })
+
+  it('saves the shortcut tour flags on their own', async () => {
+    vi.mocked(invoke).mockResolvedValueOnce(undefined)
+
+    await setShortcutTourState({ promptDismissed: true })
+
+    expect(invoke).toHaveBeenCalledWith('set_shortcut_tour_state', {
+      completed: null,
+      promptDismissed: true,
+    })
+  })
+
+  it('opens a Settings pane in the main window', async () => {
+    vi.mocked(invoke).mockResolvedValueOnce(undefined)
+
+    await openSettingsPane('stt')
+
+    expect(invoke).toHaveBeenCalledWith('open_settings_pane', { pane: 'stt' })
   })
 
   it('resolves the recording limit from the mode and seconds only', async () => {

@@ -13,6 +13,7 @@ pub mod native_keys;
 pub mod output;
 pub mod pipeline;
 pub mod platform;
+pub mod readiness;
 pub mod recording_deadline;
 pub mod selection;
 pub mod storage;
@@ -1236,6 +1237,8 @@ pub fn run() {
             commands::misc::start_shortcut_capture,
             commands::misc::stop_shortcut_capture,
             commands::config::set_auto_start,
+            commands::config::set_shortcut_tour_state,
+            readiness::open_settings_pane,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

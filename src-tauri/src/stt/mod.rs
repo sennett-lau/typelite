@@ -72,6 +72,7 @@ mod tests {
             model: "large-v3-turbo".to_string(),
             language: "auto".to_string(),
             builtin: false,
+            verified_at: None,
         };
         let cfg = config::build_whisper_config(&preset).unwrap();
 

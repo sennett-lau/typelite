@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react'
 import { SttPane } from '../SttPane'
 import * as tauri from '../../../lib/tauri'
-import { useAppStore, type SpeechPreset } from '../../../stores/appStore'
+import { BUILTIN_SPEECH_PRESET, useAppStore, type SpeechPreset } from '../../../stores/appStore'
 
 vi.mock('../../../lib/tauri')
 
@@ -11,15 +11,16 @@ vi.mock('react-i18next', async () => {
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const BUILTIN_ID = 'builtin-whisper-local'
+const BUILTIN_ID = 'builtin-speech-local'
 
 const secondPreset: SpeechPreset = {
   id: 'pc-speaches',
   name: 'PC Speaches',
-  base_url: 'http://100.90.208.26:8000/v1',
+  base_url: 'http://192.0.2.10:8000/v1',
   model: 'Systran/faster-whisper-large-v3',
   language: 'en',
   builtin: false,
+  verified_at: null,
 }
 
 function config() {
@@ -61,6 +62,11 @@ function clientBufferLimit(
 describe('SttPane', () => {
   beforeEach(() => {
     useAppStore.setState(useAppStore.getInitialState())
+    // Most tests start from one preset, so the list tests stay short.
+    useAppStore.getState().setConfig({
+      ...config(),
+      speech_presets: [{ ...BUILTIN_SPEECH_PRESET }],
+    })
     vi.clearAllMocks()
     vi.mocked(tauri.readCredential).mockResolvedValue(null)
     vi.mocked(tauri.setCredential).mockResolvedValue(undefined)
@@ -76,7 +82,7 @@ describe('SttPane', () => {
       render(<SttPane />)
 
       expect(screen.getByLabelText('Preset')).toHaveValue(BUILTIN_ID)
-      expect(screen.getByLabelText('Preset name')).toHaveValue('Local whisper.cpp (Mac)')
+      expect(screen.getByLabelText('Preset name')).toHaveValue('whisper.cpp on this Mac')
       expect(screen.getByLabelText('Base URL')).toHaveValue('http://127.0.0.1:8178/v1')
       expect(screen.getByLabelText('Model')).toHaveValue('large-v3-turbo')
       expect(screen.getByLabelText('Language')).toHaveValue('auto')
@@ -112,7 +118,7 @@ describe('SttPane', () => {
       fireEvent.change(screen.getByLabelText('Preset'), { target: { value: 'pc-speaches' } })
 
       expect(config().active_speech_preset_id).toBe('pc-speaches')
-      expect(screen.getByLabelText('Base URL')).toHaveValue('http://100.90.208.26:8000/v1')
+      expect(screen.getByLabelText('Base URL')).toHaveValue('http://192.0.2.10:8000/v1')
       expect(screen.getByLabelText('Language')).toHaveValue('en')
       await waitFor(() => {
         expect(screen.getByLabelText('API key (optional)')).toHaveValue('pc-secret')
@@ -128,7 +134,7 @@ describe('SttPane', () => {
 
       expect(activeSpeechPreset()?.name).toBe('Mac whisper')
       expect(useAppStore.getState().savedConfig?.speech_presets[0].name).toBe(
-        'Local whisper.cpp (Mac)',
+        'whisper.cpp on this Mac',
       )
     })
   })
@@ -144,7 +150,7 @@ describe('SttPane', () => {
       const created = presets[1]
       expect(created.id).not.toBe(BUILTIN_ID)
       expect(created).toMatchObject({
-        name: 'Local whisper.cpp (Mac) copy',
+        name: 'whisper.cpp on this Mac copy',
         base_url: 'http://127.0.0.1:8178/v1',
         model: 'large-v3-turbo',
         builtin: false,
@@ -234,8 +240,54 @@ describe('SttPane', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Test' }))
 
       expect(await screen.findByText('1834 ms')).toBeInTheDocument()
-      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(activeSpeechPreset(), '')
+      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
+        { ...BUILTIN_SPEECH_PRESET, verified_at: null },
+        '',
+      )
       expect(useAppStore.getState().sttTestStatus).toBe('success')
+      // A pass makes the preset ready, in the edited and the saved config alike.
+      expect(activeSpeechPreset()?.verified_at).toEqual(expect.any(Number))
+    })
+
+    it('does not mark a preset with unsaved edits as ready in the saved config', async () => {
+      useAppStore.getState().setSavedConfig(config())
+      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(10)
+      render(<SttPane />)
+
+      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'small' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+
+      await waitFor(() => expect(activeSpeechPreset()?.verified_at).toEqual(expect.any(Number)))
+      expect(useAppStore.getState().savedConfig?.speech_presets[0].verified_at).toBeNull()
+    })
+
+    it('fails a placeholder URL with a clear message without calling the server', async () => {
+      render(<SttPane />)
+
+      fireEvent.change(screen.getByLabelText('Base URL'), {
+        target: { value: 'http://<computer-ip>:8000/v1' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+
+      expect(await screen.findByText(/Replace <computer-ip> in the base URL/)).toBeInTheDocument()
+      expect(tauri.testSpeechPreset).not.toHaveBeenCalled()
+      expect(activeSpeechPreset()?.verified_at).toBeNull()
+    })
+
+    it('typing a new API key forgets the passed test', () => {
+      useAppStore.getState().setConfig({
+        ...config(),
+        speech_presets: [{ ...BUILTIN_SPEECH_PRESET, verified_at: 5 }],
+      })
+      useAppStore.getState().setSavedConfig(config())
+      render(<SttPane />)
+
+      fireEvent.change(screen.getByLabelText('API key (optional)'), {
+        target: { value: 'sk-new' },
+      })
+
+      expect(activeSpeechPreset()?.verified_at).toBeNull()
+      expect(useAppStore.getState().savedConfig?.speech_presets[0].verified_at).toBeNull()
     })
 
     it('passes the typed API key to the test', async () => {
@@ -248,7 +300,10 @@ describe('SttPane', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Test' }))
 
       await waitFor(() => {
-        expect(tauri.testSpeechPreset).toHaveBeenCalledWith(activeSpeechPreset(), 'sk-test')
+        expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
+          expect.objectContaining({ id: BUILTIN_ID }),
+          'sk-test',
+        )
       })
     })
 

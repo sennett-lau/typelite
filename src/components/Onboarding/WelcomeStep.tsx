@@ -5,6 +5,7 @@ import { openPrivacySettings } from '../../lib/tauri'
 import type { PermissionStatus } from '../../lib/tauri'
 import { PERMISSION_IDS } from './usePermissions'
 import type { PermissionId, PermissionsState } from './usePermissions'
+import { SkipLink } from './SetupGuide'
 
 const ICONS: Record<PermissionId, React.ComponentType<{ size?: number }>> = {
   microphone: Mic,
@@ -42,17 +43,7 @@ export function WelcomeStep({ permissions, onSkip }: Props) {
           />
         ))}
       </div>
-      {!permissions.allGranted && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="border-none bg-transparent text-[12px] text-text-tertiary underline-offset-2 hover:text-text-primary hover:underline cursor-pointer"
-          >
-            {t('onboarding.welcome.skipForNow')}
-          </button>
-        </div>
-      )}
+      {!permissions.allGranted && <SkipLink onSkip={onSkip} />}
     </div>
   )
 }

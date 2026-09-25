@@ -1298,7 +1298,7 @@ describe('LlmPane models 缓存：已有缓存时跳过 fetch', () => {
     })
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(mockFetch).toHaveBeenCalledWith('http://100.90.208.26:11434/v1', '')
+    expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:11434/v1', '')
   })
 
   it('fetchAiModels 完成后 store 中 llmModels 被更新', async () => {
@@ -1377,8 +1377,8 @@ describe('DirtyBar 行为', () => {
       expect(screen.getByText('Unsaved changes')).toBeDefined()
     })
     const { speech_presets, active_speech_preset_id } = useAppStore.getState().config
-    expect(speech_presets).toHaveLength(2)
-    expect(active_speech_preset_id).toBe(speech_presets[1].id)
+    expect(speech_presets).toHaveLength(5)
+    expect(active_speech_preset_id).toBe(speech_presets[4].id)
 
     fireEvent.click(screen.getByText('Save'))
 

@@ -27,6 +27,11 @@ export interface SpeechPreset {
   language: string
   /** True for the presets the app ships with. Informational only; they stay editable. */
   builtin: boolean
+  /**
+   * When this preset last passed a Test (Unix ms), or null. Cleared when its URL, model,
+   * language or API key changes. The active preset with a value makes speech "ready".
+   */
+  verified_at: number | null
 }
 
 /**
@@ -42,24 +47,111 @@ export interface AiPreset {
   /** Extra JSON fields merged into every chat request, e.g. { reasoning_effort: 'none' }. */
   extra_request_fields: Record<string, unknown>
   builtin: boolean
+  /** When this preset last passed a Test (Unix ms), or null. See `SpeechPreset.verified_at`. */
+  verified_at: number | null
 }
 
-export const BUILTIN_SPEECH_PRESET: SpeechPreset = {
-  id: 'builtin-whisper-local',
-  name: 'Local whisper.cpp (Mac)',
-  base_url: 'http://127.0.0.1:8178/v1',
-  model: 'large-v3-turbo',
-  language: 'auto',
-  builtin: true,
+function speechTemplate(id: string, name: string, base_url: string, model: string): SpeechPreset {
+  return { id, name, base_url, model, language: 'auto', builtin: true, verified_at: null }
 }
 
-export const BUILTIN_AI_PRESET: AiPreset = {
-  id: 'builtin-ollama-pc',
-  name: 'PC Ollama — Qwen3 4B Instruct',
-  base_url: 'http://100.90.208.26:11434/v1',
-  model: 'qwen3:4b-instruct-2507-q4_K_M',
-  extra_request_fields: {},
-  builtin: true,
+function aiTemplate(id: string, name: string, base_url: string, model: string): AiPreset {
+  return { id, name, base_url, model, extra_request_fields: {}, builtin: true, verified_at: null }
+}
+
+/** Built-in speech templates. Mirrors `SpeechPreset::builtin_templates` in the backend. */
+export const BUILTIN_SPEECH_PRESETS: readonly SpeechPreset[] = [
+  speechTemplate(
+    'builtin-speech-local',
+    'whisper.cpp on this Mac',
+    'http://127.0.0.1:8178/v1',
+    'large-v3-turbo',
+  ),
+  speechTemplate(
+    'builtin-speech-lan',
+    'Speech server on another computer',
+    'http://<computer-ip>:8000/v1',
+    'Systran/faster-whisper-large-v3',
+  ),
+  speechTemplate(
+    'builtin-speech-openai',
+    'OpenAI (your key)',
+    'https://api.openai.com/v1',
+    'whisper-1',
+  ),
+  speechTemplate(
+    'builtin-speech-groq',
+    'Groq (your key)',
+    'https://api.groq.com/openai/v1',
+    'whisper-large-v3-turbo',
+  ),
+]
+
+/** Built-in AI templates. Mirrors `AiPreset::builtin_templates` in the backend. */
+export const BUILTIN_AI_PRESETS: readonly AiPreset[] = [
+  aiTemplate(
+    'builtin-ai-ollama-local',
+    'Ollama on this Mac',
+    'http://127.0.0.1:11434/v1',
+    'qwen3:4b-instruct-2507-q4_K_M',
+  ),
+  aiTemplate(
+    'builtin-ai-ollama-lan',
+    'Ollama on another computer',
+    'http://<computer-ip>:11434/v1',
+    'qwen3:4b-instruct-2507-q4_K_M',
+  ),
+  aiTemplate('builtin-ai-openai', 'OpenAI (your key)', 'https://api.openai.com/v1', 'gpt-4.1-mini'),
+  aiTemplate(
+    'builtin-ai-groq',
+    'Groq (your key)',
+    'https://api.groq.com/openai/v1',
+    'llama-3.1-8b-instant',
+  ),
+]
+
+/** The first built-in speech preset (whisper.cpp on this Mac); the fallback. */
+export const BUILTIN_SPEECH_PRESET: SpeechPreset = BUILTIN_SPEECH_PRESETS[0]
+
+/** The first built-in AI preset (Ollama on this Mac); the fallback. */
+export const BUILTIN_AI_PRESET: AiPreset = BUILTIN_AI_PRESETS[0]
+
+/** Fields whose change makes an earlier Test result void (the API key is handled apart). */
+export function sameSpeechConnection(a: SpeechPreset, b: SpeechPreset): boolean {
+  return a.base_url === b.base_url && a.model === b.model && a.language === b.language
+}
+
+export function sameAiConnection(a: AiPreset, b: AiPreset): boolean {
+  return (
+    a.base_url === b.base_url &&
+    a.model === b.model &&
+    JSON.stringify(a.extra_request_fields ?? {}) === JSON.stringify(b.extra_request_fields ?? {})
+  )
+}
+
+/**
+ * Clears `verified_at` of presets whose connection changed in an edit, unless the edit set a
+ * new `verified_at` itself. The backend applies the same rule when the config is saved.
+ */
+function invalidateEditedPresets(previous: AppConfig, partial: Partial<AppConfig>) {
+  const next = { ...partial }
+  if (partial.speech_presets) {
+    next.speech_presets = partial.speech_presets.map((preset) => {
+      const old = previous.speech_presets.find((p) => p.id === preset.id)
+      return old && !sameSpeechConnection(old, preset) && old.verified_at === preset.verified_at
+        ? { ...preset, verified_at: null }
+        : preset
+    })
+  }
+  if (partial.ai_presets) {
+    next.ai_presets = partial.ai_presets.map((preset) => {
+      const old = previous.ai_presets.find((p) => p.id === preset.id)
+      return old && !sameAiConnection(old, preset) && old.verified_at === preset.verified_at
+        ? { ...preset, verified_at: null }
+        : preset
+    })
+  }
+  return next
 }
 
 /** Returns the preset whose id is `activeId`, or the first one if that id is missing. */
@@ -238,7 +330,16 @@ export interface AppConfig {
   show_in_dock: boolean
   /** Mute the default output device while recording (Settings → General → Audio). */
   mute_output_while_recording: boolean
+  /** Version of the built-in preset templates in this config (backend migration marker). */
+  builtin_presets_version: number
+  /** The three-shortcut tour (onboarding Dictate, Translate, Ask steps) was finished. */
+  shortcut_tour_completed: boolean
+  /** The "try the three shortcuts now?" dialog was answered. */
+  shortcut_tour_prompt_dismissed: boolean
 }
+
+/** A Settings pane a setup message can open. */
+export type SetupPane = 'stt' | 'llm'
 
 export type TestStatus = 'idle' | 'testing' | 'success' | 'error'
 
@@ -305,6 +406,13 @@ interface AppState {
   setOnboardingCompleted: (done: boolean) => void
   onboardingStep: number
   setOnboardingStep: (step: number) => void
+  /**
+   * True while onboarding is open only for the shortcut tour (started from the "try the three
+   * shortcuts" dialog or the Home link). Closing it returns to Home instead of quitting.
+   */
+  onboardingTour: boolean
+  /** Opens onboarding at the Dictate step for the shortcut tour. Earlier choices are kept. */
+  startShortcutTour: () => void
 
   // Capsule
   capsuleExpanded: boolean
@@ -334,7 +442,9 @@ interface AppState {
 
   // Pipeline error
   pipelineError: string | null
-  setPipelineError: (error: string | null) => void
+  /** The Settings pane the capsule's "Set up" button opens, for setup messages only. */
+  pipelineErrorAction: SetupPane | null
+  setPipelineError: (error: string | null, action?: SetupPane | null) => void
 
   // macOS Accessibility permission
   accessibilityTrusted: boolean
@@ -933,10 +1043,13 @@ function syncHotkeyConfig(previous: AppConfig, partial: Partial<AppConfig>): App
   return merged.hotkeys ? merged : syncLegacyHotkeysToTyped(merged)
 }
 
+/** Onboarding step index of the Dictate tutorial, the first step of the shortcut tour. */
+export const SHORTCUT_TOUR_FIRST_STEP = 4
+
 const defaultConfig: AppConfig = {
-  speech_presets: [{ ...BUILTIN_SPEECH_PRESET }],
+  speech_presets: BUILTIN_SPEECH_PRESETS.map((preset) => ({ ...preset })),
   active_speech_preset_id: BUILTIN_SPEECH_PRESET.id,
-  ai_presets: [{ ...BUILTIN_AI_PRESET, extra_request_fields: {} }],
+  ai_presets: BUILTIN_AI_PRESETS.map((preset) => ({ ...preset, extra_request_fields: {} })),
   active_ai_preset_id: BUILTIN_AI_PRESET.id,
   polish_enabled: true,
   context_adaptation_enabled: true,
@@ -991,6 +1104,9 @@ const defaultConfig: AppConfig = {
   input_device: '',
   show_in_dock: true,
   mute_output_while_recording: false,
+  builtin_presets_version: 1,
+  shortcut_tour_completed: false,
+  shortcut_tour_prompt_dismissed: false,
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -1021,7 +1137,10 @@ export const useAppStore = create<AppState>((set) => ({
 
   config: defaultConfig,
   setConfig: (config) => set((s) => ({ config: syncHotkeyConfig(s.config, config) })),
-  updateConfig: (partial) => set((s) => ({ config: syncHotkeyConfig(s.config, partial) })),
+  updateConfig: (partial) =>
+    set((s) => ({
+      config: syncHotkeyConfig(s.config, invalidateEditedPresets(s.config, partial)),
+    })),
   applyPersistedConfigPatch: (patch) =>
     set((s) => ({
       config: syncHotkeyConfig(s.config, patch),
@@ -1037,6 +1156,13 @@ export const useAppStore = create<AppState>((set) => ({
   setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
   onboardingStep: 0,
   setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
+  onboardingTour: false,
+  startShortcutTour: () =>
+    set({
+      onboardingTour: true,
+      onboardingStep: SHORTCUT_TOUR_FIRST_STEP,
+      onboardingCompleted: false,
+    }),
 
   capsuleExpanded: false,
   setCapsuleExpanded: (capsuleExpanded) => set({ capsuleExpanded }),
@@ -1060,7 +1186,9 @@ export const useAppStore = create<AppState>((set) => ({
   setLlmModels: (llmModels) => set({ llmModels }),
 
   pipelineError: null,
-  setPipelineError: (pipelineError) => set({ pipelineError }),
+  pipelineErrorAction: null,
+  setPipelineError: (pipelineError, action = null) =>
+    set({ pipelineError, pipelineErrorAction: pipelineError === null ? null : action }),
 
   accessibilityTrusted: true,
   setAccessibilityTrusted: (accessibilityTrusted) => set({ accessibilityTrusted }),

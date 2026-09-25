@@ -5,6 +5,7 @@ import { useRecording } from '../../hooks/useRecording'
 import {
   ASK_RECORDING_SIZE,
   DICTATION_PILL_SIZE,
+  SETUP_ERROR_SIZE,
   TRANSLATE_RECORDING_SIZE,
   useCapsuleResize,
 } from '../../hooks/useCapsuleResize'
@@ -27,7 +28,12 @@ function getCapsuleState(pipelineState: string, hasError: boolean) {
   return pipelineState
 }
 
-function getCapsuleShellSize(capsuleState: string, activeVoiceMode: VoiceMode | null) {
+function getCapsuleShellSize(
+  capsuleState: string,
+  activeVoiceMode: VoiceMode | null,
+  errorHasAction: boolean,
+) {
+  if (capsuleState === 'error' && errorHasAction) return SETUP_ERROR_SIZE
   switch (capsuleState) {
     case 'idle':
       return { width: 36, height: 36 }
@@ -58,6 +64,7 @@ export function Capsule() {
   const contextMenuReady = useAppStore((s) => s.contextMenuReady)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
+  const errorHasAction = useAppStore((s) => s.pipelineErrorAction !== null)
   const { stopRecording, isRecording } = useRecording()
 
   const dragStart = useRef<{ x: number; y: number } | null>(null)
@@ -67,7 +74,7 @@ export function Capsule() {
 
   const hasError = pipelineError !== null
   const capsuleState = getCapsuleState(pipelineState, hasError)
-  const capsuleShellSize = getCapsuleShellSize(capsuleState, activeVoiceMode)
+  const capsuleShellSize = getCapsuleShellSize(capsuleState, activeVoiceMode, errorHasAction)
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return

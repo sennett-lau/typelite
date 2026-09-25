@@ -12,6 +12,9 @@ fn build_test_request(
     if preset.model.trim().is_empty() {
         return Err("Model is required for the AI preset".to_string());
     }
+    if storage::base_url_has_placeholder(&preset.base_url) {
+        return Err(storage::PLACEHOLDER_URL_ERROR.to_string());
+    }
     let url = protocol::chat_endpoint(&preset.base_url)?;
     let body = protocol::build_chat_body(
         preset.model.trim(),
@@ -31,9 +34,12 @@ fn build_test_request(
 /// in milliseconds.
 ///
 /// `api_key` is the key typed in Settings; when it is empty the key stored in the
-/// Keychain for this preset is used.
+/// Keychain for this preset is used. A pass is saved as the preset's `verified_at` when the
+/// stored preset has the tested connection.
 #[tauri::command]
 pub async fn test_ai_preset(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, storage::ConfigManager>,
     preset: storage::AiPreset,
     api_key: String,
     client: tauri::State<'_, reqwest::Client>,
@@ -62,6 +68,7 @@ pub async fn test_ai_preset(
         });
     }
 
+    crate::commands::config::record_ai_test_passed(&app, &state, &preset).await;
     Ok(elapsed)
 }
 
@@ -121,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_request_applies_extras_and_optional_key() {
-        let mut preset = storage::AiPreset::builtin_ollama_pc();
+        let mut preset = storage::AiPreset::builtin_local();
         preset
             .extra_request_fields
             .insert("reasoning_effort".to_string(), serde_json::json!("none"));
@@ -132,7 +139,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             request.url().as_str(),
-            "http://100.90.208.26:11434/v1/chat/completions"
+            "http://127.0.0.1:11434/v1/chat/completions"
         );
         assert!(request.headers().get("Authorization").is_none());
         let body: serde_json::Value =
@@ -148,8 +155,19 @@ mod tests {
     }
 
     #[test]
+    fn test_request_rejects_a_placeholder_url() {
+        let mut preset = storage::AiPreset::builtin_templates()[1].clone();
+        assert!(preset.base_url.contains("<computer-ip>"));
+        let error = build_test_request(&reqwest::Client::new(), &preset, "").unwrap_err();
+        assert_eq!(error, storage::PLACEHOLDER_URL_ERROR);
+
+        preset.base_url = "http://192.0.2.20:11434/v1".to_string();
+        assert!(build_test_request(&reqwest::Client::new(), &preset, "").is_ok());
+    }
+
+    #[test]
     fn test_request_requires_model() {
-        let mut preset = storage::AiPreset::builtin_ollama_pc();
+        let mut preset = storage::AiPreset::builtin_local();
         preset.model = " ".to_string();
         assert!(build_test_request(&reqwest::Client::new(), &preset, "").is_err());
     }

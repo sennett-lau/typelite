@@ -11,7 +11,7 @@ import type { HotkeyConfig, ShortcutBinding, VoiceMode } from '../../stores/appS
 import { resumeHotkey } from '../../lib/tauri'
 import { TARGET_LANGUAGES } from '../../lib/constants'
 import { HotkeyRecorder } from '../Settings/ShortcutBindingList'
-import { Field } from './presetStepParts'
+import { Row } from '../ui/Group'
 import { persistConfig } from './persistConfig'
 import { usePracticeCompletion } from './usePracticeCompletion'
 import { LIST_KEY, roleBindings, translationWithFirstTarget } from './shortcutConfig'
@@ -120,17 +120,17 @@ export function ShortcutStep({ role, done, onDone }: Props) {
       </p>
 
       <div className="row-group">
-        <Field label={t('onboarding.shortcut.label')}>
+        <Row layout="stacked" label={t('onboarding.shortcut.label')}>
           <HotkeyRecorder
             value={keyLabel || t('onboarding.shortcut.notSet')}
             validateHotkey={validate}
             onSaved={(hotkey) => void save(hotkey)}
           />
           <p className="mt-1 text-[11px] text-text-tertiary">{t('onboarding.shortcut.hint')}</p>
-        </Field>
+        </Row>
 
         {role === 'translate' && (
-          <Field label={t('onboarding.translate.languageLabel')}>
+          <Row layout="stacked" label={t('onboarding.translate.languageLabel')}>
             <select
               aria-label={t('onboarding.translate.languageLabel')}
               value={translation.targets[0] ?? translation.active_target}
@@ -143,7 +143,7 @@ export function ShortcutStep({ role, done, onDone }: Props) {
                 </option>
               ))}
             </select>
-          </Field>
+          </Row>
         )}
       </div>
 
@@ -165,7 +165,7 @@ export function ShortcutStep({ role, done, onDone }: Props) {
       )}
 
       <div className="row-group">
-        <Field label={t('onboarding.practice.label')}>
+        <Row layout="stacked" label={t('onboarding.practice.label')}>
           <p className="mb-2 text-[12px] leading-relaxed text-text-secondary">
             {current ? t(instructionKey, { key: keyLabel }) : t('onboarding.shortcut.recordFirst')}
           </p>
@@ -198,7 +198,7 @@ export function ShortcutStep({ role, done, onDone }: Props) {
               </p>
             )
           )}
-        </Field>
+        </Row>
       </div>
     </div>
   )

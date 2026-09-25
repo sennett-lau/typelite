@@ -204,7 +204,9 @@ pub async fn update_config(
     config: storage::AppConfig,
 ) -> Result<(), String> {
     let previous = state.load().await.map_err(|e| e.to_string())?;
-    let config = prepare_config_for_save(config)?;
+    let mut config = prepare_config_for_save(config)?;
+    // An edited URL, model, language or extra field makes the old Test result void.
+    storage::invalidate_changed_presets(&previous, &mut config);
     let patch = config_patch_between(&previous, &config);
     let refresh_hotkeys = hotkey_runtime_config_changed(&previous, &config);
     let refresh_provider_connections = provider_connection_config_changed(&previous, &config);
@@ -283,6 +285,121 @@ pub async fn set_auto_start(
         .await
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Event sent to the main window when a preset's Test result changes in the backend
+/// (a passed Test, or a changed API key). The frontend mirrors it into both its edited and
+/// its saved config, so it does not show up as an unsaved change.
+pub const PRESET_VERIFICATION_EVENT: &str = "preset:verification";
+
+#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetVerification {
+    pub kind: storage::ServiceKind,
+    pub preset_id: String,
+    pub verified_at: Option<u64>,
+}
+
+/// Saves a passed Test of `preset` (speech) when the stored preset still has the tested
+/// connection, and tells the frontend.
+pub(crate) async fn record_speech_test_passed(
+    app: &tauri::AppHandle,
+    state: &storage::ConfigManager,
+    preset: &storage::SpeechPreset,
+) {
+    let Ok(mut config) = state.load().await else {
+        return;
+    };
+    let at = storage::now_unix_ms();
+    if config.mark_speech_verified(preset, at) {
+        save_verification(
+            app,
+            state,
+            &config,
+            storage::ServiceKind::Speech,
+            &preset.id,
+            Some(at),
+        )
+        .await;
+    }
+}
+
+/// Same as `record_speech_test_passed`, for AI presets.
+pub(crate) async fn record_ai_test_passed(
+    app: &tauri::AppHandle,
+    state: &storage::ConfigManager,
+    preset: &storage::AiPreset,
+) {
+    let Ok(mut config) = state.load().await else {
+        return;
+    };
+    let at = storage::now_unix_ms();
+    if config.mark_ai_verified(preset, at) {
+        save_verification(
+            app,
+            state,
+            &config,
+            storage::ServiceKind::Ai,
+            &preset.id,
+            Some(at),
+        )
+        .await;
+    }
+}
+
+/// Clears the Test result of one preset, for example after its API key changed.
+pub(crate) async fn clear_preset_verification(
+    app: &tauri::AppHandle,
+    state: &storage::ConfigManager,
+    kind: storage::ServiceKind,
+    preset_id: &str,
+) {
+    let Ok(mut config) = state.load().await else {
+        return;
+    };
+    if config.clear_verification(kind, preset_id) {
+        save_verification(app, state, &config, kind, preset_id, None).await;
+    }
+}
+
+async fn save_verification(
+    app: &tauri::AppHandle,
+    state: &storage::ConfigManager,
+    config: &storage::AppConfig,
+    kind: storage::ServiceKind,
+    preset_id: &str,
+    verified_at: Option<u64>,
+) {
+    if let Err(error) = state.save(config).await {
+        tracing::warn!("Failed to save the preset test result: {error}");
+        return;
+    }
+    let _ = app.emit(
+        PRESET_VERIFICATION_EVENT,
+        PresetVerification {
+            kind,
+            preset_id: preset_id.to_string(),
+            verified_at,
+        },
+    );
+}
+
+/// Saves the shortcut tour flags (Home prompt and tour). `None` leaves a flag as it is.
+/// Only these two fields change, so unsaved edits in Settings are not saved by accident.
+#[tauri::command]
+pub async fn set_shortcut_tour_state(
+    state: tauri::State<'_, storage::ConfigManager>,
+    completed: Option<bool>,
+    prompt_dismissed: Option<bool>,
+) -> Result<(), String> {
+    let mut config = state.load().await.map_err(|e| e.to_string())?;
+    if let Some(completed) = completed {
+        config.shortcut_tour_completed = completed;
+    }
+    if let Some(dismissed) = prompt_dismissed {
+        config.shortcut_tour_prompt_dismissed = dismissed;
+    }
+    state.save(&config).await.map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
@@ -365,7 +482,7 @@ mod tests {
         let mut next = previous.clone();
         let mut other = next.speech_presets[0].clone();
         other.id = "other".to_string();
-        other.base_url = "http://10.0.0.2:8000/v1".to_string();
+        other.base_url = "http://192.0.2.2:8000/v1".to_string();
         next.speech_presets.push(other);
         next.active_speech_preset_id = "other".to_string();
         assert!(provider_connection_config_changed(&previous, &next));

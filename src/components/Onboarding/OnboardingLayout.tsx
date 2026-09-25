@@ -12,6 +12,10 @@ interface Props {
   nextLabel?: string
   onNext: () => void
   onBack: () => void
+  /** Replaces the default close action (quit the app), for example to return to Home. */
+  onClose?: () => void
+  /** Centre the step content vertically in the step area (the welcome step). */
+  centerContent?: boolean
   children: React.ReactNode
 }
 
@@ -25,14 +29,17 @@ export function OnboardingLayout({
   nextLabel,
   onNext,
   onBack,
+  onClose,
+  centerContent = false,
   children,
 }: Props) {
   const { t } = useTranslation()
-  const handleClose = () => {
+  const quit = () => {
     import('@tauri-apps/api/core')
       .then(({ invoke }) => invoke('plugin:process|exit', { code: 0 }))
       .catch(() => {})
   }
+  const handleClose = onClose ?? quit
 
   return (
     <div className="app-window flex h-full w-full flex-col">
@@ -61,8 +68,18 @@ export function OnboardingLayout({
           {subtitle && <p className="page-subtitle">{subtitle}</p>}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-8">
-          <div className="mx-auto max-w-[400px] pb-6">{children}</div>
+        <div
+          className={`min-h-0 flex-1 overflow-y-auto px-8 ${centerContent ? 'flex flex-col' : ''}`}
+          data-testid="onboarding-step-area"
+        >
+          {/* my-auto centres the content when it is shorter than the area and still lets it
+              scroll from the top when it is taller. */}
+          <div
+            className={`mx-auto w-full max-w-[400px] pb-6 ${centerContent ? 'my-auto' : ''}`}
+            data-centered={centerContent ? 'true' : undefined}
+          >
+            {children}
+          </div>
         </div>
 
         <div className="flex flex-none items-center justify-between px-8 py-4">

@@ -328,13 +328,39 @@ fn normalize_translation_code(value: &str) -> Option<String> {
 
 // ─── Speech and AI presets ───
 
-pub const BUILTIN_SPEECH_PRESET_ID: &str = "builtin-whisper-local";
-pub const BUILTIN_AI_PRESET_ID: &str = "builtin-ollama-pc";
+/// Id of the first built-in speech preset (whisper.cpp on this Mac). Used as the fallback.
+pub const BUILTIN_SPEECH_PRESET_ID: &str = "builtin-speech-local";
+/// Id of the first built-in AI preset (Ollama on this Mac). Used as the fallback.
+pub const BUILTIN_AI_PRESET_ID: &str = "builtin-ai-ollama-local";
+/// Version of the built-in preset templates. A stored config with an older version gets its
+/// old built-ins replaced by the current templates once (see `migrate_builtin_presets`).
+pub const BUILTIN_PRESETS_VERSION: u32 = 1;
 /// Speech preset language value that means "let the server detect the language".
 pub const SPEECH_LANGUAGE_AUTO: &str = "auto";
 /// Longest preset id; matches the limit of the credential account names in the Keychain.
 const PRESET_ID_MAX_CHARS: usize = 80;
 const PRESET_NAME_MAX_CHARS: usize = 80;
+
+/// The message Test shows for a base URL that still holds a template placeholder.
+pub const PLACEHOLDER_URL_ERROR: &str =
+    "Replace <computer-ip> in the base URL with the address of the computer that runs the server.";
+
+/// True when a base URL still holds a template placeholder such as `<computer-ip>`.
+/// Such a URL can never work, so Test fails with `PLACEHOLDER_URL_ERROR`.
+pub fn base_url_has_placeholder(base_url: &str) -> bool {
+    match base_url.find('<') {
+        Some(start) => base_url[start..].contains('>'),
+        None => false,
+    }
+}
+
+/// Milliseconds since the Unix epoch, for `verified_at`.
+pub fn now_unix_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or(0)
+}
 
 /// A saved speech-to-text endpoint: an OpenAI-compatible
 /// `POST {base_url}/audio/transcriptions` server. The optional API key is not stored here;
@@ -350,18 +376,65 @@ pub struct SpeechPreset {
     pub language: String,
     /// True for presets that ship with the app. They can still be edited.
     pub builtin: bool,
+    /// When this preset last passed a Test (Unix ms). `None` until then, and cleared again
+    /// whenever its URL, model, language or API key changes. A preset with a value is
+    /// "ready". Nothing about dictations is stored here.
+    pub verified_at: Option<u64>,
 }
 
 impl SpeechPreset {
-    pub fn builtin_whisper_local() -> Self {
+    fn template(id: &str, name: &str, base_url: &str, model: &str) -> Self {
         Self {
-            id: BUILTIN_SPEECH_PRESET_ID.to_string(),
-            name: "Local whisper.cpp (Mac)".to_string(),
-            base_url: "http://127.0.0.1:8178/v1".to_string(),
-            model: "large-v3-turbo".to_string(),
+            id: id.to_string(),
+            name: name.to_string(),
+            base_url: base_url.to_string(),
+            model: model.to_string(),
             language: SPEECH_LANGUAGE_AUTO.to_string(),
             builtin: true,
+            verified_at: None,
         }
+    }
+
+    /// whisper.cpp on this Mac: the first built-in and the fallback.
+    pub fn builtin_local() -> Self {
+        Self::template(
+            BUILTIN_SPEECH_PRESET_ID,
+            "whisper.cpp on this Mac",
+            "http://127.0.0.1:8178/v1",
+            "large-v3-turbo",
+        )
+    }
+
+    /// The built-in templates, in the order the picker shows them.
+    pub fn builtin_templates() -> Vec<Self> {
+        vec![
+            Self::builtin_local(),
+            Self::template(
+                "builtin-speech-lan",
+                "Speech server on another computer",
+                "http://<computer-ip>:8000/v1",
+                "Systran/faster-whisper-large-v3",
+            ),
+            Self::template(
+                "builtin-speech-openai",
+                "OpenAI (your key)",
+                "https://api.openai.com/v1",
+                "whisper-1",
+            ),
+            Self::template(
+                "builtin-speech-groq",
+                "Groq (your key)",
+                "https://api.groq.com/openai/v1",
+                "whisper-large-v3-turbo",
+            ),
+        ]
+    }
+
+    /// Same endpoint: the fields that decide whether a passed Test still holds.
+    pub fn same_connection(&self, other: &Self) -> bool {
+        self.base_url == other.base_url
+            && self.model == other.model
+            && self.language == other.language
     }
 }
 
@@ -379,17 +452,234 @@ pub struct AiPreset {
     pub extra_request_fields: serde_json::Map<String, serde_json::Value>,
     /// True for presets that ship with the app. They can still be edited.
     pub builtin: bool,
+    /// When this preset last passed a Test (Unix ms); see `SpeechPreset::verified_at`.
+    pub verified_at: Option<u64>,
 }
 
 impl AiPreset {
-    pub fn builtin_ollama_pc() -> Self {
+    fn template(id: &str, name: &str, base_url: &str, model: &str) -> Self {
         Self {
-            id: BUILTIN_AI_PRESET_ID.to_string(),
-            name: "PC Ollama — Qwen3 4B Instruct".to_string(),
-            base_url: "http://100.90.208.26:11434/v1".to_string(),
-            model: "qwen3:4b-instruct-2507-q4_K_M".to_string(),
+            id: id.to_string(),
+            name: name.to_string(),
+            base_url: base_url.to_string(),
+            model: model.to_string(),
             extra_request_fields: serde_json::Map::new(),
             builtin: true,
+            verified_at: None,
+        }
+    }
+
+    /// Ollama on this Mac: the first built-in and the fallback.
+    pub fn builtin_local() -> Self {
+        Self::template(
+            BUILTIN_AI_PRESET_ID,
+            "Ollama on this Mac",
+            "http://127.0.0.1:11434/v1",
+            "qwen3:4b-instruct-2507-q4_K_M",
+        )
+    }
+
+    /// The built-in templates, in the order the picker shows them.
+    pub fn builtin_templates() -> Vec<Self> {
+        vec![
+            Self::builtin_local(),
+            Self::template(
+                "builtin-ai-ollama-lan",
+                "Ollama on another computer",
+                "http://<computer-ip>:11434/v1",
+                "qwen3:4b-instruct-2507-q4_K_M",
+            ),
+            Self::template(
+                "builtin-ai-openai",
+                "OpenAI (your key)",
+                "https://api.openai.com/v1",
+                "gpt-4.1-mini",
+            ),
+            Self::template(
+                "builtin-ai-groq",
+                "Groq (your key)",
+                "https://api.groq.com/openai/v1",
+                "llama-3.1-8b-instant",
+            ),
+        ]
+    }
+
+    /// Same endpoint: the fields that decide whether a passed Test still holds.
+    pub fn same_connection(&self, other: &Self) -> bool {
+        self.base_url == other.base_url
+            && self.model == other.model
+            && self.extra_request_fields == other.extra_request_fields
+    }
+}
+
+/// Which of the two services a preset belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ServiceKind {
+    Speech,
+    Ai,
+}
+
+impl ServiceKind {
+    /// Maps a Keychain namespace (`stt`, `llm`) to its service.
+    pub fn from_credential_namespace(namespace: &str) -> Option<Self> {
+        match namespace {
+            "stt" => Some(Self::Speech),
+            "llm" => Some(Self::Ai),
+            _ => None,
+        }
+    }
+}
+
+/// Clears `verified_at` of every preset in `next` whose connection changed compared with the
+/// same preset in `previous`, unless `next` carries a new `verified_at` (a Test of the edited
+/// values passed before they were saved).
+pub fn invalidate_changed_presets(previous: &AppConfig, next: &mut AppConfig) {
+    invalidate_changed(&previous.speech_presets, &mut next.speech_presets);
+    invalidate_changed(&previous.ai_presets, &mut next.ai_presets);
+}
+
+/// What the readiness and migration code needs from both preset types.
+trait VerifiablePreset: Clone {
+    fn id(&self) -> &str;
+    fn is_builtin(&self) -> bool;
+    fn base_url(&self) -> &str;
+    fn model(&self) -> &str;
+    fn verified_at(&self) -> Option<u64>;
+    fn verified_at_mut(&mut self) -> &mut Option<u64>;
+    fn same_connection_as(&self, other: &Self) -> bool;
+}
+
+impl VerifiablePreset for SpeechPreset {
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn is_builtin(&self) -> bool {
+        self.builtin
+    }
+    fn base_url(&self) -> &str {
+        &self.base_url
+    }
+    fn model(&self) -> &str {
+        &self.model
+    }
+    fn verified_at(&self) -> Option<u64> {
+        self.verified_at
+    }
+    fn verified_at_mut(&mut self) -> &mut Option<u64> {
+        &mut self.verified_at
+    }
+    fn same_connection_as(&self, other: &Self) -> bool {
+        self.same_connection(other)
+    }
+}
+
+impl VerifiablePreset for AiPreset {
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn is_builtin(&self) -> bool {
+        self.builtin
+    }
+    fn base_url(&self) -> &str {
+        &self.base_url
+    }
+    fn model(&self) -> &str {
+        &self.model
+    }
+    fn verified_at(&self) -> Option<u64> {
+        self.verified_at
+    }
+    fn verified_at_mut(&mut self) -> &mut Option<u64> {
+        &mut self.verified_at
+    }
+    fn same_connection_as(&self, other: &Self) -> bool {
+        self.same_connection(other)
+    }
+}
+
+fn invalidate_changed<T: VerifiablePreset>(previous: &[T], next: &mut [T]) {
+    for preset in next {
+        if let Some(old) = previous.iter().find(|p| p.id() == preset.id()) {
+            if !old.same_connection_as(preset) && old.verified_at() == preset.verified_at() {
+                *preset.verified_at_mut() = None;
+            }
+        }
+    }
+}
+
+fn mark_verified<T: VerifiablePreset>(presets: &mut [T], tested: &T, at: u64) -> bool {
+    match presets
+        .iter_mut()
+        .find(|preset| preset.id() == tested.id() && preset.same_connection_as(tested))
+    {
+        Some(preset) if !base_url_has_placeholder(preset.base_url()) => {
+            *preset.verified_at_mut() = Some(at);
+            true
+        }
+        _ => false,
+    }
+}
+
+fn clear_verified<T: VerifiablePreset>(presets: &mut [T], preset_id: &str) -> bool {
+    match presets.iter_mut().find(|preset| preset.id() == preset_id) {
+        Some(preset) if preset.verified_at().is_some() => {
+            *preset.verified_at_mut() = None;
+            true
+        }
+        _ => false,
+    }
+}
+
+/// See `AppConfig::migrate_builtin_presets`. `verify_at` marks the surviving active preset
+/// as ready (only for configs whose onboarding was completed).
+fn migrate_preset_list<T: VerifiablePreset>(
+    presets: &mut Vec<T>,
+    active_id: &mut String,
+    templates: Vec<T>,
+    verify_at: Option<u64>,
+) {
+    let fallback_id = templates
+        .first()
+        .map(|template| template.id().to_string())
+        .unwrap_or_default();
+    let mut active_replacement: Option<Option<String>> = None;
+    presets.retain(|preset| {
+        let keep = !preset.is_builtin() || templates.iter().any(|t| t.id() == preset.id());
+        if !keep && preset.id() == active_id.as_str() {
+            active_replacement = Some(
+                templates
+                    .iter()
+                    .find(|t| t.base_url() == preset.base_url() && t.model() == preset.model())
+                    .map(|t| t.id().to_string()),
+            );
+        }
+        keep
+    });
+    let missing: Vec<T> = templates
+        .into_iter()
+        .filter(|t| !presets.iter().any(|p| p.id() == t.id()))
+        .collect();
+    presets.splice(0..0, missing);
+
+    let mut keep_ready = true;
+    match active_replacement {
+        Some(Some(id)) => *active_id = id,
+        Some(None) => keep_ready = false,
+        None => {}
+    }
+    if !presets
+        .iter()
+        .any(|preset| preset.id() == active_id.as_str())
+    {
+        *active_id = fallback_id;
+        keep_ready = false;
+    }
+    if let (Some(at), true) = (verify_at, keep_ready) {
+        if let Some(preset) = presets.iter_mut().find(|p| p.id() == active_id.as_str()) {
+            if !base_url_has_placeholder(preset.base_url()) {
+                *preset.verified_at_mut() = Some(at);
+            }
         }
     }
 }
@@ -479,14 +769,20 @@ pub struct AppConfig {
     pub show_in_dock: bool,
     /// Mute the default output device while recording (Settings → General → Audio).
     pub mute_output_while_recording: bool,
+    /// Version of the built-in preset templates this config holds (`BUILTIN_PRESETS_VERSION`).
+    pub builtin_presets_version: u32,
+    /// The three-shortcut tour (onboarding steps 5 to 7) has been finished.
+    pub shortcut_tour_completed: bool,
+    /// The user answered "Later" (or "Start") to the "try the three shortcuts now?" dialog.
+    pub shortcut_tour_prompt_dismissed: bool,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            speech_presets: vec![SpeechPreset::builtin_whisper_local()],
+            speech_presets: SpeechPreset::builtin_templates(),
             active_speech_preset_id: BUILTIN_SPEECH_PRESET_ID.to_string(),
-            ai_presets: vec![AiPreset::builtin_ollama_pc()],
+            ai_presets: AiPreset::builtin_templates(),
             active_ai_preset_id: BUILTIN_AI_PRESET_ID.to_string(),
             polish_enabled: true,
             context_adaptation_enabled: true,
@@ -523,6 +819,9 @@ impl Default for AppConfig {
             input_device: String::new(),
             show_in_dock: true,
             mute_output_while_recording: false,
+            builtin_presets_version: BUILTIN_PRESETS_VERSION,
+            shortcut_tour_completed: false,
+            shortcut_tour_prompt_dismissed: false,
         }
     }
 }
@@ -649,7 +948,7 @@ impl AppConfig {
             .iter()
             .find(|preset| preset.id == self.active_speech_preset_id)
             .or_else(|| self.speech_presets.first())
-            .unwrap_or_else(|| FALLBACK.get_or_init(SpeechPreset::builtin_whisper_local))
+            .unwrap_or_else(|| FALLBACK.get_or_init(SpeechPreset::builtin_local))
     }
 
     /// The AI preset used for polish and Ask. Same fallback rules as
@@ -660,7 +959,7 @@ impl AppConfig {
             .iter()
             .find(|preset| preset.id == self.active_ai_preset_id)
             .or_else(|| self.ai_presets.first())
-            .unwrap_or_else(|| FALLBACK.get_or_init(AiPreset::builtin_ollama_pc))
+            .unwrap_or_else(|| FALLBACK.get_or_init(AiPreset::builtin_local))
     }
 
     /// Language hint of the active speech preset. `None` means auto-detect.
@@ -673,10 +972,71 @@ impl AppConfig {
         }
     }
 
+    /// Speech is ready when the active speech preset passed a Test since it last changed.
+    pub fn speech_ready(&self) -> bool {
+        self.active_speech_preset().verified_at.is_some()
+    }
+
+    /// AI is ready when the active AI preset passed a Test since it last changed.
+    pub fn ai_ready(&self) -> bool {
+        self.active_ai_preset().verified_at.is_some()
+    }
+
+    /// Marks the stored speech preset with the tested preset's id as verified, but only when
+    /// its connection is the one that was tested (unsaved edits do not count). Returns true
+    /// when the preset was marked.
+    pub fn mark_speech_verified(&mut self, tested: &SpeechPreset, at: u64) -> bool {
+        mark_verified(&mut self.speech_presets, tested, at)
+    }
+
+    /// Same as `mark_speech_verified`, for AI presets.
+    pub fn mark_ai_verified(&mut self, tested: &AiPreset, at: u64) -> bool {
+        mark_verified(&mut self.ai_presets, tested, at)
+    }
+
+    /// Clears the verification of one preset, for example after its API key changed.
+    /// Returns true when the preset was verified before.
+    pub fn clear_verification(&mut self, kind: ServiceKind, preset_id: &str) -> bool {
+        match kind {
+            ServiceKind::Speech => clear_verified(&mut self.speech_presets, preset_id),
+            ServiceKind::Ai => clear_verified(&mut self.ai_presets, preset_id),
+        }
+    }
+
+    /// One-time move to the current built-in templates (plan 0007). Old built-ins that are not
+    /// templates any more are removed, user presets are kept, and missing templates are added
+    /// in front. An active id that no longer exists moves to a template with the same URL and
+    /// model if there is one, otherwise to the first template.
+    ///
+    /// `onboarding_completed`: the old onboarding needed a passing Test of both services and
+    /// ended with the shortcut tour, so such configs keep their surviving active presets ready
+    /// and count the tour as done.
+    pub(crate) fn migrate_builtin_presets(&mut self, onboarding_completed: bool) {
+        if self.builtin_presets_version >= BUILTIN_PRESETS_VERSION {
+            return;
+        }
+        let verify_at = onboarding_completed.then(now_unix_ms);
+        migrate_preset_list(
+            &mut self.speech_presets,
+            &mut self.active_speech_preset_id,
+            SpeechPreset::builtin_templates(),
+            verify_at,
+        );
+        migrate_preset_list(
+            &mut self.ai_presets,
+            &mut self.active_ai_preset_id,
+            AiPreset::builtin_templates(),
+            verify_at,
+        );
+        if onboarding_completed {
+            self.shortcut_tour_completed = true;
+        }
+        self.builtin_presets_version = BUILTIN_PRESETS_VERSION;
+    }
+
     fn normalize_presets(&mut self) {
         if self.speech_presets.is_empty() {
-            self.speech_presets
-                .push(SpeechPreset::builtin_whisper_local());
+            self.speech_presets = SpeechPreset::builtin_templates();
         }
         let mut seen_ids = HashSet::new();
         for preset in &mut self.speech_presets {
@@ -688,6 +1048,9 @@ impl AppConfig {
             if preset.language.is_empty() || preset.language == "multi" {
                 preset.language = SPEECH_LANGUAGE_AUTO.to_string();
             }
+            if base_url_has_placeholder(&preset.base_url) {
+                preset.verified_at = None;
+            }
         }
         if !self
             .speech_presets
@@ -698,7 +1061,7 @@ impl AppConfig {
         }
 
         if self.ai_presets.is_empty() {
-            self.ai_presets.push(AiPreset::builtin_ollama_pc());
+            self.ai_presets = AiPreset::builtin_templates();
         }
         let mut seen_ids = HashSet::new();
         for preset in &mut self.ai_presets {
@@ -706,6 +1069,9 @@ impl AppConfig {
             preset.name = preset_name_or_default(&preset.name, &preset.model);
             preset.base_url = normalize_preset_base_url(&preset.base_url);
             preset.model = preset.model.trim().to_string();
+            if base_url_has_placeholder(&preset.base_url) {
+                preset.verified_at = None;
+            }
         }
         if !self
             .ai_presets
@@ -784,6 +1150,15 @@ impl AppConfig {
     }
 
     pub fn from_stored_value(value: serde_json::Value) -> Result<Self, serde_json::Error> {
+        Self::from_stored_value_with_onboarding(value, false)
+    }
+
+    /// Reads a stored config. `onboarding_completed` is the separate store flag; it only
+    /// matters for the one-time built-in preset migration.
+    pub fn from_stored_value_with_onboarding(
+        value: serde_json::Value,
+        onboarding_completed: bool,
+    ) -> Result<Self, serde_json::Error> {
         let mut value = value;
         if let Some(object) = value.as_object_mut() {
             if object
@@ -814,7 +1189,14 @@ impl AppConfig {
         let has_custom_recording_limit = value
             .as_object()
             .is_some_and(|object| object.contains_key("custom_recording_limit_seconds"));
+        let has_builtin_presets_version = value
+            .as_object()
+            .is_some_and(|object| object.contains_key("builtin_presets_version"));
         let mut config: Self = serde_json::from_value(value)?;
+        if !has_builtin_presets_version {
+            config.builtin_presets_version = 0;
+        }
+        config.migrate_builtin_presets(onboarding_completed);
         if !has_recording_limit_mode {
             if config.max_recording_seconds == 0 || config.max_recording_seconds == 30 {
                 config.recording_limit_mode = crate::stt::capabilities::RecordingLimitMode::Auto;
@@ -1328,6 +1710,14 @@ fn sanitize_family_scene_assignments(
 
 // ─── ConfigManager (tauri-plugin-store backed) ───
 
+/// True when a stored config predates the current built-in preset templates.
+fn stored_presets_need_migration(value: &serde_json::Value) -> bool {
+    value
+        .get("builtin_presets_version")
+        .and_then(serde_json::Value::as_u64)
+        .is_none_or(|version| version < u64::from(BUILTIN_PRESETS_VERSION))
+}
+
 pub struct ConfigManager {
     app_handle: tauri::AppHandle,
     cache: Mutex<Option<AppConfig>>,
@@ -1346,14 +1736,28 @@ impl ConfigManager {
             return Ok(config);
         }
 
+        let mut migrated = false;
         let config = match self.app_handle.store("settings.json") {
             Ok(store) => match store.get("app_config") {
-                Some(val) => AppConfig::from_stored_value(val.clone())
-                    .unwrap_or_else(|_| AppConfig::new_install_default()),
+                Some(val) => {
+                    let onboarding_completed = store
+                        .get("onboarding_completed")
+                        .and_then(|value| value.as_bool())
+                        .unwrap_or(false);
+                    migrated = stored_presets_need_migration(&val);
+                    AppConfig::from_stored_value_with_onboarding(val, onboarding_completed)
+                        .unwrap_or_else(|_| AppConfig::new_install_default())
+                }
                 None => AppConfig::new_install_default(),
             },
             Err(_) => AppConfig::new_install_default(),
         };
+        if migrated {
+            // Write the migrated presets back, so the migration runs only once.
+            if let Err(error) = self.persist_config(&config) {
+                tracing::warn!("Failed to save the migrated presets: {error}");
+            }
+        }
 
         *self.cache.lock().unwrap_or_else(|e| e.into_inner()) = Some(config.clone());
         Ok(config)
@@ -1714,11 +2118,8 @@ mod tests {
         }))
         .unwrap();
 
-        assert_eq!(
-            config.speech_presets,
-            vec![SpeechPreset::builtin_whisper_local()]
-        );
-        assert_eq!(config.ai_presets, vec![AiPreset::builtin_ollama_pc()]);
+        assert_eq!(config.speech_presets, SpeechPreset::builtin_templates());
+        assert_eq!(config.ai_presets, AiPreset::builtin_templates());
         assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
         assert_eq!(config.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
         assert_eq!(config.speech_language(), None);
@@ -1738,8 +2139,8 @@ mod tests {
         }))
         .unwrap();
 
-        assert_eq!(config.speech_presets.len(), 1);
-        assert_eq!(config.ai_presets.len(), 1);
+        assert_eq!(config.speech_presets.len(), 4);
+        assert_eq!(config.ai_presets.len(), 4);
         assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
         assert_eq!(config.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
     }
@@ -1748,8 +2149,8 @@ mod tests {
     fn app_config_normalizes_presets() {
         let config = AppConfig::from_stored_value(serde_json::json!({
             "speech_presets": [
-                {"id": "a", "name": " First ", "base_url": " http://10.0.0.5:8000/v1/ ", "model": " m1 ", "language": ""},
-                {"id": "a", "name": "", "base_url": "http://10.0.0.6:8000/v1", "model": "m2", "language": "multi"},
+                {"id": "a", "name": " First ", "base_url": " http://192.0.2.5:8000/v1/ ", "model": " m1 ", "language": ""},
+                {"id": "a", "name": "", "base_url": "http://192.0.2.6:8000/v1", "model": "m2", "language": "multi"},
                 {"id": "bad/id", "name": "Third", "base_url": "not a url", "model": "m3", "language": "zh"}
             ],
             "active_speech_preset_id": "gone",
@@ -1757,7 +2158,8 @@ mod tests {
                 {"id": "x", "name": "Chat", "base_url": "http://localhost:11434/v1/", "model": "qwen3",
                  "extra_request_fields": {"reasoning_effort": "none"}}
             ],
-            "active_ai_preset_id": "x"
+            "active_ai_preset_id": "x",
+            "builtin_presets_version": BUILTIN_PRESETS_VERSION
         }))
         .unwrap();
 
@@ -1765,7 +2167,7 @@ mod tests {
         assert_eq!(speech.len(), 3);
         assert_eq!(speech[0].id, "a");
         assert_eq!(speech[0].name, "First");
-        assert_eq!(speech[0].base_url, "http://10.0.0.5:8000/v1");
+        assert_eq!(speech[0].base_url, "http://192.0.2.5:8000/v1");
         assert_eq!(speech[0].model, "m1");
         assert_eq!(speech[0].language, "auto");
         // Duplicate and invalid ids get fresh random ids.
@@ -1790,6 +2192,204 @@ mod tests {
             config.active_ai_preset().extra_request_fields["reasoning_effort"],
             "none"
         );
+    }
+
+    fn old_config(active_speech: &str, active_ai: &str) -> serde_json::Value {
+        serde_json::json!({
+            "speech_presets": [
+                {"id": "builtin-whisper-local", "name": "Local whisper.cpp (Mac)",
+                 "base_url": "http://127.0.0.1:8178/v1", "model": "large-v3-turbo",
+                 "language": "auto", "builtin": true},
+                {"id": "my-speech", "name": "Mine", "base_url": "http://192.0.2.7:8000/v1",
+                 "model": "m", "language": "auto", "builtin": false}
+            ],
+            "active_speech_preset_id": active_speech,
+            "ai_presets": [
+                {"id": "builtin-ollama-pc", "name": "Old PC", "base_url": "http://192.0.2.8:11434/v1",
+                 "model": "qwen3:4b-instruct-2507-q4_K_M", "builtin": true},
+                {"id": "my-ai", "name": "Mine", "base_url": "http://192.0.2.9:11434/v1",
+                 "model": "m", "builtin": false}
+            ],
+            "active_ai_preset_id": active_ai
+        })
+    }
+
+    #[test]
+    fn builtin_templates_have_stable_ids_and_no_private_addresses() {
+        let speech: Vec<_> = SpeechPreset::builtin_templates()
+            .into_iter()
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(
+            speech,
+            [
+                "builtin-speech-local",
+                "builtin-speech-lan",
+                "builtin-speech-openai",
+                "builtin-speech-groq"
+            ]
+        );
+        let ai: Vec<_> = AiPreset::builtin_templates()
+            .into_iter()
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(
+            ai,
+            [
+                "builtin-ai-ollama-local",
+                "builtin-ai-ollama-lan",
+                "builtin-ai-openai",
+                "builtin-ai-groq"
+            ]
+        );
+        let stored = serde_json::to_string(&AppConfig::default()).unwrap();
+        assert!(!stored.contains("100."));
+        assert!(!stored.contains("192.168."));
+    }
+
+    #[test]
+    fn migration_replaces_old_builtins_and_keeps_user_presets() {
+        let config =
+            AppConfig::from_stored_value_with_onboarding(old_config("my-speech", "my-ai"), false)
+                .unwrap();
+
+        let ids: Vec<_> = config
+            .speech_presets
+            .iter()
+            .map(|p| p.id.as_str())
+            .collect();
+        assert_eq!(
+            ids,
+            [
+                "builtin-speech-local",
+                "builtin-speech-lan",
+                "builtin-speech-openai",
+                "builtin-speech-groq",
+                "my-speech"
+            ]
+        );
+        assert!(config
+            .ai_presets
+            .iter()
+            .all(|p| p.id != "builtin-ollama-pc"));
+        assert!(config.ai_presets.iter().any(|p| p.id == "my-ai"));
+        assert_eq!(config.active_speech_preset_id, "my-speech");
+        assert_eq!(config.active_ai_preset_id, "my-ai");
+        // Without a completed onboarding nothing counts as tested.
+        assert!(!config.speech_ready());
+        assert!(!config.ai_ready());
+        assert!(!config.shortcut_tour_completed);
+        assert_eq!(config.builtin_presets_version, BUILTIN_PRESETS_VERSION);
+    }
+
+    #[test]
+    fn migration_moves_a_removed_active_builtin_to_a_template() {
+        let config = AppConfig::from_stored_value_with_onboarding(
+            old_config("builtin-whisper-local", "builtin-ollama-pc"),
+            true,
+        )
+        .unwrap();
+
+        // Same URL and model as the new local template: that one becomes active and stays ready.
+        assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
+        assert!(config.speech_ready());
+        // No template matches the old AI preset: the first template is active, not ready.
+        assert_eq!(config.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
+        assert!(!config.ai_ready());
+        assert!(config.shortcut_tour_completed);
+    }
+
+    #[test]
+    fn migration_keeps_user_presets_ready_after_a_completed_onboarding() {
+        let config =
+            AppConfig::from_stored_value_with_onboarding(old_config("my-speech", "my-ai"), true)
+                .unwrap();
+        assert!(config.speech_ready());
+        assert!(config.ai_ready());
+        assert!(config.shortcut_tour_completed);
+    }
+
+    #[test]
+    fn migration_runs_only_once() {
+        let mut config = AppConfig::default();
+        config
+            .speech_presets
+            .retain(|p| p.id != "builtin-speech-groq");
+        let stored = serde_json::to_value(&config).unwrap();
+        assert!(!stored_presets_need_migration(&stored));
+
+        let loaded = AppConfig::from_stored_value_with_onboarding(stored, true).unwrap();
+        assert_eq!(loaded.speech_presets.len(), 3);
+        assert!(!loaded.speech_ready());
+        assert!(!loaded.shortcut_tour_completed);
+        assert!(stored_presets_need_migration(&old_config("a", "b")));
+    }
+
+    #[test]
+    fn editing_a_preset_clears_its_test_result() {
+        let mut previous = AppConfig::default();
+        previous.speech_presets[0].verified_at = Some(5);
+        previous.ai_presets[0].verified_at = Some(5);
+
+        // Renaming keeps it.
+        let mut next = previous.clone();
+        next.speech_presets[0].name = "Renamed".to_string();
+        invalidate_changed_presets(&previous, &mut next);
+        assert_eq!(next.speech_presets[0].verified_at, Some(5));
+
+        // URL, model, language and extra fields clear it.
+        for edit in 0..3 {
+            let mut next = previous.clone();
+            match edit {
+                0 => next.speech_presets[0].base_url = "http://192.0.2.1:8178/v1".to_string(),
+                1 => next.speech_presets[0].model = "other".to_string(),
+                _ => next.speech_presets[0].language = "en".to_string(),
+            }
+            invalidate_changed_presets(&previous, &mut next);
+            assert_eq!(next.speech_presets[0].verified_at, None, "edit {edit}");
+        }
+        let mut next = previous.clone();
+        next.ai_presets[0]
+            .extra_request_fields
+            .insert("reasoning_effort".to_string(), serde_json::json!("none"));
+        invalidate_changed_presets(&previous, &mut next);
+        assert_eq!(next.ai_presets[0].verified_at, None);
+
+        // A Test of the edited values that passed before saving keeps its new result.
+        let mut next = previous.clone();
+        next.ai_presets[0].model = "other".to_string();
+        next.ai_presets[0].verified_at = Some(9);
+        invalidate_changed_presets(&previous, &mut next);
+        assert_eq!(next.ai_presets[0].verified_at, Some(9));
+    }
+
+    #[test]
+    fn a_test_counts_only_for_the_stored_connection() {
+        let mut config = AppConfig::default();
+        let mut tested = config.speech_presets[0].clone();
+        tested.model = "unsaved-edit".to_string();
+        assert!(!config.mark_speech_verified(&tested, 7));
+        assert!(!config.speech_ready());
+
+        let tested = config.speech_presets[0].clone();
+        assert!(config.mark_speech_verified(&tested, 7));
+        assert!(config.speech_ready());
+
+        // A template with a placeholder URL can never be ready.
+        let lan = config.ai_presets[1].clone();
+        assert!(base_url_has_placeholder(&lan.base_url));
+        assert!(!config.mark_ai_verified(&lan, 7));
+
+        assert!(config.clear_verification(ServiceKind::Speech, BUILTIN_SPEECH_PRESET_ID));
+        assert!(!config.speech_ready());
+        assert!(!config.clear_verification(ServiceKind::Speech, BUILTIN_SPEECH_PRESET_ID));
+    }
+
+    #[test]
+    fn placeholder_detection() {
+        assert!(base_url_has_placeholder("http://<computer-ip>:8000/v1"));
+        assert!(!base_url_has_placeholder("http://127.0.0.1:8000/v1"));
+        assert!(!base_url_has_placeholder("http://a<b"));
     }
 
     #[test]

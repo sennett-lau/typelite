@@ -703,6 +703,9 @@ pub async fn ask_anything(
 ) -> Result<String, String> {
     let question = validate_ask_question(&question)?;
     let config = config_state.load().await.map_err(|e| e.to_string())?;
+    if !config.ai_ready() {
+        return Err("Set up the AI polish service first.".to_string());
+    }
 
     answer_question(&config, &client, &question, None)
         .await
@@ -752,6 +755,16 @@ pub(crate) async fn start_reserved_ask_dictation(
 ) -> Result<AskDictationStartResult, String> {
     let result = async {
         let config = config_state.load().await.map_err(|e| e.to_string())?;
+        // Plan 0007: Ask needs both services. Show the setup message in the capsule and
+        // start nothing (no answer window, no recording).
+        if let Some(user_error) =
+            crate::readiness::start_error(&config, crate::readiness::Feature::Ask)
+        {
+            tracing::info!("Not starting Ask: {}", user_error.code);
+            let _ = app.emit("pipeline:error", user_error);
+            state.clear_starting();
+            return Ok(AskDictationStartResult::empty());
+        }
         let recording_context = app
             .state::<crate::app_detector::ContextDetectorHandle>()
             .snapshot_for_recording_enabled(config.context_adaptation_enabled);

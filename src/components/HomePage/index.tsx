@@ -11,6 +11,8 @@ import { TARGET_LANGUAGES } from '../../lib/constants'
 import { WHATS_NEW } from '../../lib/whatsNew'
 import { PageFrame } from '../PageFrame'
 import { Group } from '../ui/Group'
+import { startShortcutTour, useShortcutTourAvailable } from '../../lib/shortcutTour'
+import { FinishSetup } from './FinishSetup'
 
 type SettingsPane = 'general' | 'stt' | 'llm'
 
@@ -239,12 +241,32 @@ function WhatsNew() {
   )
 }
 
+/** A quiet link to the shortcut tour, shown until the tour is done (once both services work). */
+function TourLink() {
+  const { t } = useTranslation()
+  const available = useShortcutTourAvailable()
+  if (!available) return null
+  return (
+    <div className="mt-2 text-right">
+      <button
+        type="button"
+        onClick={startShortcutTour}
+        className="cursor-pointer border-none bg-transparent p-0 text-[12px] text-accent hover:underline"
+      >
+        {t('home.takeTour')}
+      </button>
+    </div>
+  )
+}
+
 export function HomePage() {
   const { t } = useTranslation()
 
   return (
     <PageFrame title={t('home.welcome')} subtitle={t('home.subtitle')}>
+      <FinishSetup />
       <ShortcutTiles />
+      <TourLink />
       <div className="mt-[22px] grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start gap-3">
         <SetupGroup />
         <WhatsNew />

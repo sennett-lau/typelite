@@ -1,29 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  BUILTIN_SPEECH_PRESET,
-  findActivePreset,
-  useAppStore,
-  type SpeechPreset,
-} from '../../stores/appStore'
-import { LANGUAGES } from '../../lib/constants'
-import {
-  getSttRecordingCapability,
-  setCredential,
-  testSpeechPreset,
-  type ResolvedSttRecordingLimit,
-} from '../../lib/tauri'
-import { usePresetApiKey } from '../../hooks/usePresetApiKey'
+import { useAppStore } from '../../stores/appStore'
+import { getSttRecordingCapability, type ResolvedSttRecordingLimit } from '../../lib/tauri'
 import { Group, Row } from '../ui/Group'
-import { PresetPicker } from './PresetPicker'
-import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
-import { recordSpeechResult } from '../../lib/connectionStatus'
+import { SpeechPresetEditor } from './SpeechPresetEditor'
 
 const RECORDING_LIMIT_PRESETS = [30, 60, 120, 300, 600, 1800, 3600]
 const MIN_CUSTOM_RECORDING_SECONDS = 30
-
-/** Text fields hold technical values (URLs, model names), so they use SF Mono. */
-const inputClass = 'field w-full min-w-0 font-mono text-[12px]'
 
 function formatRecordingDuration(
   seconds: number,
@@ -39,34 +22,9 @@ function formatRecordingDuration(
 export function SttPane() {
   const config = useAppStore((s) => s.config)
   const updateConfig = useAppStore((s) => s.updateConfig)
-  const sttTestStatus = useAppStore((s) => s.sttTestStatus)
-  const setSttTestStatus = useAppStore((s) => s.setSttTestStatus)
-  const sttLatencyMs = useAppStore((s) => s.sttLatencyMs)
-  const setSttLatencyMs = useAppStore((s) => s.setSttLatencyMs)
   const { t } = useTranslation()
-  const [testErrorMessage, setTestErrorMessage] = useState<string | null>(null)
   const [recordingLimit, setRecordingLimit] = useState<ResolvedSttRecordingLimit | null>(null)
   const [customDurationEntryRequested, setCustomDurationEntryRequested] = useState(false)
-
-  const presets = config.speech_presets?.length ? config.speech_presets : [BUILTIN_SPEECH_PRESET]
-  const active = findActivePreset(presets, config.active_speech_preset_id) ?? presets[0]
-  const { apiKey, setApiKey, saveNow, saveError } = usePresetApiKey('stt', active.id)
-  const canTest = Boolean(active.base_url.trim() && active.model.trim())
-
-  const resetTest = () => {
-    setSttTestStatus('idle')
-    setSttLatencyMs(null)
-    setTestErrorMessage(null)
-  }
-
-  const updateActive = (patch: Partial<SpeechPreset>) => {
-    updateConfig({
-      speech_presets: presets.map((preset) =>
-        preset.id === active.id ? { ...preset, ...patch } : preset,
-      ),
-    })
-    resetTest()
-  }
 
   useEffect(() => {
     let cancelled = false
@@ -90,23 +48,6 @@ export function SttPane() {
       setCustomDurationEntryRequested(false)
     }
   }, [config.recording_limit_mode])
-
-  const handleTest = async () => {
-    setSttTestStatus('testing')
-    setSttLatencyMs(null)
-    setTestErrorMessage(null)
-    try {
-      const ms = await testSpeechPreset(active, apiKey)
-      setSttLatencyMs(ms)
-      setSttTestStatus('success')
-      recordSpeechResult(true)
-    } catch (err) {
-      console.error('[STT Test] Error:', err)
-      setTestErrorMessage(err instanceof Error ? err.message : typeof err === 'string' ? err : null)
-      setSttTestStatus('error')
-      recordSpeechResult(false)
-    }
-  }
 
   const availableRecordingPresets = recordingLimit
     ? RECORDING_LIMIT_PRESETS.filter(
@@ -172,117 +113,7 @@ export function SttPane() {
 
   return (
     <div>
-      <Group label={t('settings.groupPreset')}>
-        <PresetPicker
-          presets={presets}
-          activeId={active.id}
-          onChange={(speech_presets, active_speech_preset_id) => {
-            updateConfig({ speech_presets, active_speech_preset_id })
-            resetTest()
-          }}
-          onCreated={(_source, created) => {
-            // A copy starts with the same API key as the preset it came from.
-            if (apiKey) {
-              setCredential('stt', created.id, apiKey).catch((error) =>
-                console.error('[credentials] failed to copy STT key', error),
-              )
-            }
-          }}
-        />
-      </Group>
-
-      <Group label={t('settings.groupServer')}>
-        <Row label={t('settings.baseUrl')} help={t('presets.speechServerHint')} layout="wide">
-          <input
-            aria-label={t('settings.baseUrl')}
-            value={active.base_url}
-            onChange={(e) => updateActive({ base_url: e.target.value })}
-            placeholder={BUILTIN_SPEECH_PRESET.base_url}
-            className={inputClass}
-          />
-        </Row>
-
-        <Row label={t('settings.model')} layout="wide">
-          <input
-            aria-label={t('settings.model')}
-            value={active.model}
-            onChange={(e) => updateActive({ model: e.target.value })}
-            placeholder={BUILTIN_SPEECH_PRESET.model}
-            className={inputClass}
-          />
-        </Row>
-
-        <Row label={t('settings.sttLanguage')}>
-          <select
-            aria-label={t('settings.sttLanguage')}
-            value={active.language || 'auto'}
-            onChange={(e) => updateActive({ language: e.target.value })}
-            className="popup"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.labelKey ? t(l.labelKey) : l.label}
-              </option>
-            ))}
-          </select>
-        </Row>
-
-        <Row
-          label={t('presets.apiKeyOptional')}
-          help={
-            saveError ? (
-              <span className="text-error">
-                {t('settings.credentialSaveFailed', { details: saveError })}
-              </span>
-            ) : (
-              t('settings.storedLocally')
-            )
-          }
-          layout="wide"
-        >
-          <input
-            type="password"
-            aria-label={t('presets.apiKeyOptional')}
-            value={apiKey}
-            onChange={(e) => {
-              setApiKey(e.target.value)
-              resetTest()
-            }}
-            onBlur={saveNow}
-            placeholder={t('presets.apiKeyPlaceholder')}
-            className={inputClass}
-          />
-        </Row>
-
-        <Row
-          label={t('settings.connection')}
-          help={
-            sttTestStatus === 'success' ? (
-              <span className="flex items-center gap-1 text-success">
-                <CheckCircle2 size={12} />{' '}
-                {sttLatencyMs !== null
-                  ? t('presets.latency', { ms: sttLatencyMs })
-                  : t('settings.connectionSuccess')}
-              </span>
-            ) : sttTestStatus === 'error' ? (
-              <span className="flex items-start gap-1 text-error">
-                <XCircle size={12} className="mt-[2px] flex-shrink-0" />
-                <span>{testErrorMessage || t('settings.connectionFailed')}</span>
-              </span>
-            ) : undefined
-          }
-        >
-          <button
-            type="button"
-            onClick={handleTest}
-            disabled={!canTest || sttTestStatus === 'testing'}
-            className="btn-accent"
-          >
-            {sttTestStatus === 'testing' && <Loader2 size={12} className="animate-spin" />}
-            {t('settings.test')}
-          </button>
-        </Row>
-      </Group>
+      <SpeechPresetEditor />
 
       <Group label={t('settings.groupRecording')}>
         <Row
