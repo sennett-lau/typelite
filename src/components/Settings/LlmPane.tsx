@@ -8,6 +8,7 @@ import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
 import { ChevronDown, MoreHorizontal } from 'lucide-react'
 import { AiPresetEditor } from './AiPresetEditor'
+import { PresetShareButtons } from './PresetShareButtons'
 import { AppLogo } from '../AppLogo'
 import { ContextAdaptationApps } from './ContextAdaptationApps'
 import { TranslationTargets } from './TranslationTargets'
@@ -93,6 +94,8 @@ export function LlmPane() {
   return (
     <div>
       <AiPresetEditor />
+      {/* Plan 0019: export and import AI presets. */}
+      <PresetShareButtons service="ai" />
 
       <Group label={t('settings.groupPolish')}>
         <Row label={t('settings.enableAiPolish')}>

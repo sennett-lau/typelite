@@ -5,6 +5,7 @@ import { BUILTIN_WHISPER_PRESET_ID, useAppStore } from '../../stores/appStore'
 import { deleteServerPreset, selectSpeechPreset } from './saveSpeech'
 import { LearnMoreLink } from './LearnMoreLink'
 import { ServerPresetForm } from './ServerPresetForm'
+import { PresetShareButtons } from '../Settings/PresetShareButtons'
 
 const ADD = '__add__'
 
@@ -108,6 +109,9 @@ export function ServerSettings() {
           <LearnMoreLink /> {t('speech.learnMoreAbout')}
         </p>
       )}
+
+      {/* Plan 0019: export and import speech presets. */}
+      <PresetShareButtons service="speech" />
     </div>
   )
 }
