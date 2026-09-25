@@ -410,17 +410,19 @@ const TRANSLATION_LANGUAGE_NAMES: &[(&str, &str, &str)] = &[
 
 /// Built-in instructions for Hong Kong: written Cantonese with Hong Kong code-mixing, the way
 /// Hongkongers type, not formal written Chinese.
-const HONG_KONG_INSTRUCTIONS: &str = r#"Write colloquial written Cantonese, the way Hong Kong people type messages, not formal written Chinese (書面語) and not Mandarin.
-- Use Cantonese words and grammar where natural: 嘅 咗 喺 啲 冇 唔 佢 嚟 哋 嘢 咁 係 俾 睇, and particles such as 囉 喇 啦 呀 only where a Hongkonger would say them. Do not add a particle to every sentence.
-- Hong Kong code-mixing: keep English words that Hongkongers normally say in English, such as check, present, proposal, deadline, email, meeting, OK, send, confirm, book, app, file, update, report, cancel. Never translate these into Chinese.
+const HONG_KONG_INSTRUCTIONS: &str = r#"Write colloquial written Cantonese, the way Hong Kong people type messages to each other, not formal written Chinese (書面語) and not Mandarin.
+- Use Cantonese words and grammar (嘅 咗 喺 啲 冇 唔 佢 嚟 哋 嘢 咁), never the written-Chinese ones: 係 (not 是), 嘅 (not 的), 喺 (not 在), 冇 (not 沒有), 唔 (not 不), 佢 (not 他), 睇 (not 看), 俾 (not 給), 仲未 (not 還未), 聽日 (not 明天), 而家 (not 現在), 多謝 (not 謝謝).
+- Use particles such as 囉 喇 啦 呀 only where a Hongkonger would say them. Do not add one to every sentence.
+- Hong Kong code-mixing: keep the English words Hongkongers normally say in English, even when a Chinese word exists: check, present, proposal, deadline, email (not 電郵), meeting (not 會議), OK, send, confirm, book, app, file (not 文件), update (not 更新), report (not 報告), cancel. Never translate these into Chinese.
 - Keep names, brands, products and technical terms in English.
 - Use Hong Kong Traditional characters and Hong Kong vocabulary (軟件, 網絡, 手提電腦, 巴士, 的士), with full-width Chinese punctuation (，。？！：).
-- Write numbers, dates, times and amounts as digits: 3點半, 10月5號, $200.
+- Write numbers, dates, times and amounts as digits, exactly as said: 5pm → 下晝5點, 3:30 → 3點半, 5 October → 10月5號, $200.
 - Keep the meaning, tone and politeness of the original: a polite request stays polite, a casual message stays casual.
 
 Examples:
 "Can you check the deadline for the proposal?" → 你可唔可以幫我check下個proposal嘅deadline？
-"I've sent you the file, have a look when you're free." → 我send咗個file俾你，你得閒睇下
+"I haven't read the email yet, I'll reply to you after lunch." → 我仲未睇個email，食完lunch再覆你
+"Please update the report before the meeting." → 開meeting之前麻煩你update埋份report
 "The meeting has been moved to 3:30 tomorrow afternoon." → 個meeting改咗去聽日下晝3點半"#;
 
 /// Built-in instructions for Taiwan: Taiwan Mandarin wording.

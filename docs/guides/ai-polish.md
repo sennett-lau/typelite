@@ -123,8 +123,9 @@ The built-in instructions are a plain, natural translation for most languages, p
 | Chinese (Traditional, Taiwan) | Taiwan Mandarin wording and vocabulary (軟體, 網路, 計程車). |
 | Chinese (Simplified) | Mainland wording and vocabulary (软件, 网络, 出租车). |
 
-A 4B model follows these well for short messages. For long or tricky Cantonese, a larger model
-on another computer can be set for that language only, while polish stays on the fast one.
+Small 4B models write passable Cantonese but still slip into written Chinese now and then. For
+better Cantonese, set a larger or Cantonese-tuned model for that language only, while polish
+stays on the fast one.
 
 ## Share presets
 
