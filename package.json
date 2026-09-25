@@ -26,6 +26,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "build:llama-server": "bash scripts/build-llama-server.sh",
+    "build:app": "bash scripts/build-llama-server.sh && tauri build --bundles app --config src-tauri/tauri.bundle.conf.json",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
