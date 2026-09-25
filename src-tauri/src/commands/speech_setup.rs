@@ -45,6 +45,8 @@ pub struct SpeechSetupStatus {
     pub total_bytes: u64,
     pub bytes_per_second: u64,
     pub error: Option<DownloadError>,
+    /// How long the automatic test took once the model was ready (milliseconds).
+    pub test_ms: Option<u32>,
 }
 
 impl SpeechSetupStatus {
@@ -176,6 +178,38 @@ pub fn list_speech_models(app: tauri::AppHandle) -> Result<Vec<SpeechModelInfo>,
         .collect())
 }
 
+/// Plan 0015: the chip, memory and free disk space of this Mac, and the built-in models the
+/// speech screens offer on it (see `stt::hardware::offer_models`).
+#[tauri::command]
+pub async fn get_speech_hardware(
+    app: tauri::AppHandle,
+) -> Result<crate::stt::hardware::HardwareCheck, String> {
+    let dir = models_dir(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let hardware = crate::stt::hardware::detect(&dir);
+        let installed: Vec<String> = models::installed_models(&dir)
+            .into_iter()
+            .map(|model| model.id)
+            .collect();
+        let offer = crate::stt::hardware::offer_models(&hardware, &installed);
+        tracing::info!(
+            "Speech hardware check: {:?} '{}', {} GB memory, {} MB free, offered {:?}",
+            hardware.chip_kind,
+            hardware.chip_name,
+            hardware.memory_bytes / (1024 * 1024 * 1024),
+            hardware.free_bytes / 1_000_000,
+            offer
+                .models
+                .iter()
+                .map(|m| m.id.as_str())
+                .collect::<Vec<_>>()
+        );
+        crate::stt::hardware::HardwareCheck { hardware, offer }
+    })
+    .await
+    .map_err(|error| error.to_string())
+}
+
 /// Deletes a model file. Built-in presets that used it move to another installed model or
 /// are removed (see `AppConfig::reconcile_builtin_models`).
 #[tauri::command]
@@ -237,14 +271,17 @@ pub fn start_speech_setup(
         let result = run_setup(&app, &dir, model, cancel).await;
         let state = app.state::<SpeechSetupState>();
         let status = state.update(|status| match &result {
-            Ok(()) => status.phase = SetupPhase::Ready,
+            Ok(ms) => {
+                status.phase = SetupPhase::Ready;
+                status.test_ms = Some(*ms);
+            }
             Err(error) => {
                 status.phase = SetupPhase::Error;
                 status.error = Some(error.clone());
             }
         });
         match &result {
-            Ok(()) => tracing::info!("Quick speech setup finished: {} is ready", model.id),
+            Ok(_) => tracing::info!("Quick speech setup finished: {} is ready", model.id),
             Err(error) => tracing::warn!("Quick speech setup for {} stopped: {error}", model.id),
         }
         emit(&app, &status);
@@ -262,7 +299,7 @@ async fn run_setup(
     dir: &std::path::Path,
     model: KnownModel,
     cancel: tokio::sync::watch::Receiver<bool>,
-) -> Result<(), DownloadError> {
+) -> Result<u32, DownloadError> {
     let started = std::time::Instant::now();
     // Not the shared client: its 30 s request timeout would cut a large download short. A
     // stalled transfer is caught by the download's own stall timeout instead.
@@ -342,8 +379,7 @@ async fn run_setup(
             reason: error.to_string(),
         })?;
     emit_speech_presets(app, &config);
-    test.map(|_| ())
-        .map_err(|reason| DownloadError::Load { reason })
+    test.map_err(|reason| DownloadError::Load { reason })
 }
 
 #[cfg(test)]
@@ -399,6 +435,7 @@ mod tests {
                 needed_bytes: 100,
                 available_bytes: 50,
             }),
+            test_ms: None,
         };
         assert_eq!(
             serde_json::to_value(&status).unwrap(),
@@ -409,6 +446,7 @@ mod tests {
                 "totalBytes": 20,
                 "bytesPerSecond": 5,
                 "error": {"code": "disk_space", "neededBytes": 100, "availableBytes": 50},
+                "testMs": null,
             })
         );
         assert_eq!(

@@ -1,6 +1,7 @@
 pub mod builtin;
 pub mod capabilities;
 pub mod config;
+pub mod hardware;
 pub mod models;
 pub mod silence;
 pub mod transcript;

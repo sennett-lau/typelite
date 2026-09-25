@@ -5446,6 +5446,7 @@ dependencies = [
  "futures-util",
  "http",
  "keyring",
+ "libc",
  "libloading 0.8.9",
  "objc2 0.6.4",
  "plist",

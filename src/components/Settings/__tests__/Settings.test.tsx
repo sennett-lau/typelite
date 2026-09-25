@@ -676,12 +676,14 @@ describe('Settings tab 切换', () => {
   it('点击 Speech Recognition 后显示 speech preset 字段', () => {
     renderSettings()
     clickSettingsTab('settings.speechRecognition')
-    // Plan 0014: first the type, then that type's fields.
-    expect(screen.getByRole('group', { name: 'presets.type' })).toBeDefined()
-    fireEvent.click(screen.getByRole('button', { name: 'presets.types.local' }))
-    expect(screen.getByLabelText('presets.address')).toBeDefined()
-    // Settings (not onboarding) shows the language
-    expect(screen.getByText('settings.sttLanguage')).toBeDefined()
+    // Plan 0015: the engine choice, its details, then Language and Recording.
+    const engines = screen.getByRole('radiogroup', { name: 'speech.engineLabel' })
+    expect(within(engines).getAllByRole('radio')).toHaveLength(2)
+    expect(screen.getByTestId('builtin-settings')).toBeDefined()
+    fireEvent.click(within(engines).getByText('speech.engines.server.title'))
+    expect(screen.getByLabelText('speech.address')).toBeDefined()
+    expect(screen.getByText('speech.spokenLanguage')).toBeDefined()
+    expect(screen.getByText('settings.groupRecording')).toBeDefined()
   })
 
   it('点击 AI Polish 后显示 LLM provider 字段', () => {
@@ -692,7 +694,7 @@ describe('Settings tab 切换', () => {
     expect(screen.queryByText('settings.askAnything')).toBeNull()
   })
 
-  it('Settings tabs list General, Speech, AI, Prompt Presets and System only', () => {
+  it('Settings tabs list General, Speech, AI, Prompts and System only', () => {
     renderSettings()
     const tabs = within(screen.getByRole('tablist', { name: 'settings.sections' }))
       .getAllByRole('tab')
@@ -701,20 +703,26 @@ describe('Settings tab 切换', () => {
       'settings.general',
       'settings.speechRecognition',
       'settings.aiPolish',
-      'settings.scenes',
+      'settings.prompts',
       'settings.system',
     ])
     expect(screen.getByRole('tab', { name: 'settings.general' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
+    // Plan 0015: toolbar tabs, each an icon above its label (no segmented control).
+    for (const tab of screen.getAllByRole('tab')) {
+      expect(tab).toHaveClass('toolbar-tab')
+      expect(tab.querySelector('svg')).not.toBeNull()
+    }
+    expect(document.querySelector('.segmented [role="tab"]')).toBeNull()
     expect(screen.queryByText('settings.dictionary')).toBeNull()
     expect(screen.queryByText('settings.about')).toBeNull()
   })
 
   it('点击 Scenes 后显示本地 scenes 空状态', () => {
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     expect(screen.getByText('scenes.myScenes')).toBeDefined()
     expect(screen.getByText('scenes.noCustomScenes')).toBeDefined()
     expect(screen.getByText('scenes.newScene')).toBeDefined()
@@ -738,7 +746,7 @@ describe('Settings tab 切换', () => {
     expect(screen.getByText('settings.hotkey')).toBeDefined()
     expect(screen.getByLabelText('settings.tryAsk')).toBeDefined()
 
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
 
     expect(screen.getByText('scenes.myScenes')).toBeDefined()
     expect(screen.queryByText('settings.askAnything')).toBeNull()
@@ -749,8 +757,8 @@ describe('Settings tab 切换', () => {
   it('switching tabs selects the tab and names the panel after it', () => {
     renderSettings()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('settings.title')
-    clickSettingsTab('settings.scenes')
-    expect(screen.getByRole('tab', { name: 'settings.scenes' })).toHaveAttribute(
+    clickSettingsTab('settings.prompts')
+    expect(screen.getByRole('tab', { name: 'settings.prompts' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -758,7 +766,7 @@ describe('Settings tab 切换', () => {
       'aria-selected',
       'false',
     )
-    expect(screen.getByRole('tabpanel', { name: 'settings.scenes' })).toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: 'settings.prompts' })).toBeInTheDocument()
   })
 
   it('records macOS Ask hotkey as a local draft without immediate persistence', async () => {
@@ -883,7 +891,7 @@ describe('Settings Scenes local custom scenes', () => {
     seedSavedConfig()
 
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     fireEvent.click(screen.getByText('scenes.tabApps'))
 
     expect(listCustomAppMappings).not.toHaveBeenCalled()
@@ -924,7 +932,7 @@ describe('Settings Scenes local custom scenes', () => {
     vi.mocked(setFamilySceneAssignment).mockResolvedValue(persistedAssignments)
 
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     fireEvent.click(screen.getByText('scenes.tabApps'))
 
     fireEvent.change(screen.getByLabelText('contextFamilies.email scenes.appWritingScene'), {
@@ -943,7 +951,7 @@ describe('Settings Scenes local custom scenes', () => {
 
   it('switches Prompt Presets between the Prompts and Apps sub-tabs', () => {
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
 
     fireEvent.click(screen.getByText('scenes.tabPrompts'))
     expect(screen.getByText('scenes.myScenes')).toBeInTheDocument()
@@ -958,7 +966,7 @@ describe('Settings Scenes local custom scenes', () => {
 
     // The chosen sub-tab survives leaving and reopening the section.
     clickSettingsTab('settings.general')
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     expect(screen.getByText('scenes.appWritingModes')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('scenes.tabPrompts'))
@@ -967,7 +975,7 @@ describe('Settings Scenes local custom scenes', () => {
 
   it('lets users edit and reset system scenes from My Scenes', async () => {
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     fireEvent.click(screen.getByText('scenes.tabPrompts'))
 
     fireEvent.click(screen.getAllByText('scenes.systemModes.email')[0])
@@ -996,7 +1004,7 @@ describe('Settings Scenes local custom scenes', () => {
 
   it('creates a local scene without exposing global activation', async () => {
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
 
     fireEvent.click(screen.getByText('scenes.newScene'))
     fireEvent.change(screen.getByLabelText('scenes.sceneName'), {
@@ -1024,7 +1032,7 @@ describe('Settings Scenes local custom scenes', () => {
     renderSettings()
     act(() => useAppStore.getState().updateConfig({ auto_start: false }))
     expect(screen.getByText('Unsaved changes')).toBeInTheDocument()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
 
     fireEvent.click(screen.getByText('scenes.newScene'))
     fireEvent.change(screen.getByLabelText('scenes.sceneName'), {
@@ -1056,7 +1064,7 @@ describe('Settings Scenes local custom scenes', () => {
     seedSavedConfig()
 
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     fireEvent.click(screen.getByRole('button', { name: 'scenes.clearActive' }))
 
     await waitFor(() => expect(useAppStore.getState().config.active_scene).toBeNull())
@@ -1066,7 +1074,7 @@ describe('Settings Scenes local custom scenes', () => {
   it('keeps the scene editor open when persistence fails', async () => {
     vi.mocked(updateConfig).mockRejectedValueOnce(new Error('disk full'))
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
 
     fireEvent.click(screen.getByText('scenes.newScene'))
     fireEvent.change(screen.getByLabelText('scenes.sceneName'), {
@@ -1101,7 +1109,7 @@ describe('Settings Scenes local custom scenes', () => {
     seedSavedConfig()
 
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     const sceneName = screen
       .getAllByText('Warm Email')
       .find((element) => element.tagName === 'SPAN')
@@ -1138,7 +1146,7 @@ describe('Settings Scenes local custom scenes', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
     fireEvent.click(screen.getByText('scenes.export'))
 
     expect(createObjectUrl).toHaveBeenCalledTimes(1)
@@ -1166,7 +1174,7 @@ describe('Settings Scenes local custom scenes', () => {
     seedSavedConfig()
 
     renderSettings()
-    clickSettingsTab('settings.scenes')
+    clickSettingsTab('settings.prompts')
 
     const file = new File(
       [
@@ -1410,29 +1418,29 @@ describe('DirtyBar 行为', () => {
     })
   })
 
-  it('Add new preset 后 DirtyBar 出现，保存时把 preset 列表写入后端', async () => {
+  it('saving a server preset writes it to the backend at once, without the DirtyBar', async () => {
     renderSettings()
     clickSettingsTab('settings.speechRecognition')
 
-    fireEvent.click(screen.getByRole('button', { name: 'presets.types.local' }))
-    fireEvent.change(screen.getByLabelText('presets.savedPresets'), {
-      target: { value: '__add__' },
+    fireEvent.click(screen.getByText('speech.engines.server.title'))
+    fireEvent.change(screen.getByLabelText('speech.address'), {
+      target: { value: 'https://api.groq.com/openai/v1' },
     })
+    fireEvent.change(screen.getByLabelText('speech.model'), {
+      target: { value: 'whisper-large-v3-turbo' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'speech.save' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Unsaved changes')).toBeDefined()
+      expect(useAppStore.getState().config.speech_presets).toHaveLength(2)
     })
     const { speech_presets, active_speech_preset_id } = useAppStore.getState().config
-    expect(speech_presets).toHaveLength(5)
-    expect(active_speech_preset_id).toBe(speech_presets[4].id)
-
-    fireEvent.click(screen.getByText('Save'))
-
-    await waitFor(() => {
-      expect(updateConfig).toHaveBeenCalledWith(
-        expect.objectContaining({ speech_presets, active_speech_preset_id }),
-      )
-    })
+    expect(active_speech_preset_id).toBe(speech_presets[1].id)
+    expect(speech_presets[1].name).toBe('api.groq.com')
+    expect(updateConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ speech_presets, active_speech_preset_id }),
+    )
+    expect(screen.queryByText('Unsaved changes')).toBeNull()
   })
 
   it('DirtyBar 显示 Save 和 Reset 两个按钮', async () => {

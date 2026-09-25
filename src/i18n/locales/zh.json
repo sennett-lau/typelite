@@ -252,7 +252,7 @@
       "microphone": "语音输入",
       "microphoneSub": "选择你的麦克风",
       "speechRecognition": "语音识别",
-      "speechRecognitionSub": "选择语音服务并测试",
+      "speechRecognitionSub": "把你的语音转成文字。它在这台 Mac 上运行。",
       "aiPolish": "AI 润色服务",
       "aiPolishSub": "选择 AI 服务并测试",
       "dictate": "听写",
@@ -276,22 +276,12 @@
       "openFullGuide": "打开完整指南",
       "copy": "复制命令",
       "copied": "已复制",
-      "speech": {
-        "thisMac": "在“终端”中运行以下命令。它会用 Homebrew 安装 whisper.cpp、下载语音模型并启动服务。",
-        "fromRepository": "或者在代码仓库中运行 {{script}}。",
-        "thisMacThen": "然后选择“本地服务器”并点击“测试”。",
-        "otherComputer": "在那台电脑上启动一个 OpenAI 兼容的语音服务器（例如端口 8000 上的 Speaches）。选择“本地服务器”，填入那台电脑的地址，然后点击“测试”。",
-        "cloud": "选择“OpenAI 兼容”，选 OpenAI 或 Groq，粘贴你的 API 密钥并点击“测试”。录音会发送到该服务。",
-        "builtin": "选择“内置（这台 Mac）”并点击“设置”。Typelite 会下载语音模型并自行运行，无需安装其他软件。"
-      },
       "ai": {
         "thisMac": "在“终端”中运行以下命令：安装 Ollama、下载模型，然后启动 Ollama。",
         "thisMacThen": "然后选择“Ollama on this Mac”并点击“测试”。",
         "otherComputer": "在那台电脑上安装 Ollama，设置 OLLAMA_HOST=0.0.0.0:11434 让这台 Mac 可以连接，并下载同一个模型。选择“Ollama on another computer”，把 <computer-ip> 换成它的地址，然后点击“测试”。",
         "cloud": "选择“OpenAI (your key)”或“Groq (your key)”，粘贴你的 API Key 并点击“测试”。之后转写文字会发送到该服务。"
-      },
-      "builtin": "内置（最简单）",
-      "close": "关闭"
+      }
     }
   },
   "capsule": {
@@ -339,6 +329,7 @@
     "speechRecognition": "语音",
     "aiPolish": "AI",
     "scenes": "提示词预设",
+    "prompts": "提示词",
     "autoDetect": "自动检测",
     "hotkey": "快捷键",
     "dictationHotkey": "开始听写",
@@ -386,7 +377,6 @@
     "connectionFailed": "连接失败",
     "storedLocally": "保存在这台 Mac 的 macOS 钥匙串中。",
     "credentialSaveFailed": "无法保存 API Key 到系统凭据库。{{details}}",
-    "sttLanguage": "语言",
     "model": "模型",
     "fetchModels": "获取可用模型",
     "modelsAvailable": "{{count}} 个模型可用",
@@ -741,38 +731,12 @@
     "builtinHint": "内置预设。可以直接编辑，也可以另存为新预设。",
     "apiKeyOptional": "API Key（可选）",
     "apiKeyPlaceholder": "本地服务可留空",
-    "speechServerHint": "任何兼容 OpenAI 的转写服务，例如 whisper.cpp。请先启动服务，再在这里测试。",
     "extraFields": "额外请求字段（JSON 对象）",
     "extraFieldsHint": "会加入每个对话请求。Qwen3.5 等思考模型需要 {\"reasoning_effort\": \"none\"}。",
     "extraFieldsInvalid": "这不是 JSON 对象，因此不会保存。仍使用上一次有效的值。",
     "latency": "{{ms}} 毫秒",
     "placeholderUrl": "请把服务地址中的 <computer-ip> 换成运行服务的那台电脑的地址。",
-    "speechTestHelp": "这个时间包括上传、识别一段简短的测试音频和返回结果。",
-    "aiTestHelp": "这个时间包括发送一个单词的请求、模型回复和下载。润色真实文字会更久。",
-    "speechGroup": "语音识别",
-    "type": "类型",
-    "types": {
-      "builtin": "内置（这台 Mac）",
-      "local": "本地服务器",
-      "openai": "OpenAI 兼容"
-    },
-    "service": "服务",
-    "services": {
-      "openai": "OpenAI",
-      "groq": "Groq",
-      "custom": "自定义"
-    },
-    "address": "地址",
-    "apiKey": "API 密钥",
-    "builtinModel": "模型",
-    "savedPresets": "已保存的预设",
-    "addNew": "新建预设…",
-    "deleteNamed": "删除“{{name}}”",
-    "newName": "我的语音预设",
-    "localServerName": "本地服务器 — {{address}}",
-    "saveAsPreset": "保存为预设",
-    "addressChanged": "换了地址？可以把它保存为单独的预设。",
-    "works": "可用 · {{time}}"
+    "aiTestHelp": "这个时间包括发送一个单词的请求、模型回复和下载。润色真实文字会更久。"
   },
   "shortcutCapture": {
     "pressKeys": "按下按键…",
@@ -808,30 +772,17 @@
     "later": "稍后"
   },
   "speechSetup": {
-    "title": "快速设置（推荐）",
-    "body": "下载一个语音模型（{{size}}），直接在这台 Mac 上运行。无需安装其他软件。",
     "setUp": "设置",
-    "smaller": "更小更快的模型（{{size}}）",
     "ofTotal": "{{done}} / {{total}}",
-    "secondsLeft": "剩余 {{count}} 秒",
+    "secondsLeft": "约剩 {{count}} 秒",
     "minutesLeft": "约剩 {{count}} 分钟",
     "verifying": "正在检查下载的文件…",
     "testing": "正在加载模型并测试…",
     "cancel": "取消",
     "retry": "重试",
-    "resume": "继续",
-    "ready": "语音识别已就绪",
     "progressLabel": "语音模型下载",
-    "unknownSize": "约 600 MB",
-    "builtinModels": "内置模型",
     "delete": "删除",
     "confirmDelete": "再次点击以删除",
-    "inUse": "使用中",
-    "downloadOther": "另外下载 {{name}}（{{size}}）",
-    "modelNames": {
-      "large-v3-turbo": "Large v3 Turbo（最准确）",
-      "small": "Small（更小更快）"
-    },
     "errors": {
       "network": "无法下载模型：{{reason}}。请检查网络连接后重试。",
       "diskSpace": "下载模型需要 {{needed}} GB 可用空间；当前可用 {{available}} GB。",
@@ -839,6 +790,86 @@
       "cancelled": "下载已停止。点击“继续”会从停止处接着下载。",
       "io": "无法保存模型：{{reason}}",
       "load": "无法加载语音模型：{{reason}}。请尝试较小的模型。"
+    },
+    "builtinTitle": "内置",
+    "recommended": "推荐",
+    "builtinBody": "在这台 Mac 上的 Typelite 里直接运行 Whisper。无需安装其他软件。",
+    "changeModel": "更换模型",
+    "download": "下载",
+    "use": "使用",
+    "model": "模型",
+    "models": {
+      "large-v3-turbo": "最准确",
+      "small": "更快"
+    },
+    "modelDetail": "Whisper {{id}} · {{size}}",
+    "checkingMac": "正在检查这台 Mac…",
+    "nothingInstalled": "没有安装任何内容",
+    "testedOnThisMac": "在这台 Mac 上测试用时 {{time}}",
+    "testedIn": "测试用时 {{time}}",
+    "badges": {
+      "downloading": "正在下载 {{percent}}%",
+      "checking": "正在检查文件",
+      "testing": "正在测试",
+      "ready": "已就绪",
+      "inUse": "使用中",
+      "notDownloaded": "未下载",
+      "downloaded": "已下载",
+      "failed": "下载失败",
+      "testFailed": "测试失败"
+    },
+    "hardware": {
+      "long": "这台 Mac：{{chip}}，{{memory}} GB 内存。",
+      "short": "{{chip}} · {{memory}} GB",
+      "unknownChip": "未知芯片",
+      "noSpace": "可用空间不足，无法下载模型：需要 {{needed}} GB，当前可用 {{available}} GB。",
+      "leftOut": {
+        "needs_apple_silicon": "较大的模型需要 Apple 芯片的 Mac。",
+        "needs_memory": "较大的模型需要 8 GB 内存。",
+        "needs_disk_space": "可用空间不足，无法使用较大的模型。"
+      }
     }
+  },
+  "speech": {
+    "useOwnServer": "使用你自己的服务器或 API 密钥…",
+    "usingPreset": "正在使用“{{name}}”。",
+    "sheetTitle": "你自己的服务器或 API 密钥",
+    "addTitle": "添加你的服务器或 API 密钥",
+    "addPresetTitle": "添加预设",
+    "addPreset": "+ 添加预设",
+    "addPresetMenu": "+ 添加预设…",
+    "savedPresets": "已保存的预设",
+    "backToSaved": "← 已保存的预设",
+    "cancel": "取消",
+    "testAndUse": "测试并使用",
+    "learnMore": "了解更多",
+    "learnMoreAbout": "支持的服务和地址。",
+    "address": "地址",
+    "model": "模型",
+    "apiKey": "API 密钥",
+    "apiKeyPlaceholder": "可选",
+    "name": "名称",
+    "namePlaceholder": "会自动填写",
+    "test": "测试",
+    "testing": "正在测试…",
+    "works": "可用 · {{time}}",
+    "saveAndUse": "保存并使用",
+    "save": "保存",
+    "deletePreset": "删除此预设",
+    "presetLabel": "预设",
+    "engineLabel": "语音识别使用",
+    "engines": {
+      "builtin": {
+        "title": "内置",
+        "detail": "在这台 Mac 上的 Typelite 里运行 Whisper"
+      },
+      "server": {
+        "title": "你的服务器或 API 密钥",
+        "detail": "OpenAI、Groq、whisper.cpp 服务器…"
+      }
+    },
+    "languageGroup": "语言",
+    "spokenLanguage": "说话语言",
+    "spokenLanguageHelp": "自动检测可以处理混合语言"
   }
 }

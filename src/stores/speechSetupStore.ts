@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import {
+  getSpeechHardware,
   getSpeechSetupStatus,
   listSpeechModels,
+  type SpeechHardwareCheck,
   type SpeechModelInfo,
   type SpeechSetupStatus,
 } from '../lib/tauri'
@@ -15,10 +17,14 @@ interface SpeechSetupStore {
   status: SpeechSetupStatus
   /** Known models and whether each is installed; null until loaded. */
   models: SpeechModelInfo[] | null
+  /** Plan 0015: chip, memory, free disk and the models this Mac is offered; null until read. */
+  hardware: SpeechHardwareCheck | null
   applyStatus: (status: SpeechSetupStatus) => void
   /** Asks the backend for the current status and model list (after a window opens). */
   refresh: () => Promise<void>
   refreshModels: () => Promise<void>
+  /** Reads the hardware again (when a speech screen opens, and after a model changed). */
+  refreshHardware: () => Promise<void>
 }
 
 export const IDLE_SETUP_STATUS: SpeechSetupStatus = {
@@ -28,17 +34,20 @@ export const IDLE_SETUP_STATUS: SpeechSetupStatus = {
   totalBytes: 0,
   bytesPerSecond: 0,
   error: null,
+  testMs: null,
 }
 
 export const useSpeechSetupStore = create<SpeechSetupStore>((set, get) => ({
   status: IDLE_SETUP_STATUS,
   models: null,
+  hardware: null,
   applyStatus: (status) => {
     const previous = get().status.phase
     set({ status })
-    // A finished setup installed a model: the Built-in models list changes.
+    // A finished setup installed a model: the model list and the free space change.
     if (status.phase === 'ready' && previous !== 'ready') {
       void get().refreshModels()
+      void get().refreshHardware()
     }
   },
   refresh: async () => {
@@ -56,6 +65,14 @@ export const useSpeechSetupStore = create<SpeechSetupStore>((set, get) => ({
       if (Array.isArray(models)) set({ models })
     } catch (error) {
       console.error('[speech setup] failed to list models', error)
+    }
+  },
+  refreshHardware: async () => {
+    try {
+      const hardware = await getSpeechHardware()
+      if (hardware && Array.isArray(hardware.offer?.models)) set({ hardware })
+    } catch (error) {
+      console.error('[speech setup] failed to check the hardware', error)
     }
   },
 }))

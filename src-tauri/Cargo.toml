@@ -71,6 +71,8 @@ block2 = "0.6"
 coreaudio-sys = { version = "0.2", default-features = false, features = ["core_audio"] }
 # GPU (Metal) for the built-in speech provider.
 whisper-rs = { version = "0.16", features = ["tracing_backend", "metal"] }
+# Already in the tree; `sysctlbyname` reads the chip and memory for the built-in model check.
+libc = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["linux-native-sync-persistent", "crypto-rust"] }

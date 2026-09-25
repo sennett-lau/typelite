@@ -252,7 +252,7 @@
       "microphone": "Voice input",
       "microphoneSub": "Choose your microphone",
       "speechRecognition": "Speech recognition",
-      "speechRecognitionSub": "Pick a speech service and test it",
+      "speechRecognitionSub": "Turns your voice into text. It runs on this Mac.",
       "aiPolish": "AI Polish Service",
       "aiPolishSub": "Pick an AI service and test it",
       "dictate": "Dictate",
@@ -276,22 +276,12 @@
       "openFullGuide": "Open full guide",
       "copy": "Copy command",
       "copied": "Copied",
-      "speech": {
-        "thisMac": "Run this in Terminal. It installs whisper.cpp with Homebrew, downloads the speech model and starts the server.",
-        "fromRepository": "Or run {{script}} from the repository.",
-        "thisMacThen": "Then choose “Local server” and press Test.",
-        "otherComputer": "Start an OpenAI-compatible speech server there (for example Speaches on port 8000). Choose “Local server”, enter that computer’s address, then press Test.",
-        "cloud": "Choose “OpenAI-compatible”, pick OpenAI or Groq, paste your API key and press Test. Your recordings are then sent to that service.",
-        "builtin": "Choose “Built-in (this Mac)” and press Set up. Typelite downloads a speech model and runs it itself; nothing else to install."
-      },
       "ai": {
         "thisMac": "Run these in Terminal: install Ollama, download the model, then start Ollama.",
         "thisMacThen": "Then pick “Ollama on this Mac” and press Test.",
         "otherComputer": "Install Ollama there, set OLLAMA_HOST=0.0.0.0:11434 so this Mac can reach it, and pull the same model. Pick “Ollama on another computer”, replace <computer-ip> with its address, then press Test.",
         "cloud": "Pick “OpenAI (your key)” or “Groq (your key)”, paste your API key and press Test. Your transcripts are then sent to that service."
-      },
-      "builtin": "Built-in (easiest)",
-      "close": "Close"
+      }
     }
   },
   "capsule": {
@@ -339,6 +329,7 @@
     "speechRecognition": "Speech",
     "aiPolish": "AI",
     "scenes": "Prompt Presets",
+    "prompts": "Prompts",
     "autoDetect": "Auto Detect",
     "hotkey": "Shortcuts",
     "dictationHotkey": "Start dictation",
@@ -386,7 +377,6 @@
     "connectionFailed": "Connection failed",
     "storedLocally": "Stored in the macOS Keychain on this Mac.",
     "credentialSaveFailed": "Could not save API key to OS vault. {{details}}",
-    "sttLanguage": "Language",
     "model": "Model",
     "fetchModels": "Fetch available models",
     "modelsAvailable": "{{count}} models available",
@@ -741,38 +731,12 @@
     "builtinHint": "Built-in preset. You can edit it, or save a copy as a new preset.",
     "apiKeyOptional": "API key (optional)",
     "apiKeyPlaceholder": "Leave empty for local servers",
-    "speechServerHint": "Any OpenAI-compatible transcription server, for example whisper.cpp. Start it first, then test it here.",
     "extraFields": "Extra request fields (JSON object)",
     "extraFieldsHint": "Added to every chat request. Thinking models such as Qwen3.5 need {\"reasoning_effort\": \"none\"}.",
     "extraFieldsInvalid": "This is not a JSON object, so it is not saved. The last valid value is kept.",
     "latency": "{{ms}} ms",
     "placeholderUrl": "Replace <computer-ip> in the base URL with the address of the computer that runs the server.",
-    "speechTestHelp": "The time includes the upload, recognition of a short test clip, and the reply.",
-    "aiTestHelp": "The time includes sending a one-word request, the model's reply, and the download. Polishing real text takes longer.",
-    "speechGroup": "Speech recognition",
-    "type": "Type",
-    "types": {
-      "builtin": "Built-in (this Mac)",
-      "local": "Local server",
-      "openai": "OpenAI-compatible"
-    },
-    "service": "Service",
-    "services": {
-      "openai": "OpenAI",
-      "groq": "Groq",
-      "custom": "Custom"
-    },
-    "address": "Address",
-    "apiKey": "API key",
-    "builtinModel": "Model",
-    "savedPresets": "Saved presets",
-    "addNew": "Add new preset…",
-    "deleteNamed": "Delete “{{name}}”",
-    "newName": "My speech preset",
-    "localServerName": "Local server — {{address}}",
-    "saveAsPreset": "Save as a preset",
-    "addressChanged": "A different address? Keep it as its own preset.",
-    "works": "Works · {{time}}"
+    "aiTestHelp": "The time includes sending a one-word request, the model's reply, and the download. Polishing real text takes longer."
   },
   "shortcutCapture": {
     "pressKeys": "Press keys…",
@@ -808,30 +772,17 @@
     "later": "Later"
   },
   "speechSetup": {
-    "title": "Quick setup (recommended)",
-    "body": "Download a speech model ({{size}}) and run it on this Mac. No other software needed.",
     "setUp": "Set up",
-    "smaller": "Smaller and faster model ({{size}})",
     "ofTotal": "{{done}} of {{total}}",
-    "secondsLeft": "{{count}} s left",
+    "secondsLeft": "about {{count}} s left",
     "minutesLeft": "about {{count}} min left",
     "verifying": "Checking the downloaded file…",
     "testing": "Loading the model and running a test…",
     "cancel": "Cancel",
     "retry": "Try again",
-    "resume": "Resume",
-    "ready": "Speech recognition is ready",
     "progressLabel": "Speech model download",
-    "unknownSize": "about 600 MB",
-    "builtinModels": "Built-in models",
     "delete": "Delete",
     "confirmDelete": "Click again to delete",
-    "inUse": "in use",
-    "downloadOther": "Also download {{name}} ({{size}})",
-    "modelNames": {
-      "large-v3-turbo": "Large v3 Turbo (most accurate)",
-      "small": "Small (smaller and faster)"
-    },
     "errors": {
       "network": "Could not download the model: {{reason}}. Check your connection and try again.",
       "diskSpace": "Need {{needed}} GB free to download the model; {{available}} GB available.",
@@ -839,6 +790,86 @@
       "cancelled": "Download stopped. Resume continues where it stopped.",
       "io": "Could not save the model: {{reason}}",
       "load": "Could not load the speech model: {{reason}}. Try the smaller model."
+    },
+    "builtinTitle": "Built-in",
+    "recommended": "Recommended",
+    "builtinBody": "Runs Whisper inside Typelite on this Mac. No other software needed.",
+    "changeModel": "Change model",
+    "download": "Download",
+    "use": "Use",
+    "model": "Model",
+    "models": {
+      "large-v3-turbo": "Best accuracy",
+      "small": "Faster"
+    },
+    "modelDetail": "Whisper {{id}} · {{size}}",
+    "checkingMac": "Checking this Mac…",
+    "nothingInstalled": "Nothing was installed",
+    "testedOnThisMac": "tested on this Mac in {{time}}",
+    "testedIn": "tested in {{time}}",
+    "badges": {
+      "downloading": "Downloading {{percent}}%",
+      "checking": "Checking the file",
+      "testing": "Testing",
+      "ready": "Ready",
+      "inUse": "In use",
+      "notDownloaded": "Not downloaded",
+      "downloaded": "Downloaded",
+      "failed": "Download failed",
+      "testFailed": "Test failed"
+    },
+    "hardware": {
+      "long": "This Mac: {{chip}}, {{memory}} GB memory.",
+      "short": "{{chip}} · {{memory}} GB",
+      "unknownChip": "Unknown chip",
+      "noSpace": "Not enough free space for a model: {{needed}} GB needed, {{available}} GB free.",
+      "leftOut": {
+        "needs_apple_silicon": "The larger model needs an Apple Silicon Mac.",
+        "needs_memory": "The larger model needs 8 GB of memory.",
+        "needs_disk_space": "Not enough free space for the larger model."
+      }
     }
+  },
+  "speech": {
+    "useOwnServer": "Use your own server or API key…",
+    "usingPreset": "Using “{{name}}”.",
+    "sheetTitle": "Your own server or API key",
+    "addTitle": "Add your server or API key",
+    "addPresetTitle": "Add preset",
+    "addPreset": "+ Add preset",
+    "addPresetMenu": "+ Add preset…",
+    "savedPresets": "Saved presets",
+    "backToSaved": "← Saved presets",
+    "cancel": "Cancel",
+    "testAndUse": "Test and use",
+    "learnMore": "Learn more",
+    "learnMoreAbout": "about supported services and addresses.",
+    "address": "Address",
+    "model": "Model",
+    "apiKey": "API key",
+    "apiKeyPlaceholder": "Optional",
+    "name": "Name",
+    "namePlaceholder": "Filled in for you",
+    "test": "Test",
+    "testing": "Testing…",
+    "works": "Works · {{time}}",
+    "saveAndUse": "Save and use",
+    "save": "Save",
+    "deletePreset": "Delete this preset",
+    "presetLabel": "Preset",
+    "engineLabel": "Speech recognition uses",
+    "engines": {
+      "builtin": {
+        "title": "Built-in",
+        "detail": "Runs Whisper inside Typelite on this Mac"
+      },
+      "server": {
+        "title": "Your server or API key",
+        "detail": "OpenAI, Groq, a whisper.cpp server…"
+      }
+    },
+    "languageGroup": "Language",
+    "spokenLanguage": "Spoken language",
+    "spokenLanguageHelp": "Auto-detect handles mixed languages"
   }
 }

@@ -16,6 +16,8 @@ interface Props {
   onClose?: () => void
   /** Centre the step content vertically in the step area (the welcome step). */
   centerContent?: boolean
+  /** A wider step area (the speech step's Built-in card, plan 0015). */
+  wideContent?: boolean
   children: React.ReactNode
 }
 
@@ -31,6 +33,7 @@ export function OnboardingLayout({
   onBack,
   onClose,
   centerContent = false,
+  wideContent = false,
   children,
 }: Props) {
   const { t } = useTranslation()
@@ -75,7 +78,7 @@ export function OnboardingLayout({
           {/* my-auto centres the content when it is shorter than the area and still lets it
               scroll from the top when it is taller. */}
           <div
-            className={`mx-auto w-full max-w-[400px] pb-6 ${centerContent ? 'my-auto' : ''}`}
+            className={`mx-auto w-full ${wideContent ? 'max-w-[480px]' : 'max-w-[400px]'} pb-6 ${centerContent ? 'my-auto' : ''}`}
             data-centered={centerContent ? 'true' : undefined}
           >
             {children}

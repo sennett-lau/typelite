@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
 import { getSttRecordingCapability, type ResolvedSttRecordingLimit } from '../../lib/tauri'
+import { activeSpeechPreset } from '../../lib/connectionStatus'
+import { LANGUAGES } from '../../lib/constants'
 import { Group, Row } from '../ui/Group'
-import { SpeechPresetEditor } from './SpeechPresetEditor'
-import { BuiltinModels } from './BuiltinModels'
+import { SpeechEngineChoice } from '../Speech/SpeechEngineChoice'
 
 const RECORDING_LIMIT_PRESETS = [30, 60, 120, 300, 600, 1800, 3600]
 const MIN_CUSTOM_RECORDING_SECONDS = 30
@@ -112,10 +113,36 @@ export function SttPane() {
     })
   }
 
+  // Plan 0015: the language belongs to the preset in use; edits go through the Save bar.
+  const active = activeSpeechPreset(config)
+  const handleLanguageChange = (language: string) => {
+    updateConfig({
+      speech_presets: config.speech_presets.map((preset) =>
+        preset.id === active.id ? { ...preset, language } : preset,
+      ),
+    })
+  }
+
   return (
     <div>
-      <SpeechPresetEditor context="settings" />
-      <BuiltinModels />
+      <SpeechEngineChoice />
+
+      <Group label={t('speech.languageGroup')}>
+        <Row label={t('speech.spokenLanguage')} help={t('speech.spokenLanguageHelp')}>
+          <select
+            aria-label={t('speech.spokenLanguage')}
+            value={active.language || 'auto'}
+            onChange={(event) => handleLanguageChange(event.target.value)}
+            className="popup"
+          >
+            {LANGUAGES.map((language) => (
+              <option key={language.value} value={language.value}>
+                {language.labelKey ? t(language.labelKey) : language.label}
+              </option>
+            ))}
+          </select>
+        </Row>
+      </Group>
 
       <Group label={t('settings.groupRecording')}>
         <Row

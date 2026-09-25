@@ -15,7 +15,7 @@ export function LlmSetupStep({ onSkip }: { onSkip: () => void }) {
       <div>
         <AiPresetEditor />
       </div>
-      <SetupGuide kind="ai" />
+      <SetupGuide />
       {!ready && <SkipLink onSkip={onSkip} />}
     </div>
   )

@@ -34,7 +34,22 @@ describe('service readiness', () => {
 
   it('follows the active preset', () => {
     recordTestPassed('speech', speech()!)
-    state().updateConfig({ active_speech_preset_id: 'builtin-speech-openai' })
+    state().updateConfig({
+      speech_presets: [
+        ...state().config.speech_presets,
+        {
+          id: 'mine',
+          name: 'Mine',
+          kind: 'openai_compatible',
+          base_url: 'https://api.openai.com/v1',
+          model: 'whisper-1',
+          language: 'auto',
+          builtin: false,
+          verified_at: null,
+        },
+      ],
+      active_speech_preset_id: 'mine',
+    })
     expect(isSpeechReady(state().config)).toBe(false)
   })
 

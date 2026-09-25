@@ -14,7 +14,7 @@ import { recordAiResult } from '../../lib/connectionStatus'
 import { hasPlaceholder, recordTestPassed } from '../../lib/readiness'
 import { Group, Row } from '../ui/Group'
 import { PresetPicker } from './PresetPicker'
-import { TestFeedback } from './SpeechPresetEditor'
+import { TestFeedback } from './TestFeedback'
 
 /** Text fields hold technical values (URLs, model names, JSON), so they use SF Mono. */
 const inputClass = 'field w-full min-w-0 font-mono text-[12px]'
