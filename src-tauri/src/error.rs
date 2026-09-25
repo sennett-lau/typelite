@@ -25,6 +25,21 @@ pub enum AppError {
     Config(String),
 }
 
+/// "HTTP 500: <first line of the server's message>" so the user sees why a request failed.
+fn api_error_details(status: u16, body: &str) -> String {
+    let message = body
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .unwrap_or("");
+    let short: String = message.chars().take(160).collect();
+    if short.is_empty() {
+        format!("HTTP {status}")
+    } else {
+        format!("HTTP {status}: {short}")
+    }
+}
+
 impl AppError {
     pub fn is_retryable(&self) -> bool {
         match self {
@@ -41,13 +56,19 @@ impl AppError {
 
     pub fn to_user_error(&self) -> UserError {
         let (code, details) = match self {
-            AppError::Network(msg) => ("stt_timeout".to_string(), Some(msg.clone())),
-            AppError::Timeout(_) => ("stt_timeout".to_string(), None),
-            AppError::Api { status, body: _ } => {
+            AppError::Network(msg) => ("stt_unreachable".to_string(), Some(msg.clone())),
+            AppError::Timeout(d) => (
+                "stt_timeout".to_string(),
+                Some(format!("{:.0} s", d.as_secs_f64())),
+            ),
+            AppError::Api { status, body } => {
                 if *status == 401 || *status == 403 {
                     ("stt_invalid_key".to_string(), None)
                 } else {
-                    ("stt_failed".to_string(), Some(format!("HTTP {}", status)))
+                    (
+                        "stt_failed".to_string(),
+                        Some(api_error_details(*status, body)),
+                    )
                 }
             }
             AppError::Auth(msg) => ("stt_invalid_key".to_string(), Some(msg.clone())),
@@ -271,17 +292,33 @@ mod tests {
     }
 
     #[test]
-    fn test_network_maps_to_timeout_code() {
-        let err = AppError::Network("timeout".to_string());
+    fn test_network_maps_to_unreachable_code_with_reason() {
+        let err = AppError::Network("connection refused".to_string());
         let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_timeout");
+        assert_eq!(ue.code, "stt_unreachable");
+        assert_eq!(ue.details.as_deref(), Some("connection refused"));
     }
 
     #[test]
-    fn test_timeout_maps_to_timeout_code() {
+    fn test_timeout_maps_to_timeout_code_with_duration() {
         let err = AppError::Timeout(Duration::from_secs(10));
         let ue = err.to_user_error();
         assert_eq!(ue.code, "stt_timeout");
+        assert_eq!(ue.details.as_deref(), Some("10 s"));
+    }
+
+    #[test]
+    fn test_api_error_details_include_server_message() {
+        let err = AppError::Api {
+            status: 500,
+            body: "\n  model not found: large-v9\nstack...".to_string(),
+        };
+        let ue = err.to_user_error();
+        assert_eq!(ue.code, "stt_failed");
+        assert_eq!(
+            ue.details.as_deref(),
+            Some("HTTP 500: model not found: large-v9")
+        );
     }
 
     #[test]

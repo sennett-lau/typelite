@@ -8,6 +8,7 @@ export type PipelineErrorPayload =
 
 export type CapsuleErrorKey =
   | 'stt_timeout'
+  | 'stt_unreachable'
   | 'stt_invalid_key'
   | 'stt_failed'
   | 'stt_quota_exceeded'
@@ -26,6 +27,7 @@ export type CapsuleErrorKey =
 
 const structuredCapsuleErrorKeys = new Set<CapsuleErrorKey>([
   'stt_timeout',
+  'stt_unreachable',
   'stt_invalid_key',
   'stt_failed',
   'stt_quota_exceeded',

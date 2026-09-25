@@ -1824,13 +1824,32 @@ impl PipelineHandle {
     /// or `Err` on failure.
     async fn wait_for_stt(&self, stt_control: Option<SttTaskControl>) -> Result<Option<String>> {
         if let Some(control) = &stt_control {
-            tokio::select! {
+            let timed_out = tokio::select! {
                 _ = control.done.notified() => {
                     tracing::debug!("STT task completed");
+                    false
                 }
                 _ = tokio::time::sleep(std::time::Duration::from_secs(STT_FINALIZE_TIMEOUT_SECS)) => {
                     tracing::warn!("STT timed out after {}s", STT_FINALIZE_TIMEOUT_SECS);
+                    true
                 }
+            };
+
+            if timed_out
+                && should_finalize_stt_task(
+                    self.abort_flag.as_ref(),
+                    self.active_stt_session_id.as_ref(),
+                    control.id,
+                )
+            {
+                control.abort.notify_waiters();
+                let user_error = crate::error::AppError::Timeout(std::time::Duration::from_secs(
+                    STT_FINALIZE_TIMEOUT_SECS,
+                ))
+                .to_user_error();
+                let _ = self.app_handle.emit("pipeline:error", user_error);
+                self.set_state(PipelineState::Idle);
+                return Ok(None);
             }
 
             if !should_finalize_stt_task(
@@ -3129,12 +3148,12 @@ mod tests {
             latch_stt_task_error_if_active(&abort_flag, &active_session_id, &latch, 7, &error)
                 .expect("active send failure should be surfaced");
 
-        assert_eq!(user_error.code, "stt_timeout");
+        assert_eq!(user_error.code, "stt_unreachable");
         assert_eq!(
             take_matching_stt_error(&latch, 7)
                 .expect("matching error should be consumable")
                 .code,
-            "stt_timeout"
+            "stt_unreachable"
         );
 
         assert!(

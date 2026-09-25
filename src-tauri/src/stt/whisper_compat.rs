@@ -152,7 +152,18 @@ impl SttProvider for WhisperCompatProvider {
                 request = request.header("Authorization", format!("Bearer {}", config.api_key));
             }
 
+            let request_started = std::time::Instant::now();
             let resp_result = request.send().await;
+            tracing::info!(
+                "{}: POST {} answered after {} ms ({})",
+                self.provider_config.provider_name,
+                self.provider_config.endpoint,
+                request_started.elapsed().as_millis(),
+                match &resp_result {
+                    Ok(resp) => format!("HTTP {}", resp.status().as_u16()),
+                    Err(error) => format!("error: {error}"),
+                }
+            );
 
             match resp_result {
                 Ok(resp) => {

@@ -37,9 +37,9 @@
     "send": "Ask"
   },
   "errors": {
-    "stt_timeout": "Speech recognition timed out. Please try again.",
+    "stt_timeout": "The speech server did not answer within {{details}}. Check that it is running, or try a faster server.",
     "stt_invalid_key": "Speech endpoint rejected the API key. Check the key in Settings.",
-    "stt_failed": "Speech recognition failed. {{details}}",
+    "stt_failed": "Speech recognition failed: {{details}}",
     "stt_quota_exceeded": "Speech endpoint rejected the request (quota or rate limit). Try again later or check the endpoint.",
     "stt_no_speech_detected": "No speech detected. Please try again.",
     "output_fallback_clipboard": "Text output failed. The result was copied to clipboard instead. {{details}}",
@@ -49,7 +49,8 @@
     "llm_failed": "AI polishing failed. The original text was output instead. {{details}}",
     "llm_quota_exceeded": "AI endpoint rejected the request (quota or rate limit). Try again later or check the endpoint.",
     "output_wayland_clipboard_copy_only": "Copied to clipboard. Paste manually on Wayland.",
-    "mic_fallback_default": "Your selected microphone \"{{details}}\" is not connected, so the system default was used."
+    "mic_fallback_default": "Your selected microphone \"{{details}}\" is not connected, so the system default was used.",
+    "stt_unreachable": "Could not reach the speech server ({{details}}). Check the address in Settings → Speech and that the server is running."
   },
   "home": {
     "welcome": "Welcome to Typelite",
@@ -184,9 +185,9 @@
     "errorOccurred": "An error occurred",
     "accessibilityRequired": "Accessibility needed — open Settings",
     "errors": {
-      "stt_timeout": "STT timeout",
+      "stt_timeout": "Speech server timed out",
       "stt_invalid_key": "Check STT key",
-      "stt_failed": "STT failed",
+      "stt_failed": "Speech failed",
       "stt_quota_exceeded": "Speech endpoint quota hit",
       "stt_no_speech_detected": "No speech",
       "output_fallback_clipboard": "Copied",
@@ -199,7 +200,8 @@
       "audio_failed": "Mic failed",
       "output_failed": "Output failed",
       "unknown": "Error",
-      "output_wayland_clipboard_copy_only": "Copied"
+      "output_wayland_clipboard_copy_only": "Copied",
+      "stt_unreachable": "Speech server offline"
     },
     "menu": {
       "openMainWindow": "Open Main Window",

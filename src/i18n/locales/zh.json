@@ -37,9 +37,9 @@
     "send": "提问"
   },
   "errors": {
-    "stt_timeout": "语音识别超时，请重试。",
+    "stt_timeout": "语音服务在 {{details}} 内没有响应。请确认服务正在运行，或换用更快的服务。",
     "stt_invalid_key": "语音服务拒绝了 API Key，请在设置中检查。",
-    "stt_failed": "语音识别失败。{{details}}",
+    "stt_failed": "语音识别失败：{{details}}",
     "stt_quota_exceeded": "语音服务拒绝了请求（额度或速率限制）。请稍后重试或检查服务端点。",
     "stt_no_speech_detected": "未检测到语音，请重试。",
     "output_fallback_clipboard": "文本输出失败，结果已改为复制到剪贴板。{{details}}",
@@ -49,7 +49,8 @@
     "llm_failed": "AI 润色失败，已改为输出原始文本。{{details}}",
     "llm_quota_exceeded": "AI 服务拒绝了请求（额度或速率限制）。请稍后重试或检查服务端点。",
     "output_wayland_clipboard_copy_only": "已复制到剪贴板。Wayland 下需要手动粘贴。",
-    "mic_fallback_default": "所选麦克风「{{details}}」未连接，已改用系统默认麦克风。"
+    "mic_fallback_default": "所选麦克风「{{details}}」未连接，已改用系统默认麦克风。",
+    "stt_unreachable": "无法连接语音服务（{{details}}）。请检查「设置 → 语音」中的地址，并确认服务正在运行。"
   },
   "home": {
     "welcome": "欢迎使用 Typelite",
@@ -184,9 +185,9 @@
     "errorOccurred": "发生错误",
     "accessibilityRequired": "需要辅助功能权限 — 请打开设置",
     "errors": {
-      "stt_timeout": "STT 超时",
+      "stt_timeout": "语音服务超时",
       "stt_invalid_key": "检查 STT",
-      "stt_failed": "STT 失败",
+      "stt_failed": "语音识别失败",
       "stt_quota_exceeded": "语音服务额度受限",
       "stt_no_speech_detected": "未听到语音",
       "output_fallback_clipboard": "已复制",
@@ -199,7 +200,8 @@
       "audio_failed": "麦克风失败",
       "output_failed": "输出失败",
       "unknown": "出错了",
-      "output_wayland_clipboard_copy_only": "已复制"
+      "output_wayland_clipboard_copy_only": "已复制",
+      "stt_unreachable": "语音服务离线"
     },
     "menu": {
       "openMainWindow": "打开主窗口",
