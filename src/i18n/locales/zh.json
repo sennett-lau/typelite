@@ -91,6 +91,34 @@
       "speechImpact": "听写、翻译和随便问都需要它。",
       "aiImpact": "听写会粘贴原始转写；翻译和随便问需要它。",
       "setUp": "去设置"
+    },
+    "speed": {
+      "title": "速度",
+      "empty": "听写一次，就能看到时间花在哪里。",
+      "lastRun": "上一次",
+      "totalText": "从停止到文字出现 {{time}}",
+      "totalAnswer": "从停止到回答出现 {{time}}",
+      "forSpeech": "录音 {{time}}",
+      "failed": "这次运行因错误结束（{{code}}）。",
+      "skipped": "已跳过",
+      "typical": "通常",
+      "basedOnOne": "基于当前预设的 1 次运行的中位数",
+      "basedOnMany": "基于当前预设的 {{count}} 次运行的中位数",
+      "noTypical": "当前预设还没有完成的运行。",
+      "steps": {
+        "recording": "结束录音",
+        "speech": "语音识别",
+        "ai": "AI 润色",
+        "aiTranslate": "AI 翻译",
+        "aiAnswer": "AI 回答",
+        "paste": "粘贴"
+      },
+      "tips": {
+        "speech": "语音识别是最慢的一步。使用带 GPU 的服务器或固定语言会更快。",
+        "ai": "AI 润色是最慢的一步。试试更小的模型或带 GPU 的服务器。",
+        "paste": "粘贴较慢；可以把文字输出改为“直接打字”。"
+      },
+      "openSpeechGuide": "查看语音指南"
     }
   },
   "onboarding": {
@@ -634,7 +662,9 @@
     "extraFieldsHint": "会加入每个对话请求。Qwen3.5 等思考模型需要 {\"reasoning_effort\": \"none\"}。",
     "extraFieldsInvalid": "这不是 JSON 对象，因此不会保存。仍使用上一次有效的值。",
     "latency": "{{ms}} 毫秒",
-    "placeholderUrl": "请把服务地址中的 <computer-ip> 换成运行服务的那台电脑的地址。"
+    "placeholderUrl": "请把服务地址中的 <computer-ip> 换成运行服务的那台电脑的地址。",
+    "speechTestHelp": "这个时间包括上传、识别一段简短的测试音频和返回结果。",
+    "aiTestHelp": "这个时间包括发送一个单词的请求、模型回复和下载。润色真实文字会更久。"
   },
   "shortcutCapture": {
     "pressKeys": "按下按键…",

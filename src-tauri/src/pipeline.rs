@@ -673,6 +673,8 @@ pub struct PipelineHandle {
     preloaded_selected_text: Arc<Mutex<Option<String>>>,
     preloaded_voice_mode: Arc<Mutex<Option<crate::voice_intent::VoiceMode>>>,
     recording_start: Arc<Mutex<Option<std::time::Instant>>>,
+    /// Plan 0008: where the current run's speech provider notes its upload moments.
+    stt_upload_probe: Arc<Mutex<Option<crate::timing::UploadProbe>>>,
     active_translation_operation: Arc<Mutex<Option<TranslationOperationState>>>,
     shared_client: reqwest::Client,
     /// Serializes start()/stop() so that stop() waits for start() to finish
@@ -701,11 +703,25 @@ struct PolishTextOutcome {
     output_status: Option<String>,
     output_error: Option<String>,
     voice_execution: Option<crate::voice_intent::executor::VoiceExecutionResult>,
+    /// Plan 0008: error code of the step that failed, for the Speed board. `None` when the
+    /// text reached the app.
+    error_code: Option<String>,
 }
 
 pub(crate) struct AskVoiceDraftOutcome {
     pub text: String,
     pub execution: crate::voice_intent::executor::VoiceExecutionResult,
+    /// How long the AI request took (Plan 0008).
+    pub llm_elapsed: std::time::Duration,
+}
+
+/// What waiting for the speech provider ended with.
+enum SttWait {
+    Text(String),
+    /// The user cancelled, or the run was replaced by a newer one. Not a timing record.
+    Cancelled,
+    /// Recognition failed or heard nothing; carries the error code.
+    Failed(String),
 }
 
 struct PipelineVoiceExecutionBackend<'a> {
@@ -815,7 +831,13 @@ impl PolishTextOutcome {
             output_status: None,
             output_error: None,
             voice_execution: None,
+            error_code: None,
         }
+    }
+
+    fn with_error_code(mut self, code: impl Into<String>) -> Self {
+        self.error_code = Some(code.into());
+        self
     }
 
     fn with_output_status(
@@ -830,6 +852,7 @@ impl PolishTextOutcome {
             output_status: Some(status.to_string()),
             output_error: Some(error.into()),
             voice_execution: None,
+            error_code: None,
         }
     }
 
@@ -846,6 +869,7 @@ impl PolishTextOutcome {
             output_status,
             output_error,
             voice_execution: Some(execution),
+            error_code: None,
         }
     }
 }
@@ -875,6 +899,7 @@ impl PipelineHandle {
             preloaded_selected_text: Arc::new(Mutex::new(None)),
             preloaded_voice_mode: Arc::new(Mutex::new(None)),
             recording_start: Arc::new(Mutex::new(None)),
+            stt_upload_probe: Arc::new(Mutex::new(None)),
             active_translation_operation: Arc::new(Mutex::new(None)),
             shared_client,
             pipeline_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -1199,6 +1224,13 @@ impl PipelineHandle {
         };
 
         let mut provider = stt::create_provider(whisper_config, Some(self.shared_client.clone()));
+        // Plan 0008: the provider notes when its upload starts and ends, for the Speed board.
+        let upload_probe = crate::timing::UploadProbe::default();
+        provider.set_upload_probe(upload_probe.clone());
+        *self
+            .stt_upload_probe
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(upload_probe);
         // Start the platform audio backend before connecting STT. Both readiness
         // operations are then polled concurrently, so speech captured while a
         // network provider connects remains queued instead of being clipped.
@@ -1614,6 +1646,9 @@ impl PipelineHandle {
     }
 
     pub async fn stop(&self) -> Result<()> {
+        // Plan 0008: every step on the Speed board is measured from the moment stop is pressed.
+        let stop_start = std::time::Instant::now();
+
         // Acquire pipeline_lock so we wait for start() to finish its setup
         // (load config, initialize audio and connect STT) before reading shared state.
         // Released before the long stt_done wait so start() isn't blocked 120s.
@@ -1649,8 +1684,6 @@ impl PipelineHandle {
             }
         }
         crate::refresh_tray(&self.app_handle);
-
-        let stop_start = std::time::Instant::now();
 
         // Capture selected text now — hotkey is released so Ctrl+C won't conflict.
         // Small delay to ensure hotkey modifiers are fully released (especially in toggle mode).
@@ -1738,6 +1771,17 @@ impl PipelineHandle {
             .unwrap_or_else(|e| e.into_inner())
             .take()
             .unwrap_or(crate::voice_intent::VoiceMode::Dictate);
+        let upload_probe = self
+            .stt_upload_probe
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take()
+            .unwrap_or_default();
+        let run_mode = if voice_mode == crate::voice_intent::VoiceMode::Translate {
+            crate::timing::RunMode::Translate
+        } else {
+            crate::timing::RunMode::Dictate
+        };
 
         // All shared state has been taken — release the lock so a new start()
         // isn't blocked by the long stt_done wait that follows.
@@ -1745,14 +1789,35 @@ impl PipelineHandle {
 
         // ── Phase 1: Wait for STT ──────────────────────────────────────
         let raw_text = match self.wait_for_stt(stt_control.clone()).await? {
-            Some(text) => text,
-            None => {
+            SttWait::Text(text) => text,
+            SttWait::Cancelled => {
                 if let Some(control) = &stt_control {
                     self.clear_stt_session(control.id);
                 }
                 return Ok(());
-            } // aborted or no speech detected
+            }
+            SttWait::Failed(code) => {
+                crate::timing::record_run(
+                    &self.app_handle,
+                    &crate::timing::RunMarks {
+                        mode: run_mode,
+                        stop_at: stop_start,
+                        upload: upload_probe.snapshot(),
+                        transcript_at: None,
+                        ai: None,
+                        pastes: false,
+                        end_at: std::time::Instant::now(),
+                        outcome: code,
+                    },
+                    &config,
+                );
+                if let Some(control) = &stt_control {
+                    self.clear_stt_session(control.id);
+                }
+                return Ok(());
+            }
         };
+        let transcript_at = std::time::Instant::now();
         let voice_intent =
             route_pipeline_voice_intent(voice_mode, &raw_text, selected_text.as_deref(), &config);
         let stt_elapsed = stop_start.elapsed();
@@ -1789,6 +1854,25 @@ impl PipelineHandle {
 
         // ── Phase 3: Timing, cleanup ───────────────────────────────────
         let total_elapsed = stop_start.elapsed();
+        if !self.abort_flag.load(Ordering::SeqCst) {
+            crate::timing::record_run(
+                &self.app_handle,
+                &crate::timing::RunMarks {
+                    mode: run_mode,
+                    stop_at: stop_start,
+                    upload: upload_probe.snapshot(),
+                    transcript_at: Some(transcript_at),
+                    ai: config.polish_enabled.then_some(llm_elapsed),
+                    pastes: true,
+                    end_at: stop_start + total_elapsed,
+                    outcome: polish_outcome
+                        .error_code
+                        .clone()
+                        .unwrap_or_else(|| crate::timing::OUTCOME_OK.to_string()),
+                },
+                &config,
+            );
+        }
 
         // Compute recording duration
         let duration_ms = self
@@ -1838,9 +1922,9 @@ impl PipelineHandle {
     }
 
     /// Wait for the STT task to complete and return the transcribed text.
-    /// Returns `Ok(Some(text))` on success, `Ok(None)` if aborted or no speech,
-    /// or `Err` on failure.
-    async fn wait_for_stt(&self, stt_control: Option<SttTaskControl>) -> Result<Option<String>> {
+    /// Returns `SttWait::Text` on success, `Cancelled` if aborted or stale, and `Failed` with
+    /// the error code when recognition failed or heard nothing.
+    async fn wait_for_stt(&self, stt_control: Option<SttTaskControl>) -> Result<SttWait> {
         if let Some(control) = &stt_control {
             let timed_out = tokio::select! {
                 _ = control.done.notified() => {
@@ -1865,9 +1949,10 @@ impl PipelineHandle {
                     STT_FINALIZE_TIMEOUT_SECS,
                 ))
                 .to_user_error();
+                let code = user_error.code.clone();
                 let _ = self.app_handle.emit("pipeline:error", user_error);
                 self.set_state(PipelineState::Idle);
-                return Ok(None);
+                return Ok(SttWait::Failed(code));
             }
 
             if !should_finalize_stt_task(
@@ -1876,11 +1961,11 @@ impl PipelineHandle {
                 control.id,
             ) {
                 tracing::info!("Ignoring stale or aborted STT task");
-                return Ok(None);
+                return Ok(SttWait::Cancelled);
             }
-            if take_matching_stt_error(&self.stt_error, control.id).is_some() {
+            if let Some(user_error) = take_matching_stt_error(&self.stt_error, control.id) {
                 self.set_state(PipelineState::Idle);
-                return Ok(None);
+                return Ok(SttWait::Failed(user_error.code));
             }
         } else {
             tracing::warn!("No STT session was available to wait for");
@@ -1888,7 +1973,7 @@ impl PipelineHandle {
 
         if self.abort_flag.load(Ordering::SeqCst) {
             tracing::info!("Pipeline aborted after STT wait");
-            return Ok(None);
+            return Ok(SttWait::Cancelled);
         }
 
         let raw_text = self
@@ -1899,14 +1984,14 @@ impl PipelineHandle {
             .to_string();
 
         if raw_text.is_empty() {
-            let _ = self
-                .app_handle
-                .emit("pipeline:error", no_speech_user_error());
+            let user_error = no_speech_user_error();
+            let code = user_error.code.clone();
+            let _ = self.app_handle.emit("pipeline:error", user_error);
             self.set_state(PipelineState::Idle);
-            return Ok(None);
+            return Ok(SttWait::Failed(code));
         }
 
-        Ok(Some(raw_text))
+        Ok(SttWait::Text(raw_text))
     }
 
     /// Polish raw text with LLM and output the result.
@@ -1940,7 +2025,8 @@ impl PipelineHandle {
                 std::time::Duration::ZERO,
                 "fallback",
                 message,
-            );
+            )
+            .with_error_code("voice_route_failed");
         };
         let llm_api_key = match resolve_llm_config_secret(config, &SystemCredentialVault) {
             Ok(secret) => secret,
@@ -1974,10 +2060,13 @@ impl PipelineHandle {
                     std::time::Duration::ZERO,
                     "fallback",
                     message,
-                );
+                )
+                .with_error_code("llm_failed");
             }
 
             // No polishing — output raw text directly
+            let outcome =
+                PolishTextOutcome::normal(provider_text.to_string(), std::time::Duration::ZERO);
             if let Err(e) = self
                 .output_text(
                     provider_text,
@@ -1988,11 +2077,12 @@ impl PipelineHandle {
                 .await
             {
                 tracing::error!("Output failed: {}", e);
-                let _ = self
-                    .app_handle
-                    .emit("pipeline:error", output_user_error(&e));
+                let user_error = output_user_error(&e);
+                let code = user_error.code.clone();
+                let _ = self.app_handle.emit("pipeline:error", user_error);
+                return outcome.with_error_code(code);
             }
-            return PolishTextOutcome::normal(provider_text.to_string(), std::time::Duration::ZERO);
+            return outcome;
         }
 
         self.set_state(PipelineState::Polishing);
@@ -2296,16 +2386,24 @@ impl PipelineHandle {
                         )),
                     ),
                 };
-                PolishTextOutcome::with_execution(
+                let failed =
+                    execution.status == crate::voice_intent::executor::VoiceExecutionStatus::Failed;
+                let outcome = PolishTextOutcome::with_execution(
                     response.polished_text,
                     elapsed,
                     execution,
                     output_status,
                     output_error,
-                )
+                );
+                if failed {
+                    outcome.with_error_code("output_failed")
+                } else {
+                    outcome
+                }
             }
             Err(e) => {
                 let elapsed = llm_start.elapsed();
+                let llm_error_code = llm_polish_user_error(&e).code;
                 if let Some(report) = streaming_report.as_ref() {
                     if report.has_inserted_text() {
                         tracing::error!("LLM polish failed after partial streaming insert: {}", e);
@@ -2335,7 +2433,8 @@ impl PipelineHandle {
                             elapsed,
                             "partial",
                             format!("LLM polish failed after partial streaming insert: {e}"),
-                        );
+                        )
+                        .with_error_code(llm_error_code);
                     }
                 }
 
@@ -2357,7 +2456,8 @@ impl PipelineHandle {
                         elapsed,
                         "fallback",
                         "LLM generation failed; no application text was changed",
-                    );
+                    )
+                    .with_error_code(llm_error_code);
                 }
                 if let Err(e) = self
                     .output_text(
@@ -2379,6 +2479,7 @@ impl PipelineHandle {
                     "fallback",
                     format!("LLM polish failed; output raw text: {e}"),
                 )
+                .with_error_code(llm_error_code)
             }
         };
 
@@ -2442,6 +2543,7 @@ impl PipelineHandle {
         Ok(AskVoiceDraftOutcome {
             text: outcome.final_text,
             execution,
+            llm_elapsed: outcome.llm_elapsed,
         })
     }
 

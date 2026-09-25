@@ -91,6 +91,34 @@
       "speechImpact": "Dictate, Translate and Ask need it.",
       "aiImpact": "Dictate pastes the raw transcript; Translate and Ask need it.",
       "setUp": "Set up"
+    },
+    "speed": {
+      "title": "Speed",
+      "empty": "Dictate once to see where the time goes.",
+      "lastRun": "Last run",
+      "totalText": "{{time}} from stop to text",
+      "totalAnswer": "{{time}} from stop to answer",
+      "forSpeech": "for {{time}} of speech",
+      "failed": "This run ended with an error ({{code}}).",
+      "skipped": "skipped",
+      "typical": "Typical",
+      "basedOnOne": "Median of 1 run with the current presets",
+      "basedOnMany": "Median of {{count}} runs with the current presets",
+      "noTypical": "No finished runs with the current presets yet.",
+      "steps": {
+        "recording": "Finish recording",
+        "speech": "Speech recognition",
+        "ai": "AI polish",
+        "aiTranslate": "AI translation",
+        "aiAnswer": "AI answer",
+        "paste": "Paste"
+      },
+      "tips": {
+        "speech": "Speech recognition is the slow part. A GPU server or a fixed language is faster.",
+        "ai": "AI polish is the slow part. Try a smaller model or a server with a GPU.",
+        "paste": "Pasting is slow; try switching text output to Type directly."
+      },
+      "openSpeechGuide": "See the speech guide"
     }
   },
   "onboarding": {
@@ -634,7 +662,9 @@
     "extraFieldsHint": "Added to every chat request. Thinking models such as Qwen3.5 need {\"reasoning_effort\": \"none\"}.",
     "extraFieldsInvalid": "This is not a JSON object, so it is not saved. The last valid value is kept.",
     "latency": "{{ms}} ms",
-    "placeholderUrl": "Replace <computer-ip> in the base URL with the address of the computer that runs the server."
+    "placeholderUrl": "Replace <computer-ip> in the base URL with the address of the computer that runs the server.",
+    "speechTestHelp": "The time includes the upload, recognition of a short test clip, and the reply.",
+    "aiTestHelp": "The time includes sending a one-word request, the model's reply, and the download. Polishing real text takes longer."
   },
   "shortcutCapture": {
     "pressKeys": "Press keys…",

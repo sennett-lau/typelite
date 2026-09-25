@@ -25,6 +25,7 @@ pub struct WhisperCompatProvider {
     stt_config: Option<SttConfig>,
     audio_buffer: Vec<u8>,
     client: reqwest::Client,
+    upload_probe: Option<crate::timing::UploadProbe>,
 }
 
 impl WhisperCompatProvider {
@@ -34,6 +35,7 @@ impl WhisperCompatProvider {
             stt_config: None,
             audio_buffer: Vec::new(),
             client: reqwest::Client::new(),
+            upload_probe: None,
         }
     }
 
@@ -43,6 +45,7 @@ impl WhisperCompatProvider {
             stt_config: None,
             audio_buffer: Vec::new(),
             client,
+            upload_probe: None,
         }
     }
 
@@ -117,6 +120,9 @@ impl SttProvider for WhisperCompatProvider {
             return Ok(None);
         }
 
+        if let Some(probe) = &self.upload_probe {
+            probe.note_audio(self.audio_buffer.len(), config.sample_rate);
+        }
         let peak_db = peak_window_level_db(&self.audio_buffer, config.sample_rate);
         if peak_db < SILENCE_THRESHOLD_DB {
             tracing::info!(
@@ -130,6 +136,9 @@ impl SttProvider for WhisperCompatProvider {
 
         let audio_len_secs = self.audio_buffer.len() as f64 / (config.sample_rate as f64 * 2.0);
         let wav_data = Self::build_wav(&self.audio_buffer, config.sample_rate);
+        if let Some(probe) = &self.upload_probe {
+            probe.mark_started(wav_data.len());
+        }
         self.audio_buffer.clear();
         tracing::info!(
             "{}: sending {:.1}s of audio for transcription",
@@ -137,6 +146,29 @@ impl SttProvider for WhisperCompatProvider {
             audio_len_secs
         );
 
+        let result = self.upload_wav(&config, wav_data).await;
+        if let Some(probe) = &self.upload_probe {
+            probe.mark_finished();
+        }
+        result
+    }
+
+    fn name(&self) -> &str {
+        &self.provider_config.provider_name
+    }
+
+    fn set_upload_probe(&mut self, probe: crate::timing::UploadProbe) {
+        self.upload_probe = Some(probe);
+    }
+}
+
+impl WhisperCompatProvider {
+    /// Sends the WAV file, retrying server errors and timeouts up to two times.
+    async fn upload_wav(
+        &self,
+        config: &SttConfig,
+        wav_data: Vec<u8>,
+    ) -> Result<Option<String>, AppError> {
         let mut attempt = 0u32;
         loop {
             let file_part = reqwest::multipart::Part::bytes(wav_data.clone())
@@ -251,10 +283,6 @@ impl SttProvider for WhisperCompatProvider {
             }
         }
     }
-
-    fn name(&self) -> &str {
-        &self.provider_config.provider_name
-    }
 }
 
 /// Recordings whose loudest 50 ms window stays below this level are treated as silence.
@@ -321,6 +349,67 @@ mod tests {
             .await;
 
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn disconnect_marks_the_upload_on_the_probe_even_when_it_fails() {
+        let mut provider = WhisperCompatProvider::new(WhisperCompatConfig {
+            provider_name: "test-whisper".to_string(),
+            // Port 9 on localhost refuses the connection at once, so no retry wait.
+            endpoint: "http://127.0.0.1:9/v1/audio/transcriptions".to_string(),
+            model: "test-model".to_string(),
+        });
+        let probe = crate::timing::UploadProbe::default();
+        provider.set_upload_probe(probe.clone());
+        provider.connect(&SttConfig::default()).await.unwrap();
+        provider
+            .send_audio(&pcm_tone(0.3, 1.0, 16_000))
+            .await
+            .unwrap();
+
+        assert!(provider.disconnect().await.is_err());
+
+        let marks = probe.snapshot();
+        assert!(marks.started_at.is_some());
+        assert!(marks.finished_at.is_some());
+        assert_eq!(marks.pcm_bytes, 32_000);
+        assert_eq!(marks.wav_bytes, 32_044);
+        assert!((marks.recording_secs() - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn disconnect_without_audio_leaves_the_probe_empty() {
+        let mut provider = WhisperCompatProvider::new(WhisperCompatConfig {
+            provider_name: "test-whisper".to_string(),
+            endpoint: "http://127.0.0.1:9/v1/audio/transcriptions".to_string(),
+            model: "test-model".to_string(),
+        });
+        let probe = crate::timing::UploadProbe::default();
+        provider.set_upload_probe(probe.clone());
+        provider.connect(&SttConfig::default()).await.unwrap();
+
+        assert!(matches!(provider.disconnect().await, Ok(None)));
+        assert_eq!(probe.snapshot(), crate::timing::UploadMarks::default());
+    }
+
+    #[tokio::test]
+    async fn silent_recording_notes_its_length_but_no_upload() {
+        let mut provider = WhisperCompatProvider::new(WhisperCompatConfig {
+            provider_name: "test-whisper".to_string(),
+            endpoint: "http://127.0.0.1:9/v1/audio/transcriptions".to_string(),
+            model: "test-model".to_string(),
+        });
+        let probe = crate::timing::UploadProbe::default();
+        provider.set_upload_probe(probe.clone());
+        provider.connect(&SttConfig::default()).await.unwrap();
+        provider.send_audio(&[0u8; 64_000]).await.unwrap();
+
+        assert!(matches!(provider.disconnect().await, Ok(None)));
+        let marks = probe.snapshot();
+        assert!(marks.started_at.is_none());
+        assert!(marks.finished_at.is_none());
+        assert_eq!(marks.wav_bytes, 0);
+        assert!((marks.recording_secs() - 2.0).abs() < f64::EPSILON);
     }
 
     #[tokio::test]

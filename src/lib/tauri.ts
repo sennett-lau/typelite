@@ -12,6 +12,7 @@ import type {
   BrowserAccessStatus,
   BrowserTarget,
 } from '../stores/appStore'
+import type { RunTiming } from './speed'
 
 // Pipeline commands
 export async function startRecording(): Promise<void> {
@@ -24,6 +25,11 @@ export async function stopRecording(): Promise<void> {
 
 export async function abortRecording(): Promise<void> {
   return invoke('abort_recording')
+}
+
+/** Plan 0008: the last runs' step timings (memory only), oldest first, for the Speed board. */
+export async function getRunTimings(): Promise<RunTiming[]> {
+  return invoke('get_run_timings')
 }
 
 export async function setActiveTranslationTarget(code: string): Promise<TranslationConfig> {

@@ -273,13 +273,16 @@ export function AiPresetEditor() {
         <Row
           label={t('settings.connection')}
           help={
-            llmTestStatus === 'success' || llmTestStatus === 'error' ? (
-              <TestFeedback
-                status={llmTestStatus}
-                latencyMs={llmLatencyMs}
-                errorMessage={testErrorMessage}
-              />
-            ) : undefined
+            <>
+              <span className="block">{t('presets.aiTestHelp')}</span>
+              {(llmTestStatus === 'success' || llmTestStatus === 'error') && (
+                <TestFeedback
+                  status={llmTestStatus}
+                  latencyMs={llmLatencyMs}
+                  errorMessage={testErrorMessage}
+                />
+              )}
+            </>
           }
         >
           <button

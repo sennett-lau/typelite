@@ -101,6 +101,13 @@
   --color-wave-dim: rgba(255, 255, 255, 0.3);
   --color-pill-chip: #0a84ff;
   --color-pill-chip-text: #ffffff;
+
+  /* Speed board steps (plan 0008): the colour follows the step, not the feature. Read through
+     var() in inline styles, so they live here to be always emitted. */
+  --color-step-recording: #aeaeb2;
+  --color-step-speech: #0a84ff;
+  --color-step-ai: #af52de;
+  --color-step-paste: #30d158;
 }
 
 /*
@@ -140,6 +147,11 @@
   --color-feature-dictate: #3fd8c2;
   --color-feature-translate: #7aa7ff;
   --color-feature-ask: #d77bff;
+
+  --color-step-recording: #6f7d94;
+  --color-step-speech: #3fd8c2;
+  --color-step-ai: #d77bff;
+  --color-step-paste: #30d158;
 
   --color-key: #2c3646;
   --color-key-line: #445066;

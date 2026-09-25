@@ -13,6 +13,7 @@ import { PageFrame } from '../PageFrame'
 import { Group } from '../ui/Group'
 import { startShortcutTour, useShortcutTourAvailable } from '../../lib/shortcutTour'
 import { FinishSetup } from './FinishSetup'
+import { SpeedBoard } from './SpeedBoard'
 
 type SettingsPane = 'general' | 'stt' | 'llm'
 
@@ -267,6 +268,9 @@ export function HomePage() {
       <FinishSetup />
       <ShortcutTiles />
       <TourLink />
+      <div className="mt-[22px]">
+        <SpeedBoard />
+      </div>
       <div className="mt-[22px] grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start gap-3">
         <SetupGroup />
         <WhatsNew />
