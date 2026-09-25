@@ -29,7 +29,7 @@ Downloads continue if the user leaves the step; progress also shows on Home unti
 - New provider type `builtin` alongside the OpenAI-compatible one. Preset fields: model file and
   language (auto or fixed). No URL or key.
 - Transcribes the recorded 16 kHz mono audio in-process with whisper.cpp (GPU via Metal),
-  greedy decoding, the same silence gate as the server provider.
+  greedy decoding, the same voice check as the server provider (`stt/silence.rs`).
 - Loads the model on first use, keeps it for 10 minutes after the last use, then frees it.
 - Timings (load, transcription) appear in the log and the Speed board.
 

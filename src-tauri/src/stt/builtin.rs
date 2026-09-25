@@ -168,7 +168,7 @@ impl LocalWhisper {
     }
 
     /// Transcribes 16 kHz 16-bit mono PCM (blocking). `language` `None` means auto-detect.
-    /// Greedy decoding. Does not apply the silence gate; the provider does.
+    /// Greedy decoding. Does not apply the voice check; the provider does.
     pub fn transcribe(
         &'static self,
         path: &Path,

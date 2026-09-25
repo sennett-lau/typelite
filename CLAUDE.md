@@ -80,8 +80,15 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
 
 - CoreAudio can keep an input stream's callback alive after the stream is dropped. Never rely on
   that drop to close a channel; close it explicitly (see `audio/capture.rs`).
-- Whisper invents text ("Thank you.") for silent audio; silent recordings are skipped before
-  recognition by every speech provider (`SILENCE_THRESHOLD_DB` in `stt/silence.rs`).
+- Whisper invents text ("Thank you.") for audio without speech, and "loudest moment above a
+  threshold" is not a speech test: the shortcut key's click or a mic bump passes it. Every
+  speech provider runs the voice check in `stt/silence.rs` before recognition: ignore the first
+  and last 80 ms, take the 10th-percentile 20 ms window as the noise floor, count windows above
+  −45 dBFS and 12 dB above that floor, and need 200 ms of them (a click gives ~20 ms, a bump
+  ~100 ms, a quiet "Yes." ~300 ms). After recognition, built-in whisper drops segments with
+  no-speech > 0.6 and average log-prob < −1.0, and `stt/hallucination.rs` drops a transcript
+  that is only a known Whisper phrase when under 1.5 s was voiced. Then the pill shows "Didn't
+  catch that" and nothing is pasted. The log line "speech check: …" gives the numbers.
 - Built-in speech (in-process whisper.cpp, `stt/builtin.rs`): GGML's Metal backend aborts the
   process in its exit-time cleanup if a model is still loaded, so the model is freed on
   `RunEvent::Exit` (and at the end of tests). whisper.cpp is built by cmake at the crate's

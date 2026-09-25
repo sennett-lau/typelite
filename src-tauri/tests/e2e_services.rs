@@ -485,6 +485,71 @@ async fn builtin_speech_transcribes_an_english_sentence_in_process() {
     stt::builtin::engine().unload();
 }
 
+/// 16-bit PCM scaled by `db` (negative is quieter).
+fn scaled_pcm(pcm: &[u8], db: f64) -> Vec<u8> {
+    let gain = 10f64.powf(db / 20.0);
+    pcm.chunks_exact(2)
+        .flat_map(|b| {
+            let s = f64::from(i16::from_le_bytes([b[0], b[1]])) * gain;
+            (s.round().clamp(-32768.0, 32767.0) as i16).to_le_bytes()
+        })
+        .collect()
+}
+
+/// `seconds` of quiet room noise (about -60 dBFS) with a loud key click at each `clicks_ms`,
+/// like a recording started and stopped with the shortcut without speaking.
+fn clicks_in_a_quiet_room(seconds: f64, clicks_ms: &[u32]) -> Vec<u8> {
+    let len = (seconds * f64::from(SAMPLE_RATE)) as usize;
+    let mut seed: u32 = 7;
+    let mut noise = || {
+        seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+        f64::from(seed >> 8) / f64::from(1u32 << 24) * 2.0 - 1.0
+    };
+    let mut samples: Vec<f64> = (0..len).map(|_| noise() * 0.0017).collect();
+    for &at in clicks_ms {
+        let start = (at * SAMPLE_RATE / 1000) as usize;
+        for i in 0..480 {
+            let decay = (-(i as f64) / 64.0).exp();
+            let click = noise() * 0.7 * decay;
+            if let Some(s) = samples.get_mut(start + i) {
+                *s += click;
+            }
+        }
+    }
+    samples
+        .iter()
+        .flat_map(|s| ((s.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes())
+        .collect()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a Whisper model file: TYPELITE_E2E_BUILTIN_MODEL, default ~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin"]
+async fn builtin_speech_ignores_clicks_and_keeps_quiet_speech() {
+    let Some(model) = builtin_model_path() else {
+        println!("builtin speech: no model file found, skipping");
+        return;
+    };
+    // The reported bug: 0.7 s with the shortcut's clicks and nothing said gave "Thank you.".
+    for (name, pcm) in [
+        ("key clicks", clicks_in_a_quiet_room(0.7, &[20, 650])),
+        ("click mid-way", clicks_in_a_quiet_room(0.7, &[300])),
+        ("two clicks", clicks_in_a_quiet_room(1.5, &[300, 1000])),
+    ] {
+        let (text, _) = transcribe_builtin(&model, &pcm).await;
+        println!("builtin speech ({name}) -> {text:?}");
+        assert_eq!(text, None, "{name} must not produce a transcript");
+    }
+
+    // Speech 20 dB quieter than `say` makes it still gets through.
+    let quiet = scaled_pcm(&synthesise("Let's meet on Tuesday at three.", None), -20.0);
+    let (text, took) = transcribe_builtin(&model, &quiet).await;
+    println!("builtin speech (quiet): {took:?} -> {text:?}");
+    let words = normalised(&text.expect("quiet speech should be transcribed"));
+    assert!(words.contains("tuesday"), "unexpected transcript {words:?}");
+
+    stt::builtin::engine().unload();
+}
+
 /// Plan `quick-speech-setup`: Quick setup's download against the real Hugging Face file (190 MB):
 /// stop part way, resume with a Range request through the CDN redirect, then check the SHA-256.
 #[tokio::test(flavor = "multi_thread")]
