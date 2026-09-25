@@ -987,39 +987,79 @@ fn handle_advanced_role_shortcut(
     let _ = handle.emit("hotkey:role", role.as_str());
 }
 
-/// True while a run is active that Escape should cancel: any non-idle dictation or Translate
-/// state (preparing, recording, transcribing, polishing, pasting), or an Ask that is starting,
-/// recording or thinking. Idle Escape is left alone.
-pub fn escape_cancels_run(pipeline_state: pipeline::PipelineState, ask_busy: bool) -> bool {
-    ask_busy || pipeline_state != pipeline::PipelineState::Idle
+/// What Escape does right now (plans 0016 and 0018).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EscapeAction {
+    /// Nothing of Typelite's is up: Escape goes to the focused app as usual.
+    PassThrough,
+    /// An Ask is starting, recording or thinking: cancel it.
+    CancelAsk,
+    /// A dictation or Translate run is active (preparing, recording, transcribing, polishing,
+    /// pasting): abort it.
+    AbortRun,
+    /// The Copy pill is up after a run: close it.
+    CloseCopyPill,
 }
 
-/// The Escape gate for the native key listener. Runs on the listener thread for each Escape
-/// press, so it only reads state.
-pub fn escape_gate(handle: &tauri::AppHandle) -> bool {
+/// Decides what Escape does. A run wins over the Copy pill (a new run closes the pill anyway).
+pub fn escape_action(
+    pipeline_state: pipeline::PipelineState,
+    ask_busy: bool,
+    copy_pill_up: bool,
+) -> EscapeAction {
+    if ask_busy {
+        EscapeAction::CancelAsk
+    } else if pipeline_state != pipeline::PipelineState::Idle {
+        EscapeAction::AbortRun
+    } else if copy_pill_up {
+        EscapeAction::CloseCopyPill
+    } else {
+        EscapeAction::PassThrough
+    }
+}
+
+fn current_escape_action(handle: &tauri::AppHandle) -> EscapeAction {
     let ask_busy = handle
         .try_state::<commands::ask::AskDictationState>()
         .is_some_and(|ask| ask.is_busy());
-    let pipeline_state = handle
-        .try_state::<pipeline::PipelineHandle>()
+    let pipeline = handle.try_state::<pipeline::PipelineHandle>();
+    let pipeline_state = pipeline
+        .as_ref()
         .map_or(pipeline::PipelineState::Idle, |pipeline| {
             pipeline.current_state()
         });
-    escape_cancels_run(pipeline_state, ask_busy)
+    let copy_pill_up = pipeline
+        .as_ref()
+        .is_some_and(|pipeline| pipeline.has_copy_offer());
+    escape_action(pipeline_state, ask_busy, copy_pill_up)
 }
 
-/// Escape was pressed during a run: cancel it exactly like the pill's cancel button (Ask
-/// cancel for an Ask run, abort for dictation and Translate). Runs off the listener thread,
-/// because stopping audio capture may take a moment.
+/// The Escape gate for the native key listener: true when Escape is Typelite's (it is then
+/// swallowed). Runs on the listener thread for each Escape press, so it only reads state.
+pub fn escape_gate(handle: &tauri::AppHandle) -> bool {
+    current_escape_action(handle) != EscapeAction::PassThrough
+}
+
+/// Escape was pressed while it is Typelite's: cancel the run exactly like the pill's cancel
+/// button (Ask cancel for an Ask run, abort for dictation and Translate), or close the Copy
+/// pill. Runs off the listener thread, because stopping audio capture may take a moment.
 fn cancel_active_run(handle: tauri::AppHandle) {
-    tauri::async_runtime::spawn_blocking(move || {
-        if handle.state::<commands::ask::AskDictationState>().is_busy() {
+    tauri::async_runtime::spawn_blocking(move || match current_escape_action(&handle) {
+        EscapeAction::CancelAsk => {
             tracing::info!("Escape: cancelling Ask");
             commands::ask::cancel_ask_run(&handle);
-        } else {
+        }
+        EscapeAction::AbortRun => {
             tracing::info!("Escape: cancelling the current run");
             handle.state::<pipeline::PipelineHandle>().abort();
         }
+        EscapeAction::CloseCopyPill => {
+            tracing::info!("Escape: closing the Copy pill");
+            handle
+                .state::<pipeline::PipelineHandle>()
+                .dismiss_copy_offer();
+        }
+        EscapeAction::PassThrough => {}
     });
 }
 
@@ -1993,8 +2033,9 @@ mod tests {
     #[test]
     fn escape_cancels_only_while_a_run_is_active() {
         use pipeline::PipelineState::*;
-        assert!(
-            !escape_cancels_run(Idle, false),
+        assert_eq!(
+            escape_action(Idle, false, false),
+            EscapeAction::PassThrough,
             "idle Escape passes through"
         );
         for state in [
@@ -2006,12 +2047,31 @@ mod tests {
             AskRecording,
             AskThinking,
         ] {
-            assert!(escape_cancels_run(state, false), "{state:?}");
+            assert_eq!(
+                escape_action(state, false, false),
+                EscapeAction::AbortRun,
+                "{state:?}"
+            );
         }
-        assert!(
-            escape_cancels_run(Idle, true),
+        assert_eq!(
+            escape_action(Idle, true, false),
+            EscapeAction::CancelAsk,
             "Ask starting, recording or thinking"
         );
+    }
+
+    #[test]
+    fn escape_closes_the_copy_pill_only_when_no_run_is_active() {
+        use pipeline::PipelineState::*;
+        assert_eq!(
+            escape_action(Idle, false, true),
+            EscapeAction::CloseCopyPill
+        );
+        assert_eq!(
+            escape_action(Recording, false, true),
+            EscapeAction::AbortRun
+        );
+        assert_eq!(escape_action(Idle, true, true), EscapeAction::CancelAsk);
     }
 
     #[test]
