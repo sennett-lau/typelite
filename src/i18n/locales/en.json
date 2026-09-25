@@ -91,7 +91,8 @@
       "failed": "The last test failed",
       "speechImpact": "Dictate, Translate and Ask need it.",
       "aiImpact": "Dictate pastes the raw transcript; Translate and Ask need it.",
-      "setUp": "Set up"
+      "setUp": "Set up",
+      "otherOptions": "Other options"
     },
     "speed": {
       "title": "Speed",
@@ -212,16 +213,19 @@
       "speech": {
         "thisMac": "Run this in Terminal. It installs whisper.cpp with Homebrew, downloads the speech model and starts the server.",
         "fromRepository": "Or run {{script}} from the repository.",
-        "thisMacThen": "Then pick “whisper.cpp on this Mac” and press Test.",
-        "otherComputer": "Start an OpenAI-compatible speech server there (for example Speaches on port 8000). Pick “Speech server on another computer”, replace <computer-ip> with that computer’s address, then press Test.",
-        "cloud": "Pick “OpenAI (your key)” or “Groq (your key)”, paste your API key and press Test. Your recordings are then sent to that service."
+        "thisMacThen": "Then choose “Local server” and press Test.",
+        "otherComputer": "Start an OpenAI-compatible speech server there (for example Speaches on port 8000). Choose “Local server”, enter that computer’s address, then press Test.",
+        "cloud": "Choose “OpenAI-compatible”, pick OpenAI or Groq, paste your API key and press Test. Your recordings are then sent to that service.",
+        "builtin": "Choose “Built-in (this Mac)” and press Set up. Typelite downloads a speech model and runs it itself; nothing else to install."
       },
       "ai": {
         "thisMac": "Run these in Terminal: install Ollama, download the model, then start Ollama.",
         "thisMacThen": "Then pick “Ollama on this Mac” and press Test.",
         "otherComputer": "Install Ollama there, set OLLAMA_HOST=0.0.0.0:11434 so this Mac can reach it, and pull the same model. Pick “Ollama on another computer”, replace <computer-ip> with its address, then press Test.",
         "cloud": "Pick “OpenAI (your key)” or “Groq (your key)”, paste your API key and press Test. Your transcripts are then sent to that service."
-      }
+      },
+      "builtin": "Built-in (easiest)",
+      "close": "Close"
     }
   },
   "capsule": {
@@ -678,7 +682,31 @@
     "latency": "{{ms}} ms",
     "placeholderUrl": "Replace <computer-ip> in the base URL with the address of the computer that runs the server.",
     "speechTestHelp": "The time includes the upload, recognition of a short test clip, and the reply.",
-    "aiTestHelp": "The time includes sending a one-word request, the model's reply, and the download. Polishing real text takes longer."
+    "aiTestHelp": "The time includes sending a one-word request, the model's reply, and the download. Polishing real text takes longer.",
+    "speechGroup": "Speech recognition",
+    "type": "Type",
+    "types": {
+      "builtin": "Built-in (this Mac)",
+      "local": "Local server",
+      "openai": "OpenAI-compatible"
+    },
+    "service": "Service",
+    "services": {
+      "openai": "OpenAI",
+      "groq": "Groq",
+      "custom": "Custom"
+    },
+    "address": "Address",
+    "apiKey": "API key",
+    "builtinModel": "Model",
+    "savedPresets": "Saved presets",
+    "addNew": "Add new preset…",
+    "deleteNamed": "Delete “{{name}}”",
+    "newName": "My speech preset",
+    "localServerName": "Local server — {{address}}",
+    "saveAsPreset": "Save as a preset",
+    "addressChanged": "A different address? Keep it as its own preset.",
+    "works": "Works · {{time}}"
   },
   "shortcutCapture": {
     "pressKeys": "Press keys…",
@@ -712,5 +740,39 @@
     "body": "One short try each of Dictate, Translate and Ask anything.",
     "start": "Start",
     "later": "Later"
+  },
+  "speechSetup": {
+    "title": "Quick setup (recommended)",
+    "body": "Download a speech model ({{size}}) and run it on this Mac. No other software needed.",
+    "setUp": "Set up",
+    "smaller": "Smaller and faster model ({{size}})",
+    "ofTotal": "{{done}} of {{total}}",
+    "secondsLeft": "{{count}} s left",
+    "minutesLeft": "about {{count}} min left",
+    "verifying": "Checking the downloaded file…",
+    "testing": "Loading the model and running a test…",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "resume": "Resume",
+    "ready": "Speech recognition is ready",
+    "progressLabel": "Speech model download",
+    "unknownSize": "about 600 MB",
+    "builtinModels": "Built-in models",
+    "delete": "Delete",
+    "confirmDelete": "Click again to delete",
+    "inUse": "in use",
+    "downloadOther": "Also download {{name}} ({{size}})",
+    "modelNames": {
+      "large-v3-turbo": "Large v3 Turbo (most accurate)",
+      "small": "Small (smaller and faster)"
+    },
+    "errors": {
+      "network": "Could not download the model: {{reason}}. Check your connection and try again.",
+      "diskSpace": "Need {{needed}} GB free to download the model; {{available}} GB available.",
+      "checksum": "The downloaded file was damaged, so it was deleted. Try again.",
+      "cancelled": "Download stopped. Resume continues where it stopped.",
+      "io": "Could not save the model: {{reason}}",
+      "load": "Could not load the speech model: {{reason}}. Try the smaller model."
+    }
   }
 }

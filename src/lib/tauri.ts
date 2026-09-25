@@ -287,6 +287,57 @@ export async function testAiPreset(preset: AiPreset, apiKey: string): Promise<nu
   return invoke('test_ai_preset', { preset, apiKey })
 }
 
+// ─── Plan 0012: Quick speech setup (built-in whisper.cpp) ───
+
+export type SpeechSetupPhase = 'idle' | 'downloading' | 'verifying' | 'testing' | 'ready' | 'error'
+
+/** Why a Quick setup stopped. Mirrors `DownloadError` in `stt/models.rs`. */
+export type SpeechSetupError =
+  | { code: 'network'; reason: string }
+  | { code: 'disk_space'; neededBytes: number; availableBytes: number }
+  | { code: 'checksum' }
+  | { code: 'cancelled' }
+  | { code: 'io'; reason: string }
+  | { code: 'load'; reason: string }
+
+/** Payload of `speech-setup:status` and the result of `get_speech_setup_status`. */
+export interface SpeechSetupStatus {
+  modelId: string | null
+  phase: SpeechSetupPhase
+  downloadedBytes: number
+  totalBytes: number
+  bytesPerSecond: number
+  error: SpeechSetupError | null
+}
+
+export interface SpeechModelInfo {
+  id: string
+  fileName: string
+  sizeBytes: number
+  installed: boolean
+}
+
+export async function getSpeechSetupStatus(): Promise<SpeechSetupStatus> {
+  return invoke('get_speech_setup_status')
+}
+
+/** Starts the download and setup in the backend; progress arrives as events. */
+export async function startSpeechSetup(modelId?: string): Promise<void> {
+  return invoke('start_speech_setup', { modelId: modelId ?? null })
+}
+
+export async function cancelSpeechSetup(): Promise<boolean> {
+  return invoke('cancel_speech_setup')
+}
+
+export async function listSpeechModels(): Promise<SpeechModelInfo[]> {
+  return invoke('list_speech_models')
+}
+
+export async function deleteSpeechModel(modelId: string): Promise<void> {
+  return invoke('delete_speech_model', { modelId })
+}
+
 // Lists model ids from an OpenAI-compatible `GET {baseUrl}/models`.
 export async function fetchAiModels(baseUrl: string, apiKey: string): Promise<string[]> {
   return invoke('fetch_ai_models', { baseUrl, apiKey })

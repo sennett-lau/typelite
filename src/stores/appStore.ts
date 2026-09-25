@@ -14,15 +14,26 @@ export type PipelineState =
 export type VoiceMode = 'dictate' | 'ask' | 'translate'
 
 /**
- * A named speech-to-text endpoint. Every preset talks to an OpenAI-compatible
- * `POST {base_url}/audio/transcriptions` server (for example whisper.cpp).
+ * How a speech preset runs: an OpenAI-compatible `POST {base_url}/audio/transcriptions`
+ * server, or whisper.cpp inside the app with a downloaded model (plan 0012).
+ */
+export type SpeechProviderKind = 'openai_compatible' | 'builtin'
+
+/**
+ * A named speech-to-text setup. Usually an OpenAI-compatible
+ * `POST {base_url}/audio/transcriptions` server (for example whisper.cpp); with
+ * `kind: 'builtin'` a model file that Typelite runs itself.
  * The API key is not stored here; it lives in the macOS Keychain under ('stt', id).
  */
 export interface SpeechPreset {
   id: string
   name: string
+  /** Missing in configs from before plan 0012; means 'openai_compatible'. */
+  kind?: SpeechProviderKind
   base_url: string
   model: string
+  /** Built-in presets only: the model file in the app's models folder. */
+  model_file?: string
   /** 'auto' or an ISO language code such as 'en'. */
   language: string
   /** True for the presets the app ships with. Informational only; they stay editable. */
@@ -52,7 +63,25 @@ export interface AiPreset {
 }
 
 function speechTemplate(id: string, name: string, base_url: string, model: string): SpeechPreset {
-  return { id, name, base_url, model, language: 'auto', builtin: true, verified_at: null }
+  return {
+    id,
+    name,
+    kind: 'openai_compatible',
+    base_url,
+    model,
+    model_file: '',
+    language: 'auto',
+    builtin: true,
+    verified_at: null,
+  }
+}
+
+/** Id of the "Built-in (this Mac)" preset that Quick setup creates (plan 0012). */
+export const BUILTIN_WHISPER_PRESET_ID = 'builtin-speech-this-mac'
+
+/** True when whisper.cpp runs this preset inside the app. */
+export function isBuiltinSpeech(preset: Pick<SpeechPreset, 'kind'>): boolean {
+  return preset.kind === 'builtin'
 }
 
 function aiTemplate(id: string, name: string, base_url: string, model: string): AiPreset {
@@ -118,7 +147,13 @@ export const BUILTIN_AI_PRESET: AiPreset = BUILTIN_AI_PRESETS[0]
 
 /** Fields whose change makes an earlier Test result void (the API key is handled apart). */
 export function sameSpeechConnection(a: SpeechPreset, b: SpeechPreset): boolean {
-  return a.base_url === b.base_url && a.model === b.model && a.language === b.language
+  return (
+    (a.kind ?? 'openai_compatible') === (b.kind ?? 'openai_compatible') &&
+    a.base_url === b.base_url &&
+    a.model === b.model &&
+    (a.model_file ?? '') === (b.model_file ?? '') &&
+    a.language === b.language
+  )
 }
 
 export function sameAiConnection(a: AiPreset, b: AiPreset): boolean {
