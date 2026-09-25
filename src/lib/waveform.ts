@@ -91,5 +91,8 @@ export class LevelHistory {
  */
 export function waveformBarColor(index: number, count: number = WAVEFORM_BARS): string {
   const towardsB = count > 1 ? Math.round(clamp01(index / (count - 1)) * 100) : 0
-  return `color-mix(in srgb, var(--color-aurora-b) ${towardsB}%, var(--color-aurora-a))`
+  // Mostly white so the bars stand out against the aurora glow behind them; the tint only
+  // hints at the teal-to-violet gradient.
+  const tint = `color-mix(in srgb, var(--color-aurora-b) ${towardsB}%, var(--color-aurora-a))`
+  return `color-mix(in srgb, ${tint} 25%, #ffffff)`
 }
