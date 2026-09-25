@@ -15,18 +15,82 @@ pub(super) fn match_draft(view: &NormalizedUtterance<'_>) -> CommandMatch<String
     CommandMatch::NoMatch
 }
 
+/// Openings before an edit instruction (see `starts_with_edit_verb`), with Cantonese forms.
+const EDIT_LEADS: &[&str] = &[
+    "請你",
+    "請",
+    "幫我",
+    "幫忙",
+    "麻煩你",
+    "麻煩",
+    "你可以",
+    "可以",
+    "能不能",
+    "可不可以",
+    "把這段話",
+    "把這段文字",
+    "把這段",
+    "把這句話",
+    "把這句",
+    "把這個",
+    "把它",
+    "把佢",
+    "將這段",
+    "將呢段",
+    "這段話",
+    "這段",
+    "這句話",
+    "這句",
+    "呢段",
+];
+
+/// Edit instructions that replace the selection (plan 0011): shorten, rewrite, polish, fix,
+/// change the tone or the format. Questions ("解釋一下", "總結一下") are not here.
+const EDIT_VERBS: &[&str] = &[
+    "改寫",
+    "重寫",
+    "改短",
+    "改長",
+    "改成",
+    "改為",
+    "改得",
+    "改簡",
+    "改正式",
+    "改一下",
+    "寫得",
+    "寫短",
+    "寫長",
+    "寫成",
+    "縮短",
+    "精簡",
+    "簡化",
+    "擴寫",
+    "擴展",
+    "潤色",
+    "修正",
+    "修改",
+    "改正",
+    "糾正",
+    "校對",
+    "正式",
+    "更正式",
+    "隨意",
+    "輕鬆",
+    "口語",
+    "友善",
+    "友好",
+    "禮貌",
+    "客氣",
+    "簡潔",
+    "語氣",
+    "整理成",
+    "轉成",
+    "變成",
+    "列成",
+];
+
 pub(super) fn matches_rewrite(view: &NormalizedUtterance<'_>) -> bool {
-    [
-        "改寫這段",
-        "潤色這段",
-        "把這段寫得",
-        "精簡這段",
-        "擴寫這段",
-        "修正這段",
-        "把這段改成",
-    ]
-    .iter()
-    .any(|prefix| view.starts_with_prefix(prefix, false))
+    super::starts_with_edit_verb(view, EDIT_LEADS, EDIT_VERBS)
 }
 
 pub(super) fn matches_translation(view: &NormalizedUtterance<'_>) -> bool {

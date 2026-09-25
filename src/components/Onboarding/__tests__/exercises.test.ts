@@ -138,12 +138,19 @@ describe('Ask checks', () => {
     expect(mentions36(null)).toBe(false)
   })
 
-  it('an edit passes when the selection became shorter, in the box or the answer', () => {
+  it('an edit passes when the selection was replaced by a shorter version', () => {
     const prefill = en.onboarding.exercises.edit.prefill
     const edit = (overrides: Partial<CheckInput>) =>
       checkExercise('edit', input({ prefill, before: prefill, boxText: prefill, ...overrides }))
 
+    // Expected: replaced in place.
     expect(edit({ boxText: 'Did you get a chance to look at my draft?' })).toBe(true)
+    expect(wroteText('edit', input({ prefill, boxText: 'Seen my draft?', answer: null }))).toBe(
+      'Seen my draft?',
+    )
+    // A replacement that is not shorter fails, even if the panel has a shorter answer.
+    expect(edit({ boxText: `${prefill} Thanks so much!`, answer: 'Short.' })).toBe(false)
+    // Fallback: the replacement could not be made, so the shorter text is in the panel.
     expect(edit({ answer: 'Had a chance to look at my draft?' })).toBe(true)
     expect(edit({})).toBe(false)
     expect(edit({ boxText: `${prefill} Thanks so much!` })).toBe(false)

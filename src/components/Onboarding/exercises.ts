@@ -160,10 +160,17 @@ function askOutput(input: CheckInput): string {
   return (input.answer ?? '').trim() || insertedText(input.before, input.boxText)
 }
 
-/** For the Ask edit: the box when Ask replaced the selection, else the answer panel's text. */
+/** True when Ask replaced the selection in the box (the expected result of the Ask edit). */
+function replacedSelection(input: CheckInput): boolean {
+  return input.boxText.trim().length > 0 && differs(input.boxText, input.prefill)
+}
+
+/**
+ * For the Ask edit: the box when Ask replaced the selection, else (the fallback when the
+ * replacement could not be made) the answer panel's text.
+ */
 function editOutput(input: CheckInput): string {
-  if (differs(input.boxText, input.prefill) && input.boxText.trim()) return input.boxText.trim()
-  return (input.answer ?? '').trim()
+  return replacedSelection(input) ? input.boxText.trim() : (input.answer ?? '').trim()
 }
 
 /** The "Typelite wrote" text of a run. */
@@ -204,6 +211,8 @@ export function checkExercise(id: ExerciseId, input: CheckInput): boolean {
     case 'question':
       return wrote.length > 0
     case 'edit':
+      // Expected: the selection was replaced by a shorter version. Fallback: the shorter
+      // version shows in the Ask panel (copied) when the replacement could not be made.
       return (
         wrote.length > 0 &&
         differs(wrote, input.prefill) &&

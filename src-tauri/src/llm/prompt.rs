@@ -360,14 +360,35 @@ fn translation_instruction(
         }
     };
 
-    if has_selected_text {
-        Some(format!(
+    let mut instruction = if has_selected_text {
+        format!(
             "AFTER applying the user's instruction to the selected text, translate the final result into {lang_name}. Output ONLY the translated text."
-        ))
+        )
     } else {
-        Some(format!(
+        format!(
             "AFTER cleaning the text, translate the entire result into {lang_name}. Output ONLY the translated text."
-        ))
+        )
+    };
+    if let Some(vocabulary) =
+        regional_vocabulary(canonical.as_deref().unwrap_or(target_lang.trim()))
+    {
+        instruction.push(' ');
+        instruction.push_str(vocabulary);
+    }
+    Some(instruction)
+}
+
+/// Hong Kong and Taiwan share Traditional characters but not vocabulary, and small models
+/// drift to Taiwan terms for both. A few paired examples keep each variant on its own words.
+fn regional_vocabulary(code: &str) -> Option<&'static str> {
+    match code {
+        "zh-Hant-HK" => Some(
+            "VOCABULARY: use Hong Kong terms, never Taiwan or mainland ones, e.g. 軟件 (not 軟體), 手提電腦 (not 筆電), 網絡 (not 網路), 巴士 (not 公車), 的士 (not 計程車), 資訊科技, 電郵, 短訊, 質素.",
+        ),
+        "zh-Hant-TW" => Some(
+            "VOCABULARY: use Taiwan terms, never Hong Kong or mainland ones, e.g. 軟體 (not 軟件), 筆電 (not 手提電腦), 網路 (not 網絡), 公車 (not 巴士), 計程車 (not 的士), 資訊, 電子郵件, 簡訊, 品質.",
+        ),
+        _ => None,
     }
 }
 
@@ -1010,6 +1031,14 @@ mod tests {
         );
         assert!(taiwan.contains("Traditional Chinese as written in Taiwan"));
         assert!(taiwan.contains("Taiwan vocabulary and punctuation"));
+        // Each variant names its own terms, and the other variant's as the ones to avoid.
+        assert!(hong_kong.contains("軟件 (not 軟體)"));
+        assert!(hong_kong.contains("手提電腦 (not 筆電)"));
+        assert!(hong_kong.contains("網絡 (not 網路)"));
+        assert!(taiwan.contains("軟體 (not 軟件)"));
+        assert!(taiwan.contains("筆電 (not 手提電腦)"));
+        assert!(taiwan.contains("網路 (not 網絡)"));
+        assert!(!taiwan.contains("use Hong Kong terms"));
         let simplified = build_system_prompt(
             AppType::General,
             &[],
@@ -1021,6 +1050,7 @@ mod tests {
         );
         assert!(simplified.contains("Simplified Chinese as used in mainland China"));
         assert!(!simplified.contains("Traditional"));
+        assert!(!simplified.contains("VOCABULARY:"));
     }
 
     #[test]

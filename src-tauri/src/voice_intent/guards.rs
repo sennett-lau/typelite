@@ -35,6 +35,12 @@ pub(crate) fn has_command_signal(locale: CommandLocale, raw: &str) -> bool {
     if contains_ascii_command_signal(&normalized) {
         return true;
     }
+    // An edit instruction at the start ("把这段改短一点", "正式一点") is a command too.
+    if locale != CommandLocale::En
+        && super::grammar::matches_rewrite(locale, &super::normalize::NormalizedUtterance::new(raw))
+    {
+        return true;
+    }
     match locale {
         CommandLocale::En => false,
         CommandLocale::ZhHans => [
@@ -116,6 +122,25 @@ fn contains_ascii_command_signal(normalized: &str) -> bool {
         "make",
         "format",
         "turn",
+        "reword",
+        "shorten",
+        "lengthen",
+        "condense",
+        "simplify",
+        "proofread",
+        "polish",
+        "tidy",
+        "clean up",
+        "clean this",
+        "clean it",
+        "improve",
+        "expand",
+        "correct the",
+        "correct this",
+        "convert this",
+        "convert it",
+        "put this",
+        "put it",
         "make this",
         "fix the",
         "format this",

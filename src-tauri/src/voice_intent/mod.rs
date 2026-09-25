@@ -217,6 +217,23 @@ fn route_ask(
                 None,
             );
         }
+        // An edit instruction ("make this shorter", "改短一点", "fix the grammar") replaces the
+        // selection too. Questions about it ("what does this mean", "summarise this",
+        // "解释一下") are not edits and stay answers in the panel.
+        if request.flags.rewrite_selection
+            && grammar::matches_rewrite(locale, view)
+            && !grammar::matches_informational(locale, view)
+        {
+            return intent(
+                VoiceIntentKind::RewriteSelection,
+                VoiceOutputPlacement::ReplaceSelection,
+                grammar::exact_confidence(view),
+                None,
+                None,
+                Some(locale),
+                None,
+            );
+        }
         return fallback_intent(
             VoiceMode::Ask,
             true,
@@ -402,11 +419,15 @@ fn resolve_automatic_locale(utterance: &str) -> LocaleResolution {
 
     let simplified = utterance
         .chars()
-        .filter(|character| "写帮复说发这译选条简个润扩汇总释么为哪".contains(*character))
+        .filter(|character| {
+            "写帮复说发这译选条简个润扩汇总释么为哪点长语变缩礼轻".contains(*character)
+        })
         .count();
     let traditional = utterance
         .chars()
-        .filter(|character| "寫幫覆說發這譯選條簡個潤擴彙總釋麼為哪則郵".contains(*character))
+        .filter(|character| {
+            "寫幫覆說發這譯選條簡個潤擴彙總釋麼為哪則郵點長語變縮禮輕".contains(*character)
+        })
         .count();
     match (simplified, traditional) {
         (0, 0) => LocaleResolution::Ambiguous,
@@ -542,21 +563,110 @@ mod tests {
     }
 
     #[test]
-    fn voice_intent_grammar_keeps_ask_with_selection_nondestructive() {
-        for utterance in [
-            "rewrite this",
-            "make this warmer",
-            "translate this to Klingon",
+    fn ask_with_selection_replaces_it_for_edit_instructions() {
+        for (utterance, language) in [
+            ("Make this shorter.", "en"),
+            ("make it longer", "en"),
+            ("make this more formal", "en"),
+            ("Make this more casual", "en"),
+            ("make it friendlier", "en"),
+            ("fix the grammar", "en"),
+            ("Fix the typos, please", "en"),
+            ("rewrite this", "en"),
+            ("Rewrite it in plain English", "en"),
+            ("turn this into bullet points", "en"),
+            ("turn into bullet points", "en"),
+            ("Polish this.", "en"),
+            ("can you make this shorter?", "en"),
+            ("把这段改短一点。", "zh"),
+            ("改短一点", "zh"),
+            ("正式一点", "zh"),
+            ("修正语法", "zh"),
+            ("改写", "zh"),
+            ("请帮我把这段润色一下", "zh"),
+            ("把這段改短一點", "zh-hk"),
+            ("改寫一下", "zh-hk"),
+            ("呢段正式啲", "zh-hk"),
         ] {
             let routed = VoiceIntentRouter::route(request(
                 VoiceMode::Ask,
                 utterance,
                 true,
-                SpeechLanguageMode::Explicit("en"),
+                SpeechLanguageMode::Explicit(language),
             ));
-            assert_eq!(routed.kind, VoiceIntentKind::AskSelection);
+            assert_eq!(
+                routed.kind,
+                VoiceIntentKind::RewriteSelection,
+                "{utterance}"
+            );
+            assert_eq!(routed.placement, VoiceOutputPlacement::ReplaceSelection);
+        }
+        // Automatic speech language still finds the Chinese edit commands.
+        for utterance in ["把这段改短一点。", "正式一点", "改短一點"] {
+            let routed = VoiceIntentRouter::route(request(
+                VoiceMode::Ask,
+                utterance,
+                true,
+                SpeechLanguageMode::Automatic,
+            ));
+            assert_eq!(
+                routed.kind,
+                VoiceIntentKind::RewriteSelection,
+                "{utterance}"
+            );
+        }
+    }
+
+    #[test]
+    fn ask_with_selection_answers_questions_about_it_in_the_panel() {
+        for (utterance, language) in [
+            ("what does this mean?", "en"),
+            ("summarise this", "en"),
+            ("Summarize this in one line", "en"),
+            ("explain this", "en"),
+            ("Explain it simply", "en"),
+            ("is this polite?", "en"),
+            ("translate this to Klingon", "en"),
+            ("please don't rewrite this", "en"),
+            ("she said make this shorter", "en"),
+            ("解释一下", "zh"),
+            ("总结一下", "zh"),
+            ("这段是什么意思", "zh"),
+            ("不要改写", "zh"),
+            ("解釋一下", "zh-hk"),
+            ("總結一下", "zh-hk"),
+        ] {
+            let routed = VoiceIntentRouter::route(request(
+                VoiceMode::Ask,
+                utterance,
+                true,
+                SpeechLanguageMode::Explicit(language),
+            ));
+            assert_eq!(routed.kind, VoiceIntentKind::AskSelection, "{utterance}");
             assert_eq!(routed.placement, VoiceOutputPlacement::PopupAnswer);
         }
+        // With the rewrite route turned off an edit stays an answer.
+        let routed = VoiceIntentRouter::route(VoiceRouteRequest {
+            flags: VoiceRoutingFlags {
+                rewrite_selection: false,
+                ..VoiceRoutingFlags::default()
+            },
+            ..request(
+                VoiceMode::Ask,
+                "make this shorter",
+                true,
+                SpeechLanguageMode::Explicit("en"),
+            )
+        });
+        assert_eq!(routed.kind, VoiceIntentKind::AskSelection);
+        // Without a selection an edit phrase is an ordinary question.
+        let routed = VoiceIntentRouter::route(request(
+            VoiceMode::Ask,
+            "make this shorter",
+            false,
+            SpeechLanguageMode::Explicit("en"),
+        ));
+        assert_eq!(routed.kind, VoiceIntentKind::OpenQuestion);
     }
 
     #[test]

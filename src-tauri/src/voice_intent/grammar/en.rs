@@ -15,23 +15,119 @@ pub(super) fn match_draft(view: &NormalizedUtterance<'_>) -> CommandMatch<String
     CommandMatch::NoMatch
 }
 
+/// Polite openings that may come before an edit instruction ("can you make this shorter").
+const EDIT_LEADS: [&str; 7] = [
+    "",
+    "please ",
+    "can you ",
+    "could you ",
+    "can you please ",
+    "could you please ",
+    "now ",
+];
+
+/// Edit instructions on the selection. A match replaces the selection (plan 0011), so each
+/// entry is anchored at the start and ends at a word boundary.
+const EDIT_PHRASES: &[&str] = &[
+    "rewrite",
+    "rephrase",
+    "reword",
+    "shorten",
+    "lengthen",
+    "condense",
+    "simplify",
+    "proofread",
+    "polish",
+    "tidy up",
+    "tidy this up",
+    "tidy it up",
+    "clean up",
+    "clean this up",
+    "clean it up",
+    "improve this",
+    "improve it",
+    "improve the wording",
+    "expand this",
+    "expand it",
+    "fix the grammar",
+    "fix the spelling",
+    "fix the typos",
+    "fix the punctuation",
+    "fix any typos",
+    "fix typos",
+    "fix grammar",
+    "fix spelling",
+    "fix this",
+    "fix it",
+    "correct the grammar",
+    "correct the spelling",
+    "correct the typos",
+    "correct this",
+    "format this as",
+    "format this into",
+    "format it as",
+    "format as",
+    "turn this into",
+    "turn it into",
+    "turn into",
+    "convert this into",
+    "convert this to",
+    "convert it into",
+    "convert it to",
+    "put this into",
+    "put this in",
+    "put it into",
+    "put it in",
+];
+
+/// "make this …" / "make it …" edits: comparatives, "more …", "less …", "sound …", "into …".
+const MAKE_OBJECTS: [&str; 4] = [
+    "make this",
+    "make it",
+    "make the text",
+    "make the selection",
+];
+const MAKE_COMPLEMENTS: &[&str] = &[
+    "shorter",
+    "longer",
+    "briefer",
+    "tighter",
+    "simpler",
+    "clearer",
+    "warmer",
+    "friendlier",
+    "nicer",
+    "politer",
+    "punchier",
+    "better",
+    "formal",
+    "casual",
+    "friendly",
+    "polite",
+    "professional",
+    "concise",
+    "more",
+    "less",
+    "sound",
+    "into",
+    "a bulleted",
+    "a bullet",
+    "a numbered",
+    "a list",
+    "bullet points",
+];
+
 pub(super) fn matches_rewrite(view: &NormalizedUtterance<'_>) -> bool {
-    [
-        "rewrite this",
-        "rephrase this",
-        "make this shorter",
-        "make this longer",
-        "make this warmer",
-        "make this friendlier",
-        "make this more formal",
-        "make this more concise",
-        "fix the grammar",
-        "fix the spelling",
-        "format this as",
-        "turn this into",
-    ]
-    .iter()
-    .any(|prefix| view.starts_with_prefix(prefix, true))
+    EDIT_LEADS.iter().any(|lead| {
+        EDIT_PHRASES
+            .iter()
+            .any(|phrase| view.starts_with_prefix(&format!("{lead}{phrase}"), true))
+            || MAKE_OBJECTS.iter().any(|object| {
+                MAKE_COMPLEMENTS.iter().any(|complement| {
+                    view.starts_with_prefix(&format!("{lead}{object} {complement}"), true)
+                })
+            })
+    })
 }
 
 pub(super) fn matches_translation(view: &NormalizedUtterance<'_>) -> bool {
@@ -49,8 +145,9 @@ pub(super) fn matches_translation(view: &NormalizedUtterance<'_>) -> bool {
 
 pub(super) fn matches_informational(view: &NormalizedUtterance<'_>) -> bool {
     [
-        "summarize this",
-        "explain this",
+        "summarize",
+        "summarise",
+        "explain",
         "compare this",
         "what ",
         "why ",

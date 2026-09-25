@@ -16,6 +16,20 @@ Back to [index](index.md).
 - If nothing is selected, Translate behaves exactly as today (speech → translation).
 - The selection is read with the existing selected-text capture; nothing is stored.
 
+## Highlight and edit
+
+| The user does | Result |
+|---|---|
+| Selects text, uses Ask, gives an edit instruction ("make this shorter", "more formal", "fix the grammar", "rewrite this", "turn this into bullet points", "改短一点", "正式一点", "修正语法", "改写") | The selection is replaced by the edited text. |
+| Same, but the selection cannot be replaced (selection lost, app changed, paste failed) | The result is copied and shown in the Ask panel. |
+| Selects text, uses Ask, asks about it ("what does this mean", "summarise this", "explain this", "解释一下", "总结一下") | The answer shows in the Ask panel; the selection is not changed. |
+
+- The decision is made by the shared voice grammar, not the AI: an edit is an edit verb at the
+  start of the instruction, after optional openings such as "please", "can you", "请", "帮我"
+  or "把这段". Negated or reported instructions ("don't rewrite this", "she said …") stay
+  answers, as does everything the grammar does not recognise.
+- The `rewrite_selection` routing setting turns this off; edits then answer in the panel.
+
 ## Live questions (no web search yet)
 
 - Before answering an open question (no selection), Ask decides whether it needs live or

@@ -36,9 +36,9 @@ transcript, "Typelite wrote" = final text).
 2. **Edit a selection.** The practice box is pre-filled with *"Hey, just checking whether you
    had a chance to look at the draft I sent over last week, no rush at all."* Instruction:
    "Select it, press Ask, and say: make this shorter." Expected: a shorter sentence replaces the
-   selection. Success: the text changed and is shorter. Ask on a selection answers in the Ask
-   panel today (it replaces the selection only for "translate this into …"), so a shorter
-   answer in the panel counts as well.
+   selection. Success: the text in the box changed and is shorter. When the replacement cannot
+   be made, Ask copies the result and shows it in the panel, so a shorter answer in the panel
+   counts as well.
 
 "In the target language" is a script-level check (Latin, Han, kana, Hangul, Cyrillic, …), so
 languages that share a script (English and French) only need the text to have changed.

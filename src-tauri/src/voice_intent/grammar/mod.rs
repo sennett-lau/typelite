@@ -64,6 +64,22 @@ pub(crate) fn match_search(
     }
 }
 
+/// Chinese edit instructions: after optional openings ("请", "帮我", "把这段") the text must
+/// start with an edit verb ("改短", "正式一点", "修正语法"). Chinese has no spaces between
+/// words, so this is a plain prefix match once the openings are removed.
+fn starts_with_edit_verb(view: &NormalizedUtterance<'_>, leads: &[&str], verbs: &[&str]) -> bool {
+    let mut rest = view.match_text();
+    // Openings can stack: "请帮我把这段改短一点".
+    for _ in 0..4 {
+        rest = rest.trim_start_matches(|c: char| c.is_whitespace() || "，,：:".contains(c));
+        match leads.iter().find(|lead| rest.starts_with(**lead)) {
+            Some(lead) => rest = &rest[lead.len()..],
+            None => break,
+        }
+    }
+    verbs.iter().any(|verb| rest.starts_with(verb))
+}
+
 pub(crate) fn exact_confidence(view: &NormalizedUtterance<'_>) -> f32 {
     if view
         .match_text()

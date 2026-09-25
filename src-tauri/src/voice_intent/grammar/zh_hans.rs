@@ -38,18 +38,79 @@ fn looks_like_draft_artifact(payload: &str) -> bool {
         .any(|marker| payload.contains(marker))
 }
 
+/// Openings before an edit instruction (see `starts_with_edit_verb`).
+const EDIT_LEADS: &[&str] = &[
+    "请你",
+    "请",
+    "帮我",
+    "帮忙",
+    "麻烦你",
+    "麻烦",
+    "你可以",
+    "可以",
+    "能不能",
+    "可不可以",
+    "把这段话",
+    "把这段文字",
+    "把这段",
+    "把这句话",
+    "把这句",
+    "把这个",
+    "把它",
+    "把选中的文字",
+    "将这段",
+    "这段话",
+    "这段",
+    "这句话",
+    "这句",
+];
+
+/// Edit instructions that replace the selection (plan 0011): shorten, rewrite, polish, fix,
+/// change the tone or the format. Questions ("解释一下", "总结一下") are not here.
+const EDIT_VERBS: &[&str] = &[
+    "改写",
+    "重写",
+    "改短",
+    "改长",
+    "改成",
+    "改为",
+    "改得",
+    "改简",
+    "改正式",
+    "改一下",
+    "写得",
+    "写短",
+    "写长",
+    "写成",
+    "缩短",
+    "精简",
+    "简化",
+    "扩写",
+    "扩展",
+    "润色",
+    "修正",
+    "修改",
+    "改正",
+    "纠正",
+    "校对",
+    "正式",
+    "更正式",
+    "随意",
+    "轻松",
+    "口语",
+    "友好",
+    "礼貌",
+    "客气",
+    "简洁",
+    "语气",
+    "整理成",
+    "转成",
+    "变成",
+    "列成",
+];
+
 pub(super) fn matches_rewrite(view: &NormalizedUtterance<'_>) -> bool {
-    [
-        "改写这段",
-        "润色这段",
-        "把这段写得",
-        "精简这段",
-        "扩写这段",
-        "修正这段",
-        "把这段改成",
-    ]
-    .iter()
-    .any(|prefix| view.starts_with_prefix(prefix, false))
+    super::starts_with_edit_verb(view, EDIT_LEADS, EDIT_VERBS)
 }
 
 pub(super) fn matches_translation(view: &NormalizedUtterance<'_>) -> bool {

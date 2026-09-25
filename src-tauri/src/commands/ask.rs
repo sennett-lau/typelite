@@ -250,8 +250,8 @@ impl AskDictationResultMetadata {
         }
     }
 
-    /// A draft inserted at the cursor, or (Plan 0011) a translation that replaced the
-    /// selection. Anything that did not land in the app shows as copied.
+    /// A draft inserted at the cursor, or (Plan 0011) an edit or a translation that replaced
+    /// the selection. Anything that did not land in the app shows as copied.
     fn from_draft_execution(
         execution: &crate::voice_intent::executor::VoiceExecutionResult,
     ) -> Self {
@@ -1254,7 +1254,9 @@ pub async fn stop_ask_dictation(
 
         if matches!(
             voice_intent.kind,
-            VoiceIntentKind::DraftInsert | VoiceIntentKind::TranslateSelection
+            VoiceIntentKind::DraftInsert
+                | VoiceIntentKind::RewriteSelection
+                | VoiceIntentKind::TranslateSelection
         ) {
             failure_code = "llm_failed";
             pastes = true;
@@ -1456,7 +1458,7 @@ mod tests {
             VoiceIntentKind::AskSelection
         );
         assert_eq!(
-            route_ask_intent("Make this shorter", true, Some("en"), flags).kind,
+            route_ask_intent("Summarise this", true, Some("en"), flags).kind,
             VoiceIntentKind::AskSelection
         );
         assert_eq!(
@@ -1466,10 +1468,10 @@ mod tests {
     }
 
     #[test]
-    fn shared_voice_router_ask_never_replaces_selected_text() {
+    fn shared_voice_router_ask_keeps_unclear_or_negated_edits_as_answers() {
         let flags = crate::voice_intent::VoiceRoutingFlags::default();
         for question in [
-            "rewrite this",
+            "what would a rewrite of this look like?",
             "translate this to Klingon",
             "do not rewrite this",
         ] {
@@ -1543,6 +1545,54 @@ mod tests {
         let value = serde_json::to_value(&result).unwrap();
         assert_eq!(value["output"], "copiedFallback");
         assert_eq!(value["usedSelectedText"], true);
+    }
+
+    #[test]
+    fn ask_edit_instruction_replaces_the_selection_or_falls_back_to_the_panel() {
+        let flags = crate::voice_intent::VoiceRoutingFlags::default();
+        for question in ["Make this shorter.", "fix the grammar", "把这段改短一点。"] {
+            let route = route_ask_intent(question, true, None, flags);
+            assert_eq!(route.kind, VoiceIntentKind::RewriteSelection, "{question}");
+            assert_eq!(
+                route.placement,
+                crate::voice_intent::VoiceOutputPlacement::ReplaceSelection
+            );
+        }
+
+        let replaced = crate::voice_intent::executor::VoiceExecutionResult {
+            intent_kind: VoiceIntentKind::RewriteSelection,
+            requested_placement: crate::voice_intent::VoiceOutputPlacement::ReplaceSelection,
+            actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::ReplaceSelection),
+            status: crate::voice_intent::executor::VoiceExecutionStatus::Completed,
+            fallback_reason: None,
+        };
+        let result = AskDictationResult::new(
+            "make this shorter".to_string(),
+            "Did you see my draft?".to_string(),
+            VoiceIntentKind::RewriteSelection,
+            AskDictationResultMetadata::from_draft_execution(&replaced),
+        );
+        assert!(!result.should_show_window());
+
+        // Replacement impossible: the result is copied and shown in the panel.
+        let lost = crate::voice_intent::executor::VoiceExecutionResult {
+            actual_placement: None,
+            status: crate::voice_intent::executor::VoiceExecutionStatus::CopiedFallback,
+            fallback_reason: Some(
+                crate::voice_intent::executor::VoiceExecutionFallbackReason::SelectionLost,
+            ),
+            ..replaced
+        };
+        let result = AskDictationResult::new(
+            "make this shorter".to_string(),
+            "Did you see my draft?".to_string(),
+            VoiceIntentKind::RewriteSelection,
+            AskDictationResultMetadata::from_draft_execution(&lost),
+        );
+        assert!(result.should_show_window());
+        let value = serde_json::to_value(&result).unwrap();
+        assert_eq!(value["output"], "copiedFallback");
+        assert_eq!(value["answer"], "Did you see my draft?");
     }
 
     #[test]
