@@ -131,6 +131,7 @@ fn dictation_request(raw_text: &str) -> PolishRequest {
         mapped_scene_prompt: String::new(),
         active_scene_prompt: String::new(),
         polish_custom_prompt: String::new(),
+        polish_chinese_script: "preserve".into(),
         translate_enabled: false,
         target_lang: "en".into(),
         selected_text: None,

@@ -1500,7 +1500,8 @@ impl AppConfig {
         self.normalize_presets();
         self.polish_style = normalize_polish_style(&self.polish_style).to_string();
         self.polish_custom_prompt = sanitize_polish_custom_prompt(&self.polish_custom_prompt);
-        self.polish_chinese_script = "preserve".to_string();
+        self.polish_chinese_script =
+            normalize_polish_chinese_script(&self.polish_chinese_script).to_string();
         sanitize_custom_scenes(&mut self.custom_scenes);
         sanitize_system_scene_overrides(&mut self.system_scene_overrides);
         sanitize_active_scene(&mut self.active_scene);
@@ -1913,6 +1914,16 @@ fn normalize_polish_style(value: &str) -> &'static str {
         "structured" => "structured",
         "professional" => "professional",
         _ => "clean",
+    }
+}
+
+/// Chinese script for AI output: "preserve" keeps the script the transcript (or the selected
+/// text) uses; "simplified" and "traditional" convert Chinese text to that script.
+fn normalize_polish_chinese_script(value: &str) -> &'static str {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "simplified" => "simplified",
+        "traditional" => "traditional",
+        _ => "preserve",
     }
 }
 
@@ -4182,14 +4193,24 @@ mod tests {
     }
 
     #[test]
-    fn app_config_sanitizes_custom_polish_prompt_and_clears_chinese_script() {
+    fn app_config_sanitizes_custom_polish_prompt_and_keeps_chinese_script() {
         let mut value = serde_json::to_value(AppConfig::default()).unwrap();
         value["polish_custom_prompt"] = serde_json::json!("  use formal tone\0  ");
-        value["polish_chinese_script"] = serde_json::json!("traditional");
+        value["polish_chinese_script"] = serde_json::json!(" Traditional ");
 
         let config = AppConfig::from_stored_value(value).unwrap();
 
         assert_eq!(config.polish_custom_prompt, "use formal tone");
+        assert_eq!(config.polish_chinese_script, "traditional");
+    }
+
+    #[test]
+    fn app_config_unknown_chinese_script_falls_back_to_preserve() {
+        let mut value = serde_json::to_value(AppConfig::default()).unwrap();
+        value["polish_chinese_script"] = serde_json::json!("klingon");
+
+        let config = AppConfig::from_stored_value(value).unwrap();
+
         assert_eq!(config.polish_chinese_script, "preserve");
     }
 

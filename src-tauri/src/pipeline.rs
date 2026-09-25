@@ -2261,6 +2261,7 @@ impl PipelineHandle {
                 .map(|scene| scene.prompt_template.clone())
                 .unwrap_or_default(),
             polish_custom_prompt: config.polish_custom_prompt.clone(),
+            polish_chinese_script: config.polish_chinese_script.clone(),
             translate_enabled,
             target_lang,
             selected_text,
