@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::error::AppError;
 
-use super::silence::{log_decision, NoSpeechGuard, VoiceActivity};
+use super::silence::{accept_transcript, log_decision, NoSpeechGuard, VoiceActivity};
 use super::transcript::normalize_transcript;
 use super::{SttConfig, SttProvider, TranscriptEvent};
 
@@ -135,7 +135,6 @@ impl SttProvider for WhisperCompatProvider {
             self.audio_buffer.clear();
             return Ok(None);
         }
-        log_decision(&self.provider_config.provider_name, &activity, None);
 
         let audio_len_secs = self.audio_buffer.len() as f64 / (config.sample_rate as f64 * 2.0);
         let wav_data = Self::build_wav(&self.audio_buffer, config.sample_rate);
@@ -153,7 +152,11 @@ impl SttProvider for WhisperCompatProvider {
         if let Some(probe) = &self.upload_probe {
             probe.mark_finished();
         }
-        result
+        Ok(accept_transcript(
+            &self.provider_config.provider_name,
+            &activity,
+            result?,
+        ))
     }
 
     fn name(&self) -> &str {

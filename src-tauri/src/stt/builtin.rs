@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use async_trait::async_trait;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
-use super::silence::{log_decision, NoSpeechGuard, VoiceActivity};
+use super::silence::{accept_transcript, log_decision, NoSpeechGuard, VoiceActivity};
 use super::{SttConfig, SttProvider, TranscriptEvent};
 use crate::error::AppError;
 
@@ -425,7 +425,6 @@ impl SttProvider for BuiltinProvider {
             self.audio_buffer.clear();
             return Ok(None);
         }
-        log_decision(&self.config.provider_name, &activity, None);
 
         let pcm = std::mem::take(&mut self.audio_buffer);
         if let Some(probe) = &self.upload_probe {
@@ -470,7 +469,11 @@ impl SttProvider for BuiltinProvider {
             );
             return Ok(None);
         }
-        Ok((!transcription.text.is_empty()).then_some(transcription.text))
+        Ok(accept_transcript(
+            &self.config.provider_name,
+            &activity,
+            Some(transcription.text),
+        ))
     }
 
     fn name(&self) -> &str {

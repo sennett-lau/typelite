@@ -109,6 +109,10 @@ pub enum NoSpeechGuard {
     VoiceCheck,
     /// The built-in model marked every segment as probably not speech.
     WhisperNoSpeech,
+    /// Short audio whose whole transcript is a phrase Whisper invents for noise.
+    Hallucination,
+    /// The speech engine returned no text.
+    EmptyTranscript,
 }
 
 impl NoSpeechGuard {
@@ -116,6 +120,8 @@ impl NoSpeechGuard {
         match self {
             Self::VoiceCheck => "voice check",
             Self::WhisperNoSpeech => "whisper no-speech",
+            Self::Hallucination => "hallucination guard",
+            Self::EmptyTranscript => "empty transcript",
         }
     }
 }
@@ -133,6 +139,30 @@ pub fn log_decision(provider: &str, activity: &VoiceActivity, guard: Option<NoSp
         activity.noise_floor_db,
         activity.voiced_ms,
     );
+}
+
+/// The last step of every provider: drops a transcript the hallucination guard rejects and
+/// logs the decision. `None` means no speech.
+pub fn accept_transcript(
+    provider: &str,
+    activity: &VoiceActivity,
+    text: Option<String>,
+) -> Option<String> {
+    let text = text.filter(|t| !t.trim().is_empty());
+    match text {
+        Some(text) if super::hallucination::is_likely_hallucination(&text, activity.voiced_ms) => {
+            log_decision(provider, activity, Some(NoSpeechGuard::Hallucination));
+            None
+        }
+        Some(text) => {
+            log_decision(provider, activity, None);
+            Some(text)
+        }
+        None => {
+            log_decision(provider, activity, Some(NoSpeechGuard::EmptyTranscript));
+            None
+        }
+    }
 }
 
 /// A 440 Hz tone as 16-bit little-endian PCM. Used by tests and by the built-in model's
@@ -264,6 +294,34 @@ mod tests {
             activity.duration_ms, activity.peak_db, activity.noise_floor_db, activity.voiced_ms
         );
         activity
+    }
+
+    #[test]
+    fn short_audio_that_only_says_thank_you_has_no_speech() {
+        let short = VoiceActivity {
+            duration_ms: 700,
+            peak_db: -12.0,
+            noise_floor_db: -60.0,
+            voiced_ms: 220,
+        };
+        assert_eq!(
+            accept_transcript("p", &short, Some("Thank you.".into())),
+            None
+        );
+        assert_eq!(accept_transcript("p", &short, Some("  ".into())), None);
+        assert_eq!(accept_transcript("p", &short, None), None);
+        assert_eq!(
+            accept_transcript("p", &short, Some("Yes, please.".into())).as_deref(),
+            Some("Yes, please.")
+        );
+        let long = VoiceActivity {
+            voiced_ms: 2000,
+            ..short
+        };
+        assert_eq!(
+            accept_transcript("p", &long, Some("Thank you.".into())).as_deref(),
+            Some("Thank you.")
+        );
     }
 
     #[test]
