@@ -295,7 +295,8 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   const answer = result?.answer ?? ''
   const needsLiveInfo = !error && result?.output === 'needsLiveInfo'
 
-  // Plan 0011: "Answer anyway" on a live question answers from the model's own knowledge.
+  // Plan `ask-translate-and-live-questions`: "Answer anyway" on a live question answers from the
+  // model's own knowledge.
   const answerAnyway = useCallback(() => {
     if (!result || answeringAnyway) return
     setAnsweringAnyway(true)

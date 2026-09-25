@@ -2,9 +2,9 @@ import { create } from 'zustand'
 import type { SpeechHardwareCheck, SpeechModelInfo, SpeechSetupStatus } from '../lib/tauri'
 
 /**
- * A built-in model setup as the frontend sees it (speech, plan 0012, and AI, plan 0017). The
- * backend owns the download; the store mirrors its status events, so the progress survives
- * leaving the onboarding step or Settings and also shows on Home.
+ * A built-in model setup as the frontend sees it (speech, plan `quick-speech-setup`, and AI, plan
+ * `ai-polish-setup`). The backend owns the download; the store mirrors its status events, so the
+ * progress survives leaving the onboarding step or Settings and also shows on Home.
  */
 export interface ModelSetupStore {
   status: SpeechSetupStatus

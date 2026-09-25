@@ -18,11 +18,11 @@ import {
 import { SPEECH_SERVICE, builtinPresetOf, type EngineService } from './services'
 
 /**
- * Settings → Speech / AI → Built-in details (plans 0015 and 0017): the "Model" group with the
- * option cards this Mac is offered (hardware note at the top right), then one status row for
- * the selected model: Not downloaded + Download, Downloading + Cancel, In use + Delete,
- * Download failed + Try again. When no model suits this Mac, the cards and the status row are
- * hidden and only the note shows.
+ * Settings → Speech / AI → Built-in details (plans `two-tab-speech` and `ai-polish-setup`): the
+ * "Model" group with the option cards this Mac is offered (hardware note at the top right), then
+ * one status row for the selected model: Not downloaded + Download, Downloading + Cancel, In use +
+ * Delete, Download failed + Try again. When no model suits this Mac, the cards and the status row
+ * are hidden and only the note shows.
  */
 export function BuiltinSettings({ service = SPEECH_SERVICE }: { service?: EngineService }) {
   const { t } = useTranslation()

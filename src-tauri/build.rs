@@ -7,7 +7,7 @@ fn main() {
     #[cfg(target_os = "macos")]
     link_clang_runtime();
 
-    // Plan 0017: the built-in AI server binary is named after the target triple
+    // Plan `ai-polish-setup`: the built-in AI server binary is named after the target triple
     // (`llama-server-aarch64-apple-darwin`), as Tauri external binaries are.
     println!(
         "cargo:rustc-env=TYPELITE_TARGET_TRIPLE={}",
@@ -17,8 +17,8 @@ fn main() {
     tauri_build::build()
 }
 
-/// Plan 0012: whisper.cpp's Metal code uses Objective-C `@available(...)` checks. When the
-/// app is built for an older macOS than the one it is built on (the release bundle targets
+/// Plan `quick-speech-setup`: whisper.cpp's Metal code uses Objective-C `@available(...)` checks.
+/// When the app is built for an older macOS than the one it is built on (the release bundle targets
 /// `minimumSystemVersion`), clang turns those checks into calls to
 /// `__isPlatformVersionAtLeast`, which lives in clang's runtime library `libclang_rt.osx.a`.
 /// Rust links with `-nodefaultlibs`, so that library is added here by hand.

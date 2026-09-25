@@ -132,7 +132,7 @@ pub struct HotkeyConfig {
     pub open_app: Option<ShortcutBinding>,
     pub dictation_mode: String,
     /// Switches the target language of a running Translate recording. Only listened to while
-    /// a Translate recording runs (plan 0010). Default: Shift on either side.
+    /// a Translate recording runs (plan `translate-controls`). Default: Shift on either side.
     pub switch_language: Option<ShortcutBinding>,
 }
 
@@ -372,18 +372,18 @@ pub fn normalize_translation_code(value: &str) -> Option<String> {
 // ─── Speech and AI presets ───
 
 /// Id of the speech preset used as the fallback: the Built-in one (whisper.cpp inside the app,
-/// plan 0015). Every config has it, with or without a downloaded model.
+/// plan `two-tab-speech`). Every config has it, with or without a downloaded model.
 pub const BUILTIN_SPEECH_PRESET_ID: &str = BUILTIN_WHISPER_PRESET_ID;
 /// Id of the AI preset used as the fallback: the Built-in one (`llama-server` started by
-/// Typelite, plan 0017). Every config has it, with or without a downloaded model.
+/// Typelite, plan `ai-polish-setup`). Every config has it, with or without a downloaded model.
 pub const BUILTIN_AI_PRESET_ID: &str = BUILTIN_LLAMA_PRESET_ID;
-/// Id of the old "Ollama on this Mac" template (plan 0007).
+/// Id of the old "Ollama on this Mac" template (plan `setup-without-dead-ends`).
 pub const LEGACY_OLLAMA_LOCAL_PRESET_ID: &str = "builtin-ai-ollama-local";
 /// Version of the built-in preset templates. A stored config with an older version gets its
 /// old built-ins replaced by the current templates once (see `migrate_builtin_presets`).
-/// 1: plan 0007 templates. 2: plan 0015, speech keeps only the Built-in preset; the old server
-/// and cloud templates are dropped unless the user edited or used them. 3: plan 0017, the same
-/// for AI, which gets its own Built-in preset.
+/// 1: plan `setup-without-dead-ends` templates. 2: plan `two-tab-speech`, speech keeps only the
+/// Built-in preset; the old server and cloud templates are dropped unless the user edited or used
+/// them. 3: plan `ai-polish-setup`, the same for AI, which gets its own Built-in preset.
 pub const BUILTIN_PRESETS_VERSION: u32 = 3;
 /// Speech preset language value that means "let the server detect the language".
 pub const SPEECH_LANGUAGE_AUTO: &str = "auto";
@@ -412,7 +412,8 @@ pub fn now_unix_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Id of the "Built-in (this Mac)" speech preset that Quick setup creates (plan 0012).
+/// Id of the "Built-in (this Mac)" speech preset that Quick setup creates (plan
+/// `quick-speech-setup`).
 pub const BUILTIN_WHISPER_PRESET_ID: &str = "builtin-speech-this-mac";
 
 /// How a speech preset turns audio into text.
@@ -420,10 +421,10 @@ pub const BUILTIN_WHISPER_PRESET_ID: &str = "builtin-speech-this-mac";
 #[serde(rename_all = "snake_case")]
 pub enum SpeechProviderKind {
     /// Upload a WAV file to an OpenAI-compatible `/audio/transcriptions` server. Configs
-    /// written before plan 0012 have no `kind`, so this is the default.
+    /// written before plan `quick-speech-setup` have no `kind`, so this is the default.
     #[default]
     OpenaiCompatible,
-    /// Run whisper.cpp inside the app with a downloaded model file (plan 0012).
+    /// Run whisper.cpp inside the app with a downloaded model file (plan `quick-speech-setup`).
     Builtin,
 }
 
@@ -475,8 +476,8 @@ impl SpeechPreset {
         }
     }
 
-    /// The "Built-in (this Mac)" preset for a model (plan 0012). Every config has one (plan
-    /// 0015); `model_file` is empty until a model is downloaded.
+    /// The "Built-in (this Mac)" preset for a model (plan `quick-speech-setup`). Every config has
+    /// one (plan `two-tab-speech`); `model_file` is empty until a model is downloaded.
     pub fn builtin_whisper(model_id: &str, model_file: &str) -> Self {
         Self {
             id: BUILTIN_WHISPER_PRESET_ID.to_string(),
@@ -496,7 +497,7 @@ impl SpeechPreset {
     }
 
     /// The Built-in preset before any model is downloaded: the fallback and the only speech
-    /// template (plan 0015).
+    /// template (plan `two-tab-speech`).
     pub fn builtin_default() -> Self {
         Self::builtin_whisper(crate::stt::models::DEFAULT_MODEL_ID, "")
     }
@@ -506,8 +507,9 @@ impl SpeechPreset {
         vec![Self::builtin_default()]
     }
 
-    /// The server and cloud templates of plan 0007 (template version 1). Only the migrations
-    /// use them: version 1 to compare, version 2 to drop the ones the user never changed.
+    /// The server and cloud templates of plan `setup-without-dead-ends` (template version 1). Only
+    /// the migrations use them: version 1 to compare, version 2 to drop the ones the user never
+    /// changed.
     fn legacy_templates_v1() -> Vec<Self> {
         vec![
             Self::template(
@@ -539,7 +541,7 @@ impl SpeechPreset {
 
     /// Same endpoint: the fields that decide whether a passed Test still holds. The language
     /// only counts for servers (one may reject it); the built-in model runs any language, and
-    /// it has no Test button to pass again (plan 0015).
+    /// it has no Test button to pass again (plan `two-tab-speech`).
     pub fn same_connection(&self, other: &Self) -> bool {
         self.kind == other.kind
             && self.base_url == other.base_url
@@ -549,8 +551,8 @@ impl SpeechPreset {
     }
 }
 
-/// Id of the "Built-in (this Mac)" AI preset (plan 0017): llama.cpp's `llama-server`, started
-/// by Typelite on this Mac. Every config has it, with or without a downloaded model.
+/// Id of the "Built-in (this Mac)" AI preset (plan `ai-polish-setup`): llama.cpp's `llama-server`,
+/// started by Typelite on this Mac. Every config has it, with or without a downloaded model.
 pub const BUILTIN_LLAMA_PRESET_ID: &str = "builtin-ai-this-mac";
 
 /// How an AI preset reaches its model.
@@ -558,11 +560,11 @@ pub const BUILTIN_LLAMA_PRESET_ID: &str = "builtin-ai-this-mac";
 #[serde(rename_all = "snake_case")]
 pub enum AiProviderKind {
     /// An OpenAI-compatible `POST {base_url}/chat/completions` server. Configs written before
-    /// plan 0017 have no `kind`, so this is the default.
+    /// plan `ai-polish-setup` have no `kind`, so this is the default.
     #[default]
     OpenaiCompatible,
-    /// `llama-server` run by Typelite with a downloaded model file (plan 0017). The base URL is
-    /// filled in at runtime from the running server and never stored.
+    /// `llama-server` run by Typelite with a downloaded model file (plan `ai-polish-setup`). The
+    /// base URL is filled in at runtime from the running server and never stored.
     Builtin,
 }
 
@@ -611,8 +613,8 @@ impl AiPreset {
         }
     }
 
-    /// The "Built-in (this Mac)" AI preset for a model (plan 0017); `model_file` is empty until
-    /// a model is downloaded.
+    /// The "Built-in (this Mac)" AI preset for a model (plan `ai-polish-setup`); `model_file` is
+    /// empty until a model is downloaded.
     pub fn builtin_llama(model_id: &str, model_file: &str) -> Self {
         Self {
             id: BUILTIN_LLAMA_PRESET_ID.to_string(),
@@ -631,7 +633,7 @@ impl AiPreset {
     }
 
     /// The built-in AI preset before any model is downloaded: the fallback and the only AI
-    /// template of a new config (plan 0017).
+    /// template of a new config (plan `ai-polish-setup`).
     pub fn builtin_default() -> Self {
         Self::builtin_llama(crate::llm::models::DEFAULT_MODEL_ID, "")
     }
@@ -641,9 +643,9 @@ impl AiPreset {
         vec![Self::builtin_default()]
     }
 
-    /// The server and cloud templates of plan 0007 (template versions 1 and 2). Only the
-    /// migrations use them: version 1 to compare, version 3 to drop the ones the user never
-    /// changed.
+    /// The server and cloud templates of plan `setup-without-dead-ends` (template versions 1 and
+    /// 2). Only the migrations use them: version 1 to compare, version 3 to drop the ones the user
+    /// never changed.
     pub(crate) fn legacy_templates_v1() -> Vec<Self> {
         vec![
             Self::template(
@@ -1164,9 +1166,9 @@ impl AppConfig {
         mark_verified(&mut self.speech_presets, tested, at)
     }
 
-    /// Plan 0012: adds (or updates) the "Built-in (this Mac)" preset for an installed model and
-    /// makes it the active speech preset. The preset starts unverified; the automatic test
-    /// after setup marks it ready.
+    /// Plan `quick-speech-setup`: adds (or updates) the "Built-in (this Mac)" preset for an
+    /// installed model and makes it the active speech preset. The preset starts unverified; the
+    /// automatic test after setup marks it ready.
     pub fn install_builtin_whisper(&mut self, model_id: &str, model_file: &str) -> SpeechPreset {
         let fresh = SpeechPreset::builtin_whisper(model_id, model_file);
         let preset = match self
@@ -1193,11 +1195,11 @@ impl AppConfig {
         preset
     }
 
-    /// Plan 0012: keeps built-in presets in step with the model files on disk. A preset whose
-    /// model file is gone moves to another installed model (and must pass a test again). When
-    /// no model is left it stays (plan 0015: the Built-in engine always exists) with no model
-    /// file, so it is not ready until a model is downloaded again. Returns true when anything
-    /// changed.
+    /// Plan `quick-speech-setup`: keeps built-in presets in step with the model files on disk. A
+    /// preset whose model file is gone moves to another installed model (and must pass a test
+    /// again). When no model is left it stays (plan `two-tab-speech`: the Built-in engine always
+    /// exists) with no model file, so it is not ready until a model is downloaded again. Returns
+    /// true when anything changed.
     pub fn reconcile_builtin_models(&mut self, installed: &[(String, String)]) -> bool {
         let mut changed = false;
         for preset in &mut self.speech_presets {
@@ -1234,17 +1236,17 @@ impl AppConfig {
         mark_verified(&mut self.ai_presets, tested, at)
     }
 
-    /// Plan 0017: the "Built-in (this Mac)" AI preset, if the config has one (it always does
-    /// after `normalize_values`).
+    /// Plan `ai-polish-setup`: the "Built-in (this Mac)" AI preset, if the config has one (it
+    /// always does after `normalize_values`).
     pub fn builtin_ai_preset(&self) -> Option<&AiPreset> {
         self.ai_presets
             .iter()
             .find(|preset| preset.is_builtin_llama())
     }
 
-    /// Plan 0017: sets the Built-in AI preset to an installed model and makes it the active AI
-    /// preset, like `install_builtin_whisper`. It starts unverified when the model changed; the
-    /// test request after setup marks it ready.
+    /// Plan `ai-polish-setup`: sets the Built-in AI preset to an installed model and makes it the
+    /// active AI preset, like `install_builtin_whisper`. It starts unverified when the model
+    /// changed; the test request after setup marks it ready.
     pub fn install_builtin_llama(&mut self, model_id: &str, model_file: &str) -> AiPreset {
         let fresh = AiPreset::builtin_llama(model_id, model_file);
         let preset = match self
@@ -1270,8 +1272,8 @@ impl AppConfig {
         preset
     }
 
-    /// Plan 0017: keeps the Built-in AI preset in step with the model files on disk, like
-    /// `reconcile_builtin_models` does for speech. Returns true when anything changed.
+    /// Plan `ai-polish-setup`: keeps the Built-in AI preset in step with the model files on disk,
+    /// like `reconcile_builtin_models` does for speech. Returns true when anything changed.
     pub fn reconcile_builtin_ai_models(&mut self, installed: &[(String, String)]) -> bool {
         let mut changed = false;
         for preset in &mut self.ai_presets {
@@ -1314,14 +1316,14 @@ impl AppConfig {
 
     /// One-time moves to the current built-in templates.
     ///
-    /// Version 1 (plan 0007): old built-ins that are not templates any more are removed, user
-    /// presets are kept, and missing templates are added in front. An active id that no longer
-    /// exists moves to a template with the same URL and model if there is one, otherwise to the
-    /// first template. `onboarding_completed`: the old onboarding needed a passing Test of both
-    /// services and ended with the shortcut tour, so such configs keep their surviving active
-    /// presets ready and count the tour as done.
+    /// Version 1 (plan `setup-without-dead-ends`): old built-ins that are not templates any more
+    /// are removed, user presets are kept, and missing templates are added in front. An active id
+    /// that no longer exists moves to a template with the same URL and model if there is one,
+    /// otherwise to the first template. `onboarding_completed`: the old onboarding needed a passing
+    /// Test of both services and ended with the shortcut tour, so such configs keep their surviving
+    /// active presets ready and count the tour as done.
     ///
-    /// Version 2 (plan 0015): see `migrate_speech_presets_v2`.
+    /// Version 2 (plan `two-tab-speech`): see `migrate_speech_presets_v2`.
     pub(crate) fn migrate_builtin_presets(&mut self, onboarding_completed: bool) {
         if self.builtin_presets_version >= BUILTIN_PRESETS_VERSION {
             return;
@@ -1356,10 +1358,10 @@ impl AppConfig {
         self.builtin_presets_version = BUILTIN_PRESETS_VERSION;
     }
 
-    /// Plan 0015: speech has two engines, Built-in and "your server or API key". The old server
-    /// and cloud templates leave the saved list unless the user edited them (name, address or
-    /// model), picked them (the active preset, when `keep_active`) or got them working (a
-    /// passed Test). The ones that stay become ordinary user presets. The Built-in preset is
+    /// Plan `two-tab-speech`: speech has two engines, Built-in and "your server or API key". The
+    /// old server and cloud templates leave the saved list unless the user edited them (name,
+    /// address or model), picked them (the active preset, when `keep_active`) or got them working
+    /// (a passed Test). The ones that stay become ordinary user presets. The Built-in preset is
     /// added when missing, and an active id that no longer exists falls back to it.
     fn migrate_speech_presets_v2(&mut self, keep_active: bool) {
         let legacy = SpeechPreset::legacy_templates_v1();
@@ -1393,8 +1395,8 @@ impl AppConfig {
         }
     }
 
-    /// Plan 0017: AI has two engines too, Built-in and "your server or API key". The same rule
-    /// as `migrate_speech_presets_v2`: old templates the user never edited, picked or got
+    /// Plan `ai-polish-setup`: AI has two engines too, Built-in and "your server or API key". The
+    /// same rule as `migrate_speech_presets_v2`: old templates the user never edited, picked or got
     /// working leave the list, the others become ordinary user presets, and the Built-in preset
     /// is added in front. The active preset stays active.
     fn migrate_ai_presets_v3(&mut self, keep_active: bool) {
@@ -1426,7 +1428,7 @@ impl AppConfig {
     }
 
     fn normalize_presets(&mut self) {
-        // Plan 0015: the Built-in engine always has its preset.
+        // Plan `two-tab-speech`: the Built-in engine always has its preset.
         if !self
             .speech_presets
             .iter()
@@ -1463,7 +1465,7 @@ impl AppConfig {
             self.active_speech_preset_id = self.speech_presets[0].id.clone();
         }
 
-        // Plan 0017: the Built-in AI engine always has its preset.
+        // Plan `ai-polish-setup`: the Built-in AI engine always has its preset.
         if !self.ai_presets.iter().any(AiPreset::is_builtin_llama) {
             self.ai_presets.insert(0, AiPreset::builtin_default());
         }
@@ -2520,7 +2522,7 @@ fn correction_identity_exists(
 mod tests {
     use super::*;
 
-    // ─── Plan 0012: built-in (in-process) speech presets ───
+    // ─── Plan `quick-speech-setup`: built-in (in-process) speech presets ───
 
     #[test]
     fn speech_presets_without_a_kind_parse_as_openai_compatible() {
@@ -2733,7 +2735,7 @@ mod tests {
         }))
         .unwrap();
 
-        // Speech has only the Built-in preset now (plan 0015).
+        // Speech has only the Built-in preset now (plan `two-tab-speech`).
         assert_eq!(config.speech_presets, SpeechPreset::builtin_templates());
         assert_eq!(config.ai_presets, AiPreset::builtin_templates());
         assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
@@ -3035,7 +3037,7 @@ mod tests {
         assert_eq!(next.ai_presets[0].verified_at, Some(9));
     }
 
-    // ─── Plan 0017: Built-in AI preset and the version 3 migration ───
+    // ─── Plan `ai-polish-setup`: Built-in AI preset and the version 3 migration ───
 
     fn version_2_ai_config(active: &str) -> serde_json::Value {
         let template = |id: &str, name: &str, url: &str, model: &str| {

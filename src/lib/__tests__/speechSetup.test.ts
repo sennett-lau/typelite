@@ -3,7 +3,7 @@ import { formatDone, formatSize, noModelSuits, setupErrorMessage, setupKey } fro
 import { hardwareCheck } from '../../test-utils/speechHardware'
 import { translate } from '../../test-utils/i18nMock'
 
-describe('built-in setup helpers (plan 0017)', () => {
+describe('built-in setup helpers (plan `ai-polish-setup`)', () => {
   it('shows sizes in MB below a gigabyte and in GB above', () => {
     expect(formatSize(574_041_195)).toBe('574 MB')
     expect(formatSize(2_497_281_120)).toBe('2.5 GB')

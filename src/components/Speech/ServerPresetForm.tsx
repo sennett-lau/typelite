@@ -33,10 +33,10 @@ function formatExtraFields(fields: Record<string, unknown> | undefined): string 
 }
 
 /**
- * Plan 0015 (speech) and 0017 (AI): the form for a server or API key (any OpenAI-compatible
- * service). Four fields with the OpenAI example as placeholders; Name fills itself with the
- * address's host until the user types a name. AI presets also have "Extra fields" (JSON) under
- * a collapsed Advanced. Test shows its result on the same line as the buttons.
+ * Plan `two-tab-speech` (speech) and `ai-polish-setup` (AI): the form for a server or API key (any
+ * OpenAI-compatible service). Four fields with the OpenAI example as placeholders; Name fills
+ * itself with the address's host until the user types a name. AI presets also have "Extra fields"
+ * (JSON) under a collapsed Advanced. Test shows its result on the same line as the buttons.
  */
 export function ServerPresetForm({
   preset,

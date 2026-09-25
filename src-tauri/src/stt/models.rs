@@ -1,5 +1,5 @@
-//! Plan 0012: the Whisper model files that Quick setup downloads for the built-in speech
-//! provider.
+//! Plan `quick-speech-setup`: the Whisper model files that Quick setup downloads for the built-in
+//! speech provider.
 //!
 //! Models come from the official whisper.cpp repository on Hugging Face and are checked
 //! against a SHA-256 written into this file. They live in `<app data>/models/` (on macOS
@@ -85,7 +85,7 @@ pub fn installed_models(dir: &Path) -> Vec<InstalledModel> {
 
 /// The models of `table` whose file is fully in place (a `.part` file does not count). The file
 /// size must match; the checksum was checked before the file got its name. Used for the speech
-/// models and, with their own table, the built-in AI models (plan 0017).
+/// models and, with their own table, the built-in AI models (plan `ai-polish-setup`).
 pub fn installed_from(dir: &Path, table: &[KnownModel]) -> Vec<InstalledModel> {
     table
         .iter()
@@ -148,8 +148,8 @@ pub enum DownloadError {
     /// The file is in place but the engine (whisper.cpp, or llama-server for AI) could not
     /// load or run it (the automatic test after the download).
     Load { reason: String },
-    /// Plan 0017: this copy of Typelite was built without the `llama-server` program, so
-    /// Built-in AI cannot run.
+    /// Plan `ai-polish-setup`: this copy of Typelite was built without the `llama-server` program,
+    /// so Built-in AI cannot run.
     ServerMissing,
 }
 

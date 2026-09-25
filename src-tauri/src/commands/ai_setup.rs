@@ -1,5 +1,5 @@
-//! Plan 0017: Built-in AI setup. Downloads a model, points the "Built-in (this Mac)" AI preset
-//! at it, starts `llama-server`, sends one test request, and marks the preset ready. The
+//! Plan `ai-polish-setup`: Built-in AI setup. Downloads a model, points the "Built-in (this Mac)"
+//! AI preset at it, starts `llama-server`, sends one test request, and marks the preset ready. The
 //! download, progress and cancel work as for speech (`model_setup`).
 
 use serde::Serialize;

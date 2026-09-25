@@ -61,8 +61,8 @@ interface Props {
 }
 
 /**
- * Plan 0013: the scripted exercises of one shortcut step, in order. The step completes once
- * each exercise is done or skipped. Nothing here is stored: the transcript and result live in
+ * Plan `guided-tutorial`: the scripted exercises of one shortcut step, in order. The step completes
+ * once each exercise is done or skipped. Nothing here is stored: the transcript and result live in
  * the card and vanish when it (or the step) changes.
  */
 export function ShortcutExercises({

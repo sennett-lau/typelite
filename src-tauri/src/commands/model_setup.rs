@@ -1,6 +1,6 @@
-//! The part of a built-in model setup that speech (plan 0012) and AI (plan 0017) share: the
-//! status the setup card shows, the state that holds it with the cancel switch, and the
-//! download with progress events.
+//! The part of a built-in model setup that speech (plan `quick-speech-setup`) and AI (plan
+//! `ai-polish-setup`) share: the status the setup card shows, the state that holds it with the
+//! cancel switch, and the download with progress events.
 //!
 //! The work runs in a background task owned by the backend, so it keeps going when the user
 //! leaves the onboarding step or Settings. Every change of the status is sent to all windows as

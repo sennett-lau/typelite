@@ -24,10 +24,10 @@ const STYLE_KEY: Record<PolishStyle, string> = {
 }
 
 /**
- * Settings → AI (plan 0017): "AI polish uses" (Built-in or your server or API key, with their
- * details), then Polish (clean-up switch, style cards, match the app, the last app and browser
- * access), Translation (language chips, always translate) and a collapsed Advanced (selected
- * text, custom instructions).
+ * Settings → AI (plan `ai-polish-setup`): "AI polish uses" (Built-in or your server or API key,
+ * with their details), then Polish (clean-up switch, style cards, match the app, the last app and
+ * browser access), Translation (language chips, always translate) and a collapsed Advanced
+ * (selected text, custom instructions).
  */
 export function LlmPane() {
   const config = useAppStore((s) => s.config)

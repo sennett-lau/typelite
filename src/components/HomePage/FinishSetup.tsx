@@ -24,12 +24,12 @@ import {
 } from '../../hooks/useSpeechSetup'
 
 /**
- * "Finish setup" (plan 0007): one row per service that is not ready yet, with what it means
- * for the shortcuts. Hidden when both work.
+ * "Finish setup" (plan `setup-without-dead-ends`): one row per service that is not ready yet, with
+ * what it means for the shortcuts. Hidden when both work.
  *
- * Speech (plans 0012 and 0015): "Set up" starts the Built-in setup right here with the model
- * this Mac is offered first; the progress shows under the row until it is done. "Other
- * options" opens Settings → Speech. AI: "Set up" opens Settings → AI.
+ * Speech (plans `quick-speech-setup` and `two-tab-speech`): "Set up" starts the Built-in setup
+ * right here with the model this Mac is offered first; the progress shows under the row until it
+ * is done. "Other options" opens Settings → Speech. AI: "Set up" opens Settings → AI.
  */
 export function FinishSetup() {
   const { t } = useTranslation()

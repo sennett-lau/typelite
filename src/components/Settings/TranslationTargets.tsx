@@ -10,11 +10,11 @@ interface TranslationTargetsProps {
 }
 
 /**
- * The translation languages the user chose (plan 0010): English by default, up to three.
- * Plan 0017: shown as chips, the default one first and marked; clicking another chip makes it
- * the default, × removes it (the last language cannot be removed), "+ Add" shows while fewer
- * than three are chosen. The pill shows exactly these languages, and the Switch language
- * shortcut cycles through them in their saved order.
+ * The translation languages the user chose (plan `translate-controls`): English by default, up to
+ * three. Plan `ai-polish-setup`: shown as chips, the default one first and marked; clicking another
+ * chip makes it the default, × removes it (the last language cannot be removed), "+ Add" shows
+ * while fewer than three are chosen. The pill shows exactly these languages, and the Switch
+ * language shortcut cycles through them in their saved order.
  */
 export function TranslationTargets({ value, onChange }: TranslationTargetsProps) {
   const { t } = useTranslation()

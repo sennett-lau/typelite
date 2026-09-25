@@ -1,4 +1,5 @@
-//! Plan 0017: the model files that Built-in AI downloads, and which of them this Mac runs well.
+//! Plan `ai-polish-setup`: the model files that Built-in AI downloads, and which of them this Mac
+//! runs well.
 //!
 //! The files are Qwen3 GGUF models quantised to Q4_K_M. Qwen publishes no Q4_K_M GGUF of these
 //! two models itself, so they come from Unsloth's Hugging Face repositories, pinned to one

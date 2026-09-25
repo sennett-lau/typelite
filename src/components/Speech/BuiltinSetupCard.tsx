@@ -23,11 +23,11 @@ import { SPEECH_SERVICE, builtinPresetOf, type EngineService } from './services'
 type CardState = 'none' | 'downloading' | 'ready' | 'failed'
 
 /**
- * Onboarding → Speech recognition and → AI polish, the Built-in card (plans 0015 and 0017). It
- * has one fixed height; every state fills the same two slots, a status area and one action
- * button at the bottom right: Not set up (model cards + hardware note, Set up), Downloading
- * (Cancel), Ready (Change model), Failed (Try again). When no model suits this Mac there are
- * no cards and no button, only the note.
+ * Onboarding → Speech recognition and → AI polish, the Built-in card (plans `two-tab-speech` and
+ * `ai-polish-setup`). It has one fixed height; every state fills the same two slots, a status area
+ * and one action button at the bottom right: Not set up (model cards + hardware note, Set up),
+ * Downloading (Cancel), Ready (Change model), Failed (Try again). When no model suits this Mac
+ * there are no cards and no button, only the note.
  */
 export function BuiltinSetupCard({ service = SPEECH_SERVICE }: { service?: EngineService }) {
   const { t } = useTranslation()

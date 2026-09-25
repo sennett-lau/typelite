@@ -6,9 +6,9 @@ import { ServerPresetSheet } from '../Speech/ServerPresetSheet'
 import { SPEECH_SERVICE, activePresetOf, type EngineService } from '../Speech/services'
 
 /**
- * Onboarding → Speech recognition and → AI polish (plans 0015 and 0017): the Built-in card with
- * its one main button, then "Use your own server or API key…" (opens the sheet) and "Skip for
- * now". Next unlocks once Built-in is ready or a preset passed Test.
+ * Onboarding → Speech recognition and → AI polish (plans `two-tab-speech` and `ai-polish-setup`):
+ * the Built-in card with its one main button, then "Use your own server or API key…" (opens the
+ * sheet) and "Skip for now". Next unlocks once Built-in is ready or a preset passed Test.
  */
 export function EngineSetupStep({
   service,

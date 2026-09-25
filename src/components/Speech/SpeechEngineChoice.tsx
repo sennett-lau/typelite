@@ -19,10 +19,10 @@ type Engine = 'builtin' | 'server'
 const ENGINES: Engine[] = ['builtin', 'server']
 
 /**
- * Settings → Speech and → AI (plans 0015 and 0017): "Speech recognition uses" / "AI polish
- * uses" is a choice between two option cards, Built-in and "Your server or API key", with
- * "Learn more" at the right of the header. Picking one makes it the engine in use (saved at
- * once) and shows its details below. With no saved server preset there is nothing to switch to
+ * Settings → Speech and → AI (plans `two-tab-speech` and `ai-polish-setup`): "Speech recognition
+ * uses" / "AI polish uses" is a choice between two option cards, Built-in and "Your server or API
+ * key", with "Learn more" at the right of the header. Picking one makes it the engine in use (saved
+ * at once) and shows its details below. With no saved server preset there is nothing to switch to
  * yet, so that card only opens the empty form; saving it makes the new preset the one in use.
  * When no built-in model suits this Mac, the Built-in card is dimmed, reads "Not available on
  * this Mac", cannot be picked, and the page shows the server option.
@@ -101,7 +101,7 @@ export function EngineChoice({ service }: { service: EngineService }) {
   )
 }
 
-/** Settings → Speech's engine choice (plan 0015). */
+/** Settings → Speech's engine choice (plan `two-tab-speech`). */
 export function SpeechEngineChoice() {
   return <EngineChoice service={SPEECH_SERVICE} />
 }

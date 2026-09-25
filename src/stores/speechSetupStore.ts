@@ -4,8 +4,8 @@ import { createModelSetupStore } from './modelSetupStore'
 export { IDLE_SETUP_STATUS, isSetupRunning } from './modelSetupStore'
 
 /**
- * Plan 0012: the Quick speech setup, mirrored from the backend's `speech-setup:status` events
- * (see `modelSetupStore`).
+ * Plan `quick-speech-setup`: the Quick speech setup, mirrored from the backend's
+ * `speech-setup:status` events (see `modelSetupStore`).
  */
 export const useSpeechSetupStore = createModelSetupStore({
   label: 'speech setup',

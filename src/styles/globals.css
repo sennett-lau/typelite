@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Theme: plan 0006 (UI revamp). Light values live in @theme; `.dark` (set on <html> by
+ * Theme: plan `ui-revamp`. Light values live in @theme; `.dark` (set on <html> by
  * src/hooks/useTheme.ts) switches to the "Aurora" dark mode. Components use these tokens through
  * Tailwind utilities (`bg-bg-elevated`, `text-text-secondary`, ...) or the component classes below.
  */
@@ -95,7 +95,7 @@
   --color-pill-menu: rgba(30, 30, 32, 0.86);
   --color-pill-text: #ffffff;
   --color-recording: #ff453a;
-  /* Aurora light inside the pill and the waveform gradient (plan 0009): blue to violet in
+  /* Aurora light inside the pill and the waveform gradient (plan `aurora-pill`): blue to violet in
      light mode, teal to violet in dark mode. */
   --color-aurora-a: #0a84ff;
   --color-aurora-b: #af52de;
@@ -103,8 +103,8 @@
   --color-pill-chip: #0a84ff;
   --color-pill-chip-text: #ffffff;
 
-  /* Speed board steps (plan 0008): the colour follows the step, not the feature. Read through
-     var() in inline styles, so they live here to be always emitted. */
+  /* Speed board steps (plan `speed-board`): the colour follows the step, not the feature. Read
+     through var() in inline styles, so they live here to be always emitted. */
   --color-step-recording: #aeaeb2;
   --color-step-speech: #0a84ff;
   --color-step-ai: #af52de;
@@ -558,7 +558,7 @@ body,
     outline-offset: -2px;
   }
 
-  /* ─── Settings toolbar tabs (plan 0015): icon above label, like macOS Settings windows ─── */
+  /* ─── Settings toolbar tabs (plan `two-tab-speech`): icon above label, like macOS Settings ─── */
   .toolbar-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -595,7 +595,7 @@ body,
     outline-offset: -2px;
   }
 
-  /* ─── Speech setup (plan 0015, docs/plans/0015-two-tab-speech/mock.html) ─── */
+  /* ─── Speech setup (plan `two-tab-speech`, docs/plans/2026-09-25-two-tab-speech/mock.html) ─── */
 
   /* The onboarding Built-in card: one fixed height for every state, so text never moves. */
   .setup-card {
@@ -730,12 +730,12 @@ body,
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
-  /* Plan 0017: an engine this Mac cannot run ("Not available on this Mac"). */
+  /* Plan `ai-polish-setup`: an engine this Mac cannot run ("Not available on this Mac"). */
   .option-card:disabled {
     cursor: default;
     opacity: 0.5;
   }
-  /* Plan 0017: the four polish styles in one row (two on narrow windows). */
+  /* Plan `ai-polish-setup`: the four polish styles in one row (two on narrow windows). */
   .option-cards-four {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
@@ -746,7 +746,7 @@ body,
     }
   }
 
-  /* Plan 0017: translation languages as chips; the default one is tinted. */
+  /* Plan `ai-polish-setup`: translation languages as chips; the default one is tinted. */
   .lang-chip {
     display: inline-flex;
     align-items: center;
@@ -786,7 +786,7 @@ body,
     outline-offset: 2px;
   }
 
-  /* Plan 0017: a quiet "▸ Advanced" toggle that opens more fields below it. */
+  /* Plan `ai-polish-setup`: a quiet "▸ Advanced" toggle that opens more fields below it. */
   .disclosure {
     padding: 0;
     border: none;
@@ -970,10 +970,94 @@ body,
     box-shadow: 0 10px 30px rgba(20, 20, 40, 0.22);
     color: var(--color-pill-text);
     overflow: hidden;
+    /* Plan `copy-when-no-field`: size and corners animate together; showing and hiding slide and
+       fade. */
+    transition:
+      width 0.28s cubic-bezier(0.2, 0, 0, 1),
+      height 0.28s cubic-bezier(0.2, 0, 0, 1),
+      border-radius 0.28s cubic-bezier(0.2, 0, 0, 1),
+      background-color 0.28s ease,
+      border-color 0.28s ease,
+      opacity 0.22s ease,
+      transform 0.22s cubic-bezier(0.2, 0, 0, 1),
+      filter 0.22s ease;
+  }
+  /* The pill just appeared: take the new size at once (only opacity and position animate). */
+  .pill-size-instant {
+    transition-property: opacity, transform, filter;
+  }
+  /* Hiding (and hidden): slid down 6 pt, a little smaller, faded out. */
+  .pill-gone {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+    filter: blur(2px);
+    pointer-events: none;
   }
   .pill-error {
     background: var(--color-pill-error-bg);
     border-color: var(--color-pill-error-line);
+  }
+  /* Copy pill (plan `copy-when-no-field`): the language tag of a translation. */
+  .pill-lang {
+    flex: none;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.16);
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+  }
+  /* The Copy button; its border is the countdown ring. */
+  .pill-copy-button {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 11px;
+    border: none;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .pill-copy-button:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+  .pill-copy-button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .pill-copy-button-done {
+    background: color-mix(in srgb, var(--color-aurora-a) 60%, transparent);
+  }
+  .pill-copy-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    animation: pill-copy-label-in 0.18s cubic-bezier(0.2, 0, 0, 1) both;
+  }
+  .pill-copy-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .pill-copy-ring rect {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.85);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+  .pill-copy-ring .pill-copy-ring-track {
+    stroke: rgba(255, 255, 255, 0.12);
   }
   /* The capsule's right-click menu: the same dark glass as the pill. */
   .pill-menu {
@@ -999,7 +1083,7 @@ body,
   color: transparent;
 }
 
-/* ─── Aurora — the light inside the pill (plan 0009, CapsuleAurora.tsx) ─── */
+/* ─── Aurora — the light inside the pill (plan `aurora-pill`, CapsuleAurora.tsx) ─── */
 .aurora {
   position: absolute;
   inset: 0;
@@ -1102,8 +1186,30 @@ body,
     opacity: 0;
   }
 }
-/* Reduced motion: still gradients, no drift, sweep or flash animation. */
+@keyframes pill-copy-label-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+/* Reduced motion: still gradients, no drift, sweep or flash animation; the pill only fades. */
 @media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: opacity 0.15s ease;
+  }
+  .pill-gone {
+    transform: none;
+    filter: none;
+  }
+  .pill-copy-label {
+    animation: none;
+  }
   .aurora-blob,
   .aurora-sweep,
   .aurora-flash {

@@ -1,8 +1,9 @@
-//! Plan 0015: which built-in Whisper models this Mac runs well.
+//! Plan `two-tab-speech`: which built-in Whisper models this Mac runs well.
 //!
 //! [`detect`] reads the chip, the memory and the free disk space; [`offer_models`] applies the
-//! table in `docs/plans/0015-two-tab-speech/layout.md` to decide which models the speech screens
-//! offer, and why the larger one is left out. The rule is a pure function so it is unit-tested.
+//! table in `docs/plans/2026-09-25-two-tab-speech/layout.md` to decide which models the speech
+//! screens offer, and why the larger one is left out. The rule is a pure function so it is
+//! unit-tested.
 
 use std::path::Path;
 
@@ -80,8 +81,8 @@ pub struct HardwareCheck {
     pub offer: ModelOffer,
 }
 
-/// What one model needs from the Mac. Speech and AI (plan 0017) each have a list of these,
-/// largest model first.
+/// What one model needs from the Mac. Speech and AI (plan `ai-polish-setup`) each have a list of
+/// these, largest model first.
 #[derive(Debug, Clone, Copy)]
 pub struct ModelRule {
     pub model: KnownModel,

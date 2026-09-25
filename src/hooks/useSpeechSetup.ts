@@ -20,8 +20,8 @@ export function useSetupStatus(store: ModelSetupStoreHook) {
 }
 
 /**
- * Plan 0015: reads the chip, memory and free disk space when a setup screen opens, and returns
- * the result (null until it arrives).
+ * Plan `two-tab-speech`: reads the chip, memory and free disk space when a setup screen opens, and
+ * returns the result (null until it arrives).
  */
 export function useSetupHardware(store: ModelSetupStoreHook) {
   const hardware = store((s) => s.hardware)

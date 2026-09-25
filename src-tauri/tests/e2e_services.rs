@@ -8,13 +8,16 @@
 //! ```
 //!
 //! Servers are chosen with environment variables (defaults in brackets):
-//! - `TYPELITE_E2E_SPEECH_URL` [`http://127.0.0.1:8178/v1`], `TYPELITE_E2E_SPEECH_MODEL` [`large-v3-turbo`]
-//! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL` [`qwen3:4b-instruct-2507-q4_K_M`]
+//! - `TYPELITE_E2E_SPEECH_URL` [`http://127.0.0.1:8178/v1`], `TYPELITE_E2E_SPEECH_MODEL`
+//! [`large-v3-turbo`]
+//! - `TYPELITE_E2E_AI_URL` [`http://127.0.0.1:11434/v1`], `TYPELITE_E2E_AI_MODEL`
+//! [`qwen3:4b-instruct-2507-q4_K_M`]
 //!
 //! - `TYPELITE_E2E_BUILTIN_MODEL` [`~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin`]: model
 //!   file for the in-process (built-in) speech test; the test is skipped when it is missing.
-//! - `TYPELITE_E2E_LLAMA_MODEL`: a Qwen3 GGUF file for the built-in AI test (plan 0017); it also
-//!   needs `src-tauri/binaries/llama-server-<triple>` from `scripts/build-llama-server.sh`.
+//! - `TYPELITE_E2E_LLAMA_MODEL`: a Qwen3 GGUF file for the built-in AI test (plan
+//! `ai-polish-setup`); it also   needs `src-tauri/binaries/llama-server-<triple>` from
+//! `scripts/build-llama-server.sh`.
 //! - `TYPELITE_E2E_DOWNLOAD=1`: also run the Quick setup download test (190 MB from Hugging Face).
 //!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
@@ -268,7 +271,7 @@ async fn polish_keeps_one_topic_in_one_paragraph() {
     assert!(!text.contains('\n'), "unexpected line break: {text:?}");
 }
 
-// ─── Plan 0011: selection translate and live questions ───
+// ─── Plan `ask-translate-and-live-questions`: selection translate and live questions ───
 
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
@@ -382,8 +385,8 @@ async fn selection_translation_into_taiwan_chinese_uses_taiwan_vocabulary() {
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn ask_edit_on_a_selection_returns_a_shorter_replacement() {
-    // Plan 0011: Ask + "make this shorter" on a selection is routed as an edit that replaces
-    // the selection, so the AI must return only the shorter text.
+    // Plan `ask-translate-and-live-questions`: Ask + "make this shorter" on a selection is routed
+    // as an edit that replaces the selection, so the AI must return only the shorter text.
     let selected = "Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.";
     let instruction = "Make this shorter.";
     let intent = typelite_lib::commands::ask::route_ask_intent(
@@ -407,8 +410,8 @@ async fn ask_edit_on_a_selection_returns_a_shorter_replacement() {
     );
 }
 
-/// Plan 0012: the model file for the in-process test. Defaults to the developer's copy used by
-/// the local whisper.cpp server.
+/// Plan `quick-speech-setup`: the model file for the in-process test. Defaults to the developer's
+/// copy used by the local whisper.cpp server.
 fn builtin_model_path() -> Option<PathBuf> {
     let path = std::env::var("TYPELITE_E2E_BUILTIN_MODEL")
         .ok()
@@ -487,8 +490,8 @@ async fn builtin_speech_transcribes_an_english_sentence_in_process() {
     stt::builtin::engine().unload();
 }
 
-/// Plan 0012: Quick setup's download against the real Hugging Face file (190 MB): stop part
-/// way, resume with a Range request through the CDN redirect, then check the SHA-256.
+/// Plan `quick-speech-setup`: Quick setup's download against the real Hugging Face file (190 MB):
+/// stop part way, resume with a Range request through the CDN redirect, then check the SHA-256.
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "downloads 190 MB from Hugging Face"]
 async fn quick_setup_downloads_and_resumes_the_small_model() {
@@ -563,7 +566,7 @@ async fn quick_setup_downloads_and_resumes_the_small_model() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// Plan 0017: the model file for the built-in AI test (a Qwen3 Q4_K_M GGUF).
+/// Plan `ai-polish-setup`: the model file for the built-in AI test (a Qwen3 Q4_K_M GGUF).
 fn llama_model_path() -> Option<PathBuf> {
     let path = std::env::var("TYPELITE_E2E_LLAMA_MODEL")
         .ok()

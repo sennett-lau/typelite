@@ -6,5 +6,5 @@
 # will have schema files for capabilities auto-completion
 /gen/schemas
 
-# Plan 0017: llama-server built by scripts/build-llama-server.sh
+# Plan `ai-polish-setup`: llama-server built by scripts/build-llama-server.sh
 /binaries/

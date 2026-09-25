@@ -1,6 +1,6 @@
 /**
- * Plan 0013: the order of a step's exercises and what happened to each. Pure, so the flow
- * (success, miss, try again, skip) is tested without the UI.
+ * Plan `guided-tutorial`: the order of a step's exercises and what happened to each. Pure, so the
+ * flow (success, miss, try again, skip) is tested without the UI.
  */
 
 export type ExerciseStatus = 'pending' | 'done' | 'skipped'

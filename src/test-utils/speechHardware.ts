@@ -8,7 +8,9 @@ const SIZES: Record<string, number> = {
   'qwen3-1.7b': 1_107_409_472,
 }
 
-/** A hardware check result offering `models` (plan 0015), as the backend would send it. */
+/**
+ * A hardware check result offering `models` (plan `two-tab-speech`), as the backend would send it.
+ */
 export function hardwareCheck(
   models: string[],
   options: Partial<SpeechHardwareCheck['hardware']> & {
@@ -77,7 +79,7 @@ export function installedBuiltin(
   }
 }
 
-/** Plan 0017: the Built-in AI preset with an installed model. */
+/** Plan `ai-polish-setup`: the Built-in AI preset with an installed model. */
 export function installedAiBuiltin(model = 'qwen3-4b', verified_at: number | null = 5): AiPreset {
   return {
     id: 'builtin-ai-this-mac',
@@ -93,7 +95,7 @@ export function installedAiBuiltin(model = 'qwen3-4b', verified_at: number | nul
   }
 }
 
-/** Plan 0017: a saved AI server or API key preset. */
+/** Plan `ai-polish-setup`: a saved AI server or API key preset. */
 export function aiServerPreset(id: string, name: string, base_url: string, model = 'm'): AiPreset {
   return {
     id,

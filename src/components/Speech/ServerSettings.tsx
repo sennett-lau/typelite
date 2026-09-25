@@ -14,11 +14,11 @@ import {
 const ADD = '__add__'
 
 /**
- * Settings → Speech / AI → "Your server or API key" details (plans 0015 and 0017). With saved
- * presets: a "Preset" header with the picker at the upper right (saved presets and "+ Add
- * preset…"), the fields of the selected preset, Test and Save on one line, and "Delete this
- * preset". With none: "Add your server or API key" and the empty form. ("Learn more" sits on
- * the page's "… uses" header.)
+ * Settings → Speech / AI → "Your server or API key" details (plans `two-tab-speech` and
+ * `ai-polish-setup`). With saved presets: a "Preset" header with the picker at the upper right
+ * (saved presets and "+ Add preset…"), the fields of the selected preset, Test and Save on one
+ * line, and "Delete this preset". With none: "Add your server or API key" and the empty form.
+ * ("Learn more" sits on the page's "… uses" header.)
  */
 export function ServerSettings({ service = SPEECH_SERVICE }: { service?: EngineService }) {
   const { t } = useTranslation()

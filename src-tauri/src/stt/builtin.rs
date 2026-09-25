@@ -1,5 +1,5 @@
-//! Plan 0012: the "Built-in (this Mac)" speech provider. Runs whisper.cpp inside the app
-//! through the `whisper-rs` binding (GPU through Metal on macOS), so no speech server or
+//! Plan `quick-speech-setup`: the "Built-in (this Mac)" speech provider. Runs whisper.cpp inside
+//! the app through the `whisper-rs` binding (GPU through Metal on macOS), so no speech server or
 //! Homebrew install is needed.
 //!
 //! The model is loaded on first use (a recording start begins loading it while the user

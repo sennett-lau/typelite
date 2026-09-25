@@ -6,6 +6,7 @@ import { useAppStore } from '../stores/appStore'
 import type {
   AppConfig,
   ContextProfileSummary,
+  CopyOffer,
   InsertResult,
   PipelineState,
   RecordingDeadlineSnapshot,
@@ -63,6 +64,7 @@ export function useTauriEvents() {
     setTargetApp,
     setLastInsertResult,
     setLastContext,
+    setCopyOffer,
     setPipelineError,
     setAccessibilityTrusted,
     applyPersistedConfigPatch,
@@ -142,6 +144,9 @@ export function useTauriEvents() {
       if (run.polished && !run.aiFailed) recordAiResult(true)
     })
     addListener<ContextProfileSummary>('pipeline:context', setLastContext)
+    // Plan `copy-when-no-field`: the Copy pill opens with a result, or closes (null, for example on
+    // Escape).
+    addListener<CopyOffer | null>('pipeline:copy_offer', setCopyOffer)
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
       const capsuleErrorKey = capsuleErrorKeyFromPayload(payload)
       setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), setupPaneForError(capsuleErrorKey))
@@ -174,11 +179,12 @@ export function useTauriEvents() {
     })
 
     addListener<PresetVerificationEvent>('preset:verification', applyVerificationEvent)
-    // Plan 0012: Quick speech setup progress, kept in a store so it survives leaving the step.
+    // Plan `quick-speech-setup`: Quick speech setup progress, kept in a store so it survives
+    // leaving the step.
     addListener<SpeechSetupStatus>('speech-setup:status', (status) =>
       useSpeechSetupStore.getState().applyStatus(status),
     )
-    // Plan 0017: the same for the Built-in AI setup.
+    // Plan `ai-polish-setup`: the same for the Built-in AI setup.
     addListener<SpeechSetupStatus>('ai-setup:status', (status) =>
       useAiSetupStore.getState().applyStatus(status),
     )
@@ -208,6 +214,7 @@ export function useTauriEvents() {
     setTargetApp,
     setLastInsertResult,
     setLastContext,
+    setCopyOffer,
     setPipelineError,
     setAccessibilityTrusted,
     applyPersistedConfigPatch,

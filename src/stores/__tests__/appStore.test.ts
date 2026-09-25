@@ -79,7 +79,7 @@ describe('appStore', () => {
       expect(config.translation).toEqual({ targets: ['en'], active_target: 'en' })
       expect(config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
       expect(config.target_lang).toBe('en')
-      // Plan 0015: only the Built-in preset, before a model is downloaded.
+      // Plan `two-tab-speech`: only the Built-in preset, before a model is downloaded.
       expect(config.speech_presets).toEqual([
         {
           id: 'builtin-speech-this-mac',
@@ -94,7 +94,7 @@ describe('appStore', () => {
         },
       ])
       expect(config.active_speech_preset_id).toBe('builtin-speech-this-mac')
-      // Plan 0017: AI starts on its Built-in preset too, before a model is downloaded.
+      // Plan `ai-polish-setup`: AI starts on its Built-in preset too, before a model is downloaded.
       expect(config.ai_presets).toEqual([
         {
           id: 'builtin-ai-this-mac',

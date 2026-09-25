@@ -46,7 +46,7 @@ pub async fn test_ai_preset(
 ) -> Result<u32, String> {
     let api_key = resolve_config_secret(&api_key, "llm", &preset.id, &SystemCredentialVault)
         .map_err(|e| e.to_string())?;
-    // Plan 0017: the Built-in preset is tested against Typelite's own running server.
+    // Plan `ai-polish-setup`: the Built-in preset is tested against Typelite's own running server.
     let (target, api_key) = crate::llm::builtin::resolve_preset(&preset, api_key)
         .await
         .map_err(|e| e.to_string())?;

@@ -104,7 +104,7 @@ describe('SttPane', () => {
       expect(await screen.findByLabelText('Single recording duration')).toBeInTheDocument()
     })
 
-    it('has one Learn more, on the "Speech recognition uses" header (plan 0017)', async () => {
+    it('has one Learn more, on the "Speech recognition uses" header (plan `ai-polish-setup`)', async () => {
       const pc = serverPreset('pc', 'Speech server on my PC', 'http://192.0.2.10:8000/v1')
       setPresets([...BUILTIN_SPEECH_PRESETS.map((p) => ({ ...p })), pc], 'pc')
       render(<SttPane />)

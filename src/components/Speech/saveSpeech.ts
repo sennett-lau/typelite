@@ -3,9 +3,9 @@ import { setCredential, updateConfig as saveConfig } from '../../lib/tauri'
 import { SPEECH_SERVICE, type AnyPreset, type EngineService } from './services'
 
 /**
- * Plan 0015 (speech) and 0017 (AI): the engine, the preset in use and a saved preset are saved
- * at once (not through Settings' Save bar), both in onboarding and in Settings. Only the fields
- * of that service are written; other unsaved Settings edits stay unsaved.
+ * Plan `two-tab-speech` (speech) and `ai-polish-setup` (AI): the engine, the preset in use and a
+ * saved preset are saved at once (not through Settings' Save bar), both in onboarding and in
+ * Settings. Only the fields of that service are written; other unsaved Settings edits stay unsaved.
  */
 export async function saveChoice(choice: Partial<AppConfig>): Promise<void> {
   const { config, savedConfig, applyPersistedConfigPatch } = useAppStore.getState()
@@ -59,7 +59,7 @@ export async function deleteServerPreset(
   )
 }
 
-/** Speech shorthands (plan 0015). */
+/** Speech shorthands (plan `two-tab-speech`). */
 export function saveSpeechChoice(
   choice: Pick<AppConfig, 'speech_presets' | 'active_speech_preset_id'>,
 ): Promise<void> {

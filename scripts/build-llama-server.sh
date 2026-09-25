@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds llama.cpp's `llama-server` for Typelite's Built-in AI (plan 0017).
+# Builds llama.cpp's `llama-server` for Typelite's Built-in AI (plan `ai-polish-setup`).
 #
 # The binary is built from source at one pinned llama.cpp release, with Metal on and the Metal
 # shaders embedded, linked statically (no libllama/libggml dylibs, no OpenSSL, no curl), so the
@@ -8,7 +8,7 @@
 #   src-tauri/binaries/llama-server-<target-triple>
 #
 # which is git-ignored. `npm run build:app` bundles it as an external binary (it adds
-# `src-tauri/tauri.bundle.conf.json`; see docs/plans/0017-ai-polish-setup/builtin-ai.md).
+# `src-tauri/tauri.bundle.conf.json`; see docs/plans/2026-09-25-ai-polish-setup/builtin-ai.md).
 #
 # Options (environment variables):
 #   LLAMA_CPP_TAG=b11177   llama.cpp release tag to build (change it only on purpose).

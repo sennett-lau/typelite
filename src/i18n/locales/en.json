@@ -277,6 +277,10 @@
     "cancelProcessing": "Cancel processing",
     "cancelPolishing": "Cancel polishing",
     "done": "Done",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyResult": "Copy the result",
+    "copyHint": "No text field to paste into. Copy the result (Esc closes)",
     "errorOccurred": "An error occurred",
     "accessibilityRequired": "Accessibility needed — open Settings",
     "errors": {

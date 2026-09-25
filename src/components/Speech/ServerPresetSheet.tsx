@@ -15,9 +15,9 @@ type UseResult =
   | { status: 'error'; message: string }
 
 /**
- * Plan 0015 (speech) and 0017 (AI): "Your own server or API key", the sheet the onboarding step
- * opens. With saved presets it lists them (name + host) with "+ Add preset", Cancel and "Test
- * and use"; with none it opens straight on the form.
+ * Plan `two-tab-speech` (speech) and `ai-polish-setup` (AI): "Your own server or API key", the
+ * sheet the onboarding step opens. With saved presets it lists them (name + host) with "+ Add
+ * preset", Cancel and "Test and use"; with none it opens straight on the form.
  */
 export function ServerPresetSheet({
   onClose,

@@ -9,9 +9,10 @@ import {
 import { activeAiPreset, activeSpeechPreset } from './connectionStatus'
 
 /**
- * Service readiness (plan 0007). A service is ready when its active preset passed a Test since
- * the preset last changed; the result is stored per preset as `verified_at`. The backend checks
- * the same flags before Dictate, Translate and Ask start, so the two always agree.
+ * Service readiness (plan `setup-without-dead-ends`). A service is ready when its active preset
+ * passed a Test since the preset last changed; the result is stored per preset as `verified_at`.
+ * The backend checks the same flags before Dictate, Translate and Ask start, so the two always
+ * agree.
  */
 
 export type ServiceKind = 'speech' | 'ai'

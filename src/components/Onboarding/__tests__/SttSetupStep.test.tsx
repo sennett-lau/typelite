@@ -41,7 +41,7 @@ function card() {
   return screen.getByTestId('builtin-setup-card')
 }
 
-/** The buttons in the card: only one action at a time (plan 0015). */
+/** The buttons in the card: only one action at a time (plan `two-tab-speech`). */
 function cardButtons() {
   return within(card())
     .getAllByRole('button')
@@ -142,7 +142,7 @@ describe('SttSetupStep', () => {
       expect(
         within(card()).getByText('Not enough free space for a model: 0.2 GB needed, 0.1 GB free.'),
       ).toBeInTheDocument()
-      // Plan 0017: no model cards, no status and no Set up button, only the note.
+      // Plan `ai-polish-setup`: no model cards, no status and no Set up button, only the note.
       expect(within(card()).queryByRole('radiogroup')).not.toBeInTheDocument()
       expect(within(card()).queryAllByRole('button')).toEqual([])
     })

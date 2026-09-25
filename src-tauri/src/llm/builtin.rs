@@ -1,5 +1,6 @@
-//! Plan 0017: Built-in AI. Typelite runs llama.cpp's `llama-server` as a separate program on
-//! this Mac and sends it the same OpenAI-compatible chat requests as any other AI preset.
+//! Plan `ai-polish-setup`: Built-in AI. Typelite runs llama.cpp's `llama-server` as a separate
+//! program on this Mac and sends it the same OpenAI-compatible chat requests as any other AI
+//! preset.
 //!
 //! - The program ships inside the app bundle next to the main executable (a Tauri external
 //!   binary, built by `scripts/build-llama-server.sh`). Without it Built-in AI reports
@@ -564,8 +565,8 @@ pub async fn resolve_preset(
     Ok((resolved, endpoint.api_key))
 }
 
-/// The chat settings for the active AI preset (plan 0017: the polish pipeline itself is
-/// unchanged; only the address and key come from the running built-in server).
+/// The chat settings for the active AI preset (plan `ai-polish-setup`: the polish pipeline itself
+/// is unchanged; only the address and key come from the running built-in server).
 pub async fn llm_config(preset: &AiPreset, api_key: String) -> Result<LlmConfig, AppError> {
     let (resolved, api_key) = resolve_preset(preset, api_key)
         .await

@@ -30,8 +30,8 @@ import { useAiSetupStore } from '../../stores/aiSetupStore'
 export type AnyPreset = SpeechPreset | AiPreset
 
 /**
- * Plan 0017: speech recognition and AI polish each run on one of two engines, Built-in or
- * "your server or API key", and their screens are built from the same pieces. A service holds
+ * Plan `ai-polish-setup`: speech recognition and AI polish each run on one of two engines, Built-in
+ * or "your server or API key", and their screens are built from the same pieces. A service holds
  * what differs: which presets it edits, how a preset is tested, the built-in setup's store and
  * commands, and its texts.
  */
