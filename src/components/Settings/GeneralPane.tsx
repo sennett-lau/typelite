@@ -17,6 +17,7 @@ import { ShortcutBindingList } from './ShortcutBindingList'
 import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
+import { targetLanguageLabel } from '../../lib/constants'
 
 const MAC_ACCESSIBILITY_HOTKEY_ERROR = 'Accessibility permission may be denied'
 
@@ -32,6 +33,7 @@ export function GeneralPane() {
   const isMac = isMacPlatform()
   const [hotkeyStatus, setHotkeyStatus] = useState<HotkeyStatus | null>(null)
   const accessibilityRecoveryAttemptedRef = useRef(false)
+  const targetName = targetLanguageLabel(config.translation?.active_target ?? config.target_lang, t)
 
   useEffect(() => {
     if (platformCapabilities) return
@@ -148,12 +150,28 @@ export function GeneralPane() {
     hotkeyStatusMessage ? { key: 'status', tone: 'warning', text: hotkeyStatusMessage } : null,
   ].filter((note): note is { key: string; tone: string; text: string } => note !== null)
 
+  // Pasting and Typing map onto the existing output settings (plan `general-settings`).
+  const setOutputMode = (outputMode: OutputMode) =>
+    updateConfig({
+      output_mode: outputMode,
+      insertion_strategy: outputMode === 'clipboard' ? 'clipboardPaste' : 'auto',
+    })
+
   return (
     <div>
-      <Group label={t('settings.hotkey')}>
+      <Group
+        label={t('settings.hotkey')}
+        actions={
+          <span className="font-normal normal-case tracking-normal">
+            {t('settings.generalPane.shortcutsHint')}
+          </span>
+        }
+      >
         <ShortcutBindingList
           role="dictation"
-          label={t('settings.dictationHotkey')}
+          label={t('home.shortcuts.dictate')}
+          description={t('home.shortcuts.dictateDesc')}
+          showKeycaps
           bindings={dictationBindings}
           otherBindings={otherBindingsFor('dictation')}
           required
@@ -161,7 +179,9 @@ export function GeneralPane() {
         />
         <ShortcutBindingList
           role="translate"
-          label={t('settings.translateHotkey')}
+          label={t('home.shortcuts.translate')}
+          description={t('home.shortcuts.translateDesc', { language: targetName })}
+          showKeycaps
           bindings={translateBindings}
           otherBindings={otherBindingsFor('translate')}
           required={false}
@@ -183,7 +203,9 @@ export function GeneralPane() {
         )}
         <ShortcutBindingList
           role="ask"
-          label={t('settings.askHotkey')}
+          label={t('home.shortcuts.ask')}
+          description={t('settings.generalPane.askDesc')}
+          showKeycaps
           bindings={askBindings}
           otherBindings={otherBindingsFor('ask')}
           required={false}
@@ -200,6 +222,14 @@ export function GeneralPane() {
             </button>
           }
         />
+        {/* Escape is fixed (plan `pill-follows-cursor-and-escape`), so this row only informs. */}
+        <Row
+          label={t('settings.generalPane.cancel')}
+          help={t('settings.generalPane.cancelDesc')}
+          testId="shortcut-cancel"
+        >
+          <kbd className="kbd">{t('settings.generalPane.escKey')}</kbd>
+        </Row>
         {notes.length > 0 && (
           <Row>
             <div className="space-y-1 text-[12px] leading-relaxed">
@@ -213,8 +243,23 @@ export function GeneralPane() {
         )}
       </Group>
 
-      <Group label={t('settings.audio')}>
+      <Group label={t('settings.generalPane.recording')}>
+        <Row
+          label={t('settings.generalPane.startStop')}
+          help={t('settings.generalPane.startStopDesc')}
+        >
+          <SegmentedControl
+            ariaLabel={t('settings.generalPane.startStop')}
+            options={[
+              { value: 'toggle', label: t('settings.generalPane.pressToggle') },
+              { value: 'hold', label: t('settings.generalPane.holdToTalk') },
+            ]}
+            value={config.hotkey_mode}
+            onChange={(v) => updateConfig({ hotkey_mode: v as HotkeyMode })}
+          />
+        </Row>
         <MicrophonePicker
+          label={t('settings.generalPane.microphone')}
           value={config.input_device}
           onChange={(v) => updateConfig({ input_device: v })}
         />
@@ -228,42 +273,25 @@ export function GeneralPane() {
         </Row>
       </Group>
 
-      <Group label={t('settings.dictation')}>
-        <Row label={t('settings.dictationMode')}>
-          <SegmentedControl
-            ariaLabel={t('settings.dictationMode')}
-            options={[
-              { value: 'hold', label: t('settings.holdToTalk') },
-              { value: 'toggle', label: t('settings.toggleOnOff') },
-            ]}
-            value={config.hotkey_mode}
-            onChange={(v) => updateConfig({ hotkey_mode: v as HotkeyMode })}
-          />
-        </Row>
+      <Group label={t('settings.generalPane.output')}>
         <Row
-          label={t('settings.outputMode')}
+          label={t('settings.generalPane.outputBy')}
           help={
             config.output_mode === 'clipboard' &&
             platformCapabilities &&
             !platformCapabilities.clipboardAutoPasteReliable
               ? t('settings.waylandClipboardCopyOnly')
-              : undefined
+              : t('settings.generalPane.outputByDesc')
           }
         >
           <SegmentedControl
-            ariaLabel={t('settings.outputMode')}
+            ariaLabel={t('settings.generalPane.outputBy')}
             options={[
-              { value: 'keyboard', label: t('settings.keyboardSimulation') },
-              { value: 'clipboard', label: t('settings.clipboardPaste') },
+              { value: 'clipboard', label: t('settings.generalPane.pasting') },
+              { value: 'keyboard', label: t('settings.generalPane.typing') },
             ]}
             value={config.output_mode}
-            onChange={(v) => {
-              const outputMode = v as OutputMode
-              updateConfig({
-                output_mode: outputMode,
-                insertion_strategy: outputMode === 'clipboard' ? 'clipboardPaste' : 'auto',
-              })
-            }}
+            onChange={(v) => setOutputMode(v as OutputMode)}
           />
         </Row>
       </Group>

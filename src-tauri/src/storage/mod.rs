@@ -8,6 +8,8 @@ use std::sync::Mutex;
 use tauri_plugin_store::StoreExt;
 use unicode_normalization::UnicodeNormalization;
 
+pub mod preset_share;
+
 const CUSTOM_SCENES_MAX_COUNT: usize = 100;
 const SCENE_ID_MAX_CHARS: usize = 120;
 const SCENE_SOURCE_MAX_CHARS: usize = 24;

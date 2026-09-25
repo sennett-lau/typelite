@@ -15,6 +15,8 @@ interface MicrophonePickerProps {
   /** Saved device name; '' means "System default". */
   value: string
   onChange: (value: string) => void
+  /** Row label; defaults to "Input device". */
+  label?: string
 }
 
 /**
@@ -24,7 +26,7 @@ interface MicrophonePickerProps {
  * triggers the macOS Microphone permission prompt. It runs only while this picker is mounted, the
  * window is visible and no recording is in progress.
  */
-export function MicrophonePicker({ value, onChange }: MicrophonePickerProps) {
+export function MicrophonePicker({ value, onChange, label }: MicrophonePickerProps) {
   const { t } = useTranslation()
   const selectId = useId()
   const pipelineIdle = useAppStore((s) => s.pipelineState === 'idle')
@@ -122,10 +124,10 @@ export function MicrophonePicker({ value, onChange }: MicrophonePickerProps) {
   // Rows for a grouped list: the device pop-up, the level meter, then any notes.
   return (
     <>
-      <Row label={t('mic.label')} htmlFor={selectId}>
+      <Row label={label ?? t('mic.label')} htmlFor={selectId}>
         <select
           id={selectId}
-          aria-label={t('mic.label')}
+          aria-label={label ?? t('mic.label')}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className="popup w-[240px]"
