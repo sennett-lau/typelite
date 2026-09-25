@@ -23,6 +23,9 @@ pub const ASK_MAX_SELECTED_TEXT_CHARS: usize = 4_000;
 pub const ASK_OUTPUT_TOKEN_LIMIT: u32 = 80;
 const ASK_STT_FINALIZE_TIMEOUT_SECS: u64 = 12;
 static ASK_RECORDING_SESSION_COUNTER: AtomicU64 = AtomicU64::new(1);
+/// Error returned by `stop_ask_dictation` when the run was cancelled (Escape) while Ask was
+/// thinking. Callers show nothing for it.
+pub const ASK_CANCELLED_ERROR: &str = "ask_cancelled";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -45,6 +48,9 @@ struct AskDictationStateInner {
     stop_after_start: bool,
     session: Option<AskDictationSession>,
     processing: bool,
+    /// Wakes the running `stop_ask_dictation` so it drops its work (Escape while thinking).
+    /// A fresh one per run, so a cancel never leaks into the next run.
+    processing_cancel: Option<Arc<Notify>>,
     pending_message: Option<PendingAskMessage>,
 }
 
@@ -83,7 +89,30 @@ impl AskDictationState {
     }
 
     fn set_processing(&self, processing: bool) {
-        self.0.lock().unwrap_or_else(|e| e.into_inner()).processing = processing;
+        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        guard.processing = processing;
+        if !processing {
+            guard.processing_cancel = None;
+        }
+    }
+
+    /// Asks the running Ask processing step (thinking) to stop. Returns false when none runs.
+    fn cancel_processing(&self) -> bool {
+        let cancel = self
+            .0
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .processing_cancel
+            .take();
+        match cancel {
+            // `notify_one` keeps a permit, so the cancel is not lost if it lands before the
+            // processing step starts waiting.
+            Some(cancel) => {
+                cancel.notify_one();
+                true
+            }
+            None => false,
+        }
     }
 
     pub fn set_pending_result(&self, result: AskDictationResult) {
@@ -1127,7 +1156,7 @@ pub async fn stop_ask_dictation(
 ) -> Result<AskDictationResult, String> {
     // Plan 0008: Speed board timing starts when stop is pressed.
     let stop_at = std::time::Instant::now();
-    let mut session = {
+    let (mut session, cancel) = {
         let mut guard = state.0.lock().unwrap_or_else(|e| e.into_inner());
         if guard.processing {
             return Err("Ask is already processing".to_string());
@@ -1138,7 +1167,9 @@ pub async fn stop_ask_dictation(
             .ok_or_else(|| "Ask dictation is not recording".to_string())?;
         guard.stop_after_start = false;
         guard.processing = true;
-        session
+        let cancel = Arc::new(Notify::new());
+        guard.processing_cancel = Some(cancel.clone());
+        (session, cancel)
     };
     let upload_probe = session.upload_probe.clone();
     let mut transcript_at: Option<std::time::Instant> = None;
@@ -1146,8 +1177,9 @@ pub async fn stop_ask_dictation(
     let mut pastes = false;
     let mut failure_code = "stt_failed";
     let mut run_config: Option<storage::AppConfig> = None;
+    let mut cancelled = false;
 
-    let result = async {
+    let work = async {
         session.handle.stop();
         emit_capsule_state(&app, PipelineState::AskThinking);
 
@@ -1176,9 +1208,7 @@ pub async fn stop_ask_dictation(
                 failure_code = "stt_no_speech_detected";
                 return Err("No speech detected. Please try again.".to_string());
             }
-            tracing::warn!(
-                "Ask STT finalize timed out; continuing with collected transcript"
-            );
+            tracing::warn!("Ask STT finalize timed out; continuing with collected transcript");
         }
 
         if let Some(message) = session
@@ -1238,9 +1268,7 @@ pub async fn stop_ask_dictation(
                 &mut backend,
             )
             .await;
-            if execution.status
-                != crate::voice_intent::executor::VoiceExecutionStatus::Completed
-            {
+            if execution.status != crate::voice_intent::executor::VoiceExecutionStatus::Completed {
                 failure_code = "search_failed";
                 return Err("Search could not be opened safely".to_string());
             }
@@ -1317,12 +1345,28 @@ pub async fn stop_ask_dictation(
             voice_intent.kind,
             AskDictationResultMetadata::popup(used_selected_text, selected_text_truncated),
         ))
-    }
-    .await;
+    };
+    // Escape while thinking drops the work: the request stops and nothing is pasted or shown.
+    let result = tokio::select! {
+        result = work => result,
+        _ = cancel.notified() => {
+            cancelled = true;
+            Err(ASK_CANCELLED_ERROR.to_string())
+        }
+    };
     let end_at = std::time::Instant::now();
 
     state.set_processing(false);
     emit_capsule_state(&app, PipelineState::Idle);
+    if cancelled {
+        tracing::info!("Ask cancelled while thinking");
+        // A dropped draft may have left the pipeline mid-polish; put it back to idle.
+        let pipeline = app.state::<crate::pipeline::PipelineHandle>();
+        if pipeline.current_state() != PipelineState::Idle {
+            pipeline.abort();
+        }
+        return result;
+    }
 
     let run_config = match run_config {
         Some(config) => config,
@@ -1364,6 +1408,7 @@ pub async fn stop_ask_flow(
     match stop_ask_dictation(app.clone(), state, config_state, client).await {
         Ok(result) if result.should_show_window() => show_answer_window(&app, result),
         Ok(_) => Ok(()),
+        Err(message) if message == ASK_CANCELLED_ERROR => Ok(()),
         Err(message) => show_error_window(&app, message),
     }
 }
@@ -1379,6 +1424,18 @@ pub fn abort_ask_dictation(
     }
     emit_capsule_state(&app, PipelineState::Idle);
     Ok(())
+}
+
+/// Cancels the Ask run like the pill's cancel button (Escape): stops a starting or running
+/// recording, or drops the thinking step so nothing is pasted or shown.
+pub(crate) fn cancel_ask_run(app: &tauri::AppHandle) {
+    let state = app.state::<AskDictationState>();
+    let (session, _was_starting) = state.abort_starting_or_recording();
+    if let Some(mut session) = session {
+        session.handle.stop();
+    }
+    state.cancel_processing();
+    emit_capsule_state(app, PipelineState::Idle);
 }
 
 #[tauri::command]
@@ -1936,6 +1993,36 @@ mod tests {
         state.clear_starting();
         assert!(!state.request_stop_after_start());
         assert!(!state.take_stop_after_start());
+    }
+
+    #[test]
+    fn cancelling_ask_processing_wakes_the_run_once() {
+        let state = AskDictationState::default();
+        assert!(!state.cancel_processing(), "nothing to cancel");
+
+        let cancel = Arc::new(Notify::new());
+        {
+            let mut guard = state.0.lock().unwrap();
+            guard.processing = true;
+            guard.processing_cancel = Some(cancel.clone());
+        }
+        assert!(state.cancel_processing());
+        assert!(!state.cancel_processing(), "a cancel is used once");
+
+        // The permit is kept even though nobody was waiting yet.
+        let woke = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .unwrap()
+            .block_on(async {
+                tokio::time::timeout(std::time::Duration::from_millis(50), cancel.notified())
+                    .await
+                    .is_ok()
+            });
+        assert!(woke);
+
+        state.set_processing(false);
+        assert!(state.0.lock().unwrap().processing_cancel.is_none());
     }
 
     #[test]

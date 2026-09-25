@@ -248,6 +248,10 @@ pub enum HotkeyRole {
     /// Moves a running Translate recording to its next language. Only active while a
     /// Translate recording runs (see `native_hotkey::ChordMatcher`).
     SwitchLanguage,
+    /// Escape while a run is active: cancels it like the pill's cancel button. Not a
+    /// configurable shortcut; the native key listener fires it (see
+    /// `native_hotkey::ChordMatcher::with_cancel_key`).
+    Cancel,
 }
 
 impl HotkeyRole {
@@ -260,6 +264,7 @@ impl HotkeyRole {
             Self::SwitchScene => "switchScene",
             Self::OpenApp => "openApp",
             Self::SwitchLanguage => "switchLanguage",
+            Self::Cancel => "cancel",
         }
     }
 }
@@ -883,6 +888,7 @@ async fn stop_ask_shortcut(handle: tauri::AppHandle) {
         Ok(result) if result.should_show_window() => show_ask_result_window(&handle, &result),
         Ok(_) => {}
         Err(message) if message == "Ask dictation is not recording" => {}
+        Err(message) if message == commands::ask::ASK_CANCELLED_ERROR => {}
         Err(message) => show_ask_error_window(&handle, message),
     }
 }
@@ -981,6 +987,42 @@ fn handle_advanced_role_shortcut(
     let _ = handle.emit("hotkey:role", role.as_str());
 }
 
+/// True while a run is active that Escape should cancel: any non-idle dictation or Translate
+/// state (preparing, recording, transcribing, polishing, pasting), or an Ask that is starting,
+/// recording or thinking. Idle Escape is left alone.
+pub fn escape_cancels_run(pipeline_state: pipeline::PipelineState, ask_busy: bool) -> bool {
+    ask_busy || pipeline_state != pipeline::PipelineState::Idle
+}
+
+/// The Escape gate for the native key listener. Runs on the listener thread for each Escape
+/// press, so it only reads state.
+pub fn escape_gate(handle: &tauri::AppHandle) -> bool {
+    let ask_busy = handle
+        .try_state::<commands::ask::AskDictationState>()
+        .is_some_and(|ask| ask.is_busy());
+    let pipeline_state = handle
+        .try_state::<pipeline::PipelineHandle>()
+        .map_or(pipeline::PipelineState::Idle, |pipeline| {
+            pipeline.current_state()
+        });
+    escape_cancels_run(pipeline_state, ask_busy)
+}
+
+/// Escape was pressed during a run: cancel it exactly like the pill's cancel button (Ask
+/// cancel for an Ask run, abort for dictation and Translate). Runs off the listener thread,
+/// because stopping audio capture may take a moment.
+fn cancel_active_run(handle: tauri::AppHandle) {
+    tauri::async_runtime::spawn_blocking(move || {
+        if handle.state::<commands::ask::AskDictationState>().is_busy() {
+            tracing::info!("Escape: cancelling Ask");
+            commands::ask::cancel_ask_run(&handle);
+        } else {
+            tracing::info!("Escape: cancelling the current run");
+            handle.state::<pipeline::PipelineHandle>().abort();
+        }
+    });
+}
+
 pub fn handle_hotkey_role_event(
     handle: tauri::AppHandle,
     role: HotkeyRole,
@@ -1063,6 +1105,11 @@ pub fn handle_hotkey_role_event(
                 tauri::async_runtime::spawn(
                     commands::translation::cycle_translation_target_from_shortcut(handle.clone()),
                 );
+            }
+        }
+        HotkeyRole::Cancel => {
+            if event_state == ShortcutState::Pressed {
+                cancel_active_run(handle);
             }
         }
         role => handle_advanced_role_shortcut(handle, role, event_state),
@@ -1940,6 +1987,30 @@ mod tests {
                 conflict_role: HotkeyRole::Dictation,
                 conflict_index: 0,
             }
+        );
+    }
+
+    #[test]
+    fn escape_cancels_only_while_a_run_is_active() {
+        use pipeline::PipelineState::*;
+        assert!(
+            !escape_cancels_run(Idle, false),
+            "idle Escape passes through"
+        );
+        for state in [
+            Preparing,
+            Recording,
+            Transcribing,
+            Polishing,
+            Outputting,
+            AskRecording,
+            AskThinking,
+        ] {
+            assert!(escape_cancels_run(state, false), "{state:?}");
+        }
+        assert!(
+            escape_cancels_run(Idle, true),
+            "Ask starting, recording or thinking"
         );
     }
 

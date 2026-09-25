@@ -286,6 +286,7 @@
   },
   "capsule": {
     "cancelRecording": "取消录音",
+    "cancelHint": "取消（Esc）",
     "preparing": "准备中...",
     "transcribing": "转录中",
     "cancelProcessing": "取消处理",

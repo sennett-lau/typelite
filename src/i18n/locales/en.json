@@ -286,6 +286,7 @@
   },
   "capsule": {
     "cancelRecording": "Cancel recording",
+    "cancelHint": "Cancel (Esc)",
     "preparing": "Preparing...",
     "transcribing": "Transcribing",
     "cancelProcessing": "Cancel processing",
