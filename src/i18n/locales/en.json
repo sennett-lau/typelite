@@ -34,6 +34,11 @@
     "copiedInstead": "Copied instead of inserting",
     "routeDisabled": "This route is disabled",
     "searchOpened": "Opened {{provider}} search",
+    "liveTitle": "Needs live information",
+    "liveBody": "This question needs up-to-date information from the web. Typelite can't look things up yet.",
+    "answerAnyway": "Answer anyway",
+    "close": "Close",
+    "outOfDateNote": "May be out of date — no web search was used",
     "send": "Ask"
   },
   "errors": {
