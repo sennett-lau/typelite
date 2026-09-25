@@ -19,8 +19,8 @@ export function useSpeechSetupStatus() {
 }
 
 /**
- * Plan 0015: reads the chip, memory and free disk space when a speech screen opens, and returns
- * the result (null until it arrives).
+ * Plan `two-tab-speech`: reads the chip, memory and free disk space when a speech screen opens, and
+ * returns the result (null until it arrives).
  */
 export function useSpeechHardware() {
   const hardware = useSpeechSetupStore((s) => s.hardware)

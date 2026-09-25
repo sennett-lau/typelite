@@ -39,8 +39,8 @@ interface Props {
 }
 
 /**
- * Plan 0015: the form for a server or API key (any OpenAI-compatible speech service). Four
- * fields with the OpenAI example as placeholders; Name fills itself with the address's host
+ * Plan `two-tab-speech`: the form for a server or API key (any OpenAI-compatible speech service).
+ * Four fields with the OpenAI example as placeholders; Name fills itself with the address's host
  * until the user types a name. Test shows its result on the same line as the buttons.
  */
 export function ServerPresetForm({ preset, saveLabel, secondary, onSaved }: Props) {

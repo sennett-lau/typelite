@@ -18,9 +18,9 @@ interface SwitchLanguageShortcutProps {
 }
 
 /**
- * Settings → General → Shortcuts: the Switch language key (plan 0010), recorded by pressing
- * keys like the other shortcuts. It only listens while a Translate recording runs, so a bare
- * key such as Shift is fine. It may be part of the Translate shortcut (Fn + Shift with Shift);
+ * Settings → General → Shortcuts: the Switch language key (plan `translate-controls`), recorded by
+ * pressing keys like the other shortcuts. It only listens while a Translate recording runs, so a
+ * bare key such as Shift is fine. It may be part of the Translate shortcut (Fn + Shift with Shift);
  * it may not be the same as another shortcut.
  */
 export function SwitchLanguageShortcut({

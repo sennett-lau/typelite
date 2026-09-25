@@ -26,7 +26,7 @@ interface Props {
 
 /**
  * Steps 5–7: record the shortcut by pressing keys, then work through the step's scripted
- * exercises (plan 0013). The step is complete when each exercise is done or skipped.
+ * exercises (plan `guided-tutorial`). The step is complete when each exercise is done or skipped.
  */
 export function ShortcutStep({ role, done, onDone }: Props) {
   const { t } = useTranslation()
