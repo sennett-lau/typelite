@@ -164,6 +164,7 @@ async function connect(url) {
   let nextId = 1
   const pending = new Map()
   const waiters = new Map()
+  const listeners = new Map()
   ws.addEventListener('message', (event) => {
     const msg = JSON.parse(event.data)
     if (msg.id && pending.has(msg.id)) {
@@ -171,7 +172,10 @@ async function connect(url) {
       pending.delete(msg.id)
       if (msg.error) reject(new Error(`${msg.error.message} (${msg.error.code})`))
       else resolve(msg.result)
-    } else if (msg.method && waiters.has(msg.method)) {
+    } else if (msg.method && listeners.has(msg.method)) {
+      listeners.get(msg.method).forEach((fn) => fn(msg.params))
+    }
+    if (msg.method && waiters.has(msg.method)) {
       const list = waiters.get(msg.method)
       waiters.delete(msg.method)
       list.forEach((fn) => fn(msg.params))
@@ -189,6 +193,12 @@ async function connect(url) {
         list.push(resolve)
         waiters.set(method, list)
       })
+    },
+    /** Calls `fn` for every event named `method`. */
+    on(method, fn) {
+      const list = listeners.get(method) ?? []
+      list.push(fn)
+      listeners.set(method, list)
     },
     close() {
       ws.close()
