@@ -93,7 +93,8 @@ describe('GeneralPane', () => {
 
     for (const [label, description] of [
       ['home.shortcuts.dictate', 'home.shortcuts.dictateDesc'],
-      ['home.shortcuts.translate', 'home.shortcuts.translateDesc'],
+      // A new install has no translation language yet (plan `tutorial-one-page`).
+      ['home.shortcuts.translate', 'home.shortcuts.translateDescNoLanguage'],
       ['settings.switchLanguageHotkey', 'settings.generalPane.switchLanguageDesc'],
       ['home.shortcuts.ask', 'settings.generalPane.askDesc'],
       ['settings.generalPane.cancel', 'settings.generalPane.cancelDesc'],

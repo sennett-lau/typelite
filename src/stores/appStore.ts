@@ -1086,14 +1086,17 @@ export function normalizeTranslationTargets(targets: string[]): string[] {
   return normalized
 }
 
+/**
+ * Keeps `translation` and the legacy `target_lang` in step. Plan `tutorial-one-page`: the list may
+ * be empty (a new install has no language until the user adds one); the active target is then ''.
+ */
 function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>): AppConfig {
   const merged = { ...previous, ...partial }
   if (partial.translation) {
     const targets = normalizeTranslationTargets(partial.translation.targets)
     const requestedActive = canonicalTranslationCode(partial.translation.active_target)
-    if (targets.length === 0) targets.push(requestedActive ?? 'en')
     const activeTarget =
-      requestedActive && targets.includes(requestedActive) ? requestedActive : targets[0]
+      requestedActive && targets.includes(requestedActive) ? requestedActive : (targets[0] ?? '')
     return {
       ...merged,
       target_lang: activeTarget,
@@ -1108,8 +1111,8 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
   if ('target_lang' in partial) {
     const activeTarget =
       canonicalTranslationCode(partial.target_lang ?? '') ??
-      canonicalTranslationCode(previous.translation?.active_target ?? '') ??
-      'en'
+      canonicalTranslationCode(previous.translation?.active_target ?? '')
+    if (!activeTarget) return { ...merged, target_lang: previous.translation?.active_target ?? '' }
     const targets = normalizeTranslationTargets(previous.translation?.targets ?? [activeTarget])
     if (!targets.includes(activeTarget)) {
       if (targets.length === MAX_TRANSLATION_TARGETS) targets[targets.length - 1] = activeTarget
@@ -1128,11 +1131,11 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
 
   const current = merged.translation
   if (!current) {
-    const activeTarget = canonicalTranslationCode(merged.target_lang) ?? 'en'
+    const activeTarget = canonicalTranslationCode(merged.target_lang) ?? ''
     return {
       ...merged,
       target_lang: activeTarget,
-      translation: { targets: [activeTarget], active_target: activeTarget },
+      translation: { targets: activeTarget ? [activeTarget] : [], active_target: activeTarget },
     }
   }
   return merged
@@ -1198,8 +1201,9 @@ const defaultConfig: AppConfig = {
   active_scene: null,
   family_scene_assignments: [],
   translate_enabled: false,
-  target_lang: 'en',
-  translation: { targets: ['en'], active_target: 'en', languages: {} },
+  // Plan `tutorial-one-page`: no translation language until the user adds one.
+  target_lang: '',
+  translation: { targets: [], active_target: '', languages: {} },
   hotkey: defaultDictationHotkey(),
   ask_hotkey: defaultAskHotkey(),
   hotkey_mode: defaultDictationHotkeyMode(),

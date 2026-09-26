@@ -1170,6 +1170,396 @@ body,
     box-shadow: 0 10px 30px rgba(20, 20, 40, 0.28);
     color: var(--color-pill-text);
   }
+
+  /* ─── Onboarding tutorial (plan `tutorial-one-page`, docs/plans/…-tutorial-one-page/mock.html) ─── */
+
+  /* Big key caps on the setup pages, inline ones in instruction lines. */
+  .kbd-large {
+    min-width: 34px;
+    padding: 6px 14px;
+    border-bottom-width: 3px;
+    border-radius: 9px;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .kbd-inline {
+    display: inline-block;
+    min-width: 0;
+    margin: 0 1px;
+    padding: 1px 6px;
+    font-size: 11px;
+    line-height: 16px;
+    vertical-align: middle;
+  }
+  /* The setup page's shortcut: a dashed area around the caps; click to record. */
+  .keycap-field {
+    display: inline-flex;
+    min-height: 54px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 1px dashed var(--color-border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .keycap-field:hover:not(:disabled) {
+    border-color: var(--color-accent);
+  }
+  .keycap-field:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  .keycap-field-recording {
+    border-style: solid;
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px var(--color-accent-light);
+  }
+  .tutorial-card {
+    border: 1px solid var(--color-hairline);
+    border-radius: 12px;
+    background: var(--color-bg-elevated);
+  }
+
+  /* Exercise page: fixed slots, so nothing moves between states. */
+  .tutorial-top {
+    display: flex;
+    height: 96px;
+    box-sizing: border-box;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 12px 16px;
+    border: 1px solid var(--color-hairline);
+    border-radius: 12px;
+    background: var(--color-bg-elevated);
+  }
+  .tutorial-top-label {
+    height: 18px;
+    margin: 0;
+    overflow: hidden;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-text-tertiary);
+  }
+  .tutorial-top-text {
+    display: -webkit-box;
+    margin: 6px 0 0;
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--color-text-primary);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    user-select: text;
+  }
+  .tutorial-result {
+    border-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 9%, var(--color-bg-elevated));
+    animation: tutorial-fade-in 0.25s ease both;
+  }
+  .tutorial-result-title {
+    display: flex;
+    height: 18px;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+  .tutorial-result del {
+    color: var(--color-text-tertiary);
+    text-decoration-color: color-mix(in srgb, var(--color-error) 70%, transparent);
+    text-decoration-thickness: 1.5px;
+  }
+  .tutorial-arrow {
+    margin: 0 6px;
+    color: var(--color-text-tertiary);
+  }
+  .tutorial-box {
+    display: block;
+    width: 100%;
+    height: 62px;
+    box-sizing: border-box;
+    resize: none;
+    padding: 9px 11px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 13px;
+    user-select: text;
+  }
+  .tutorial-box:focus {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -1px;
+  }
+  /* The selection exercises' text block: a paragraph look, 72 pt. It stays a text area so the
+     pipeline can paste over the highlighted text. */
+  .tutorial-box-block {
+    height: 72px;
+    padding: 11px 14px;
+    border-color: var(--color-hairline);
+    border-radius: 10px;
+    background: var(--color-bg-elevated);
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: text;
+  }
+  .tutorial-box-block:focus {
+    outline: none;
+  }
+  .tutorial-box-block::selection {
+    background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  }
+  .tutorial-box-done {
+    border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
+  }
+  .tutorial-line {
+    height: 44px;
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 26px;
+    color: var(--color-text-secondary);
+  }
+  .tutorial-line-button {
+    margin-left: 6px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tutorial-line-button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  .tutorial-writing-dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .tutorial-writing-dots i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    animation: tutorial-blink 1s infinite ease-in-out;
+  }
+  .tutorial-writing-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .tutorial-writing-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .tutorial-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 26px;
+    color: var(--color-text-secondary);
+  }
+  .tutorial-legend-item {
+    white-space: nowrap;
+  }
+  .tutorial-legend-off {
+    opacity: 0.45;
+  }
+  .tutorial-legend-sep {
+    margin: 0 12px;
+    font-style: normal;
+    font-weight: 700;
+    color: var(--color-text-tertiary);
+  }
+
+  /* Translate setup: three language slots in one row. */
+  .lang-slots {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .lang-slot {
+    display: flex;
+    height: 32px;
+    min-width: 0;
+    box-sizing: border-box;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px 0 9px;
+    border-radius: 9px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-size: 12.5px;
+  }
+  .lang-slot-number {
+    flex: none;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--color-text-tertiary);
+  }
+  .lang-slot-name {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lang-slot-remove {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    flex: none;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .lang-slot-remove:hover {
+    background: var(--color-hairline);
+  }
+  .lang-slot-remove:focus-visible,
+  .lang-slot-add:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+  .lang-slot-add {
+    display: block;
+    width: 100%;
+    padding: 0 8px;
+    border: 1px dashed color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    text-align-last: center;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .lang-slot-empty {
+    border: 1px dashed var(--color-hairline);
+    background: none;
+  }
+
+  /* The recording pill preview (the design of plan `translate-pill-and-keys`), on a small
+     desktop-like backdrop so it shows in both themes. The name and dots use the real pill's
+     `.pill-lang-*` classes. */
+  .pill-preview-stage {
+    display: grid;
+    width: 100%;
+    box-sizing: border-box;
+    place-items: center;
+    padding: 18px 12px;
+    border-radius: 12px;
+    background:
+      radial-gradient(70% 90% at 15% 0%, #c9d6ec, transparent 70%),
+      radial-gradient(60% 80% at 90% 100%, #e3d6f0, transparent 70%), #dfe5ef;
+  }
+  .dark .pill-preview-stage {
+    background:
+      radial-gradient(70% 90% at 15% 0%, #1d3246, transparent 70%),
+      radial-gradient(60% 80% at 90% 100%, #2c1f40, transparent 70%), #12151c;
+  }
+  .pill-preview {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    height: 40px;
+    box-sizing: border-box;
+    flex: none;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 20px;
+    background:
+      radial-gradient(
+        60% 140% at 18% 50%,
+        color-mix(in srgb, var(--color-aurora-a) 42%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        55% 140% at 85% 50%,
+        color-mix(in srgb, var(--color-aurora-b) 38%, transparent),
+        transparent 70%
+      ),
+      rgba(28, 28, 30, 0.9);
+    box-shadow: 0 10px 28px rgba(10, 10, 30, 0.35);
+    color: #ffffff;
+    transition: width 0.28s cubic-bezier(0.2, 0, 0, 1);
+  }
+  .dark .pill-preview {
+    border-color: rgba(255, 255, 255, 0.2);
+    background:
+      radial-gradient(
+        60% 140% at 18% 50%,
+        color-mix(in srgb, var(--color-aurora-a) 36%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        55% 140% at 85% 50%,
+        color-mix(in srgb, var(--color-aurora-b) 36%, transparent),
+        transparent 70%
+      ),
+      rgba(20, 22, 26, 0.92);
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(63, 216, 194, 0.12);
+  }
+  .pill-preview-content {
+    display: inline-flex;
+    width: max-content;
+    flex: none;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px 0 14px;
+    white-space: nowrap;
+  }
+  .pill-preview-rec {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--color-recording);
+  }
+  .pill-preview-wave {
+    display: flex;
+    height: 18px;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+  }
+  .pill-preview-wave i {
+    width: 2px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.85);
+  }
+  .pill-preview-close {
+    flex: none;
+    margin-left: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+  }
 }
 
 /* Dark-only: page titles fade from the text colour into the accent. */
@@ -1513,6 +1903,25 @@ body,
   }
 }
 
+/* Onboarding tutorial (plan `tutorial-one-page`). */
+@keyframes tutorial-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tutorial-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
 /* ─── Reduced Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *,

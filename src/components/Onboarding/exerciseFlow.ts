@@ -1,90 +1,71 @@
 /**
- * Plan `guided-tutorial`: the order of a step's exercises and what happened to each. Pure, so the
- * flow (success, miss, try again, skip) is tested without the UI.
+ * Plan `tutorial-one-page`: what an exercise page shows, and when its result is decided. Pure, so
+ * the states are tested without the UI.
  */
 
+/** What happened to an exercise: kept by the onboarding so Back and Next remember it. */
 export type ExerciseStatus = 'pending' | 'done' | 'skipped'
 
 /**
- * `ready`: waiting for a run. `running`: a run started. `success` / `miss`: the last run's
- * check passed or did not.
+ * Where the current run is. `idle`: no run yet (or it was cancelled). `listening`: recording.
+ * `writing`: recording stopped, the result is on its way. `landed`: the pipeline delivered it.
  */
-export type ExercisePhase = 'ready' | 'running' | 'success' | 'miss'
+export type RunStage = 'idle' | 'listening' | 'writing' | 'landed'
 
-export interface ExerciseFlowState {
-  /** The current exercise; equal to `statuses.length` once every exercise is finished. */
-  index: number
-  statuses: ExerciseStatus[]
-  phase: ExercisePhase
-  /** Grows on every Try again, so the card (box, before/after) starts fresh. */
-  attempt: number
+/** The page's state, one per result line. */
+export type ExerciseView =
+  | 'ready'
+  | 'listening'
+  | 'writing'
+  | 'success'
+  | 'miss'
+  | 'noSpeech'
+  | 'error'
+
+/** The check's answer for a landed run, or null while it is not decided yet. */
+export type Verdict = 'success' | 'miss' | null
+
+/**
+ * How long the box must stay unchanged once all inserted characters arrived, before the result
+ * is decided.
+ */
+export const SETTLE_MS = 150
+
+/**
+ * How long the box must stay unchanged when the inserted characters never all arrive (the paste
+ * was held for Copy, or the text differs from the count), before the result is decided.
+ */
+export const MISS_DELAY_MS = 600
+
+export interface ViewInput {
+  stage: RunStage
+  verdict: Verdict
+  error: string | null
+  noSpeech: boolean
 }
 
-export type ExerciseFlowAction =
-  | { type: 'runStarted' }
-  | { type: 'result'; passed: boolean }
-  | { type: 'retry' }
-  | { type: 'skip' }
-  | { type: 'next' }
-  | { type: 'restart' }
-
-export function initialExerciseFlow(count: number): ExerciseFlowState {
-  return { index: 0, statuses: Array(count).fill('pending'), phase: 'ready', attempt: 0 }
+/** The state to show. A success wins; then errors; then the run's own stage. */
+export function exerciseView({ stage, verdict, error, noSpeech }: ViewInput): ExerciseView {
+  if (verdict === 'success') return 'success'
+  if (noSpeech) return 'noSpeech'
+  if (error) return 'error'
+  if (verdict === 'miss') return 'miss'
+  if (stage === 'listening') return 'listening'
+  if (stage === 'writing' || stage === 'landed') return 'writing'
+  return 'ready'
 }
 
-/** True once every exercise is done or skipped. */
-export function flowComplete(state: ExerciseFlowState): boolean {
-  return state.statuses.every((status) => status !== 'pending')
+/**
+ * How long to wait, after the last change of the box, before deciding a landed run.
+ * `expected`: characters the pipeline says it inserted (null: nothing to wait for).
+ * `arrived`: characters that reached the box so far.
+ */
+export function decideDelay(expected: number | null, arrived: number): number {
+  if (expected === null) return 0
+  return arrived >= expected ? SETTLE_MS : MISS_DELAY_MS
 }
 
-/** True when every exercise has been passed through (the summary shows). */
-export function flowFinished(state: ExerciseFlowState): boolean {
-  return state.index >= state.statuses.length
-}
-
-function withStatus(
-  statuses: ExerciseStatus[],
-  index: number,
-  status: ExerciseStatus,
-): ExerciseStatus[] {
-  return statuses.map((value, i) => (i === index ? status : value))
-}
-
-export function exerciseFlowReducer(
-  state: ExerciseFlowState,
-  action: ExerciseFlowAction,
-): ExerciseFlowState {
-  if (flowFinished(state) && action.type !== 'restart') return state
-  switch (action.type) {
-    case 'runStarted':
-      // A new run clears a miss; a success stays visible.
-      return state.phase === 'success' ? state : { ...state, phase: 'running' }
-    case 'result':
-      if (state.phase === 'success') return state
-      if (!action.passed) return { ...state, phase: 'miss' }
-      return {
-        ...state,
-        phase: 'success',
-        statuses: withStatus(state.statuses, state.index, 'done'),
-      }
-    case 'retry':
-      // Resets this exercise's card; an exercise already passed stays done.
-      return { ...state, phase: 'ready', attempt: state.attempt + 1 }
-    case 'skip': {
-      const current = state.statuses[state.index]
-      return {
-        ...state,
-        index: state.index + 1,
-        statuses: withStatus(state.statuses, state.index, current === 'done' ? 'done' : 'skipped'),
-        phase: 'ready',
-        attempt: state.attempt + 1,
-      }
-    }
-    case 'next':
-      if (state.statuses[state.index] !== 'done') return state
-      return { ...state, index: state.index + 1, phase: 'ready', attempt: state.attempt + 1 }
-    case 'restart':
-      // Practise again: back to the first card; what was already done stays done.
-      return { ...state, index: 0, phase: 'ready', attempt: state.attempt + 1 }
-  }
+/** The status after Skip: an exercise already passed stays done. */
+export function skippedStatus(current: ExerciseStatus | undefined): ExerciseStatus {
+  return current === 'done' ? 'done' : 'skipped'
 }
