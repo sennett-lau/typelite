@@ -9,6 +9,7 @@ import { enableCaptureClock } from '../src/lib/clock'
 import { HeroDemo } from '../src/demos/HeroDemo'
 import { AskVignette, TranslateVignette } from '../src/demos/Vignettes'
 import { Aurora, Pill, PillRecording, speechBetween } from '../src/components/Pill'
+import { App } from '../src/App'
 import '../src/styles.css'
 import './capture.css'
 
@@ -16,6 +17,9 @@ const params = new URLSearchParams(location.search)
 const scene = params.get('scene') ?? 'hero'
 document.documentElement.dataset.theme = params.get('theme') === 'dark' ? 'dark' : 'light'
 enableCaptureClock()
+// Optional frame width (CSS px), to check layouts at phone widths.
+const frameWidth = params.get('w')
+if (frameWidth) document.documentElement.style.setProperty('--cap-width', `${frameWidth}px`)
 
 function Og() {
   const speaking = speechBetween(0, 100)
@@ -57,7 +61,10 @@ const scenes: Record<string, () => React.ReactElement> = {
     </div>
   ),
   og: Og,
+  // The whole page with every demo frozen at the same time (layout checks).
+  site: () => <App />,
 }
 
 const Scene = scenes[scene] ?? scenes.hero
+if (scene === 'site') document.body.classList.add('capture-site')
 createRoot(document.getElementById('frame')!).render(<Scene />)

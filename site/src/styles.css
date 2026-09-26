@@ -949,6 +949,22 @@ section {
   border-radius: 50%;
   color: rgba(255, 255, 255, 0.7);
 }
+/* The pill's text never inherits page styles (a section's paragraph rules, for example): these
+   are the app's `text-[11px] font-medium leading-4 text-white`, on one line. */
+.pill p {
+  margin: 0;
+}
+.pill .pill-label,
+.pill .pill-copy-text {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.pill .pill-label {
+  color: #fff;
+}
 .pill-label {
   flex: 1;
   min-width: 0;
@@ -1319,7 +1335,7 @@ section {
   font-size: clamp(26px, 3vw, 34px);
   font-weight: 700;
 }
-.feature p {
+.feature-copy > p {
   margin-top: 12px;
   color: var(--text-2);
   font-size: 16.5px;

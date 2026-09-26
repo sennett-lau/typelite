@@ -12,13 +12,13 @@ body.capture::before {
   background: var(--bg);
 }
 .cap-hero {
-  width: 960px;
+  width: var(--cap-width, 960px);
 }
 .cap-hero .hero-frame {
   max-width: none;
 }
 .cap-vignette {
-  width: 560px;
+  width: var(--cap-width, 560px);
 }
 .cap-vignette .vignette {
   margin: 0;
@@ -80,4 +80,18 @@ body.capture::before {
   color: #7d8ba3;
   font-size: 22px;
   font-weight: 500;
+}
+
+/* scene=site: the normal page, no frame. */
+body.capture-site {
+  overflow: visible;
+}
+body.capture-site #frame {
+  display: block;
+  padding: 0;
+}
+/* Scroll reveal off, so frozen frames show content at full opacity. */
+body.capture-site .reveal-armed {
+  opacity: 1;
+  transform: none;
 }
