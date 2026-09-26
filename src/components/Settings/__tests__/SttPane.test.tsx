@@ -149,7 +149,7 @@ describe('SttPane', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Learn more' }))
       expect(openUrl).toHaveBeenCalledWith(
-        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md',
+        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech/README.md',
       )
     })
 

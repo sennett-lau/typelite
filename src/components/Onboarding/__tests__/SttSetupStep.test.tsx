@@ -15,7 +15,7 @@ vi.mock('react-i18next', async () => {
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md'
+const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech/README.md'
 
 function config() {
   return useAppStore.getState().config

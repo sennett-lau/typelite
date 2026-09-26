@@ -9,7 +9,7 @@ export type SpeechEngine = 'builtin' | 'server'
 
 /** The speech services guide on GitHub, opened by "Learn more". */
 export const SPEECH_SERVICES_GUIDE_URL =
-  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md'
+  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech/README.md'
 
 /** Placeholders of the server form: the OpenAI example. */
 export const SERVER_PLACEHOLDERS = {

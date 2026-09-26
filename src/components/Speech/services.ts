@@ -80,7 +80,7 @@ export interface EngineService {
 
 /** The AI polish guide on GitHub, opened by "Learn more" on the AI screens. */
 export const AI_POLISH_GUIDE_URL =
-  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md'
+  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish/README.md'
 
 const AI_MODEL_KEYS: Record<string, string> = { 'qwen3-4b': 'best', 'qwen3-1.7b': 'faster' }
 

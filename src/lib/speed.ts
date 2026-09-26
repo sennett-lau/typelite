@@ -9,7 +9,7 @@ import { findActivePreset } from '../stores/appStore'
 
 /** The speech guide in the repository, linked from the "speech is the slow part" tip. */
 export const SPEECH_GUIDE_URL =
-  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-recognition.md'
+  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech/troubleshooting.md#it-is-slow'
 
 /** Event the backend sends after each Dictate, Translate or Ask run. */
 export const RUN_TIMING_EVENT = 'timing:run'
