@@ -1,9 +1,9 @@
 import React from 'react'
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../../../stores/appStore'
-import { setActiveTranslationTarget, stopAskFlow } from '../../../lib/tauri'
+import { stopAskFlow } from '../../../lib/tauri'
 import { Capsule } from '../index'
 
 vi.mock('framer-motion', () => ({
@@ -205,84 +205,66 @@ describe('Capsule flow states', () => {
     translation: { targets: ['en', 'zh-Hant-HK', 'ja'], active_target: 'en' },
   })
 
-  it('shows one chip per chosen language only while Translate is recording', () => {
+  const translateWith = (targets: string[], active_target: string) => ({
+    ...useAppStore.getState().config,
+    translation: { targets, active_target },
+  })
+  const languageName = () => document.querySelector('.pill-lang-name')
+  const dots = () =>
+    Array.from(screen.queryByTestId('translate-pill-dots')?.querySelectorAll('i') ?? [])
+
+  it('shows the active language name and one dot per language only while Translate records', () => {
     useAppStore.setState({
       pipelineState: 'recording',
       activeVoiceMode: 'dictate',
-      config: translateConfig(),
+      config: translateWith(['en', 'zh-Hant-HK', 'ja'], 'zh-Hant-HK'),
     })
     const { rerender } = render(<Capsule />)
-
-    expect(screen.queryByRole('group', { name: 'translate.chipsLabel' })).toBeNull()
+    expect(languageName()).toBeNull()
 
     useAppStore.setState({ activeVoiceMode: 'translate' })
     rerender(<Capsule />)
-    const chips = within(screen.getByRole('group', { name: 'translate.chipsLabel' })).getAllByRole(
-      'button',
-    )
-    expect(chips.map((chip) => chip.textContent)).toEqual(['EN', '港', '日'])
-    expect(screen.getByRole('button', { name: 'translate.chipLabel English' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-    expect(screen.getByRole('button', { name: 'translate.chipLabel English' })).toHaveClass(
-      'bg-pill-chip',
-    )
-    expect(
-      screen.getByRole('button', { name: 'translate.chipLabel translate.languages.zhHantHK' }),
-    ).toHaveAttribute('aria-pressed', 'false')
+    expect(languageName()).toHaveTextContent('translate.languages.zhHantHK')
+    expect(dots()).toHaveLength(3)
+    expect(dots().map((dot) => dot.classList.contains('pill-lang-dot-on'))).toEqual([
+      false,
+      true,
+      false,
+    ])
+    expect(screen.getByRole('img', { name: 'translate.pillPosition' })).toBeInTheDocument()
 
     useAppStore.setState({ pipelineState: 'transcribing' })
     rerender(<Capsule />)
-    expect(screen.queryByRole('group', { name: 'translate.chipsLabel' })).toBeNull()
+    expect(languageName()).toBeNull()
   })
 
-  it('shows the language name and no chips when only one language is chosen', () => {
+  it('shows only the name, without dots, when one language is chosen', () => {
     useAppStore.setState({
       pipelineState: 'recording',
       activeVoiceMode: 'translate',
-      config: {
-        ...useAppStore.getState().config,
-        translation: { targets: ['ja'], active_target: 'ja' },
-      },
-    })
-    const { container } = render(<Capsule />)
-
-    expect(screen.queryByRole('group', { name: 'translate.chipsLabel' })).toBeNull()
-    expect(screen.getByText('日本語')).toBeInTheDocument()
-    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('240px')
-  })
-
-  it('switches the target on chip click without stopping or restarting recording', async () => {
-    vi.mocked(setActiveTranslationTarget).mockResolvedValueOnce({
-      targets: ['en', 'zh-Hant-HK', 'ja'],
-      active_target: 'ja',
-    })
-    useAppStore.setState({
-      pipelineState: 'recording',
-      activeVoiceMode: 'translate',
-      config: translateConfig(),
+      config: translateWith(['ja'], 'ja'),
     })
     render(<Capsule />)
 
-    const japanese = screen.getByRole('button', { name: 'translate.chipLabel 日本語' })
-    const pointerUp = new Event('pointerup', { bubbles: true })
-    Object.defineProperty(pointerUp, 'button', { value: 0 })
-    fireEvent.pointerDown(japanese)
-    fireEvent(japanese, pointerUp)
-    fireEvent.click(japanese)
-
-    await waitFor(() => expect(setActiveTranslationTarget).toHaveBeenCalledWith('ja'))
-    expect(invoke).not.toHaveBeenCalledWith('stop_recording')
-    expect(invoke).not.toHaveBeenCalledWith('start_recording')
-    await waitFor(() => expect(useAppStore.getState().config.translation.active_target).toBe('ja'))
-    expect(screen.getByRole('button', { name: 'translate.chipLabel 日本語' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(languageName()).toHaveTextContent('日本語')
+    expect(screen.queryByTestId('translate-pill-dots')).toBeNull()
   })
 
-  it('widens the capsule shell for the chips while Translate is recording', () => {
+  it('shows no name when no language is chosen', () => {
+    useAppStore.setState({
+      pipelineState: 'recording',
+      activeVoiceMode: 'translate',
+      config: translateWith([], 'en'),
+    })
+    const { container } = render(<Capsule />)
+
+    expect(languageName()).toBeNull()
+    expect(screen.queryByTestId('translate-pill-dots')).toBeNull()
+    expect(screen.getByTestId('waveform')).toBeInTheDocument()
+    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('160px')
+  })
+
+  it('widens the capsule shell for the language while Translate is recording', () => {
     useAppStore.setState({
       pipelineState: 'recording',
       activeVoiceMode: 'translate',

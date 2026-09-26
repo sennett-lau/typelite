@@ -1020,6 +1020,35 @@ body,
     font-weight: 700;
     line-height: 14px;
   }
+  /* Translate recording pill (plan `translate-pill-and-keys`): the active language's name, and
+     one dot per language (the filled one is active). */
+  .pill-lang-name {
+    display: block;
+    flex: none;
+    max-width: 180px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  .pill-lang-dots {
+    display: inline-flex;
+    flex: none;
+    gap: 4px;
+  }
+  .pill-lang-dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background-color 0.2s ease;
+  }
+  .pill-lang-dots i.pill-lang-dot-on {
+    background: #fff;
+  }
   /* The Copy button; its border is the countdown ring. */
   .pill-copy-button {
     position: relative;
