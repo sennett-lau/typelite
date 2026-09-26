@@ -1348,6 +1348,156 @@ body,
   }
 }
 
+/* ─── Ask answer panel above the pill (plan `ask-panel-above-pill`, AskAnswerPanel.tsx) ───
+   The pill's dark glass with the aurora tint inside: the accent at the top left, violet at the
+   bottom right. It grows out of the pill: fade, 8 pt rise and a slight scale from the bottom
+   centre. */
+.ask-glass {
+  position: relative;
+  width: 420px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      80% 60% at 12% 0%,
+      color-mix(in srgb, var(--color-aurora-a) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      70% 60% at 92% 100%,
+      color-mix(in srgb, var(--color-aurora-b) 20%, transparent),
+      transparent 70%
+    ),
+    rgba(28, 28, 30, 0.58);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(28px) saturate(1.8);
+  /* Fits inside the window's 16 pt padding (`WINDOW_PADDING` in ask_panel.rs). */
+  box-shadow: 0 6px 10px rgba(10, 10, 30, 0.34);
+  color: #f2f2f5;
+  transform-origin: 50% 100%;
+  animation: ask-glass-in 0.26s cubic-bezier(0.2, 0, 0, 1) both;
+}
+@keyframes ask-glass-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ask-glass-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* The question line: grey, one line. */
+.ask-glass-question {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11.5px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ask-glass-question b {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+/* Long answers scroll inside the panel. */
+.ask-glass-answer {
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 8px 14px 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ask-glass-note {
+  margin: 0 14px;
+  color: #ffd60a;
+  font-size: 11.5px;
+  line-height: 16px;
+}
+.ask-glass-hint {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+}
+.ask-glass-hint kbd {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  padding: 0 5px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  font-size: 10px;
+}
+.ask-glass-close {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  place-items: center;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+.ask-glass-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.ask-glass-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 5px 11px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.ask-glass-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.ask-glass-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.ask-glass-button-primary {
+  background: var(--color-aurora-a);
+  color: var(--color-pill-chip-text);
+}
+.ask-glass-button-primary:hover {
+  background: color-mix(in srgb, var(--color-aurora-a) 85%, #fff);
+}
+.ask-glass-button:focus-visible,
+.ask-glass-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+/* Reduced motion: the panel only fades in. */
+@media (prefers-reduced-motion: reduce) {
+  .ask-glass {
+    animation-name: ask-glass-fade-in;
+  }
+}
+
 .context-app-count--compact {
   display: none;
 }

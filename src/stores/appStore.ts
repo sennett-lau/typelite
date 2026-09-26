@@ -464,6 +464,13 @@ interface AppState {
   setPipelineState: (state: PipelineState) => void
   activeVoiceMode: VoiceMode | null
   setActiveVoiceMode: (mode: VoiceMode | null) => void
+  /**
+   * Plan `ask-panel-above-pill`: the start of the highlight the current Ask run includes (the
+   * pill's "About …" chip), or null. Kept until the next run, so the done flash can say
+   * "Replaced".
+   */
+  askSelectionPreview: string | null
+  setAskSelectionPreview: (preview: string | null) => void
 
   // Recording
   audioVolume: number
@@ -1239,6 +1246,8 @@ export const useAppStore = create<AppState>((set) => ({
   setPipelineState: (pipelineState) => set({ pipelineState }),
   activeVoiceMode: null,
   setActiveVoiceMode: (activeVoiceMode) => set({ activeVoiceMode }),
+  askSelectionPreview: null,
+  setAskSelectionPreview: (askSelectionPreview) => set({ askSelectionPreview }),
 
   audioVolume: 0,
   setAudioVolume: (audioVolume) => set({ audioVolume }),

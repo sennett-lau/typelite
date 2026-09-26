@@ -533,7 +533,15 @@ export interface AskDictationResult {
 export interface AskDictationStartResult {
   usedSelectedText: boolean
   selectedTextTruncated: boolean
+  /** Plan `ask-panel-above-pill`: the start of the highlight for the pill's chip. */
+  selectedTextPreview?: string | null
 }
+
+/**
+ * Plan `ask-panel-above-pill`: the start of the highlighted text (or null) that the Ask pill shows
+ * as a chip while it listens.
+ */
+export const ASK_SELECTION_PREVIEW_EVENT = 'ask:selection_preview'
 
 export type PendingAskMessage =
   | { kind: 'result'; payload: AskDictationResult }
@@ -568,6 +576,31 @@ export async function takePendingAskMessage(): Promise<PendingAskMessage | null>
  */
 export async function answerAskAnyway(question: string): Promise<AskDictationResult> {
   return invoke('answer_ask_anyway', { question })
+}
+
+// Plan `ask-panel-above-pill`: the Ask panel above the pill.
+
+/** Sent to the Ask window when the panel closes (Escape or a new run). */
+export const ASK_PANEL_CLOSED_EVENT = 'ask:panel_closed'
+
+/** The panel's ✕ button. */
+export async function closeAskPanel(): Promise<void> {
+  return invoke('close_ask_panel')
+}
+
+/** Reports the panel's height; the window keeps its bottom edge above the pill. */
+export async function resizeAskPanel(height: number): Promise<void> {
+  return invoke('resize_ask_panel', { height })
+}
+
+/** Puts `text` on the clipboard (the panel is never focused, so the browser clipboard is not used). */
+export async function copyAskText(text: string): Promise<void> {
+  return invoke('copy_ask_text', { text })
+}
+
+/** Pastes `text` into the frontmost app (replacing a highlight that is still selected). */
+export async function insertAskText(text: string): Promise<void> {
+  return invoke('insert_ask_text', { text })
 }
 
 // Dictionary

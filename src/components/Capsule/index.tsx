@@ -131,6 +131,8 @@ export function Capsule() {
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const copyOffer = useAppStore((s) => s.copyOffer)
   const setCopyOffer = useAppStore((s) => s.setCopyOffer)
+  const askSelectionPreview = useAppStore((s) => s.askSelectionPreview)
+  const lastInsertStatus = useAppStore((s) => s.lastInsertResult?.status ?? null)
   const { stopRecording, isRecording } = useRecording()
   const reducedMotion = useReducedMotion()
 
@@ -144,7 +146,16 @@ export function Capsule() {
   useCapsuleResize(doneFlash, rootRef)
 
   const liveState = getCapsuleState(pipelineState, hasError, doneFlash, copyOffer !== null)
-  const liveSize = getPillSize(liveState, activeVoiceMode, errorHasAction, translatePill, copyOffer)
+  const liveSize = getPillSize(
+    liveState,
+    activeVoiceMode,
+    errorHasAction,
+    translatePill,
+    copyOffer,
+    askSelectionPreview !== null,
+  )
+  // Plan `ask-panel-above-pill`: an Ask edit that replaced the highlight flashes "Replaced".
+  const replacedSelection = askSelectionPreview !== null && lastInsertStatus === 'inserted'
   const visible = getCapsuleVisibility({
     contextMenuOpen,
     capsuleExpanded,
@@ -305,8 +316,10 @@ export function Capsule() {
             {capsuleState === 'transcribing' && <CapsuleProcessing />}
             {capsuleState === 'polishing' && <CapsulePolishing />}
             {capsuleState === 'outputting' && <CapsulePasting />}
-            {capsuleState === 'done' && <CapsuleDone />}
-            {capsuleState === 'ask_recording' && <CapsuleAskRecording />}
+            {capsuleState === 'done' && <CapsuleDone replaced={replacedSelection} />}
+            {capsuleState === 'ask_recording' && (
+              <CapsuleAskRecording selectionPreview={askSelectionPreview} />
+            )}
             {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
             {capsuleState === 'error' && (
               <CapsuleError

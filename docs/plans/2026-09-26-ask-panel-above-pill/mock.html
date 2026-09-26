@@ -1,0 +1,224 @@
+<title>Typelite Ask Panel</title>
+<style>
+  :root {
+    --page: #eef1f6; --ink: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.1); --seg: rgba(0,0,0,.05); --seg-on: #fff;
+    --accent: #0a84ff; --aur-a: #0a84ff; --aur-b: #af52de;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark;
+    --page: #0c0d10; --ink: #f2f2f5; --muted: #9a9aa3; --line: rgba(255,255,255,.1); --seg: rgba(255,255,255,.06); --seg-on: rgba(255,255,255,.14); --accent: #3fd8c2; } }
+  :root[data-theme="dark"] { color-scheme: dark;
+    --page: #0c0d10; --ink: #f2f2f5; --muted: #9a9aa3; --line: rgba(255,255,255,.1); --seg: rgba(255,255,255,.06); --seg-on: rgba(255,255,255,.14); --accent: #3fd8c2; }
+  body { background: var(--page); color: var(--ink); font-family: var(--ui); }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 28px 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+  .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h1 { margin: 4px 0 6px; font-size: 22px; text-wrap: balance; }
+  .lead { margin: 0; color: var(--muted); max-width: 70ch; line-height: 1.5; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .label { font-size: 12px; color: var(--muted); }
+  .seg { display: inline-flex; background: var(--seg); border-radius: 8px; padding: 2px; flex-wrap: wrap; }
+  .seg button { all: unset; cursor: pointer; font-size: 12px; padding: 5px 10px; border-radius: 6px; color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--seg-on); box-shadow: 0 1px 2px rgba(0,0,0,.12); font-weight: 600; }
+  .seg button:focus-visible, .play:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .play { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--accent); padding: 5px 4px; }
+
+  /* Desktop */
+  .desk { --wa: #cfd9ea; --wb: #e9e1f2; --winbg: rgba(255,255,255,.9); --winline: rgba(0,0,0,.08); --wintext: #2c2c2e; --sel: rgba(10,132,255,.28);
+    position: relative; height: 560px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
+    background: radial-gradient(80% 90% at 15% 10%, var(--wa), transparent 70%), radial-gradient(70% 80% at 90% 90%, var(--wb), transparent 70%), #dde3ee; }
+  .desk.dk { --wa: #1b2a3a; --wb: #2a1d3a; --winbg: rgba(30,31,36,.92); --winline: rgba(255,255,255,.08); --wintext: #e2e2e6; --sel: rgba(63,216,194,.28); --aur-a: #3fd8c2;
+    background: radial-gradient(80% 90% at 15% 10%, var(--wa), transparent 70%), radial-gradient(70% 80% at 90% 90%, var(--wb), transparent 70%), #0e1015; }
+  .doc { position: absolute; left: 50%; top: 26px; bottom: 30px; transform: translateX(-50%); width: min(620px, 90%); border-radius: 10px; background: var(--winbg); border: 1px solid var(--winline);
+    box-shadow: 0 18px 50px rgba(0,0,0,.18); color: var(--wintext); font-size: 13.5px; line-height: 1.6; overflow: hidden; }
+  .doc .top { display: flex; align-items: center; gap: 6px; padding: 9px 12px; border-bottom: 1px solid var(--winline); font-size: 12px; font-weight: 600; }
+  .doc .top i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .doc .top span { margin-left: 8px; }
+  .doc .body { padding: 14px 18px 18px; }
+  .doc p { margin: 0 0 10px; }
+  mark.sel { background: var(--sel); color: inherit; border-radius: 2px; transition: background .2s; }
+  mark.sel.replaced { background: color-mix(in srgb, var(--aur-a) 18%, transparent); }
+
+  /* Pill (matches the app: dark glass, aurora inside) */
+  .stage { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+  .pill { pointer-events: auto; position: relative; height: 40px; border-radius: 20px; display: flex; align-items: center; gap: 9px; padding: 0 12px 0 14px; color: #fff; font-size: 12px; font-weight: 500;
+    background: radial-gradient(60% 140% at 18% 50%, color-mix(in srgb, var(--aur-a) 40%, transparent), transparent 70%), radial-gradient(55% 140% at 85% 50%, color-mix(in srgb, var(--aur-b) 36%, transparent), transparent 70%), rgba(28,28,30,.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8);
+    border: 1px solid rgba(255,255,255,.2); box-shadow: 0 10px 28px rgba(10,10,30,.35); transition: width .28s cubic-bezier(.2,0,0,1), opacity .22s, transform .22s; overflow: hidden; white-space: nowrap; }
+  .pill.gone { opacity: 0; transform: translateY(6px) scale(.96); }
+  .pill .rec { width: 8px; height: 8px; border-radius: 50%; background: #ff453a; flex: none; }
+  .pill .wave { display: flex; align-items: center; gap: 2px; height: 18px; }
+  .pill .wave i { width: 2px; border-radius: 1px; background: rgba(255,255,255,.85); animation: wv .9s ease-in-out infinite; }
+  @keyframes wv { 50% { transform: scaleY(.45); } }
+  .pill .ctx { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.14); color: rgba(255,255,255,.9); max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .pill .x { font-size: 11px; color: rgba(255,255,255,.6); }
+  .pill .sweep { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--aur-a) 55%, transparent), color-mix(in srgb, var(--aur-b) 45%, transparent), transparent); width: 60%; filter: blur(8px); animation: sweep 1.4s linear infinite; z-index: 0; }
+  .pill > * { position: relative; z-index: 1; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(200%); } }
+
+  /* Answer panel, anchored above the pill */
+  .panel { pointer-events: auto; width: min(420px, 92%); border-radius: 16px; color: #f2f2f5; overflow: hidden;
+    background:
+      radial-gradient(80% 60% at 12% 0%, color-mix(in srgb, var(--aur-a) 22%, transparent), transparent 70%),
+      radial-gradient(70% 60% at 92% 100%, color-mix(in srgb, var(--aur-b) 20%, transparent), transparent 70%),
+      rgba(28,28,30,.58);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8); backdrop-filter: blur(28px) saturate(1.8);
+    border: 1px solid rgba(255,255,255,.16); box-shadow: 0 18px 44px rgba(10,10,30,.4);
+    transform-origin: 50% 100%; animation: pop .26s cubic-bezier(.2,0,0,1) both; }
+  .panel[hidden] { display: none; }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+  .panel .ph { display: flex; align-items: center; gap: 8px; padding: 10px 12px 0 14px; }
+  .panel .q { flex: 1; min-width: 0; font-size: 11.5px; color: rgba(255,255,255,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .panel .q b { color: rgba(255,255,255,.8); font-weight: 600; }
+  .panel .close { all: unset; cursor: pointer; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: rgba(255,255,255,.6); font-size: 12px; }
+  .panel .close:hover { background: rgba(255,255,255,.12); }
+  .panel .ans { padding: 8px 14px 4px; font-size: 13.5px; line-height: 1.55; max-height: 190px; overflow-y: auto; }
+  .panel .ans p { margin: 0 0 8px; }
+  .panel .note { margin: 0 14px; font-size: 11.5px; color: #ffd60a; display: flex; gap: 6px; align-items: center; }
+  .panel .pf { display: flex; align-items: center; gap: 6px; padding: 8px 10px 10px 14px; }
+  .panel .pf .hint { flex: 1; font-size: 11px; color: rgba(255,255,255,.45); }
+  .panel .pf .hint kbd { font-family: inherit; font-size: 10px; padding: 0 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,.28); color: rgba(255,255,255,.7); }
+  .pbtn { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: rgba(255,255,255,.12); color: #fff; }
+  .pbtn:hover { background: rgba(255,255,255,.2); }
+  .pbtn.primary { background: var(--aur-a); color: #fff; }
+  .desk.dk .pbtn.primary { color: #06201c; }
+  .pbtn:focus-visible, .panel .close:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+  .notes { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; line-height: 1.55; }
+  .notes ul { margin: 6px 0 0; padding-left: 18px; max-width: 76ch; }
+  .notes li + li { margin-top: 4px; }
+  @media (prefers-reduced-motion: reduce) { .panel, .pill .sweep, .pill .wave i { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · design iteration</div>
+    <h1>Ask about highlighted text</h1>
+    <p class="lead">Highlight text, press Ask, speak. Edits replace the highlight as today; answers now appear in a panel just above the pill instead of a window in the middle of the screen.</p>
+  </header>
+
+  <div class="bar">
+    <span class="label">Step</span>
+    <div class="seg" role="group" aria-label="Step">
+      <button type="button" data-k="step" data-v="select" aria-pressed="false">1 · Highlighted</button>
+      <button type="button" data-k="step" data-v="listen" aria-pressed="false">2 · Listening</button>
+      <button type="button" data-k="step" data-v="think" aria-pressed="false">3 · Thinking</button>
+      <button type="button" data-k="step" data-v="result" aria-pressed="true">4 · Result</button>
+    </div>
+    <button class="play" type="button" id="play">▶ Play the whole flow</button>
+  </div>
+  <div class="bar">
+    <span class="label">You asked</span>
+    <div class="seg" role="group" aria-label="Kind of ask">
+      <button type="button" data-k="kind" data-v="question" aria-pressed="true">A question about it</button>
+      <button type="button" data-k="kind" data-v="edit" aria-pressed="false">An edit ("make it shorter")</button>
+      <button type="button" data-k="kind" data-v="copied" aria-pressed="false">An edit that couldn't replace</button>
+      <button type="button" data-k="kind" data-v="live" aria-pressed="false">Needs live info</button>
+    </div>
+    <span class="label">Answer</span>
+    <div class="seg" role="group" aria-label="Answer length">
+      <button type="button" data-k="len" data-v="short" aria-pressed="true">Short</button>
+      <button type="button" data-k="len" data-v="long" aria-pressed="false">Long</button>
+    </div>
+    <span class="label">Theme</span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="true">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="doc">
+      <div class="top"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>Notes — Q3 planning</span></div>
+      <div class="body">
+        <p>Kick-off with the design team on Monday. We agreed to ship the onboarding revamp before the October release.</p>
+        <p id="para">The vendor said the new API is <mark class="sel" id="sel">idempotent, so retries after a timeout won't create duplicate orders</mark>, which means we can drop the manual dedupe step.</p>
+        <p>Open items: pricing page copy, the support macro, and who owns the migration script.</p>
+        <p>Risks: the payments sandbox is flaky on Fridays, and the retry policy still needs sign-off from finance. If sign-off slips, we keep the dedupe job running for one more sprint.</p>
+        <p>Next check-in: Thursday 3 pm. Bring the updated budget and the list of open questions from last week.</p>
+        <p>Parking lot: dark mode for the admin screens, CSV export limits, and the long-running report timeouts.</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="panel" id="panel" role="dialog" aria-label="Ask answer" hidden></div>
+      <div class="pill" id="pill"></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>How it behaves</b>
+    <ul>
+      <li><b>Edits</b> ("make it shorter", "translate this") replace the highlight, like today. No panel: the pill flashes Done.</li>
+      <li><b>Questions</b> ("what does this mean?") open a panel just above the pill, on the screen you are using. It shows your question (with a hint that it was about the highlight), the answer, and actions: <b>Copy</b>, <b>Insert</b> (at the cursor, or replace the highlight), and <b>✕</b>.</li>
+      <li>The panel stays until you close it (Esc, ✕, or starting a new run); it never takes focus from your app, so you can keep typing. Long answers scroll inside the panel (max ~190 pt).</li>
+      <li><b>Couldn't replace</b> (the app blocked it): the same panel shows the result, already on the clipboard, with "Copied" and a retry.</li>
+      <li><b>Needs live information</b>: the panel says so and offers "Answer anyway", as today's Ask window does.</li>
+      <li>Today these appear in a separate window in the middle of the screen; this design moves them above the pill.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var st = { step: 'result', kind: 'question', len: 'short' };
+  var SEL_TEXT = "idempotent, so retries after a timeout won't create duplicate orders";
+  var Q = { question: 'What does idempotent mean here?', edit: 'Make this shorter', copied: 'Make this shorter', live: 'Is their API status page showing any outage today?' };
+  var ANS = {
+    short: '<p>It means sending the same request twice has the same effect as sending it once. If a payment request times out and your app retries it, the vendor won’t create a second order.</p>',
+    long: '<p>It means sending the same request twice has the same effect as sending it once. If a payment request times out and your app retries it, the vendor won’t create a second order.</p><p>In practice they usually do this with an <b>idempotency key</b>: your app sends a unique ID with each order, and the server remembers it. A repeat with the same key returns the first result instead of creating a new order.</p><p>So the manual dedupe step can go, as long as your app sends the same key when it retries. Check how long they keep the keys (often 24 hours); retries after that window could still duplicate.</p>'
+  };
+  var SHORT = "idempotent: repeated requests don't duplicate orders";
+  var desk = document.getElementById('desk'), pill = document.getElementById('pill'), panel = document.getElementById('panel'), sel = document.getElementById('sel');
+  var timers = [];
+  function wave() { return '<span class="wave">' + [6, 11, 7, 14, 9, 12, 5, 10].map(function (h, i) { return '<i style="height:' + h + 'px;animation-delay:' + (i * 0.07) + 's"></i>'; }).join('') + '</span>'; }
+
+  function render() {
+    sel.textContent = SEL_TEXT; sel.className = 'sel';
+    panel.hidden = true; pill.className = 'pill';
+    var snippet = '“' + SEL_TEXT.slice(0, 18) + '…”';
+    if (st.step === 'select') { pill.className = 'pill gone'; pill.innerHTML = ''; return; }
+    if (st.step === 'listen') { pill.innerHTML = '<span class="rec"></span>' + wave() + '<span class="ctx" title="Asking about the highlighted text">About ' + snippet + '</span><span class="x">✕</span>'; return; }
+    if (st.step === 'think') { pill.innerHTML = '<span class="sweep"></span><span>Thinking…</span><span class="x">✕</span>'; return; }
+    // result
+    if (st.kind === 'edit') {
+      sel.textContent = SHORT; sel.className = 'sel replaced';
+      pill.innerHTML = '<span>✓ Replaced</span>';
+      timers.push(setTimeout(function () { pill.className = 'pill gone'; }, 900));
+      return;
+    }
+    pill.className = 'pill gone'; pill.innerHTML = '';
+    var h = '<div class="ph"><span class="q">' + (st.kind === 'live' ? '' : 'About the highlight · ') + '<b>' + Q[st.kind] + '</b></span><button class="close" type="button" aria-label="Close (Esc)" title="Close (Esc)">✕</button></div>';
+    if (st.kind === 'question') {
+      h += '<div class="ans">' + ANS[st.len] + '</div>';
+      h += '<div class="pf"><span class="hint"><kbd>Esc</kbd> to close</span><button class="pbtn" type="button">Copy</button><button class="pbtn primary" type="button">Insert</button></div>';
+    } else if (st.kind === 'copied') {
+      h += '<div class="ans"><p>' + SHORT + '</p></div><p class="note">⚠︎ This app didn’t allow the replacement. The result is on your clipboard.</p>';
+      h += '<div class="pf"><span class="hint"><kbd>Esc</kbd> to close</span><button class="pbtn" type="button">Try replacing again</button><button class="pbtn primary" type="button">Copied ✓</button></div>';
+    } else {
+      h += '<div class="ans"><p>This needs live information, and Typelite doesn’t search the web. It can still answer from what the model knows, which may be out of date.</p></div>';
+      h += '<div class="pf"><span class="hint"><kbd>Esc</kbd> to close</span><button class="pbtn primary" type="button">Answer anyway</button></div>';
+    }
+    panel.innerHTML = h; panel.hidden = false;
+    panel.querySelector('.close').onclick = function () { panel.hidden = true; };
+  }
+  function set(k, v) {
+    st[k] = v;
+    document.querySelectorAll('[data-k="' + k + '"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === v)); });
+  }
+  document.querySelectorAll('[data-k]').forEach(function (b) {
+    b.onclick = function () { timers.forEach(clearTimeout); timers = []; set(b.getAttribute('data-k'), b.getAttribute('data-v')); render(); };
+  });
+  document.getElementById('play').onclick = function () {
+    timers.forEach(clearTimeout); timers = [];
+    [['select', 0], ['listen', 900], ['think', 3000], ['result', 4400]].forEach(function (s) {
+      timers.push(setTimeout(function () { set('step', s[0]); render(); }, s[1]));
+    });
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') panel.hidden = true; });
+  function theme(d) { desk.classList.toggle('dk', d);
+    document.getElementById('t-light').setAttribute('aria-pressed', String(!d)); document.getElementById('t-dark').setAttribute('aria-pressed', String(d)); }
+  document.getElementById('t-light').onclick = function () { theme(false); };
+  document.getElementById('t-dark').onclick = function () { theme(true); };
+  try { if (matchMedia('(prefers-color-scheme: dark)').matches) theme(true); } catch (e) {}
+  render();
+})();
+</script>
