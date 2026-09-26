@@ -1,0 +1,80 @@
+{
+  "format": 1,
+  "presets": [
+    {
+      "id": "cantonese-hong-kong",
+      "name": "Cantonese (Hong Kong) 廣東話",
+      "version": 1,
+      "format": 1,
+      "tier": "official",
+      "languages": [
+        "zh-Hant-HK",
+        "yue-Hant-HK"
+      ],
+      "variants": [],
+      "applies_to": [
+        "polish",
+        "translate"
+      ],
+      "summary": "Colloquial written Cantonese as Hong Kong people type it, with Hong Kong code-mixing.",
+      "authors": [
+        "sennett-lau"
+      ],
+      "model_hint": "4B models slip into formal written Chinese now and then; 7B or larger follows it better.",
+      "path": "cantonese-hong-kong/preset.md",
+      "bytes": 2139,
+      "sha256": "01128c05b0ae5751e736ef5e94cc90e2fb7d59364415e02e58603d5fd35acf20"
+    },
+    {
+      "id": "english",
+      "name": "English",
+      "version": 1,
+      "format": 1,
+      "tier": "official",
+      "languages": [
+        "en"
+      ],
+      "variants": [
+        "en-AU",
+        "en-CA",
+        "en-GB",
+        "en-US"
+      ],
+      "applies_to": [
+        "polish",
+        "translate"
+      ],
+      "summary": "Clear, natural English that keeps the speaker's tone, with spelling and words per region.",
+      "authors": [
+        "sennett-lau"
+      ],
+      "model_hint": "Works with small 4B instruct models.",
+      "path": "english/preset.md",
+      "bytes": 1941,
+      "sha256": "c03d5c4941fab8af9d6125084814263728df5d0179b8497f19361c2fe59f5a02"
+    },
+    {
+      "id": "mandarin-taiwan",
+      "name": "Mandarin (Taiwan) 臺灣華語",
+      "version": 1,
+      "format": 1,
+      "tier": "official",
+      "languages": [
+        "zh-Hant-TW",
+        "cmn-Hant-TW"
+      ],
+      "variants": [],
+      "applies_to": [
+        "polish",
+        "translate"
+      ],
+      "summary": "Natural Taiwan Mandarin in Traditional characters, with Taiwan vocabulary.",
+      "authors": [
+        "sennett-lau"
+      ],
+      "path": "mandarin-taiwan/preset.md",
+      "bytes": 1059,
+      "sha256": "787e563d8dbcf92ed5f495f664e9cfcb44ef7da5e5dce97809ca3328613883d9"
+    }
+  ]
+}
