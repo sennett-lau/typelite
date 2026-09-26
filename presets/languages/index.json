@@ -55,7 +55,7 @@
     },
     {
       "id": "mandarin-taiwan",
-      "name": "Mandarin (Taiwan) 繁體中文（台灣）",
+      "name": "Mandarin (Taiwan) 國語",
       "version": 3,
       "format": 1,
       "tier": "official",
@@ -73,8 +73,8 @@
         "sennett-lau"
       ],
       "path": "mandarin-taiwan/preset.md",
-      "bytes": 1827,
-      "sha256": "1828802760c3a780c8aa15a0d839bcc5b13c5704f758dd5d8e1a3d3dd9cd495b"
+      "bytes": 1809,
+      "sha256": "d1adbf5168974d754ad78a4c4d846853f9c78957eb1ff546d3668910de8713da"
     }
   ]
 }
