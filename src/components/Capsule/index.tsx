@@ -21,6 +21,7 @@ import { CapsuleAskRecording } from './CapsuleAskRecording'
 import { CapsuleAskThinking } from './CapsuleAskThinking'
 import { CapsuleAurora, type AuroraMode } from './CapsuleAurora'
 import { CapsuleCopy } from './CapsuleCopy'
+import { useTranslatePill } from './translatePill'
 
 const DRAG_THRESHOLD = 5
 /** How long the done flash stays before the pill hides. */
@@ -126,7 +127,7 @@ export function Capsule() {
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const errorHasAction = useAppStore((s) => s.pipelineErrorAction !== null)
-  const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
+  const translatePill = useTranslatePill()
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const copyOffer = useAppStore((s) => s.copyOffer)
   const setCopyOffer = useAppStore((s) => s.setCopyOffer)
@@ -143,13 +144,7 @@ export function Capsule() {
   useCapsuleResize(doneFlash, rootRef)
 
   const liveState = getCapsuleState(pipelineState, hasError, doneFlash, copyOffer !== null)
-  const liveSize = getPillSize(
-    liveState,
-    activeVoiceMode,
-    errorHasAction,
-    translateTargetCount,
-    copyOffer,
-  )
+  const liveSize = getPillSize(liveState, activeVoiceMode, errorHasAction, translatePill, copyOffer)
   const visible = getCapsuleVisibility({
     contextMenuOpen,
     capsuleExpanded,
