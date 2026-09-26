@@ -2740,16 +2740,37 @@ section {
   white-space: nowrap;
 }
 .track {
+  position: relative;
   height: 6px;
   border-radius: 3px;
   background: var(--hairline);
   overflow: hidden;
 }
 .track i {
+  position: relative;
+  overflow: hidden;
   display: block;
   height: 100%;
   border-radius: 3px;
   background: var(--accent);
+  transform-origin: 0 50%;
+  transition: background-color 0.5s ease;
+}
+/* A light moving along the filled part while it downloads. */
+.track b {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.55) 12%, transparent 25%);
+}
+.track-done i {
+  background: var(--success);
+}
+.dl-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: color-mix(in srgb, var(--success) 75%, var(--text)) !important;
+  font-weight: 600;
 }
 .dl-foot {
   display: flex;
