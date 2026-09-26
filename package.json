@@ -34,7 +34,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "presets:index": "node scripts/language-presets.mjs",
-    "presets:check": "node scripts/language-presets.mjs --check"
+    "presets:check": "node scripts/language-presets.mjs --check",
+    "docs:cards": "node scripts/docs-cards.mjs",
+    "docs:check": "node scripts/docs-cards.mjs --check"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.0",
