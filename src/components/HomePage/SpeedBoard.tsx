@@ -23,6 +23,7 @@ import {
   type StepId,
 } from '../../lib/speed'
 import { Group } from '../ui/Group'
+import { SpeedCompare } from './SpeedCompare'
 
 /**
  * Loads the kept runs when Home opens and adds each new run from its event. The backend keeps
@@ -329,6 +330,7 @@ export function SpeedBoard() {
 
   return (
     <Group label={t('home.speed.title')}>
+      <SpeedCompare />
       {average ? (
         <>
           <AverageRun average={average} />
