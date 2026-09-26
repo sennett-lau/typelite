@@ -34,6 +34,10 @@
   --glow-b: rgba(175, 82, 222, 0.12);
   --aurora-a: #0a84ff;
   --aurora-b: #af52de;
+  --hero-a: rgba(10, 132, 255, 0.2);
+  --hero-b: rgba(175, 82, 222, 0.16);
+  --hero-c: rgba(255, 159, 140, 0.14);
+  --hero-glow: rgba(10, 132, 255, 0.1);
   --pill-bg: rgba(30, 30, 32, 0.72);
   --pill-line: rgba(255, 255, 255, 0.14);
   --pill-chip-text: #ffffff;
@@ -84,6 +88,10 @@
     --key-line: #445066;
     --glow-a: rgba(63, 216, 194, 0.2);
     --glow-b: rgba(175, 82, 222, 0.2);
+    --hero-a: rgba(63, 216, 194, 0.16);
+    --hero-b: rgba(175, 82, 222, 0.2);
+    --hero-c: rgba(10, 132, 255, 0.1);
+    --hero-glow: rgba(63, 216, 194, 0.09);
     --aurora-a: #3fd8c2;
     --pill-chip-text: #04241f;
     --desk: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%);
@@ -119,6 +127,10 @@
   --key-line: #445066;
   --glow-a: rgba(63, 216, 194, 0.2);
   --glow-b: rgba(175, 82, 222, 0.2);
+  --hero-a: rgba(63, 216, 194, 0.16);
+  --hero-b: rgba(175, 82, 222, 0.2);
+  --hero-c: rgba(10, 132, 255, 0.1);
+  --hero-glow: rgba(63, 216, 194, 0.09);
   --aurora-a: #3fd8c2;
   --pill-chip-text: #04241f;
   --desk: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%);
@@ -507,9 +519,155 @@ section {
 
 /* ─── Hero ─── */
 .hero {
+  isolation: isolate;
   padding-top: 56px;
   padding-bottom: 72px;
   text-align: center;
+}
+
+/* The hero's aurora: three large soft blobs drifting slowly (transform only), faded out towards
+   the bottom so they melt into the page. It reaches up under the transparent top bar. */
+.hero-backdrop {
+  position: absolute;
+  inset: -64px 0 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 0%, #000 55%, transparent 92%);
+  mask-image: linear-gradient(#000 0%, #000 55%, transparent 92%);
+}
+.hero-blob {
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  max-width: 980px;
+  max-height: 980px;
+  border-radius: 50%;
+  will-change: transform;
+  animation: hero-drift-a 26s ease-in-out infinite alternate;
+}
+.hero-blob-a {
+  left: -18%;
+  top: -30%;
+  background: radial-gradient(closest-side, var(--hero-a), transparent);
+}
+.hero-blob-b {
+  right: -20%;
+  top: -18%;
+  background: radial-gradient(closest-side, var(--hero-b), transparent);
+  animation-name: hero-drift-b;
+  animation-duration: 31s;
+}
+.hero-blob-c {
+  left: 28%;
+  top: 8%;
+  width: 46vmax;
+  height: 46vmax;
+  background: radial-gradient(closest-side, var(--hero-c), transparent);
+  animation-name: hero-drift-c;
+  animation-duration: 23s;
+}
+@keyframes hero-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(14%, 10%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(26%, -4%, 0) scale(0.94);
+  }
+}
+@keyframes hero-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-18%, 14%, 0) scale(0.92);
+  }
+  100% {
+    transform: translate3d(-8%, 24%, 0) scale(1.1);
+  }
+}
+@keyframes hero-drift-c {
+  0% {
+    transform: translate3d(-12%, 6%, 0) scale(0.9);
+  }
+  100% {
+    transform: translate3d(16%, -10%, 0) scale(1.15);
+  }
+}
+/* A faint light that follows the pointer (desktop only, set by HeroBackdrop.tsx). */
+.hero-glow {
+  position: absolute;
+  left: -280px;
+  top: -280px;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--hero-glow), transparent);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.hero-glow.on {
+  opacity: 1;
+}
+.hero.is-offscreen .hero-blob,
+.hero.is-offscreen .gradient-live {
+  animation-play-state: paused;
+}
+
+/* Entrance: each headline word blurs into focus, the rest rises in after it. */
+.hero-title .hw {
+  display: inline-block;
+  animation: hero-word-in 1s var(--ease) both;
+  animation-delay: calc(0.1s + var(--i, 0) * 0.13s);
+}
+@keyframes hero-word-in {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+    transform: translateY(0.16em) scale(0.97);
+  }
+}
+.hero-rise {
+  animation: hero-rise-in 0.9s var(--ease) both;
+  animation-delay: var(--d, 0s);
+}
+@keyframes hero-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+/* "say it." shares one gradient across both words (each word is its own box, so the second is
+   offset by the first word's width), and the gradient drifts slowly through its colours. */
+@property --gx {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+.hero-title {
+  --gw: 2.4em;
+}
+.gradient-live {
+  background-image: linear-gradient(
+    95deg,
+    var(--aurora-a) 0%,
+    var(--aurora-b) 50%,
+    var(--aurora-a) 100%
+  );
+  background-size: calc(var(--gw) * 2) 100%;
+  background-position: calc(var(--gx) - var(--off, 0px)) 0;
+  animation: gradient-flow 14s linear infinite;
+}
+.gradient-live-2 {
+  --off: 1.66em;
+}
+@keyframes gradient-flow {
+  to {
+    --gx: calc(var(--gw) * -2);
+  }
 }
 .hero-badge {
   display: inline-flex;
