@@ -29,8 +29,9 @@ vi.mock('../OnboardingLayout', () => ({
     canBack,
     nextLabel,
     title,
+    subtitle,
     onClose,
-    centerContent,
+    onSkip,
   }: {
     children: React.ReactNode
     onBack: () => void
@@ -40,16 +41,13 @@ vi.mock('../OnboardingLayout', () => ({
     canBack: boolean
     nextLabel: string
     title: string
+    subtitle?: string
     onClose?: () => void
-    centerContent?: boolean
+    onSkip?: () => void
   }) => (
-    <div
-      data-testid="layout"
-      data-total-steps={totalSteps}
-      data-can-next={String(canNext)}
-      data-centered={String(Boolean(centerContent))}
-    >
+    <div data-testid="layout" data-total-steps={totalSteps} data-can-next={String(canNext)}>
       <h1>{title}</h1>
+      {subtitle && <p data-testid="subtitle">{subtitle}</p>}
       {onClose && (
         <button type="button" onClick={onClose}>
           Close tour
@@ -58,6 +56,11 @@ vi.mock('../OnboardingLayout', () => ({
       <button type="button" onClick={onBack} disabled={!canBack}>
         Back
       </button>
+      {onSkip && (
+        <button type="button" onClick={onSkip}>
+          Skip
+        </button>
+      )}
       <button type="button" onClick={onNext} disabled={!canNext}>
         {nextLabel}
       </button>
@@ -109,16 +112,32 @@ vi.mock('../LlmSetupStep', () => ({
     </div>
   ),
 }))
-vi.mock('../ShortcutStep', () => ({
-  ShortcutStep: ({ role, done, onDone }: { role: string; done: boolean; onDone: () => void }) => (
+vi.mock('../ShortcutSetupPage', () => ({
+  ShortcutSetupPage: ({ role }: { role: string }) => <div>Setup page {role}</div>,
+}))
+vi.mock('../ExercisePage', () => ({
+  ExercisePage: ({ exercise, onPassed }: { exercise: { id: string }; onPassed: () => void }) => (
     <div>
-      Shortcut step {role} {done ? 'done' : 'pending'}
-      <button type="button" onClick={onDone}>
-        Complete {role}
+      Exercise page {exercise.id}
+      <button type="button" onClick={onPassed}>
+        Pass {exercise.id}
       </button>
     </div>
   ),
 }))
+
+/** Step index of each shortcut page (plan `tutorial-one-page`). */
+const PAGE = {
+  dictateSetup: 4,
+  correction: 5,
+  fillers: 6,
+  translateSetup: 7,
+  speakTranslate: 8,
+  selectionTranslate: 9,
+  askSetup: 10,
+  question: 11,
+  edit: 12,
+}
 
 function layout() {
   return screen.getByTestId('layout')
@@ -156,25 +175,41 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('Onboarding flow', () => {
-  it('has seven steps in the agreed order', () => {
-    expect(TOTAL_STEPS).toBe(7)
+  it('has the four setup steps, then a setup page and two exercise pages per shortcut', () => {
+    expect(TOTAL_STEPS).toBe(13)
     render(<Onboarding />)
-    expect(layout()).toHaveAttribute('data-total-steps', '7')
+    expect(layout()).toHaveAttribute('data-total-steps', '13')
 
     const expected = [
       ['Welcome', 'Welcome step'],
       ['Voice input', 'Microphone step'],
       ['Speech recognition', 'Speech step'],
       ['AI polish', 'AI step'],
-      ['Dictate', 'Shortcut step dictation pending'],
-      ['Translate', 'Shortcut step translate pending'],
-      ['Ask Anything', 'Shortcut step ask pending'],
+      ['Dictate', 'Setup page dictation'],
+      ['Change your mind', 'Exercise page correction'],
+      ['Fillers disappear', 'Exercise page fillers'],
+      ['Translate', 'Setup page translate'],
+      ['Speak and translate', 'Exercise page speakTranslate'],
+      ['Translate a selection', 'Exercise page selectionTranslate'],
+      ['Ask Anything', 'Setup page ask'],
+      ['Ask a question', 'Exercise page question'],
+      ['Edit by voice', 'Exercise page edit'],
     ]
     expected.forEach(([title, content], step) => {
       goToStep(step)
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument()
       expect(screen.getByText(content)).toBeInTheDocument()
     })
+  })
+
+  it('subtitles each exercise with its shortcut and number', () => {
+    useAppStore.setState({ onboardingStep: PAGE.fillers })
+    render(<Onboarding />)
+    expect(screen.getByTestId('subtitle')).toHaveTextContent('Dictate · exercise 2 of 2')
+    goToStep(PAGE.dictateSetup)
+    expect(screen.getByTestId('subtitle')).toHaveTextContent(
+      'Speak, and get clean text in any app.',
+    )
   })
 
   it('loads the saved config when it opens', async () => {
@@ -206,13 +241,6 @@ describe('Onboarding flow', () => {
     useAppStore.setState({ onboardingStep: 1 })
     render(<Onboarding />)
     expect(layout()).toHaveAttribute('data-can-next', 'true')
-  })
-
-  it('centres only the welcome step', () => {
-    render(<Onboarding />)
-    expect(layout()).toHaveAttribute('data-centered', 'true')
-    goToStep(1)
-    expect(layout()).toHaveAttribute('data-centered', 'false')
   })
 
   it('unlocks Next on the service steps once the active preset passed a test', () => {
@@ -270,37 +298,74 @@ describe('Onboarding flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
 
-    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(4))
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(PAGE.dictateSetup))
     expect(useAppStore.getState().onboardingCompleted).toBe(false)
   })
 
-  it('unlocks each shortcut step once its practice worked, and keeps it after Back', async () => {
-    useAppStore.setState({ onboardingStep: 4 })
+  it('offers "Try it" on a setup page once the shortcut is set', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.dictateSetup })
+    render(<Onboarding />)
+    expect(layout()).toHaveAttribute('data-can-next', 'true')
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try it' }))
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(PAGE.correction))
+  })
+
+  it('keeps "Try it" off on the Translate setup page until a language is added', () => {
+    useAppStore.getState().updateConfig({ translation: { targets: [], active_target: '' } })
+    useAppStore.setState({ onboardingStep: PAGE.translateSetup })
+    render(<Onboarding />)
+    expect(screen.getByRole('button', { name: 'Try it' })).toBeDisabled()
+
+    act(() =>
+      useAppStore
+        .getState()
+        .updateConfig({ translation: { targets: ['ja'], active_target: 'ja' } }),
+    )
+    expect(screen.getByRole('button', { name: 'Try it' })).toBeEnabled()
+  })
+
+  it('unlocks Next on an exercise once it passed, hides Skip, and keeps it after Back', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.correction })
     render(<Onboarding />)
     expect(layout()).toHaveAttribute('data-can-next', 'false')
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complete dictation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass correction' }))
     expect(layout()).toHaveAttribute('data-can-next', 'true')
-    expect(screen.getByText('Shortcut step dictation done')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(5))
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(PAGE.fillers))
     expect(layout()).toHaveAttribute('data-can-next', 'false')
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }))
-    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(4))
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(PAGE.correction))
     expect(layout()).toHaveAttribute('data-can-next', 'true')
     expect(tauri.updateConfig).toHaveBeenCalled()
   })
 
-  it('finishes on the Ask step and marks onboarding completed', async () => {
-    useAppStore.setState({ onboardingStep: 6 })
+  it('Skip moves on to the next page without passing the exercise', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.fillers })
+    render(<Onboarding />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(PAGE.translateSetup))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(useAppStore.getState().onboardingStep).toBe(PAGE.fillers))
+    expect(layout()).toHaveAttribute('data-can-next', 'false')
+  })
+
+  it('finishes on the last exercise and marks onboarding completed', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.edit })
     render(<Onboarding />)
 
     const finish = screen.getByRole('button', { name: 'Finish' })
     expect(finish).toBeDisabled()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
     await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
@@ -309,11 +374,21 @@ describe('Onboarding flow', () => {
     expect(useAppStore.getState().config.shortcut_tour_completed).toBe(true)
   })
 
+  it('skipping the last exercise also finishes the tour', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.edit })
+    render(<Onboarding />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
+    expect(tauri.setShortcutTourState).toHaveBeenCalledWith({ completed: true })
+  })
+
   it('the shortcut tour starts at Dictate, cannot go back, and closes to Home', async () => {
     useAppStore.getState().startShortcutTour()
     render(<Onboarding />)
 
-    expect(screen.getByText('Shortcut step dictation pending')).toBeInTheDocument()
+    expect(screen.getByText('Setup page dictation')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Close tour' }))
@@ -324,10 +399,10 @@ describe('Onboarding flow', () => {
 
   it('shows the error and stays when saving on Finish fails', async () => {
     vi.mocked(tauri.updateConfig).mockRejectedValue('disk full')
-    useAppStore.setState({ onboardingStep: 6 })
+    useAppStore.setState({ onboardingStep: PAGE.edit })
     render(<Onboarding />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
     expect(await screen.findByText('Could not save: disk full')).toBeInTheDocument()
@@ -352,15 +427,25 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
     expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
   })
 
-  it('allows only the shortcut each tutorial step teaches', async () => {
-    useAppStore.setState({ onboardingStep: 4 })
+  it('allows only the shortcut each exercise page teaches; setup pages allow none', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.correction })
     render(<Onboarding />)
     await waitFor(() => expect(lastGate()).toEqual(['dictation']))
 
-    goToStep(5)
+    goToStep(PAGE.fillers)
+    expect(lastGate()).toEqual(['dictation'])
+
+    // Plan `tutorial-one-page`: a shortcut's setup page records keys; nothing runs there.
+    goToStep(PAGE.translateSetup)
+    expect(lastGate()).toEqual([])
+
+    goToStep(PAGE.speakTranslate)
     expect(lastGate()).toEqual(['translate', 'switchLanguage'])
 
-    goToStep(6)
+    goToStep(PAGE.askSetup)
+    expect(lastGate()).toEqual([])
+
+    goToStep(PAGE.edit)
     expect(lastGate()).toEqual(['ask'])
 
     // Back to a setup step closes the gate again.
@@ -368,10 +453,10 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
     expect(lastGate()).toEqual([])
   })
 
-  it('opens every shortcut when onboarding finishes on the Ask step', async () => {
-    useAppStore.setState({ onboardingStep: 6 })
+  it('opens every shortcut when onboarding finishes on the last exercise', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.edit })
     render(<Onboarding />)
-    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
     await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
@@ -394,9 +479,9 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
 
   it('keeps the gate closed when saving on Finish fails', async () => {
     vi.mocked(tauri.updateConfig).mockRejectedValue('disk full')
-    useAppStore.setState({ onboardingStep: 6 })
+    useAppStore.setState({ onboardingStep: PAGE.edit })
     render(<Onboarding />)
-    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
     expect(await screen.findByText('Could not save: disk full')).toBeInTheDocument()
@@ -407,7 +492,10 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
     // After a finished onboarding everything was allowed; the tour re-enters onboarding.
     useAppStore.getState().startShortcutTour()
     render(<Onboarding />)
-    await waitFor(() => expect(lastGate()).toEqual(['dictation']))
+    // The tour opens on the Dictate setup page (nothing allowed), then its first exercise.
+    await waitFor(() => expect(lastGate()).toEqual([]))
+    goToStep(PAGE.correction)
+    expect(lastGate()).toEqual(['dictation'])
     expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
 
     fireEvent.click(screen.getByRole('button', { name: 'Close tour' }))

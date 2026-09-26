@@ -340,6 +340,15 @@ impl Default for TranslationConfig {
 }
 
 impl TranslationConfig {
+    /// No language at all: what a new install starts with (plan `tutorial-one-page`).
+    pub fn empty() -> Self {
+        Self {
+            targets: Vec::new(),
+            active_target: String::new(),
+            languages: BTreeMap::new(),
+        }
+    }
+
     fn from_legacy(target_lang: &str) -> Self {
         let target = normalize_translation_code(target_lang).unwrap_or_else(|| "en".to_string());
         Self {
@@ -418,8 +427,15 @@ impl TranslationConfig {
         }
 
         let legacy = normalize_translation_code(legacy_target);
+        // Plan `tutorial-one-page`: an empty list stays empty (a new install has no language
+        // until the user adds one); only an older config's legacy target fills it.
         if normalized.is_empty() {
-            normalized.push(legacy.clone().unwrap_or_else(|| "en".to_string()));
+            let Some(legacy) = legacy.clone() else {
+                self.targets = Vec::new();
+                self.active_target = String::new();
+                return;
+            };
+            normalized.push(legacy);
         }
         if let Some(legacy) = legacy.as_ref() {
             if !normalized.contains(legacy) && normalized.len() < MAX_TRANSLATION_TARGETS {
@@ -1103,9 +1119,14 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
-    /// Config for a first launch with no stored settings.
+    /// Config for a first launch with no stored settings. Plan `tutorial-one-page`: no
+    /// translation language until the user adds one (older configs keep theirs).
     pub fn new_install_default() -> Self {
-        Self::default()
+        Self {
+            target_lang: String::new(),
+            translation: TranslationConfig::empty(),
+            ..Self::default()
+        }
     }
 
     fn migrate_legacy_platform_hotkeys(&mut self) {
@@ -3577,6 +3598,7 @@ mod tests {
         assert_eq!(normalized.translation.active_target, "de");
         assert_eq!(normalized.target_lang, "de");
 
+        // Plan `tutorial-one-page`: an empty list stays empty; there is no English fallback.
         let empty = AppConfig::from_stored_value(serde_json::json!({
             "target_lang": "xx",
             "translation": {
@@ -3585,9 +3607,40 @@ mod tests {
             }
         }))
         .unwrap();
-        assert_eq!(empty.translation.targets, ["en"]);
-        assert_eq!(empty.translation.active_target, "en");
-        assert_eq!(serde_json::to_value(&empty).unwrap()["target_lang"], "en");
+        assert!(empty.translation.targets.is_empty());
+        assert_eq!(empty.translation.active_target, "");
+        assert_eq!(serde_json::to_value(&empty).unwrap()["target_lang"], "");
+
+        // An empty list with a valid legacy target (an older config) keeps that target.
+        let legacy_fill = AppConfig::from_stored_value(serde_json::json!({
+            "target_lang": "ja",
+            "translation": {"targets": [], "active_target": ""}
+        }))
+        .unwrap();
+        assert_eq!(legacy_fill.translation.targets, ["ja"]);
+        assert_eq!(legacy_fill.translation.active_target, "ja");
+    }
+
+    #[test]
+    fn new_install_starts_without_a_translation_language() {
+        let config = AppConfig::new_install_default();
+        assert!(config.translation.targets.is_empty());
+        assert_eq!(config.translation.active_target, "");
+        assert_eq!(config.target_lang, "");
+
+        // Saved and loaded again, it stays empty.
+        let round_trip =
+            AppConfig::from_stored_value(serde_json::to_value(&config).unwrap()).unwrap();
+        assert!(round_trip.translation.targets.is_empty());
+        assert_eq!(round_trip.target_lang, "");
+
+        // An existing config keeps its languages.
+        let existing = AppConfig::from_stored_value(serde_json::json!({
+            "target_lang": "en",
+            "translation": {"targets": ["en", "ja"], "active_target": "en"}
+        }))
+        .unwrap();
+        assert_eq!(existing.translation.targets, ["en", "ja"]);
     }
 
     #[test]

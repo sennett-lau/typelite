@@ -12,10 +12,10 @@ interface Props {
   nextLabel?: string
   onNext: () => void
   onBack: () => void
+  /** Plan `tutorial-one-page`: shows Skip next to Next (the exercise pages). */
+  onSkip?: () => void
   /** Replaces the default close action (quit the app), for example to return to Home. */
   onClose?: () => void
-  /** Centre the step content vertically in the step area (the welcome step). */
-  centerContent?: boolean
   /** A wider step area (the speech step's Built-in card, plan `two-tab-speech`). */
   wideContent?: boolean
   children: React.ReactNode
@@ -31,8 +31,8 @@ export function OnboardingLayout({
   nextLabel,
   onNext,
   onBack,
+  onSkip,
   onClose,
-  centerContent = false,
   wideContent = false,
   children,
 }: Props) {
@@ -66,26 +66,25 @@ export function OnboardingLayout({
           <StepIndicator total={totalSteps} current={step} />
         </div>
 
-        <div className="flex-none px-8 pt-3 pb-5 text-center">
-          <h1 className="page-title">{title}</h1>
-          {subtitle && <p className="page-subtitle">{subtitle}</p>}
-        </div>
-
+        {/* Plan `tutorial-one-page`: title and content are one block, centred between the dots
+            and the footer. my-auto centres it when it is shorter than the area and still lets
+            it scroll from the top when it is taller. */}
         <div
-          className={`min-h-0 flex-1 overflow-y-auto px-8 ${centerContent ? 'flex flex-col' : ''}`}
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto px-8"
           data-testid="onboarding-step-area"
         >
-          {/* my-auto centres the content when it is shorter than the area and still lets it
-              scroll from the top when it is taller. */}
-          <div
-            className={`mx-auto w-full ${wideContent ? 'max-w-[480px]' : 'max-w-[400px]'} pb-6 ${centerContent ? 'my-auto' : ''}`}
-            data-centered={centerContent ? 'true' : undefined}
-          >
-            {children}
+          <div className="my-auto w-full pt-3 pb-4" data-testid="onboarding-block">
+            <div className="pb-[22px] text-center">
+              <h1 className="page-title">{title}</h1>
+              {subtitle && <p className="page-subtitle">{subtitle}</p>}
+            </div>
+            <div className={`mx-auto w-full ${wideContent ? 'max-w-[480px]' : 'max-w-[400px]'}`}>
+              {children}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-none items-center justify-between px-8 py-4">
+        <div className="flex flex-none items-center px-8 py-4">
           <button
             type="button"
             onClick={onBack}
@@ -94,6 +93,16 @@ export function OnboardingLayout({
           >
             {t('onboarding.layout.back')}
           </button>
+          <span className="flex-1" />
+          {onSkip && (
+            <button
+              type="button"
+              onClick={onSkip}
+              className="btn-secondary mr-2 px-4 py-1.5 text-[13px]"
+            >
+              {t('onboarding.layout.skip')}
+            </button>
+          )}
           <button
             type="button"
             onClick={onNext}

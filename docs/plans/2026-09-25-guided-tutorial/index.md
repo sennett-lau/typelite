@@ -7,6 +7,8 @@ and Ask answers questions or edits a selection.
 
 Status: done — 2026-09-25
 
+Superseded in part by [tutorial-one-page](../2026-09-26-tutorial-one-page/index.md) (one page per exercise, result card instead of the before/after panel).
+
 Refines the shortcut steps of [onboarding-tutorial](../2026-09-24-onboarding-tutorial/index.md). Depends on
 [ask-translate-and-live-questions](../2026-09-25-ask-translate-and-live-questions/index.md) for highlight-and-translate.
 

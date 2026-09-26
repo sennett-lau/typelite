@@ -4,21 +4,18 @@ import zh from '../../../i18n/locales/zh.json'
 import {
   EXERCISES,
   SELECTION_TRANSLATE_PREFILL,
+  SPEAK_TRANSLATE_LINE,
   checkExercise,
+  insertedCharCount,
   insertedText,
   looksLikeLanguage,
-  mentions36,
   selectionTranslatePrefill,
+  speakTranslateLine,
+  wordDiff,
   wroteText,
 } from '../exercises'
 import type { CheckInput, ExerciseId } from '../exercises'
-import {
-  exerciseFlowReducer,
-  flowComplete,
-  flowFinished,
-  initialExerciseFlow,
-} from '../exerciseFlow'
-import type { ExerciseFlowAction, ExerciseFlowState } from '../exerciseFlow'
+import { MISS_DELAY_MS, SETTLE_MS, decideDelay, exerciseView, skippedStatus } from '../exerciseFlow'
 
 function input(overrides: Partial<CheckInput>): CheckInput {
   return {
@@ -43,6 +40,85 @@ describe('insertedText', () => {
     expect(insertedText('First. ', 'First. Second.')).toBe('Second.')
     expect(insertedText('ab', 'aXYb')).toBe('XY')
     expect(insertedText('replace me', 'new text')).toBe('new text')
+  })
+
+  it('counts inserted characters as Rust does, spaces and CJK included', () => {
+    expect(insertedCharCount('', 'Hello. ')).toBe(7)
+    expect(insertedCharCount('First. ', 'First. Second.')).toBe(7)
+    expect(insertedCharCount('今天下午三点开会', 'The meeting is at 3.')).toBe(20)
+    expect(insertedCharCount('', '早晨😀')).toBe(3)
+    expect(insertedCharCount('same', 'same')).toBe(0)
+  })
+})
+
+describe('wordDiff (plan tutorial-one-page)', () => {
+  const struck = (said: string, wrote: string) =>
+    wordDiff(said, wrote)
+      .filter((part) => part.removed)
+      .map((part) => part.text.trim())
+
+  it('strikes through the words the cleanup removed', () => {
+    expect(
+      struck(
+        'Um so I think we should like ship it on Friday',
+        'I think we should ship it on Friday.',
+      ),
+    ).toEqual(['Um so', 'like'])
+    const parts = wordDiff("Let's have lunch at 1 oh no let's do it at 2", "Let's have lunch at 2.")
+    expect(parts.map((part) => part.text).join('')).toContain("Let's have lunch")
+    expect(
+      parts
+        .filter((part) => !part.removed)
+        .map((part) => part.text)
+        .join(''),
+    ).toBe("Let's have lunch at 2.")
+    expect(
+      struck("Let's have lunch at 1 oh no let's do it at 2", "Let's have lunch at 2.").join(' '),
+    ).toContain('oh no')
+  })
+
+  it('shows the written text alone when there is no transcript', () => {
+    expect(wordDiff('', 'Hello there.')).toEqual([{ text: 'Hello there.', removed: false }])
+    expect(wordDiff('', '')).toEqual([])
+  })
+
+  it('works per character for Chinese', () => {
+    expect(struck('嗯我觉得周五发布吧', '我觉得周五发布吧。')).toEqual(['嗯'])
+  })
+})
+
+describe('exercise states (plan tutorial-one-page)', () => {
+  const view = (overrides: Partial<Parameters<typeof exerciseView>[0]>) =>
+    exerciseView({ stage: 'idle', verdict: null, error: null, noSpeech: false, ...overrides })
+
+  it('follows the run, and shows writing until the result is decided', () => {
+    expect(view({})).toBe('ready')
+    expect(view({ stage: 'listening' })).toBe('listening')
+    expect(view({ stage: 'writing' })).toBe('writing')
+    // Landed, but the paste may still be arriving: still writing.
+    expect(view({ stage: 'landed' })).toBe('writing')
+    expect(view({ stage: 'landed', verdict: 'success' })).toBe('success')
+    expect(view({ stage: 'landed', verdict: 'miss' })).toBe('miss')
+  })
+
+  it('shows no speech and errors, but a success wins', () => {
+    expect(view({ noSpeech: true })).toBe('noSpeech')
+    expect(view({ error: 'offline' })).toBe('error')
+    expect(view({ error: 'offline', verdict: 'success' })).toBe('success')
+  })
+
+  it('decides only after all inserted characters arrived and the box settled', () => {
+    expect(decideDelay(null, 0)).toBe(0)
+    expect(decideDelay(20, 20)).toBe(SETTLE_MS)
+    expect(decideDelay(20, 21)).toBe(SETTLE_MS)
+    expect(decideDelay(20, 7)).toBe(MISS_DELAY_MS)
+    expect(SETTLE_MS).toBeLessThan(MISS_DELAY_MS)
+  })
+
+  it('keeps a passed exercise done when it is skipped', () => {
+    expect(skippedStatus(undefined)).toBe('skipped')
+    expect(skippedStatus('pending')).toBe('skipped')
+    expect(skippedStatus('done')).toBe('done')
   })
 })
 
@@ -117,6 +193,22 @@ describe('Translate checks', () => {
     expect(check('La réunion commence à trois heures cet après-midi.', 'fr', enPrefill)).toBe(true)
   })
 
+  it('reads a line in another language than the first target (plan tutorial-one-page)', () => {
+    expect(speakTranslateLine('en')).toBe('早晨，我哋聽日下晝可唔可以見面？')
+    expect(speakTranslateLine('zh-Hant-HK')).toBe('Good morning, can we meet tomorrow afternoon?')
+    expect(speakTranslateLine('ja')).toBe(SPEAK_TRANSLATE_LINE.en)
+    expect(speakTranslateLine('')).toBe(SPEAK_TRANSLATE_LINE.en)
+    // The check passes for a Cantonese line translated into English.
+    expect(
+      pasted(
+        'speakTranslate',
+        'Good morning, can we meet tomorrow afternoon?',
+        SPEAK_TRANSLATE_LINE.yue,
+        'en',
+      ),
+    ).toBe(true)
+  })
+
   it('pre-fills a sentence in another language than the target', () => {
     expect(selectionTranslatePrefill('en')).toBe('今天下午三点开会')
     expect(selectionTranslatePrefill('zh-Hans')).toBe('The meeting starts at three this afternoon.')
@@ -126,16 +218,10 @@ describe('Translate checks', () => {
 })
 
 describe('Ask checks', () => {
-  it('a question passes when an answer appeared, and notes 36', () => {
+  it('a question passes when an answer appeared', () => {
     expect(checkExercise('question', input({ answer: '15% of 240 is 36.' }))).toBe(true)
     expect(checkExercise('question', input({ answer: '' }))).toBe(false)
     expect(checkExercise('question', input({ answer: null }))).toBe(false)
-    // Typed at the cursor instead of the panel.
-    expect(checkExercise('question', input({ boxText: '36' }))).toBe(true)
-    expect(mentions36('15% of 240 is 36.')).toBe(true)
-    expect(mentions36('答案是三十六。')).toBe(true)
-    expect(mentions36('It is 360.')).toBe(false)
-    expect(mentions36(null)).toBe(false)
   })
 
   it('an edit passes when the selection was replaced by a shorter version', () => {
@@ -159,76 +245,6 @@ describe('Ask checks', () => {
   })
 })
 
-describe('exercise flow', () => {
-  const run = (state: ExerciseFlowState, ...actions: ExerciseFlowAction[]) =>
-    actions.reduce(exerciseFlowReducer, state)
-
-  it('marks a passed exercise done and moves on with Next', () => {
-    const state = run(
-      initialExerciseFlow(2),
-      { type: 'runStarted' },
-      { type: 'result', passed: true },
-    )
-    expect(state.phase).toBe('success')
-    expect(state.statuses).toEqual(['done', 'pending'])
-    expect(flowComplete(state)).toBe(false)
-
-    const next = run(state, { type: 'next' })
-    expect(next.index).toBe(1)
-    expect(next.phase).toBe('ready')
-    expect(next.attempt).toBeGreaterThan(state.attempt)
-  })
-
-  it('a miss stays pending, a new run clears it, and Try again resets the card', () => {
-    const missed = run(
-      initialExerciseFlow(2),
-      { type: 'runStarted' },
-      { type: 'result', passed: false },
-    )
-    expect(missed.phase).toBe('miss')
-    expect(missed.statuses).toEqual(['pending', 'pending'])
-    expect(run(missed, { type: 'next' })).toBe(missed)
-    expect(run(missed, { type: 'runStarted' }).phase).toBe('running')
-
-    const retried = run(missed, { type: 'retry' })
-    expect(retried.phase).toBe('ready')
-    expect(retried.index).toBe(0)
-    expect(retried.attempt).toBe(missed.attempt + 1)
-    expect(run(retried, { type: 'result', passed: true }).statuses[0]).toBe('done')
-  })
-
-  it('a success is not undone by a later miss', () => {
-    const state = run(
-      initialExerciseFlow(1),
-      { type: 'result', passed: true },
-      { type: 'result', passed: false },
-    )
-    expect(state.phase).toBe('success')
-  })
-
-  it('skipping every exercise completes the step', () => {
-    const state = run(initialExerciseFlow(2), { type: 'skip' }, { type: 'skip' })
-    expect(state.statuses).toEqual(['skipped', 'skipped'])
-    expect(flowComplete(state)).toBe(true)
-    expect(flowFinished(state)).toBe(true)
-  })
-
-  it('completes with one done and one skipped, and Practise again keeps them', () => {
-    const state = run(
-      initialExerciseFlow(2),
-      { type: 'result', passed: true },
-      { type: 'next' },
-      { type: 'skip' },
-    )
-    expect(state.statuses).toEqual(['done', 'skipped'])
-    expect(flowComplete(state)).toBe(true)
-    const again = run(state, { type: 'restart' })
-    expect(again.index).toBe(0)
-    expect(flowFinished(again)).toBe(false)
-    expect(flowComplete(again)).toBe(true)
-  })
-})
-
 describe('exercise texts', () => {
   const ids = Object.values(EXERCISES).flatMap((list) => list.map((exercise) => exercise.id))
 
@@ -240,7 +256,6 @@ describe('exercise texts', () => {
       if ('script' in texts) expect(han.test(texts.script), id).toBe(true)
     }
     expect(han.test(zh.onboarding.exercises.edit.prefill)).toBe(true)
-    expect(zh.onboarding.exercises.speakTranslate.script).toBe('早上好，我们明天下午可以见面吗？')
   })
 
   it('pass their own checks for the expected Chinese results', () => {

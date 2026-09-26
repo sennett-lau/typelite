@@ -67,23 +67,50 @@ interface HotkeyRecorderProps {
    * stays in the field for screen readers.
    */
   keycaps?: string[]
+  /**
+   * Plan `tutorial-one-page`: a large, centred field with big key caps joined by "+" (the
+   * onboarding setup pages).
+   */
+  large?: boolean
 }
 
 /** The idle field content: key caps when given, else the plain text. */
-function IdleValue({ value, keycaps }: { value: string; keycaps?: string[] }) {
+function IdleValue({
+  value,
+  keycaps,
+  large = false,
+}: {
+  value: string
+  keycaps?: string[]
+  large?: boolean
+}) {
   if (!keycaps || keycaps.length === 0) return <>{value}</>
   return (
     <>
       <span className="sr-only">{value}</span>
-      <span aria-hidden="true" className="inline-flex flex-wrap items-center gap-1 font-sans">
+      <span
+        aria-hidden="true"
+        className={`inline-flex flex-wrap items-center font-sans ${large ? 'gap-2' : 'gap-1'}`}
+      >
         {keycaps.map((key, index) => (
-          <kbd key={`${key}-${index}`} className="kbd">
-            {key}
-          </kbd>
+          <span key={`${key}-${index}`} className="inline-flex items-center gap-2">
+            {large && index > 0 && <span className="text-[16px] text-text-tertiary">+</span>}
+            <kbd className={large ? 'kbd kbd-large' : 'kbd'}>{key}</kbd>
+          </span>
         ))}
       </span>
     </>
   )
+}
+
+/** The recorder's button: the Settings field, or the large onboarding field. */
+function fieldClass(recording: boolean, large: boolean): string {
+  if (large) return `keycap-field ${recording ? 'keycap-field-recording' : ''}`
+  return `h-7 min-w-0 flex-1 rounded-[6px] border px-2.5 text-left font-mono text-[12px] transition-colors disabled:opacity-40 ${
+    recording
+      ? 'border-border-focus bg-bg-tertiary text-text-primary ring-2 ring-accent/20'
+      : 'border-transparent bg-bg-secondary text-text-primary hover:border-border'
+  }`
 }
 
 /** Key cap labels for a binding, in display order. */
@@ -117,6 +144,7 @@ function NativeHotkeyRecorder({
   autoStart = false,
   onCancel,
   keycaps,
+  large = false,
 }: HotkeyRecorderProps) {
   const { t } = useTranslation()
   const [recording, setRecording] = useState(false)
@@ -222,16 +250,12 @@ function NativeHotkeyRecorder({
 
   return (
     <div className="min-w-0">
-      <div className="flex min-w-0 items-center gap-1">
+      <div className={`flex min-w-0 items-center gap-1 ${large ? 'justify-center' : ''}`}>
         <button
           type="button"
           onClick={handleClick}
           disabled={disabled}
-          className={`h-7 min-w-0 flex-1 rounded-[6px] border px-2.5 text-left font-mono text-[12px] transition-colors disabled:opacity-40 ${
-            recording
-              ? 'border-border-focus bg-bg-tertiary text-text-primary ring-2 ring-accent/20'
-              : 'border-transparent bg-bg-secondary text-text-primary hover:border-border'
-          }`}
+          className={fieldClass(recording, large)}
         >
           {recording ? (
             live.length > 0 ? (
@@ -240,7 +264,7 @@ function NativeHotkeyRecorder({
               t('shortcutCapture.pressKeys')
             )
           ) : (
-            <IdleValue value={value} keycaps={keycaps} />
+            <IdleValue value={value} keycaps={keycaps} large={large} />
           )}
         </button>
         {recording && onCancel && (
@@ -272,6 +296,7 @@ function WebHotkeyRecorder({
   autoStart = false,
   onCancel,
   keycaps,
+  large = false,
 }: HotkeyRecorderProps) {
   const { t } = useTranslation()
   const isMac = isMacPlatform()
@@ -419,21 +444,17 @@ function WebHotkeyRecorder({
 
   return (
     <div className="min-w-0">
-      <div className="flex min-w-0 items-center gap-1">
+      <div className={`flex min-w-0 items-center gap-1 ${large ? 'justify-center' : ''}`}>
         <button
           type="button"
           onClick={handleClick}
           disabled={disabled}
-          className={`h-7 min-w-0 flex-1 rounded-[6px] border px-2.5 text-left font-mono text-[12px] transition-colors disabled:opacity-40 ${
-            recording
-              ? 'border-border-focus bg-bg-tertiary text-text-primary ring-2 ring-accent/20'
-              : 'border-transparent bg-bg-secondary text-text-primary hover:border-border'
-          }`}
+          className={fieldClass(recording, large)}
         >
           {recording ? (
             pending || modifierHint || t('settings.pressKeyCombination')
           ) : (
-            <IdleValue value={value} keycaps={keycaps} />
+            <IdleValue value={value} keycaps={keycaps} large={large} />
           )}
         </button>
         {recording && onCancel && (
