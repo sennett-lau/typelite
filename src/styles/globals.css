@@ -434,6 +434,21 @@ body,
     font-weight: 500;
     line-height: 1.3;
     text-align: center;
+    white-space: nowrap;
+  }
+  /* Plan `compact-key-labels`: a modifier symbol a little larger than words, and the small,
+     muted side letter after it (⇧ + R). In em, so it scales with every cap size; the side
+     letter is 9 px in a normal cap. */
+  .kbd-glyph {
+    font-size: 1.12em;
+    line-height: 1;
+  }
+  .kbd-side {
+    margin-left: 2px;
+    font-size: 0.78em;
+    font-weight: 700;
+    opacity: 0.6;
+    vertical-align: 1px;
   }
 
   /* ─── Controls ─── */
