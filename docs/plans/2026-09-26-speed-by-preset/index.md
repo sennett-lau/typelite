@@ -6,7 +6,7 @@ have enough runs to compare, run timings are now kept across restarts in a small
 data folder (the last 200 runs), and Settings → System gets **Clear insights data** to delete
 it. The visual reference is [mock.html](mock.html).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 Supersedes in part [speed-board](../2026-09-25-speed-board/index.md): its decision "timings are
 kept in memory only (last 50 runs)" becomes "the last 200 runs are kept in a file". Builds on
