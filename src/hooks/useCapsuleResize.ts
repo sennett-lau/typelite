@@ -18,6 +18,14 @@ export const PILL_HEIGHT = 40
 export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
 /** Ask recording: Ask icon, waveform and cancel button. */
 export const ASK_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
+/**
+ * Plan `ask-panel-above-pill`: Ask recording with highlighted text, which adds the "About …"
+ * chip (at most 150 pt, after an 8 pt gap).
+ */
+export const ASK_RECORDING_WITH_SELECTION_SIZE: CapsuleSize = {
+  width: 320,
+  height: PILL_HEIGHT,
+}
 
 /** Size of each language dot and the space between dots. */
 const LANGUAGE_DOT = 6
@@ -102,7 +110,8 @@ export const PILL_HIDE_MS = 220
 /**
  * The pill's own size (without the context menu or window padding) for a capsule state.
  * `capsuleState` is the pipeline state, `error`, `done` (the brief flash after pasting) or
- * `copy` (the Copy pill, sized by `copyOffer`).
+ * `copy` (the Copy pill, sized by `copyOffer`). `askWithSelection` widens the Ask pill for its
+ * highlight chip.
  */
 export function getPillSize(
   capsuleState: string,
@@ -110,6 +119,7 @@ export function getPillSize(
   errorHasAction: boolean,
   translate: TranslatePillMetrics,
   copyOffer: CopyOffer | null = null,
+  askWithSelection = false,
 ): CapsuleSize {
   switch (capsuleState) {
     case 'copy':
@@ -120,7 +130,7 @@ export function getPillSize(
       if (activeVoiceMode !== 'translate') return DICTATION_RECORDING_SIZE
       return translateRecordingSize(translate)
     case 'ask_recording':
-      return ASK_RECORDING_SIZE
+      return askWithSelection ? ASK_RECORDING_WITH_SELECTION_SIZE : ASK_RECORDING_SIZE
     case 'preparing':
     case 'transcribing':
     case 'polishing':
@@ -309,12 +319,20 @@ export function getSizeForState(
   translate: TranslatePillMetrics = NO_TRANSLATE_LANGUAGE,
   doneFlash = false,
   copyOffer: CopyOffer | null = null,
+  askWithSelection = false,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
   if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translate)
   if (expanded) return { width: 220, height: 90 }
   const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null)
-  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translate, copyOffer)
+  return getPillSize(
+    capsuleState,
+    activeVoiceMode,
+    errorHasAction,
+    translate,
+    copyOffer,
+    askWithSelection,
+  )
 }
 
 /**
@@ -351,6 +369,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const translateNameWidth = translatePill.nameWidth
   const translateDots = translatePill.dots
   const copyOffer = useAppStore((s) => s.copyOffer)
+  const askWithSelection = useAppStore((s) => s.askSelectionPreview !== null)
   const anchor = useRef<CapsuleAnchor | null>(null)
   /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
   const anchorMonitor = useRef<string | null>(null)
@@ -386,6 +405,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       { nameWidth: translateNameWidth, dots: translateDots },
       doneFlash,
       copyOffer,
+      askWithSelection,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
@@ -487,6 +507,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     translateDots,
     doneFlash,
     copyOffer,
+    askWithSelection,
     shouldShow,
     setContextMenuReady,
   ])
@@ -556,5 +577,6 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     { nameWidth: translateNameWidth, dots: translateDots },
     doneFlash,
     copyOffer,
+    askWithSelection,
   )
 }

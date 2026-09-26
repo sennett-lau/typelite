@@ -39,6 +39,8 @@
     "answerAnyway": "Answer anyway",
     "close": "Close",
     "outOfDateNote": "May be out of date — no web search was used",
+    "aboutSelection": "About “{{text}}”",
+    "aboutSelectionHint": "Asking about the highlighted text",
     "send": "Ask"
   },
   "askPanel": {
@@ -292,6 +294,7 @@
     "cancelProcessing": "Cancel processing",
     "cancelPolishing": "Cancel polishing",
     "done": "Done",
+    "replaced": "Replaced",
     "copy": "Copy",
     "copied": "Copied",
     "copyResult": "Copy the result",

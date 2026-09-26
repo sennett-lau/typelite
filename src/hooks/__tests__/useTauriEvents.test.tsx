@@ -24,7 +24,9 @@ vi.mock('../../i18n', () => ({
   },
 }))
 
-vi.mock('../../lib/tauri', () => ({}))
+vi.mock('../../lib/tauri', () => ({
+  ASK_SELECTION_PREVIEW_EVENT: 'ask:selection_preview',
+}))
 
 vi.mock('../../components/toast-service', () => ({
   toast: vi.fn(),
@@ -161,6 +163,40 @@ describe('useTauriEvents', () => {
       eventListeners.get('pipeline:voice_mode')?.({ payload: null })
     })
     expect(useAppStore.getState().activeVoiceMode).toBeNull()
+  })
+
+  it('keeps the highlight preview for the Ask pill until a dictation starts', async () => {
+    // Plan `ask-panel-above-pill`: the "About …" chip.
+    useAppStore.setState({ askSelectionPreview: null })
+    render(<HookHarness />)
+
+    await waitFor(() => {
+      expect(eventListeners.has('ask:selection_preview')).toBe(true)
+    })
+
+    act(() => {
+      eventListeners.get('ask:selection_preview')?.({ payload: 'idempotent, so ret…' })
+      eventListeners.get('pipeline:state')?.({ payload: 'ask_recording' })
+    })
+    expect(useAppStore.getState().askSelectionPreview).toBe('idempotent, so ret…')
+
+    // Thinking and the done flash keep it (the flash says "Replaced").
+    act(() => {
+      eventListeners.get('pipeline:state')?.({ payload: 'ask_thinking' })
+      eventListeners.get('pipeline:state')?.({ payload: 'idle' })
+    })
+    expect(useAppStore.getState().askSelectionPreview).toBe('idempotent, so ret…')
+
+    act(() => {
+      eventListeners.get('pipeline:state')?.({ payload: 'preparing' })
+    })
+    expect(useAppStore.getState().askSelectionPreview).toBeNull()
+
+    act(() => {
+      eventListeners.get('ask:selection_preview')?.({ payload: 'x' })
+      eventListeners.get('ask:selection_preview')?.({ payload: null })
+    })
+    expect(useAppStore.getState().askSelectionPreview).toBeNull()
   })
 
   it('shows deadline warnings and explains an automatic graceful stop', async () => {

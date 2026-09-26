@@ -22,7 +22,7 @@ import { applyVerificationEvent, type PresetVerificationEvent } from '../lib/rea
 import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/connectionStatus'
 import { useSpeechSetupStore } from '../stores/speechSetupStore'
 import { useAiSetupStore } from '../stores/aiSetupStore'
-import type { SpeechSetupStatus } from '../lib/tauri'
+import { ASK_SELECTION_PREVIEW_EVENT, type SpeechSetupStatus } from '../lib/tauri'
 
 type Unlisten = () => void | Promise<void>
 
@@ -103,6 +103,10 @@ export function useTauriEvents() {
       if (state === 'preparing' || state === 'idle') {
         setRecordingDeadline(null)
       }
+      if (state === 'preparing' || state === 'recording') {
+        // A dictation or translation run includes no highlight (plan `ask-panel-above-pill`).
+        useAppStore.getState().setAskSelectionPreview(null)
+      }
       if (state === 'preparing' || state === 'recording' || state === 'ask_recording') {
         // Clear any previous error when starting a new pipeline run
         setPipelineError(null)
@@ -137,6 +141,9 @@ export function useTauriEvents() {
       )
     })
     addListener<VoiceMode | null>('pipeline:voice_mode', setActiveVoiceMode)
+    addListener<string | null>(ASK_SELECTION_PREVIEW_EVENT, (preview) =>
+      useAppStore.getState().setAskSelectionPreview(preview ?? null),
+    )
     addListener<string>('pipeline:target_app', setTargetApp)
     addListener<InsertResult>('pipeline:insert_result', (result) => {
       setLastInsertResult(result)

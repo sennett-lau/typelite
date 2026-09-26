@@ -533,7 +533,15 @@ export interface AskDictationResult {
 export interface AskDictationStartResult {
   usedSelectedText: boolean
   selectedTextTruncated: boolean
+  /** Plan `ask-panel-above-pill`: the start of the highlight for the pill's chip. */
+  selectedTextPreview?: string | null
 }
+
+/**
+ * Plan `ask-panel-above-pill`: the start of the highlighted text (or null) that the Ask pill shows
+ * as a chip while it listens.
+ */
+export const ASK_SELECTION_PREVIEW_EVENT = 'ask:selection_preview'
 
 export type PendingAskMessage =
   | { kind: 'result'; payload: AskDictationResult }
