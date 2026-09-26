@@ -928,7 +928,8 @@
     "translationLanguages": "最多三种翻译语言，翻译时可用“切换语言”键切换。",
     "setupTutorial": "全新的分步设置教程。",
     "nativeGlass": "Native Glass 外观，跟随浅色和深色模式。",
-    "noHistory": "不再保存历史：Typelite 不会记录你说的内容。"
+    "noHistory": "不再保存历史：Typelite 不会记录你说的内容。",
+    "languagePresets": "来自 GitHub 项目库的语言预设：每种语言的说明可以来自预设，你说这种语言时也会用于润色。"
   },
   "status": {
     "label": "连接状态",

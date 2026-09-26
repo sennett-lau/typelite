@@ -50,15 +50,16 @@ The per-language settings from plan `translation-language-presets` become:
 ## Settings → AI → Translation
 
 - One **row per language**, in the saved order. Each row: a drag handle (⋮⋮), its number, the
-  name, a grey line saying where its instructions come from, an on/off switch, **Edit**, and ✕
-  (not on the last language).
+  name, a grey line saying where its instructions come from, an on/off switch (saved at once,
+  like the sheet), **Edit**, and ✕ (not on the last language).
   - Source line: "Cantonese (Hong Kong) preset · v2 · updates automatically", "Based on
     Cantonese (Hong Kong) · edited", "Built-in instructions", or, when off, "Instructions off ·
     plain translation".
   - An **Update** tag after the name when a decision is needed: a newer version exists and the
     language is edited or has auto-update off.
 - Dragging a row changes the order, which is the order the Switch-language key and the pill's
-  dots follow. The row can also be moved with the keyboard (Alt+↑/↓ on the handle).
+  dots follow. The row can also be moved with the keyboard (↑/↓ on the focused handle). The
+  order, adding and removing are ordinary Settings edits (saved with the Save bar).
 - A full-width **＋ Add language** row ("up to 3") follows the rows while fewer than three are
   chosen. Adding a language opens its sheet.
 - The group header has an **About language presets** link to

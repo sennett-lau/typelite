@@ -10,7 +10,7 @@ https://raw.githubusercontent.com/sennett-lau/typelite/main/presets/languages/in
 https://raw.githubusercontent.com/sennett-lau/typelite/main/presets/languages/<path>
 ```
 
-- The base address is one constant in the app (`LIBRARY_BASE_URL` in `llm/language_library.rs`),
+- The base address is one constant in the app (`LIBRARY_BASE_URL` in `llm/language_library/mod.rs`),
   in the same style as `MODEL_BASE_URL`.
 - The **main branch**, because a merged preset should reach users without an app release; the
   library is data, reviewed on merge.

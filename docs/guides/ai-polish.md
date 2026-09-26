@@ -100,20 +100,78 @@ Built-in models always run with thinking off.
 
 ## Translation languages
 
-Each language in **Settings → AI → Translation** can have its own model and its own
-instructions. Press the pencil on a language to open its settings:
+**Settings → AI → Translation** lists your languages (up to three), one row each:
 
-- **AI model**: **Same as AI polish** (the default), or any saved AI preset, including
-  Built-in. Every translation into that language uses it: the Translate shortcut, "Always
-  translate output", highlight-and-translate and Ask's "translate this into …". Switching
-  language during a recording also switches the model. Polish without translation keeps the AI
-  polish model.
-- **Instructions**: how to write that language, up to 2000 characters. It starts with a
-  built-in text; **Reset to default** brings that back. Typelite always adds its own rules
-  around your text (output only the translation, keep the line breaks, use the right Chinese
-  script), so an edit cannot make the model add notes or answer in two languages.
-- A language you changed shows **Custom**. If you delete a preset a language uses, that
-  language goes back to **Same as AI polish**.
+- The **order** is the order the Switch language key and the pill follow. Drag a row by its
+  ⋮⋮ handle to change it (or focus the handle and press ↑ / ↓).
+- The grey line says where the language's instructions come from: a preset from the library,
+  your own edit ("Based on … · edited"), or the built-in instructions.
+- The **switch** turns the language's instructions on or off. Off means a plain translation
+  into that language, and no extra notes when you dictate in it. Your text is kept.
+- **Edit** opens the language's settings, ✕ removes it, and **＋ Add language** adds one.
+
+Every translation uses the AI polish model: the Translate shortcut, "Always translate output",
+highlight-and-translate and Ask's "translate this into …".
+
+## Language presets
+
+A language preset tells the AI how to write one language: which words and grammar to use,
+which script, which words stay in English, with a few examples. Presets live in the
+[`presets/languages`](../../presets/languages) folder of the Typelite repository; anyone can
+add one with a pull request (see its README).
+
+### Choosing a preset
+
+1. Press **Edit** on a language, then **Browse presets** (or **Change**).
+2. The list starts with the **Built-in default**, then the presets that fit the language:
+   **Official** ones first, and the one written for exactly your language (for example
+   `en-GB`) before a general one. Each shows its summary, version, authors and a model tip.
+   English presets carry short notes per region, so English (UK) gets British spelling.
+3. **Preview** downloads the preset and shows the full text the AI will get. Nothing is used
+   until you press **Use this preset**, then **Save**.
+
+You can edit the text afterwards. **Reset to preset** brings back the preset's text; **Reset
+to default** goes back to the built-in instructions. Typelite always adds its own rules around
+your text (output only the result, keep the line breaks, use the right Chinese script), so a
+preset or an edit cannot make the AI add notes or answer in another language.
+
+### Where the instructions are used
+
+- **Translating into the language** uses them whenever the language is on.
+- **Dictating in the language** (Dictate, no translation, no selected text) uses them too, but
+  only when Typelite recognises that you spoke that language. The **Recognition** tab shows how:
+  1. **Hint characters and words** found in what you said pick the language with the most
+     hits. The preset brings its own (Cantonese: 嘅 咗 喺 唔 聽日 …); add your own with
+     **+ Add hint**.
+  2. Otherwise the language **speech recognition heard** counts (for example `en`), unless the
+     preset needs a hint. The Cantonese preset does: speech recognition says `zh` for Mandarin
+     too, and Mandarin should not get Cantonese rules.
+  3. Otherwise nothing is added and polish works as before.
+
+  Built-in speech recognition reports the language it heard; a server gets asked for it with
+  `response_format=verbose_json` (servers that do not support it keep working). A speech preset
+  with a fixed language counts as that language. A language on its built-in instructions has no
+  recognition data, so only your own hints route to it.
+
+### Updates
+
+- A newer version shows an **Update** tag on the row and a banner in the sheet: **Preview** or
+  **Update**. If you edited the text, it is never replaced: **Keep mine** keeps your text, **Use
+  vN instead** shows the new text first.
+- Tick **Update this preset automatically** to let a language follow new versions by itself.
+  Then Typelite checks GitHub at most once a day, only while such a language is in use, and
+  never replaces text you edited.
+
+### Privacy and offline use
+
+- Presets are downloaded with plain requests to `raw.githubusercontent.com`: no account, no
+  identifiers, nothing about you, your languages or your text. GitHub sees your IP address, as
+  with any download. Typelite goes online only when you browse presets, or once a day for
+  languages with automatic updates on.
+- Every download is checked against the size and SHA-256 hash in the library's index, and
+  validated, before it is used. Downloaded presets are kept in Typelite's data folder.
+- Offline, the built-in instructions and downloaded presets keep working; Browse shows what is
+  downloaded and offers **Try again**.
 
 The built-in instructions are a plain, natural translation for most languages, plus:
 
@@ -123,9 +181,8 @@ The built-in instructions are a plain, natural translation for most languages, p
 | Chinese (Traditional, Taiwan) | Taiwan Mandarin wording and vocabulary (軟體, 網路, 計程車). |
 | Chinese (Simplified) | Mainland wording and vocabulary (软件, 网络, 出租车). |
 
-Small 4B models write passable Cantonese but still slip into written Chinese now and then. For
-better Cantonese, set a larger or Cantonese-tuned model for that language only, while polish
-stays on the fast one.
+Small 4B models write passable Cantonese but still slip into written Chinese now and then; a
+larger or Cantonese-tuned model as the AI polish model does better.
 
 ## Share presets
 

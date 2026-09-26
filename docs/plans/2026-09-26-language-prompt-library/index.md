@@ -13,7 +13,7 @@ anyone can add more by pull request. One preset can serve many language codes: e
 variant (en-US, en-GB, en-AU…) finds the same `english` preset, which carries short notes for
 each region.
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 Builds on [translation-language-presets](../2026-09-26-translation-language-presets/index.md)
 (per-language instructions with built-in defaults) and changes two of its decisions:

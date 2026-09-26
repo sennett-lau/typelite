@@ -928,7 +928,8 @@
     "translationLanguages": "Up to three translation languages, with a Switch language key while you translate.",
     "setupTutorial": "A new step-by-step setup tutorial.",
     "nativeGlass": "Native Glass look that follows light and dark mode.",
-    "noHistory": "No history: Typelite keeps no record of what you say."
+    "noHistory": "No history: Typelite keeps no record of what you say.",
+    "languagePresets": "Language presets from the project's library on GitHub: each language's instructions can come from a preset, and they also shape polish when you speak that language."
   },
   "status": {
     "label": "Connection status",
