@@ -134,15 +134,15 @@ export function Speed() {
         <p className="footnote" data-reveal>
           Rates are rounded down and vary from person to person. Typing: an average of 52 words per
           minute across 168,000 volunteers (
-          <a href="https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf">
+          <a rel="noopener" href="https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf">
             Dhakal et al., CHI 2018
           </a>
           ). Speaking: about 196 words per minute measured in telephone conversations (
-          <a href="https://www.isca-archive.org/interspeech_2006/yuan06_interspeech.html">
+          <a rel="noopener" href="https://www.isca-archive.org/interspeech_2006/yuan06_interspeech.html">
             Yuan, Liberman and Cieri, Interspeech 2006
           </a>
           ) and 153 for English speech input on a phone (
-          <a href="https://arxiv.org/abs/1608.07323">Ruan et al., 2016</a>); we use a conservative
+          <a rel="noopener" href="https://arxiv.org/abs/1608.07323">Ruan et al., 2016</a>); we use a conservative
           150.
         </p>
       </div>

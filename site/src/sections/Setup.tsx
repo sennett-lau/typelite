@@ -50,8 +50,8 @@ export function Setup() {
             </span>
             <h3>Everything on your computer.</h3>
             <p>
-              No servers to install. On Apple Silicon, <a href={links.whisper}>whisper.cpp</a> runs
-              inside the app and <a href={links.llama}>llama.cpp</a>’s server ships with it. Models
+              No servers to install. On Apple Silicon, <a rel="noopener" href={links.whisper}>whisper.cpp</a> runs
+              inside the app and <a rel="noopener" href={links.llama}>llama.cpp</a>’s server ships with it. Models
               are picked for your hardware and checked against a SHA-256 before use.
             </p>
             <Stage
@@ -120,7 +120,7 @@ export function Setup() {
               <li>AI polish: Qwen3 4B Instruct 2507, or Qwen3 1.7B for 8 GB Macs</li>
               <li>Offline once downloaded; nothing leaves your computer</li>
             </ul>
-            <a className="inline-link" href={links.models}>
+            <a rel="noopener" className="inline-link" href={links.models}>
               Choosing a model <IconArrowRight size={15} />
             </a>
           </article>
@@ -157,7 +157,7 @@ export function Setup() {
               Cloud services are used only when you add one with your own key; they then receive
               your audio or text. Nothing leaves your machines otherwise.
             </p>
-            <a className="inline-link" href={links.docs}>
+            <a rel="noopener" className="inline-link" href={links.docs}>
               Read the setup guides <IconArrowRight size={15} />
             </a>
           </article>
