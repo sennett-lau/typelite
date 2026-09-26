@@ -19,6 +19,7 @@ pub mod readiness;
 pub mod recording_deadline;
 pub mod selection;
 pub mod shortcut_gate;
+pub mod speed_stats;
 pub mod storage;
 pub mod stt;
 pub mod timing;
@@ -1088,6 +1089,12 @@ pub fn run() {
             app.manage(timing::RunTimingBuffer::load(
                 data_dir.join(timing::RUN_TIMINGS_FILE),
             ));
+            // Plan `typing-speed-and-nudge`: speaking and typing totals, and the nudge.
+            let speed_stats =
+                speed_stats::SpeedStats::load(Some(data_dir.join(speed_stats::STATS_FILE)));
+            speed_stats.set_enabled(initial_config.measure_typing_speed);
+            speed_stats::start_worker(app_handle.clone(), speed_stats.clone());
+            app.manage(speed_stats);
             app.manage(commands::speech_setup::SpeechSetupState::default());
             // Plan `quick-speech-setup`: tell the built-in speech engine where models live, and
             // drop presets whose model file is gone.
@@ -1421,11 +1428,19 @@ pub fn run() {
             readiness::open_settings_pane,
             timing::get_run_timings,
             timing::clear_run_timings,
+            speed_stats::get_speed_stats,
+            speed_stats::reset_speed_stats,
+            speed_stats::dismiss_typing_nudge,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
             if let tauri::RunEvent::Exit = _event {
+                // Plan `typing-speed-and-nudge`: count the burst in progress and save the totals.
+                if let Some(stats) = _app.try_state::<speed_stats::SpeedStats>() {
+                    stats.finish();
+                    stats.save();
+                }
                 // Plan `quick-speech-setup`: free the built-in speech model before exit, or GGML's
                 // Metal cleanup aborts the process.
                 stt::builtin::engine().unload();
