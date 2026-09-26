@@ -139,3 +139,107 @@ pub fn allows(handle: &tauri::AppHandle, role: HotkeyRole) -> bool {
 pub fn run_to_cancel(gate: &ShortcutGate, active_run: Option<HotkeyRole>) -> Option<HotkeyRole> {
     active_run.filter(|role| !gate.allows(*role))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn roles(names: &[&str]) -> ShortcutGateRequest {
+        ShortcutGateRequest::Roles(names.iter().map(|name| name.to_string()).collect())
+    }
+
+    const CONFIGURABLE: [HotkeyRole; 7] = [
+        HotkeyRole::Dictation,
+        HotkeyRole::Ask,
+        HotkeyRole::TranslateSelection,
+        HotkeyRole::EditSelection,
+        HotkeyRole::SwitchScene,
+        HotkeyRole::OpenApp,
+        HotkeyRole::SwitchLanguage,
+    ];
+
+    #[test]
+    fn startup_gate_is_closed_until_onboarding_is_finished() {
+        let closed = ShortcutGate::at_startup(false);
+        for role in CONFIGURABLE {
+            assert!(!closed.allows(role), "{} must be gated", role.as_str());
+        }
+        let open = ShortcutGate::at_startup(true);
+        assert_eq!(open, ShortcutGate::All);
+        for role in CONFIGURABLE {
+            assert!(open.allows(role));
+        }
+    }
+
+    #[test]
+    fn escape_cancel_is_never_gated() {
+        assert!(ShortcutGate::closed().allows(HotkeyRole::Cancel));
+        assert!(ShortcutGate::from_request(roles(&["ask"]))
+            .unwrap()
+            .allows(HotkeyRole::Cancel));
+    }
+
+    #[test]
+    fn each_tutorial_step_allows_only_its_roles() {
+        let dictate = ShortcutGate::from_request(roles(&["dictation"])).unwrap();
+        assert!(dictate.allows(HotkeyRole::Dictation));
+        assert!(!dictate.allows(HotkeyRole::TranslateSelection));
+        assert!(!dictate.allows(HotkeyRole::SwitchLanguage));
+        assert!(!dictate.allows(HotkeyRole::Ask));
+
+        let translate =
+            ShortcutGate::from_request(roles(&["translate", "switchLanguage"])).unwrap();
+        assert!(translate.allows(HotkeyRole::TranslateSelection));
+        assert!(translate.allows(HotkeyRole::SwitchLanguage));
+        assert!(!translate.allows(HotkeyRole::Dictation));
+        assert!(!translate.allows(HotkeyRole::Ask));
+
+        let ask = ShortcutGate::from_request(roles(&["ask"])).unwrap();
+        assert!(ask.allows(HotkeyRole::Ask));
+        assert!(!ask.allows(HotkeyRole::Dictation));
+        assert!(!ask.allows(HotkeyRole::TranslateSelection));
+
+        let none = ShortcutGate::from_request(roles(&[])).unwrap();
+        assert_eq!(none, ShortcutGate::closed());
+        assert_eq!(none.describe(), "none");
+    }
+
+    #[test]
+    fn requests_parse_all_and_reject_unknown_names() {
+        let all: ShortcutGateRequest = serde_json::from_str("\"all\"").unwrap();
+        assert_eq!(ShortcutGate::from_request(all), Ok(ShortcutGate::All));
+        let list: ShortcutGateRequest =
+            serde_json::from_str("[\"translate\",\"switchLanguage\"]").unwrap();
+        assert_eq!(
+            ShortcutGate::from_request(list).unwrap().describe(),
+            "translate, switchLanguage"
+        );
+        assert!(ShortcutGate::from_request(ShortcutGateRequest::Keyword("none".into())).is_err());
+        assert!(ShortcutGate::from_request(roles(&["dictate"])).is_err());
+    }
+
+    #[test]
+    fn state_set_returns_the_previous_gate() {
+        let state = ShortcutGateState::new(ShortcutGate::at_startup(false));
+        assert!(!state.allows(HotkeyRole::Dictation));
+        let previous = state.set(ShortcutGate::All);
+        assert_eq!(previous, ShortcutGate::closed());
+        assert!(state.allows(HotkeyRole::Dictation));
+        assert_eq!(state.get(), ShortcutGate::All);
+    }
+
+    #[test]
+    fn closing_the_gate_cancels_only_a_run_it_no_longer_allows() {
+        let ask_only = ShortcutGate::from_request(roles(&["ask"])).unwrap();
+        assert_eq!(
+            run_to_cancel(&ask_only, Some(HotkeyRole::TranslateSelection)),
+            Some(HotkeyRole::TranslateSelection)
+        );
+        assert_eq!(run_to_cancel(&ask_only, Some(HotkeyRole::Ask)), None);
+        assert_eq!(run_to_cancel(&ask_only, None), None);
+        assert_eq!(
+            run_to_cancel(&ShortcutGate::All, Some(HotkeyRole::Dictation)),
+            None
+        );
+    }
+}

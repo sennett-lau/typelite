@@ -334,3 +334,94 @@ describe('Onboarding flow', () => {
     expect(useAppStore.getState().onboardingCompleted).toBe(false)
   })
 })
+
+describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
+  const lastGate = () => vi.mocked(tauri.setShortcutGate).mock.lastCall?.[0]
+
+  beforeEach(() => {
+    vi.mocked(tauri.setShortcutGate).mockResolvedValue(undefined)
+  })
+
+  it('allows no shortcut on the welcome, microphone, speech and AI steps', async () => {
+    render(<Onboarding />)
+    await waitFor(() => expect(tauri.setShortcutGate).toHaveBeenCalledWith([]))
+    for (const step of [1, 2, 3]) {
+      goToStep(step)
+      expect(lastGate()).toEqual([])
+    }
+    expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
+  })
+
+  it('allows only the shortcut each tutorial step teaches', async () => {
+    useAppStore.setState({ onboardingStep: 4 })
+    render(<Onboarding />)
+    await waitFor(() => expect(lastGate()).toEqual(['dictation']))
+
+    goToStep(5)
+    expect(lastGate()).toEqual(['translate', 'switchLanguage'])
+
+    goToStep(6)
+    expect(lastGate()).toEqual(['ask'])
+
+    // Back to a setup step closes the gate again.
+    goToStep(3)
+    expect(lastGate()).toEqual([])
+  })
+
+  it('opens every shortcut when onboarding finishes on the Ask step', async () => {
+    useAppStore.setState({ onboardingStep: 6 })
+    render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
+    expect(lastGate()).toBe('all')
+    // The finished flag is saved before the gate opens, so a restart starts open too.
+    const saved = vi.mocked(tauri.saveOnboardingCompleted).mock.invocationCallOrder[0]
+    const order = vi.mocked(tauri.setShortcutGate).mock.invocationCallOrder
+    const opened = order[order.length - 1]
+    expect(saved).toBeLessThan(opened)
+  })
+
+  it('opens every shortcut when the AI step is skipped and onboarding ends early', async () => {
+    useAppStore.setState({ onboardingStep: 3 })
+    render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Skip AI' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
+    expect(lastGate()).toBe('all')
+  })
+
+  it('keeps the gate closed when saving on Finish fails', async () => {
+    vi.mocked(tauri.updateConfig).mockRejectedValue('disk full')
+    useAppStore.setState({ onboardingStep: 6 })
+    render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
+
+    expect(await screen.findByText('Could not save: disk full')).toBeInTheDocument()
+    expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
+  })
+
+  it('closes the gate again when the tour is re-run, and opens it when the tour closes', async () => {
+    // After a finished onboarding everything was allowed; the tour re-enters onboarding.
+    useAppStore.getState().startShortcutTour()
+    render(<Onboarding />)
+    await waitFor(() => expect(lastGate()).toEqual(['dictation']))
+    expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close tour' }))
+    expect(lastGate()).toBe('all')
+  })
+
+  it('still finishes when the gate call fails', async () => {
+    vi.mocked(tauri.setShortcutGate).mockRejectedValue('no backend')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    useAppStore.setState({ onboardingStep: 3 })
+    render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Skip AI' }))
+
+    await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
+    consoleError.mockRestore()
+  })
+})
