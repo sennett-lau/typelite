@@ -1,5 +1,8 @@
 pub mod builtin;
 pub mod context_policy;
+// Plan `language-prompt-library`: test-only checks of the preset files in `presets/languages/`.
+#[cfg(test)]
+mod language_library;
 pub mod live_question;
 pub mod models;
 pub mod openai;
