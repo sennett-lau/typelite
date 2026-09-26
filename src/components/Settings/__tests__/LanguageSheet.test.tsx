@@ -275,7 +275,7 @@ describe('LanguageSheet', () => {
           downloaded: false,
         },
       ],
-      related: ['Mandarin (Taiwan) 臺灣華語'],
+      related: ['Mandarin (Taiwan) 國語'],
       offline: false,
     })
     renderSheet()
