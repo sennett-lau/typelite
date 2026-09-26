@@ -1033,6 +1033,45 @@ body,
     font-weight: 500;
     line-height: 16px;
     color: rgba(255, 255, 255, 0.88);
+    /* A new name (after a language switch) fades in while the pill animates to its width. */
+    animation: pill-lang-in 0.22s cubic-bezier(0.2, 0, 0, 1) 0.08s both;
+  }
+  /* The invisible copy that measures a name's natural width (src/lib/textWidth.ts). */
+  .pill-lang-name.pill-lang-name-probe {
+    position: absolute;
+    top: 0;
+    left: -10000px;
+    max-width: none;
+    visibility: hidden;
+    pointer-events: none;
+    animation: none;
+  }
+  /* A name wider than 180 pt: two copies scroll left continuously, with soft edges. */
+  .pill-lang-marquee {
+    text-overflow: clip;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 6px,
+      #000 calc(100% - 6px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 6px,
+      #000 calc(100% - 6px),
+      transparent 100%
+    );
+  }
+  .pill-lang-marquee-track {
+    display: inline-flex;
+    animation: pill-marquee var(--pill-marquee-duration, 8s) linear infinite;
+    will-change: transform;
+  }
+  .pill-lang-marquee-track > span {
+    flex: none;
+    padding-right: 28px;
   }
   .pill-lang-dots {
     display: inline-flex;
@@ -1240,6 +1279,24 @@ body,
     transform: none;
   }
 }
+@keyframes pill-lang-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes pill-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
 /* Reduced motion: still gradients, no drift, sweep or flash animation; the pill only fades. */
 @media (prefers-reduced-motion: reduce) {
   .pill {
@@ -1249,7 +1306,9 @@ body,
     transform: none;
     filter: none;
   }
-  .pill-copy-label {
+  .pill-copy-label,
+  .pill-lang-name,
+  .pill-lang-marquee-track {
     animation: none;
   }
   .aurora-blob,
