@@ -368,6 +368,7 @@ describe('Settings tab 切换', () => {
       'settings.hotkey',
       'settings.generalPane.recording',
       'settings.generalPane.output',
+      'settings.generalPane.insights',
     ])
     expect(screen.getAllByText('home.shortcuts.ask')).toHaveLength(1)
     expect(screen.queryByText('settings.advancedGeneral')).toBeNull()

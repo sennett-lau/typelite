@@ -13,6 +13,7 @@ import {
   getSizeForState,
   growFirstSize,
   NO_TRANSLATE_LANGUAGE,
+  NUDGE_PILL_SIZE,
   monitorKey,
   pickFollowTarget,
   pickMonitorForPoint,
@@ -224,6 +225,44 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
       width: 224,
       height: 40,
     })
+  })
+})
+
+describe('typing nudge (plan `typing-speed-and-nudge`)', () => {
+  it('shows only while idle, behind errors, the done flash and the Copy pill', () => {
+    expect(getCapsuleState('idle', false, false, false, true)).toBe('nudge')
+    expect(getCapsuleState('idle', true, false, false, true)).toBe('error')
+    expect(getCapsuleState('idle', false, true, false, true)).toBe('done')
+    expect(getCapsuleState('idle', false, false, true, true)).toBe('copy')
+    expect(getCapsuleState('recording', false, false, false, true)).toBe('recording')
+  })
+
+  it('keeps the window visible and sized for the one-line toast', () => {
+    expect(
+      getCapsuleVisibility({
+        contextMenuOpen: false,
+        capsuleExpanded: false,
+        hasError: false,
+        pipelineState: 'idle',
+        typingNudge: true,
+      }),
+    ).toBe(true)
+    expect(getPillSize('nudge', null, false, NO_TRANSLATE_LANGUAGE)).toEqual(NUDGE_PILL_SIZE)
+    expect(
+      getSizeForState(
+        'idle',
+        false,
+        false,
+        false,
+        null,
+        false,
+        NO_TRANSLATE_LANGUAGE,
+        false,
+        null,
+        false,
+        true,
+      ),
+    ).toEqual(NUDGE_PILL_SIZE)
   })
 })
 
