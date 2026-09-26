@@ -1,34 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { KeyCap } from '../components/KeyCap'
-import {
-  AskVignette,
-  CopyVignette,
-  DictateVignette,
-  FollowVignette,
-  InsightsVignette,
-  TranslateVignette,
-} from '../demos/Vignettes'
-import {
-  IconClipboard,
-  IconGauge,
-  IconGlobe,
-  IconMic,
-  IconMonitor,
-  IconSparkle,
-} from '../components/Icons'
-
-function Keys({ keys }: { keys: string[] }) {
-  return (
-    <>
-      {keys.map((k, i) => (
-        <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          {i > 0 && <span aria-hidden="true">+</span>}
-          <KeyCap name={k} />
-        </span>
-      ))}
-    </>
-  )
-}
+import { AskVignette, DictateVignette, TranslateVignette } from '../demos/Vignettes'
+import { IconCheck, IconGlobe, IconMic, IconSparkle } from '../components/Icons'
 
 function Feature({
   color,
@@ -36,22 +9,24 @@ function Feature({
   tag,
   title,
   children,
+  points,
   keys,
-  wide = false,
   demo,
+  flip = false,
 }: {
   color: string
   icon: ReactNode
   tag: string
   title: string
   children: ReactNode
-  keys?: string[]
-  wide?: boolean
+  points: string[]
+  keys: string[]
   demo: ReactNode
+  flip?: boolean
 }) {
   return (
     <article
-      className={`card feature ${wide ? 'wide' : ''}`}
+      className={`card feature ${flip ? 'flip' : ''}`}
       style={{ '--fc': color } as CSSProperties}
       data-reveal
     >
@@ -62,12 +37,23 @@ function Feature({
         </span>
         <h3>{title}</h3>
         <p>{children}</p>
-        {keys && (
-          <div className="keys">
-            <Keys keys={keys} />
-            <span style={{ marginLeft: 6 }}>by default, change it any time</span>
-          </div>
-        )}
+        <ul className="feature-points">
+          {points.map((p) => (
+            <li key={p}>
+              <IconCheck size={15} />
+              {p}
+            </li>
+          ))}
+        </ul>
+        <div className="keys">
+          {keys.map((k, i) => (
+            <span key={k} className="key-join">
+              {i > 0 && <span aria-hidden="true">+</span>}
+              <KeyCap name={k} />
+            </span>
+          ))}
+          <span className="keys-note">by default · any keys you like</span>
+        </div>
       </div>
       {demo}
     </article>
@@ -88,94 +74,56 @@ export function Features() {
             your screen shows what’s happening and never steals focus.
           </p>
         </div>
-        <div className="feature-grid">
+        <div className="feature-list">
           <Feature
-            wide
             color="var(--f-dictate)"
             icon={<IconMic size={16} />}
             tag="Dictate"
             title="Speak messy, get clean text."
+            points={[
+              'Fillers and repeated words removed',
+              '“No, actually…” corrections applied',
+              'Punctuation and capitals added',
+            ]}
             keys={['Fn']}
             demo={<DictateVignette />}
           >
-            Fillers out, self-corrections applied, punctuation in. Talk the way you talk; Typelite
-            writes it the way you would have typed it.
+            Talk the way you talk. Typelite writes it the way you would have typed it, and pastes it
+            where your cursor is.
           </Feature>
           <Feature
-            wide
+            flip
             color="var(--f-translate)"
             icon={<IconGlobe size={16} />}
             tag="Translate"
             title="Say it, get it in another language."
+            points={[
+              'Up to three target languages',
+              'Switch mid-sentence with Shift or a click on the pill',
+              'Highlight text to translate it in place',
+            ]}
             keys={['Fn', 'LeftShift']}
             demo={<TranslateVignette />}
           >
-            Up to three target languages. Press Shift or click the language on the pill to switch
-            while you’re still speaking; the recording keeps going. Highlight text to translate it
-            in place.
+            Speak in your own language and the text arrives in the one you need. The recording keeps
+            going while you switch.
           </Feature>
           <Feature
-            wide
             color="var(--f-ask)"
             icon={<IconSparkle size={16} />}
             tag="Ask anything"
             title="Ask about what you’ve highlighted."
+            points={[
+              'Questions answered in a glass panel above the pill',
+              '“Make this shorter” edits the highlight',
+              'Copy or insert the answer with one click',
+            ]}
             keys={['Fn', 'Space']}
             demo={<AskVignette />}
           >
-            Ask a question, or highlight text and say “make this shorter”. Answers appear in a small
-            glass panel above the pill, with Copy and Insert.
+            Highlight a paragraph and ask for a summary, a rewrite or an explanation, without
+            leaving the app you’re in.
           </Feature>
-          <Feature
-            wide
-            color="var(--accent)"
-            icon={<IconClipboard size={16} />}
-            tag="Copy pill"
-            title="Nowhere to paste? It waits for you."
-            demo={<CopyVignette />}
-          >
-            When no text field has focus, the result stays in the pill with a Copy button. Its
-            border counts down; hover to keep it, Esc to close.
-          </Feature>
-          <Feature
-            color="var(--accent)"
-            icon={<IconMonitor size={16} />}
-            tag="Multi-monitor"
-            title="The pill follows your screen."
-            demo={<FollowVignette />}
-          >
-            It shows up at the bottom of the display you’re working on, and never takes focus from
-            your app. Esc cancels.
-          </Feature>
-          <Feature
-            color="var(--f-ask)"
-            icon={<IconGauge size={16} />}
-            tag="Insights"
-            title="See how much faster you are."
-            demo={<InsightsVignette />}
-          >
-            How fast you speak compared with how fast you type, how long it takes from the end of
-            your speech to the text, and how your presets compare. Timings only, never what you
-            said.
-          </Feature>
-          <article className="card feature" data-reveal>
-            <div className="feature-copy">
-              <span className="feature-tag">
-                <span className="feature-icon">
-                  <IconSparkle size={16} />
-                </span>
-                And more
-              </span>
-              <h3>Made for real work.</h3>
-              <ul className="more-list">
-                <li>Hold-to-talk or tap-to-toggle, on any keys</li>
-                <li>Your own dictionary of names and terms</li>
-                <li>Guided setup with a hands-on tutorial</li>
-                <li>Esc cancels at any moment</li>
-                <li>Light and dark, like macOS</li>
-              </ul>
-            </div>
-          </article>
         </div>
       </div>
     </section>
