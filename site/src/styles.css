@@ -930,11 +930,11 @@ section {
   flex: none;
   align-items: center;
   gap: 2px;
-  height: 16px;
+  height: 13px;
 }
 .pill-bar {
   width: 2px;
-  height: 16px;
+  height: 13px;
   border-radius: 9999px;
   transform-origin: center;
 }
@@ -950,15 +950,16 @@ section {
   color: rgba(255, 255, 255, 0.7);
 }
 /* The pill's text never inherits page styles (a section's paragraph rules, for example): these
-   are the app's `text-[11px] font-medium leading-4 text-white`, on one line. */
+   are the app's `text-[10.5px] font-medium leading-[14px] text-white`, on one line (plan
+   `compact-pill`: 32 pt high, 10.5 pt labels). */
 .pill p {
   margin: 0;
 }
 .pill .pill-label,
 .pill .pill-copy-text {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 14px;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
@@ -972,23 +973,23 @@ section {
   text-align: center;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 14px;
 }
 .pill-label-inline {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 14px;
 }
 .pill-lang {
   flex: none;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.16);
   padding: 1px 6px;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
-  line-height: 14px;
+  line-height: 13px;
 }
 .pill-lang-name {
   display: block;
@@ -997,16 +998,16 @@ section {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 14px;
   color: rgba(255, 255, 255, 0.88);
   animation: pill-lang-in 0.22s var(--ease) 0.08s both;
 }
 .pill-lang-switch {
   box-sizing: content-box;
   margin: 0 -4px;
-  padding: 2px 4px;
+  padding: 1px 4px;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -1034,8 +1035,8 @@ section {
   gap: 4px;
 }
 .pill-lang-dots i {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.3);
   transition: background-color 0.2s ease;
@@ -1044,7 +1045,7 @@ section {
   background: #fff;
 }
 .pill-copy-content {
-  padding-right: 7px;
+  padding-right: 5px;
   min-width: 0;
 }
 .pill-copy-text {
@@ -1053,9 +1054,9 @@ section {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 14px;
   color: rgba(255, 255, 255, 0.9);
 }
 .pill-copy-button {
@@ -1064,16 +1065,16 @@ section {
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 66px;
-  height: 26px;
+  width: 62px;
+  height: 22px;
   border: none;
-  border-radius: 13px;
+  border-radius: 11px;
   background: rgba(255, 255, 255, 0.16);
   color: #fff;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  line-height: 16px;
+  line-height: 14px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -1272,8 +1273,8 @@ section {
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.9);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 10.5px;
+  line-height: 14px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }

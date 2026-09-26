@@ -3,17 +3,17 @@ import { easeInOut, voiceLevel } from '../lib/clock'
 import { IconCheck, IconCopy, IconMessage, IconX } from './Icons'
 
 /**
- * A faithful copy of Typelite's pill (the "capsule"): 40 pt dark glass with the aurora light
+ * A faithful copy of Typelite's pill (the "capsule"): 32 pt dark glass with the aurora light
  * inside. Sizes, colours and timings come from the app (globals.css `.pill`, `.aurora-*`,
  * useCapsuleResize.ts); here everything is a function of the demo time `t`, not of live audio.
  */
 
-export const PILL_HEIGHT = 40
+export const PILL_HEIGHT = 32
 export const RECORDING_WIDTH = 160
 export const WORKING_WIDTH = 140
 const WAVEFORM_BARS = 18
 const SAMPLE_S = 0.033
-const BAR_HEIGHT = 16
+const BAR_HEIGHT = 13
 const MIN_SCALE = 3 / BAR_HEIGHT
 
 export type AuroraMode = 'listening' | 'working' | 'done' | null
@@ -164,14 +164,14 @@ export function PillRecording({
       {extra}
       <span className="pill-flex" />
       <span className="pill-x" aria-hidden="true">
-        <IconX size={12} />
+        <IconX size={10} />
       </span>
     </div>
   )
 }
 
 export function PillAskIcon() {
-  return <IconMessage size={13} className="pill-ask-icon" />
+  return <IconMessage size={12} className="pill-ask-icon" />
 }
 
 /** A working state: a short white label over the aurora sweep. */
@@ -181,7 +181,7 @@ export function PillWorking({ label, cancel = true }: { label: string; cancel?: 
       <p className="pill-label">{label}</p>
       {cancel && (
         <span className="pill-x" aria-hidden="true">
-          <IconX size={12} />
+          <IconX size={10} />
         </span>
       )}
     </div>
@@ -191,7 +191,7 @@ export function PillWorking({ label, cancel = true }: { label: string; cancel?: 
 export function PillDone({ label = 'Done' }: { label?: string }) {
   return (
     <div className="pill-content pill-center">
-      <IconCheck size={14} />
+      <IconCheck size={12} />
       <span className="pill-label-inline">{label}</span>
     </div>
   )
@@ -224,21 +224,21 @@ export function PillCopy({
         aria-label={copied ? 'Copied' : 'Copy the result'}
       >
         {!copied && (
-          <svg className="pill-copy-ring" viewBox="0 0 66 26" aria-hidden="true">
+          <svg className="pill-copy-ring" viewBox="0 0 62 22" aria-hidden="true">
             <rect
               className="pill-copy-ring-track"
               x="0.8"
               y="0.8"
-              width="64.4"
-              height="24.4"
-              rx="12.2"
+              width="60.4"
+              height="20.4"
+              rx="10.2"
             />
             <rect
               x="0.8"
               y="0.8"
-              width="64.4"
-              height="24.4"
-              rx="12.2"
+              width="60.4"
+              height="20.4"
+              rx="10.2"
               pathLength={100}
               strokeDasharray="100"
               strokeDashoffset={String(100 - remaining * 100)}
@@ -246,7 +246,7 @@ export function PillCopy({
           </svg>
         )}
         <span className="pill-copy-label">
-          {copied ? <IconCheck size={13} /> : <IconCopy size={13} />}
+          {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
           {copied ? 'Copied' : 'Copy'}
         </span>
       </button>
