@@ -27,7 +27,7 @@ export function CapsulePreparing() {
         animate={reduced ? undefined : { opacity: [0.45, 1, 0.45], scale: [0.92, 1, 0.92] }}
         transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
       />
-      <p className="text-[11px] text-white/90 leading-4 truncate flex-1 min-w-0">
+      <p className="text-[10.5px] text-white/90 leading-[14px] truncate flex-1 min-w-0">
         {t('capsule.preparing')}
       </p>
       <button
@@ -38,7 +38,7 @@ export function CapsulePreparing() {
         title={t('capsule.cancelHint')}
         className="flex-shrink-0 p-1 rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors bg-transparent border-none cursor-pointer"
       >
-        <X size={12} />
+        <X size={10} />
       </button>
     </motion.div>
   )

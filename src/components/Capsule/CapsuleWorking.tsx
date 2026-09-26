@@ -31,7 +31,7 @@ export function CapsuleWorking({ label, cancelLabel, icon }: CapsuleWorkingProps
   return (
     <div className="relative z-10 flex h-full items-center gap-2 pl-3.5 pr-3">
       {icon}
-      <p className="min-w-0 flex-1 truncate text-center text-[11px] font-medium leading-4 text-white">
+      <p className="min-w-0 flex-1 truncate text-center text-[10.5px] font-medium leading-[14px] text-white">
         {label}
       </p>
       {cancelLabel && (
@@ -43,7 +43,7 @@ export function CapsuleWorking({ label, cancelLabel, icon }: CapsuleWorkingProps
           title={t('capsule.cancelHint')}
           className="flex-shrink-0 cursor-pointer rounded-full border-none bg-transparent p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
         >
-          <X size={12} />
+          <X size={10} />
         </button>
       )}
     </div>

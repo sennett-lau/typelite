@@ -29,12 +29,12 @@ export function CapsuleAskRecording({ selectionPreview = null }: CapsuleAskRecor
 
   return (
     <div className="relative z-10 flex h-full items-center gap-2 pl-3.5 pr-3">
-      <MessageCircle size={13} className="shrink-0 text-white/90" aria-hidden="true" />
+      <MessageCircle size={12} className="shrink-0 text-white/90" aria-hidden="true" />
       <span className="sr-only">{t('ask.title')}</span>
       <Waveform />
       {selectionPreview && (
         <span
-          className="max-w-[150px] shrink truncate rounded-full bg-white/15 px-2 py-0.5 text-[11px] leading-4 text-white/90"
+          className="max-w-[150px] shrink truncate rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] leading-[14px] text-white/90"
           title={t('ask.aboutSelectionHint')}
           data-testid="ask-selection-chip"
         >
@@ -50,7 +50,7 @@ export function CapsuleAskRecording({ selectionPreview = null }: CapsuleAskRecor
         title={t('capsule.cancelHint')}
         className="shrink-0 rounded-full border-none bg-transparent p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white"
       >
-        <X size={12} />
+        <X size={10} />
       </button>
     </div>
   )

@@ -33,7 +33,7 @@ pub const CAPSULE_WINDOW_PADDING: f64 = 12.0;
 /// work area, the part the Dock does not cover (`PILL_BOTTOM_GAP` in `useCapsuleResize`).
 pub const PILL_BOTTOM_GAP: f64 = 16.0;
 /// Without a pill ever seen: its usual height (`PILL_HEIGHT` in `useCapsuleResize`).
-const DEFAULT_PILL_HEIGHT: f64 = 40.0;
+const DEFAULT_PILL_HEIGHT: f64 = 32.0;
 
 /// A rectangle in global logical points (y grows downwards, as Tauri reports it).
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -8,11 +8,12 @@ export interface CapsuleSize {
   height: number
 }
 
-// Pill sizes from plan `translate-pill-and-keys` (pill.md): every state is 40 pt high. The window
-// adds 12 pt of padding on each side.
+// Pill sizes from plan `translate-pill-and-keys` (pill.md). Every state is 32 pt high (plan
+// `compact-pill`: 10.5 pt labels, a 13 pt waveform); the widths are unchanged. The window adds
+// 12 pt of padding on each side.
 
 /** Height of every pill state. */
-export const PILL_HEIGHT = 40
+export const PILL_HEIGHT = 32
 
 /** Dictate recording: red dot, 18-bar waveform and cancel button. */
 export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
@@ -28,7 +29,7 @@ export const ASK_RECORDING_WITH_SELECTION_SIZE: CapsuleSize = {
 }
 
 /** Size of each language dot and the space between dots. */
-const LANGUAGE_DOT = 6
+const LANGUAGE_DOT = 5
 const LANGUAGE_DOT_GAP = 4
 /**
  * The fixed parts of a recording pill: 14 pt left padding, 8 pt dot, the waveform (2 pt bars

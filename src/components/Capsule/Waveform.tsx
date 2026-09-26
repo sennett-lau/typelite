@@ -10,7 +10,8 @@ import {
   waveformBarColor,
 } from '../../lib/waveform'
 
-const BAR_HEIGHT_PX = 16
+/** Tallest bar; fits the 32 pt pill with even space above and below. */
+const BAR_HEIGHT_PX = 13
 /** Smallest bar scale, so silence still shows a thin 3 px line. */
 const MIN_SCALE = 3 / BAR_HEIGHT_PX
 /** Scale used for every bar when the user prefers reduced motion. */
