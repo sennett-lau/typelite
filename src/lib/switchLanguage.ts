@@ -1,19 +1,17 @@
-import { bindingFromHotkey, displayBinding } from '../stores/appStore'
+import { bindingFromHotkey, describeBinding } from '../stores/appStore'
 import type { ShortcutBinding } from '../stores/appStore'
 
 /**
- * How the Switch language key reads in Settings and on Home: bare `Shift` means either Shift
- * key, so it says so; anything else uses the normal shortcut display.
+ * How the Switch language key reads as text (the Settings field's accessible name): full key
+ * names, or "Off". Bare `Shift` means either Shift key; as a key cap it is ⇧ with no side letter
+ * (plan `compact-key-labels`).
  */
 export function switchLanguageLabel(
   binding: ShortcutBinding | null,
   t: (key: string) => string,
 ): string {
   if (!binding) return t('settings.shortcutOff')
-  if (binding.primary === 'Shift' && binding.modifiers.length === 0) {
-    return t('settings.eitherShift')
-  }
-  return displayBinding(binding)
+  return describeBinding(binding)
 }
 
 const EITHER_SIDE: Record<string, string[]> = {

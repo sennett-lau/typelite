@@ -104,7 +104,11 @@ describe('GeneralPane', () => {
     }
 
     const cancel = screen.getByTestId('shortcut-cancel')
-    expect(within(cancel).getByText('settings.generalPane.escKey').tagName).toBe('KBD')
+    // Plan `compact-key-labels`: the fixed Escape key is an "esc" cap read as "Escape".
+    const esc = within(cancel).getByTitle('Escape')
+    expect(esc.tagName).toBe('KBD')
+    expect(esc.querySelector('[aria-hidden="true"]')?.textContent).toBe('esc')
+    expect(within(cancel).getByText('Escape')).toHaveClass('sr-only')
     expect(within(cancel).queryByRole('button')).toBeNull()
   })
 
@@ -115,6 +119,24 @@ describe('GeneralPane', () => {
     const field = within(ask).getByRole('button', { name: 'Fn + Space' })
     const caps = Array.from(field.querySelectorAll('kbd')).map((kbd) => kbd.textContent)
     expect(caps).toEqual(['Fn', 'Space'])
+  })
+
+  it('draws side-specific keys as a symbol with a small side letter (plan compact-key-labels)', () => {
+    const hotkeys = config().hotkeys
+    const translate = { primary: 'RightShift', modifiers: ['End'] }
+    useAppStore.getState().updateConfig({
+      hotkeys: { ...hotkeys, translate, translateBindings: [translate] },
+    })
+    render(<GeneralPane />)
+
+    const row = document.querySelector('[data-hotkey-role="translate"]') as HTMLElement
+    // The field reads full names; the caps show End and ⇧ with a small R.
+    const field = within(row).getByRole('button', { name: 'End + Right Shift' })
+    const caps = Array.from(field.querySelectorAll('kbd'))
+    expect(caps.map((kbd) => kbd.getAttribute('title'))).toEqual(['End', 'Right Shift'])
+    expect(caps[0].textContent).toBe('End')
+    expect(caps[1].querySelector('.kbd-glyph')).toHaveTextContent('⇧')
+    expect(caps[1].querySelector('.kbd-side')).toHaveTextContent('R')
   })
 
   it('keeps Try Ask and adding extra shortcuts', () => {

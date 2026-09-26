@@ -4,11 +4,10 @@ import { X } from 'lucide-react'
 import { useAppStore } from '../../stores/appStore'
 import type { TranslationConfig } from '../../stores/appStore'
 import { MAX_TRANSLATION_TARGETS, TARGET_LANGUAGES, targetLanguageLabel } from '../../lib/constants'
-import { switchLanguageLabel } from '../../lib/switchLanguage'
 import { KeyText } from './KeyCaps'
 import { KEY_TOKENS } from './keyTokens'
 import { persistConfig } from './persistConfig'
-import { translationWithTarget, translationWithoutTarget } from './shortcutConfig'
+import { bindingKeys, translationWithTarget, translationWithoutTarget } from './shortcutConfig'
 import { TranslatePillPreview } from './TranslatePillPreview'
 
 /**
@@ -109,7 +108,7 @@ export function TranslateLanguages({ onError }: { onError: (error: string | null
         <p className="m-0 text-center text-[12px] leading-[1.8] text-text-secondary">
           <PreviewCaption
             count={targets.length}
-            switchKey={switchBinding ? [switchLanguageLabel(switchBinding, t)] : null}
+            switchKey={switchBinding ? bindingKeys(switchBinding) : null}
           />
         </p>
       </div>

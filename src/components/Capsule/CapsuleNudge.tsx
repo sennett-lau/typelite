@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Mic, X } from 'lucide-react'
-import { displayBinding, useAppStore } from '../../stores/appStore'
+import { bindingKeyNames, useAppStore } from '../../stores/appStore'
+import { KeyCaps } from '../ui/KeyCap'
 import { dismissTypingNudge } from '../../lib/tauri'
 import { useCountdown } from '../../hooks/useCountdown'
 
@@ -10,10 +11,10 @@ const KEY_MARKER = '@@KEY@@'
 /** How long the typing nudge stays when nobody hovers it. */
 export const NUDGE_HOLD_MS = 8000
 
-/** The first Dictate shortcut as the user reads it ("End", "Fn"), or null when none is set. */
-function useDictateKeyLabel(): string | null {
+/** The key names of the first Dictate shortcut (`["End"]`), empty when none is set. */
+function useDictateKeys(): string[] {
   const binding = useAppStore((s) => s.config.hotkeys?.dictationBindings?.[0] ?? null)
-  return binding ? displayBinding(binding) : null
+  return binding ? bindingKeyNames(binding) : []
 }
 
 /**
@@ -25,7 +26,7 @@ function useDictateKeyLabel(): string | null {
 export function CapsuleNudge({ active }: { active: boolean }) {
   const { t } = useTranslation()
   const setTypingNudge = useAppStore((s) => s.setTypingNudge)
-  const dictateKey = useDictateKeyLabel()
+  const dictateKeys = useDictateKeys()
   const [hovered, setHovered] = useState(false)
 
   const close = useCallback(
@@ -42,7 +43,7 @@ export function CapsuleNudge({ active }: { active: boolean }) {
   useCountdown(NUDGE_HOLD_MS, active && !hovered, () => close(false))
 
   const stopPointerPropagation = (event: React.PointerEvent) => event.stopPropagation()
-  // The key goes in its own <kbd>, so the sentence is split around a marker.
+  // The keys go in their own <kbd>s, so the sentence is split around a marker.
   const [before = '', after = ''] = t('capsule.nudge.text', { key: KEY_MARKER }).split(KEY_MARKER)
 
   return (
@@ -56,7 +57,7 @@ export function CapsuleNudge({ active }: { active: boolean }) {
       <Mic size={14} className="flex-none text-white/85" aria-hidden="true" />
       <p className="min-w-0 flex-1 truncate text-[12px] font-medium leading-4 text-white/95">
         {before}
-        <kbd className="pill-nudge-key">{dictateKey ?? ''}</kbd>
+        <KeyCaps keys={dictateKeys} className="pill-nudge-key" joiner="plus" />
         {after}
       </p>
       <button
