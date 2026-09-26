@@ -28,16 +28,21 @@ POST <address>/audio/transcriptions
 Authorization: Bearer <API key>          (only when a key is set)
 Content-Type: multipart/form-data
 
-file      recording.wav (16 kHz, 16-bit, mono WAV)
-model     <model>
-language  <code>                          (only when not auto-detect)
+file             recording.wav (16 kHz, 16-bit, mono WAV)
+model            <model>
+language         <code>                   (only with a fixed language)
+response_format  verbose_json             (only with auto-detect)
 ```
 
-and expects a JSON answer with the text:
+and expects a JSON answer with the text, and with `verbose_json` the language it heard:
 
 ```json
-{"text": "Let's meet at four tomorrow."}
+{"text": "Let's meet at four tomorrow.", "language": "en"}
 ```
+
+- The detected language lets Typelite add the right [language instructions](../languages.md)
+  when it polishes. A server that refuses `verbose_json` gets plain requests for the rest of the
+  session and keeps working, without a detected language.
 
 - A request times out after 60 seconds. Server errors (5xx) and timeouts are retried up to two
   times.
