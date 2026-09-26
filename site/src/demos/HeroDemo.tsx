@@ -12,6 +12,7 @@ import {
   speechBetween,
 } from '../components/Pill'
 import { Stage } from '../components/Stage'
+import { KeyCap } from '../components/KeyCap'
 
 /**
  * The hero demo: a chat app on a desktop. Press fn, speak (the raw words appear in the
@@ -155,7 +156,7 @@ export function HeroFrame({ t }: { t: number }) {
       <div className="screen screen-hero">
         <div className="key-hint" aria-hidden="true">
           <span>Dictate</span>
-          <kbd className={`kbd kbd-lg ${keyDown ? 'is-down' : ''}`}>fn</kbd>
+          <KeyCap name="Fn" large down={keyDown} />
         </div>
         <div className="win chat" aria-hidden="true">
           <div className="win-bar">

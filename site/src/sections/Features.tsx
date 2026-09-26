@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { KeyCap } from '../components/KeyCap'
 import {
   AskVignette,
   CopyVignette,
@@ -22,7 +23,7 @@ function Keys({ keys }: { keys: string[] }) {
       {keys.map((k, i) => (
         <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {i > 0 && <span aria-hidden="true">+</span>}
-          <kbd className="kbd">{k}</kbd>
+          <KeyCap name={k} />
         </span>
       ))}
     </>
@@ -94,7 +95,7 @@ export function Features() {
             icon={<IconMic size={16} />}
             tag="Dictate"
             title="Speak messy, get clean text."
-            keys={['fn']}
+            keys={['Fn']}
             demo={<DictateVignette />}
           >
             Fillers out, self-corrections applied, punctuation in. Talk the way you talk; Typelite
@@ -106,7 +107,7 @@ export function Features() {
             icon={<IconGlobe size={16} />}
             tag="Translate"
             title="Say it, get it in another language."
-            keys={['fn', '⇧']}
+            keys={['Fn', 'LeftShift']}
             demo={<TranslateVignette />}
           >
             Up to three target languages. Press Shift or click the language on the pill to switch
@@ -119,7 +120,7 @@ export function Features() {
             icon={<IconSparkle size={16} />}
             tag="Ask anything"
             title="Ask about what you’ve highlighted."
-            keys={['fn', 'Space']}
+            keys={['Fn', 'Space']}
             demo={<AskVignette />}
           >
             Ask a question, or highlight text and say “make this shorter”. Answers appear in a small

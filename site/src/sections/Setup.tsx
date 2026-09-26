@@ -97,7 +97,7 @@ export function Setup() {
                           <span className="ready-dot">
                             <IconCheck size={12} strokeWidth={3} />
                           </span>
-                          Ready. Press fn and speak.
+                          Ready. Press Fn and speak.
                         </span>
                       ) : (
                         <span>{t < 0.9 ? 'About 3 GB, once.' : 'Downloading…'}</span>
