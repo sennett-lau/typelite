@@ -2441,6 +2441,42 @@ section {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.router-flow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.router-flow-line {
+  fill: none;
+  stroke: url(#router-flow-grad);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+.router-flow-dot {
+  fill: #fff;
+  filter: drop-shadow(0 0 4px var(--aurora-a));
+}
+.router-flow-end {
+  fill: var(--aurora-b);
+  animation: router-end-in 0.4s var(--ease) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes router-end-in {
+  from {
+    transform: scale(0);
+  }
+}
+@media (max-width: 900px) {
+  .router-flow {
+    display: none;
+  }
+}
 .router-input {
   display: flex;
   flex-direction: column;

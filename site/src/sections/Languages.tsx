@@ -1,5 +1,6 @@
 import { easeOut, progress } from '../lib/clock'
 import { Stage } from '../components/Stage'
+import { RouterFlow } from '../components/RouterFlow'
 import { IconArrowRight, IconLanguages } from '../components/Icons'
 import { links } from '../links'
 // The community library itself, so the cards always match the repository.
@@ -138,18 +139,23 @@ export function Languages() {
                 <div className="card router-out" data-reveal>
                   <h3>Your languages</h3>
                   <PresetRow
+                    target={0}
                     name="English"
                     meta={presetMeta('english')}
                     sum="Clear, natural English that keeps your tone, with spelling per region."
                     state={!decided ? 'idle' : r.target === 'english' ? 'chosen' : 'dim'}
                   />
                   <PresetRow
+                    target={1}
                     name="Chinese (Traditional, Hong Kong)"
                     meta={`${presetMeta('cantonese-hong-kong')} · needs a hint`}
                     sum="Colloquial written Cantonese, with Hong Kong code-mixing kept."
                     state={!decided ? 'idle' : r.target === 'cantonese' ? 'chosen' : 'dim'}
                   />
-                  <div className={`no-preset ${decided && r.target === null ? 'chosen' : ''}`}>
+                  <div
+                    className={`no-preset ${decided && r.target === null ? 'chosen' : ''}`}
+                    data-route-target={2}
+                  >
                     No match: no language instructions are added.
                   </div>
                   <p
@@ -163,6 +169,12 @@ export function Languages() {
                     {r.why}
                   </p>
                 </div>
+                <RouterFlow
+                  route={i}
+                  target={r.target === 'english' ? 0 : r.target === 'cantonese' ? 1 : 2}
+                  u={u}
+                  end={EACH}
+                />
               </>
             )
           }}
@@ -210,18 +222,20 @@ function presetMeta(id: string): string {
 }
 
 function PresetRow({
+  target,
   name,
   meta,
   sum,
   state,
 }: {
+  target: number
   name: string
   meta: string
   sum: string
   state: 'idle' | 'chosen' | 'dim'
 }) {
   return (
-    <div className={`preset ${state === 'idle' ? '' : state}`}>
+    <div className={`preset ${state === 'idle' ? '' : state}`} data-route-target={target}>
       <div className="preset-top">
         {name}
         {state === 'chosen' && <span className="used-badge">Added</span>}
