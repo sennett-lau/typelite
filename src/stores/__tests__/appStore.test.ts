@@ -82,9 +82,10 @@ describe('appStore', () => {
       expect(config.polish_chinese_script).toBe('preserve')
       expect(config.custom_scenes).toEqual([])
       expect(config.active_scene).toBeNull()
-      expect(config.translation).toEqual({ targets: ['en'], active_target: 'en', languages: {} })
+      // Plan `tutorial-one-page`: no translation language until the user adds one.
+      expect(config.translation).toEqual({ targets: [], active_target: '', languages: {} })
       expect(config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
-      expect(config.target_lang).toBe('en')
+      expect(config.target_lang).toBe('')
       // Plan `two-tab-speech`: only the Built-in preset, before a model is downloaded.
       expect(config.speech_presets).toEqual([
         {
@@ -305,7 +306,7 @@ describe('appStore', () => {
     it('keeps ordered translation targets and the legacy target mirror in sync', () => {
       getState().updateConfig({ target_lang: 'fr' })
       expect(getState().config.translation).toEqual({
-        targets: ['en', 'fr'],
+        targets: ['fr'],
         active_target: 'fr',
         languages: {},
       })
@@ -331,6 +332,17 @@ describe('appStore', () => {
         active_target: 'ko',
         languages: {},
       })
+    })
+
+    it('allows an empty language list, with no active target', () => {
+      getState().updateConfig({ translation: { targets: ['en'], active_target: 'en' } })
+      getState().updateConfig({ translation: { targets: [], active_target: 'en' } })
+      expect(getState().config.translation).toEqual({
+        targets: [],
+        active_target: '',
+        languages: {},
+      })
+      expect(getState().config.target_lang).toBe('')
     })
 
     it('migrates plain Chinese to Simplified Chinese and keeps the order and active target', () => {
