@@ -532,9 +532,28 @@ mod tests {
     #[test]
     fn without_a_pill_the_panel_uses_the_pills_usual_place() {
         let screen = rect(0.0, 0.0, 1512.0, 982.0);
-        let anchor = anchor_on_screen(screen, 36.0);
+        let anchor = anchor_on_screen(screen, 32.0);
         assert_eq!(anchor.centre_x, 756.0);
-        assert_eq!(anchor.pill_top, 982.0 - 80.0 - 18.0);
+        // The pill's bottom sits `PILL_BOTTOM_GAP` above the work area's bottom.
+        assert_eq!(anchor.pill_top, 982.0 - PILL_BOTTOM_GAP - 32.0);
+    }
+
+    #[test]
+    fn without_a_pill_the_panel_sits_above_the_dock_or_near_the_bottom_edge() {
+        // Work areas in points: a Retina screen with the menu bar and a 70 pt Dock at the
+        // bottom, and a 1x external screen with only its menu bar (no Dock, or full screen).
+        let with_dock = logical_rect(0, 50, 3024, 1774, 2.0);
+        let without_dock = logical_rect(1512, 25, 1920, 1055, 1.0);
+        assert_eq!(with_dock, rect(0.0, 25.0, 1512.0, 887.0));
+
+        let above_dock = anchor_on_screen(with_dock, 32.0);
+        assert_eq!(above_dock.pill_top + 32.0, 912.0 - PILL_BOTTOM_GAP);
+        let panel = panel_of(panel_window_frame(&above_dock, 150.0));
+        assert_eq!(panel.bottom(), above_dock.pill_top - GAP_ABOVE_PILL);
+
+        let near_edge = anchor_on_screen(without_dock, 32.0);
+        assert_eq!(near_edge.pill_top + 32.0, 1080.0 - PILL_BOTTOM_GAP);
+        assert_eq!(near_edge.centre_x, 1512.0 + 960.0);
     }
 
     #[test]

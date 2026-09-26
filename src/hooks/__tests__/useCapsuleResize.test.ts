@@ -4,6 +4,9 @@ import {
   capsuleOrigin,
   copyPillSize,
   cursorLogicalPoint,
+  monitorWorkAreaRect,
+  PILL_BOTTOM_GAP,
+  PILL_HEIGHT,
   getCapsuleFocusable,
   getCapsuleState,
   getCapsuleVisibility,
@@ -93,7 +96,7 @@ describe('getCapsuleVisibility', () => {
 })
 
 describe('getSizeForState', () => {
-  const size = (width: number) => ({ width, height: 40 })
+  const size = (width: number) => ({ width, height: 32 })
 
   it('uses the plan `translate-pill-and-keys` sizes while recording', () => {
     expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(160))
@@ -104,14 +107,14 @@ describe('getSizeForState', () => {
   it('sizes Translate recording for its language name and dots', () => {
     const translate = (nameWidth: number | null, dots: number) =>
       getSizeForState('recording', false, false, false, 'translate', false, { nameWidth, dots })
-    // Fixed parts 140 + slack 8, the name after an 8 pt gap, the dots (6 pt, 4 apart) likewise.
+    // Fixed parts 140 + slack 8, the name after an 8 pt gap, the dots (5 pt, 4 apart) likewise.
     expect(translate(48, 0)).toEqual(size(204))
-    expect(translate(48, 2)).toEqual(size(228))
-    expect(translate(48, 3)).toEqual(size(238))
+    expect(translate(48, 2)).toEqual(size(226))
+    expect(translate(48, 3)).toEqual(size(235))
     // Fractional widths round up, so the text is never cut by a pixel.
     expect(translate(47.2, 0)).toEqual(size(204))
     // A long name is capped at 180 pt (it scrolls inside that).
-    expect(translate(300, 3)).toEqual(size(370))
+    expect(translate(300, 3)).toEqual(size(367))
     expect(translate(180, 0)).toEqual(size(336))
     // No language chosen: no name, the Dictate size.
     expect(translate(null, 0)).toEqual(size(160))
@@ -138,7 +141,7 @@ describe('getSizeForState', () => {
     expect(
       getSizeForState('idle', false, false, false, null, false, NO_TRANSLATE_LANGUAGE, true),
     ).toEqual(size(140))
-    expect(getSizeForState('idle', false, false, false)).toEqual(size(40))
+    expect(getSizeForState('idle', false, false, false)).toEqual(size(32))
   })
 
   it('keeps the context menu and error sizes ahead of the voice mode', () => {
@@ -169,9 +172,9 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
   }
   const short = { text: 'See you at 4.', targetLang: null }
 
-  it('is one line, 40 pt high and 308 or 368 pt wide by the length of the result', () => {
-    expect(copyPillSize(short)).toEqual({ width: 308, height: 40 })
-    expect(copyPillSize(long)).toEqual({ width: 368, height: 40 })
+  it('is one line, 32 pt high and 308 or 368 pt wide by the length of the result', () => {
+    expect(copyPillSize(short)).toEqual({ width: 308, height: 32 })
+    expect(copyPillSize(long)).toEqual({ width: 368, height: 32 })
     // CJK characters are wide, and a language tag takes room too.
     expect(
       copyPillSize({ text: '我哋聽日下晝四點喺二樓會議室開會啦。', targetLang: null }).width,
@@ -184,7 +187,7 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
     )
     expect(getPillSize('copy', null, false, NO_TRANSLATE_LANGUAGE, short)).toEqual({
       width: 308,
-      height: 40,
+      height: 32,
     })
   })
 
@@ -210,7 +213,7 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
       getSizeForState('idle', false, false, false, null, false, NO_TRANSLATE_LANGUAGE, false, long),
     ).toEqual({
       width: 368,
-      height: 40,
+      height: 32,
     })
     // The context menu and an error still win.
     expect(
@@ -223,7 +226,7 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
       getSizeForState('idle', false, true, false, null, false, NO_TRANSLATE_LANGUAGE, false, long),
     ).toEqual({
       width: 224,
-      height: 40,
+      height: 32,
     })
   })
 })
@@ -321,20 +324,93 @@ describe('capsule placement', () => {
   })
 
   it('anchors the capsule bottom-centre of the target monitor in logical points', () => {
-    const anchor = capsuleAnchorForMonitor(retina, 224, 60)
-    expect(anchor).toEqual({ left: 644, centerY: 872 })
-    expect(capsuleOrigin(anchor, 60)).toEqual({ x: 644, y: 842 })
+    // No work area reported: the whole screen. The pill's bottom sits 16 pt above its edge.
+    const anchor = capsuleAnchorForMonitor(retina, 224)
+    expect(anchor).toEqual({ left: 644, centerY: 982 - 16 - 16 })
+    expect(capsuleOrigin(anchor, 56)).toEqual({ x: 644, y: 922 })
 
-    const external = capsuleAnchorForMonitor(rightExternal, 224, 60)
-    expect(capsuleOrigin(external, 60)).toEqual({ x: 1894, y: 2282 })
+    const external = capsuleAnchorForMonitor(rightExternal, 224)
+    expect(capsuleOrigin(external, 56)).toEqual({ x: 1894, y: 2422 - 16 - 32 - 12 })
   })
 
   it('keeps the origin stable across repeated resizes', () => {
-    const anchor = capsuleAnchorForMonitor(retina, 60, 60)
-    const sizes = [60, 60, 60, 114, 60, 60]
+    const anchor = capsuleAnchorForMonitor(retina, 56)
+    const sizes = [56, 56, 56, 114, 56, 56]
     const origins = sizes.map((height) => capsuleOrigin(anchor, height))
     expect(new Set(origins.map((origin) => origin.x)).size).toBe(1)
     expect(origins.every((origin) => Number.isFinite(origin.y) && origin.y < 982)).toBe(true)
+  })
+})
+
+/** The pill's bottom edge for an anchor (the window is the pill plus 12 pt padding). */
+function pillBottom(anchor: { centerY: number }): number {
+  return anchor.centerY + PILL_HEIGHT / 2
+}
+
+// The owner's report: on screens without the Dock the pill sat far too high, because one
+// fixed 80 pt bottom offset (sized for a Dock) was used everywhere.
+describe('capsule placement on the work area', () => {
+  // Retina (2x) with the menu bar (25 pt) and a 70 pt Dock at the bottom, in physical pixels.
+  const dockBottom = {
+    ...retina,
+    workArea: { position: { x: 0, y: 50 }, size: { width: 3024, height: 1964 - 50 - 140 } },
+  }
+
+  it('sits just above a Dock at the bottom', () => {
+    const area = monitorWorkAreaRect(dockBottom)
+    expect(area).toEqual({ x: 0, y: 25, width: 1512, height: 887 })
+    const anchor = capsuleAnchorForMonitor(dockBottom, 184)
+    expect(pillBottom(anchor)).toBe(912 - PILL_BOTTOM_GAP)
+    expect(anchor.left).toBe(756 - 92)
+  })
+
+  it('sits near the bottom edge without a Dock, with an auto-hidden Dock and in full screen', () => {
+    // An external screen: only its own menu bar. An auto-hidden Dock or a full-screen Space
+    // report the whole screen (or all of it but the menu bar) as the work area.
+    const noDock = {
+      ...retina,
+      workArea: { position: { x: 0, y: 50 }, size: { width: 3024, height: 1914 } },
+    }
+    const fullScreen = { ...retina, workArea: { position: { x: 0, y: 0 }, size: retina.size } }
+    for (const monitor of [noDock, fullScreen, retina]) {
+      const anchor = capsuleAnchorForMonitor(monitor, 184)
+      expect(pillBottom(anchor)).toBe(982 - PILL_BOTTOM_GAP)
+      expect(anchor.left).toBe(756 - 92)
+    }
+  })
+
+  it('centres on the work area when the Dock is on the left or right', () => {
+    // A 70 pt Dock on the left: the work area starts at x 70.
+    const dockLeft = {
+      ...retina,
+      workArea: { position: { x: 140, y: 50 }, size: { width: 3024 - 140, height: 1914 } },
+    }
+    const left = capsuleAnchorForMonitor(dockLeft, 184)
+    expect(left.left).toBe(Math.round(70 + 721 - 92))
+    expect(pillBottom(left)).toBe(982 - PILL_BOTTOM_GAP)
+
+    const dockRight = {
+      ...retina,
+      workArea: { position: { x: 0, y: 50 }, size: { width: 3024 - 140, height: 1914 } },
+    }
+    const right = capsuleAnchorForMonitor(dockRight, 184)
+    expect(right.left).toBe(Math.round(721 - 92))
+    expect(pillBottom(right)).toBe(982 - PILL_BOTTOM_GAP)
+  })
+
+  it('converts each work area with its own monitor scale (mixed Retina and 1x)', () => {
+    // The 1x external below the Retina: its menu bar is 25 physical pixels, no Dock.
+    const external = {
+      ...rightExternal,
+      workArea: { position: { x: 726, y: 982 + 25 }, size: { width: 2560, height: 1440 - 25 } },
+    }
+    expect(monitorWorkAreaRect(external)).toEqual({ x: 726, y: 1007, width: 2560, height: 1415 })
+    const onExternal = capsuleAnchorForMonitor(external, 184)
+    expect(pillBottom(onExternal)).toBe(2422 - PILL_BOTTOM_GAP)
+    expect(onExternal.left).toBe(726 + 1280 - 92)
+
+    // The same Dock-at-the-bottom work area on the 2x Retina lands in points, not pixels.
+    expect(pillBottom(capsuleAnchorForMonitor(dockBottom, 184))).toBe(896)
   })
 })
 
@@ -371,10 +447,11 @@ describe('pill follows the cursor screen', () => {
   })
 
   it('re-anchors bottom-centre of the new monitor with the original window size', () => {
-    const moved = capsuleAnchorForMonitor(rightExternal, 174, 60)
-    // Right external: logical x 726..3286, y 982..2422.
+    const moved = capsuleAnchorForMonitor(rightExternal, 174)
+    // Right external: logical x 726..3286, y 982..2422. The pill's bottom is 16 pt above the
+    // bottom edge; the window adds 12 pt of padding below it.
     expect(moved.left).toBe(Math.round(726 + 1280 - 87))
-    expect(capsuleOrigin(moved, 60).y).toBe(2422 - 80 - 60)
+    expect(capsuleOrigin(moved, 56).y).toBe(2422 - 16 - 32 - 12)
   })
 })
 
