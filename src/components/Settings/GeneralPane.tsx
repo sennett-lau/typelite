@@ -13,6 +13,7 @@ import type { HotkeyStatus } from '../../lib/tauri'
 import { SegmentedControl } from './shared/SegmentedControl'
 import { Toggle } from './shared/Toggle'
 import { Group, Row } from '../ui/Group'
+import { KeyCap } from '../ui/KeyCap'
 import { ShortcutBindingList } from './ShortcutBindingList'
 import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
@@ -232,7 +233,7 @@ export function GeneralPane() {
           help={t('settings.generalPane.cancelDesc')}
           testId="shortcut-cancel"
         >
-          <kbd className="kbd">{t('settings.generalPane.escKey')}</kbd>
+          <KeyCap name="Escape" />
         </Row>
         {notes.length > 0 && (
           <Row>

@@ -807,7 +807,12 @@ describe('Settings tab 切换', () => {
           cancelled: false,
         })
       })
-      expect(screen.getByText('Left Command + ;')).toBeDefined()
+      // The held keys read by full name; the caps show ⌘ with a small L.
+      const held = screen.getByText('Left Command + ;')
+      expect(held).toHaveClass('sr-only')
+      expect(
+        held.parentElement!.querySelector('kbd[title="Left Command"] .kbd-side'),
+      ).toHaveTextContent('L')
       act(() => {
         emitTauriEvent('hotkey:capture', {
           held: ['LeftCommand', ';'],
@@ -841,7 +846,11 @@ describe('Settings tab 切换', () => {
 
       const row = document.querySelector('[data-hotkey-role="switchLanguage"]') as HTMLElement
       expect(row).toBeTruthy()
-      fireEvent.click(within(row).getByText('settings.eitherShift'))
+      // Either Shift: the field reads "Shift" and shows a bare ⇧ cap (plan `compact-key-labels`).
+      const field = within(row).getByRole('button', { name: 'Shift' })
+      expect(field.querySelector('kbd .kbd-glyph')).toHaveTextContent('⇧')
+      expect(field.querySelector('kbd .kbd-side')).toBeNull()
+      fireEvent.click(field)
       await waitFor(() => expect(startShortcutCapture).toHaveBeenCalled())
       act(() => {
         emitTauriEvent('hotkey:capture', {

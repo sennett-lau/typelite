@@ -212,10 +212,13 @@ describe('HomePage', () => {
 
     const translateRow = screen.getByTestId('shortcut-row-translate')
     expect(translateRow).toHaveTextContent('Translate')
-    expect(Array.from(translateRow.querySelectorAll('kbd')).map((kbd) => kbd.textContent)).toEqual([
-      'End',
-      'Right Shift',
-    ])
+    // Plan `compact-key-labels`: ⇧ with a small R, full name as tooltip and for screen readers.
+    const translateCaps = Array.from(translateRow.querySelectorAll('kbd'))
+    expect(translateCaps.map((kbd) => kbd.getAttribute('title'))).toEqual(['End', 'Right Shift'])
+    expect(translateCaps[0].textContent).toBe('End')
+    expect(translateCaps[1].querySelector('.kbd-glyph')).toHaveTextContent('⇧')
+    expect(translateCaps[1].querySelector('.kbd-side')).toHaveTextContent('R')
+    expect(within(translateCaps[1]).getByText('Right Shift')).toHaveClass('sr-only')
 
     const ask = screen.getByTestId('shortcut-row-ask')
     expect(ask).toHaveTextContent('Ask anything')
