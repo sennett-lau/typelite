@@ -8,9 +8,12 @@ whisper.cpp. In the setup screens it is not a separate choice: the user enters i
 
 Status: building — 2026-09-25
 
-Supersedes in part plan [v1-scope](../2026-09-24-v1-scope/index.md)'s "Hosted providers with
-their own APIs are not built in" ([providers.md](../2026-09-24-v1-scope/providers.md)) for this
-one service. Fits the two-engine speech setup of plan
+Supersedes in part plan [v1-scope](../2026-09-24-v1-scope/index.md) for this one opt-in
+service: its "Hosted providers with their own APIs are not built in"
+([providers.md](../2026-09-24-v1-scope/providers.md)) and its "no cloud services" / "no cloud
+STT" constraint ([local-only.md](../2026-09-24-v1-scope/local-only.md)). Audio goes to Qwen Cloud
+only when the user enters their own paid key; everything else stays free and local by default.
+The "Hard constraints" in `CLAUDE.md` say the same. Fits the two-engine speech setup of plan
 [two-tab-speech](../2026-09-25-two-tab-speech/index.md) without changing its screens beyond one
 note line in the form.
 
@@ -58,3 +61,5 @@ note line in the form.
 - Only the Token Plan address was probed. Model Studio (DashScope) hosts are sent to the same
   native endpoint, but whether they take the same request body for their speech models is not
   tested.
+- The key steps in the speech services guide ("sign in to the Qwen Cloud console, subscribe to a
+  Token Plan, create an API key") are not yet confirmed, and the console's address is missing.
