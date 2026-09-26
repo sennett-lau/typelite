@@ -286,7 +286,7 @@ export function Footer() {
               <a rel="noopener" className="btn btn-primary" href={links.releases}>
                 <IconDownload size={18} /> Download for macOS
               </a>
-              <a rel="noopener" className="btn btn-glass" href={links.repo}>
+              <a rel="noopener" className="btn btn-glass btn-star" href={links.repo}>
                 <IconStar size={17} /> Star on GitHub
               </a>
             </div>

@@ -281,6 +281,62 @@ kbd {
 .btn-primary:hover {
   background: var(--accent-hover);
 }
+/* Primary buttons: a light under the pointer and a small pull towards it (useMagneticButtons). */
+.btn-primary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transform: translate(var(--tx, 0px), var(--ty, 0px));
+}
+.btn-primary:active {
+  transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(0.98);
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    120px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.38),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn-primary:hover::before {
+  opacity: 1;
+}
+.btn-primary:hover {
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+/* Star buttons: the star spins a turn-fifth and fills with gold on hover or focus. */
+.btn-star svg {
+  transition:
+    fill 0.3s ease,
+    color 0.3s ease;
+}
+.btn-star:hover svg,
+.btn-star:focus-visible svg {
+  color: #f5a623;
+  fill: #ffc940;
+  animation: star-pop 0.6s var(--ease);
+}
+@keyframes star-pop {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  35% {
+    transform: rotate(-18deg) scale(0.86);
+  }
+  75% {
+    transform: rotate(80deg) scale(1.28);
+  }
+  100% {
+    transform: rotate(72deg) scale(1);
+  }
+}
 .btn-glass {
   background: var(--surface);
   color: var(--text);
