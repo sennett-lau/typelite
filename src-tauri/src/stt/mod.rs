@@ -181,7 +181,7 @@ mod tests {
     fn built_in_presets_get_the_in_process_provider() {
         let preset = crate::storage::SpeechPreset::builtin_whisper("small", "ggml-small-q5_1.bin");
         let provider = provider_for_preset(&preset, None).unwrap();
-        assert_eq!(provider.name(), "Built-in (this Mac)");
+        assert_eq!(provider.name(), "Built-in (on-device)");
 
         let mut no_file = preset.clone();
         no_file.model_file.clear();

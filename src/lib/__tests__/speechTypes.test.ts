@@ -116,10 +116,10 @@ describe('speech engines (plan `two-tab-speech`)', () => {
 
   it('words the hardware note', () => {
     expect(hardwareNote(check(['large-v3-turbo', 'small']), translate, 'long')).toBe(
-      'This Mac: Apple M1 Pro, 32 GB memory.',
+      'This computer: Apple M1 Pro, 32 GB memory.',
     )
     expect(hardwareNote(check(['small'], 'needs_memory'), translate, 'long')).toBe(
-      'This Mac: Apple M1 Pro, 32 GB memory. The larger model needs 8 GB of memory.',
+      'This computer: Apple M1 Pro, 32 GB memory. The larger model needs 8 GB of memory.',
     )
     expect(hardwareNote(check(['small'], 'needs_apple_silicon'), translate, 'short')).toBe(
       'Apple M1 Pro · 32 GB · The larger model needs an Apple Silicon Mac.',

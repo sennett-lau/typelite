@@ -176,7 +176,7 @@ describe('LlmPane', () => {
       await waitFor(() => expect(tauri.deleteAiModel).toHaveBeenCalledWith('qwen3-4b'))
     })
 
-    it('when no model suits this Mac, Built-in is dimmed and the server form shows', async () => {
+    it('when no model suits this computer, Built-in is dimmed and the server form shows', async () => {
       vi.mocked(tauri.getAiHardware).mockResolvedValue(
         hardwareCheck([], {
           chipKind: 'intel',
@@ -189,7 +189,7 @@ describe('LlmPane', () => {
 
       const builtin = within(engineCards()).getByRole('radio', { name: /Built-in/ })
       expect(builtin).toBeDisabled()
-      expect(builtin).toHaveTextContent('Not available on this Mac')
+      expect(builtin).toHaveTextContent('Not available on this computer')
       expect(
         within(engineCards()).getByRole('radio', { name: /Your server or API key/ }),
       ).toHaveAttribute('aria-checked', 'true')
