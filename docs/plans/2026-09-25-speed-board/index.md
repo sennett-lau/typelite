@@ -9,6 +9,9 @@ Status: agreed — 2026-09-25
 Superseded in part by [home-refresh](../2026-09-26-home-refresh/index.md) (Insights shows the
 average run across all presets).
 
+Superseded in part by [speed-by-preset](../2026-09-26-speed-by-preset/index.md) (the last 200
+runs are kept in a file, not in memory only).
+
 ## Why it is needed
 
 Speech recognition is not streaming. Typelite records until the user stops, then uploads the
