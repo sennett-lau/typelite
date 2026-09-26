@@ -762,4 +762,126 @@ mod tests {
         };
         assert!(!panel_swap_is_safe(missing, missing));
     }
+
+    #[test]
+    fn tauris_window_class_is_recognised_with_or_without_kvo() {
+        // What a live Tauri window reports (seen in the log of the real app).
+        let observed = [
+            "NSKVONotifying_TaoWindow",
+            "TaoWindow",
+            "NSWindow",
+            "NSResponder",
+            "NSObject",
+        ];
+        assert_eq!(
+            classify_window_class(&observed),
+            WindowKind::TauriWindow { observed: true }
+        );
+        assert_eq!(
+            classify_window_class(&["TaoWindow", "NSWindow", "NSResponder", "NSObject"]),
+            WindowKind::TauriWindow { observed: false }
+        );
+    }
+
+    #[test]
+    fn a_swapped_panel_is_recognised_so_the_swap_runs_once() {
+        let chain = [
+            "NSKVONotifying_TypeliteOverlayPanel",
+            "TypeliteOverlayPanel",
+            "NSPanel",
+            "NSWindow",
+        ];
+        assert_eq!(
+            classify_window_class(&chain),
+            WindowKind::OverlayPanel { observed: true }
+        );
+        assert_eq!(
+            classify_window_class(&chain[1..]),
+            WindowKind::OverlayPanel { observed: false }
+        );
+    }
+
+    #[test]
+    fn other_classes_and_mismatched_kvo_classes_are_left_alone() {
+        for chain in [
+            &["NSWindow", "NSResponder", "NSObject"][..],
+            &["NSPanel", "NSWindow"],
+            // A KVO class must sit directly on the class it is named after.
+            &["NSKVONotifying_TaoWindow", "NSWindow"],
+            &["NSKVONotifying_NSWindow", "NSWindow"],
+            &["NSKVONotifying_", "TaoWindow"],
+            &["NSKVONotifying_TaoWindow"],
+            // Some other subclass of Tauri's class.
+            &["MyWindow", "TaoWindow", "NSWindow"],
+            &[],
+        ] {
+            assert_eq!(
+                classify_window_class(chain),
+                WindowKind::Unknown,
+                "{chain:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn kvo_keys_come_from_the_setters_only() {
+        // The methods of the real NSKVONotifying_TaoWindow, plus a few made-up ones.
+        let methods = [
+            "setContentView:",
+            "class",
+            "dealloc",
+            "_isKVOA",
+            "setTitle:",
+            "setURL:",
+            "setTitle:",
+            "set:",
+            "setup",
+            "setFrame:display:",
+            "settle:",
+        ];
+        assert_eq!(
+            kvo_keys_from_methods(methods),
+            vec!["URL".to_string(), "contentView".into(), "title".into()]
+        );
+        assert!(kvo_keys_from_methods(["class", "dealloc", "_isKVOA"]).is_empty());
+    }
+
+    fn observation(observer: usize, key_path: &str, context: usize) -> Observation {
+        Observation {
+            observer,
+            key_path: key_path.to_string(),
+            context,
+        }
+    }
+
+    #[test]
+    fn observers_from_before_the_swap_are_removed_under_the_old_class() {
+        let mut records = vec![observation(1, "title", 0)];
+        // Not registered after the swap: another observer, another key, another context.
+        assert!(!take_observation(&mut records, 2, "title", None));
+        assert!(!take_observation(&mut records, 1, "contentView", None));
+        assert!(!take_observation(&mut records, 1, "title", Some(7)));
+        assert_eq!(records.len(), 1);
+        // Registered after the swap: removed normally, and only once.
+        assert!(take_observation(&mut records, 1, "title", Some(0)));
+        assert!(records.is_empty());
+        assert!(!take_observation(&mut records, 1, "title", None));
+    }
+
+    #[test]
+    fn a_removal_without_context_takes_the_latest_registration() {
+        let mut records = vec![
+            observation(1, "title", 10),
+            observation(1, "level", 10),
+            observation(1, "title", 20),
+        ];
+        assert!(take_observation(&mut records, 1, "title", None));
+        assert_eq!(
+            records,
+            vec![observation(1, "title", 10), observation(1, "level", 10)]
+        );
+        // With a context, exactly that registration.
+        assert!(take_observation(&mut records, 1, "title", Some(10)));
+        assert_eq!(records, vec![observation(1, "level", 10)]);
+    }
 }
