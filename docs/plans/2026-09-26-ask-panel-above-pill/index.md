@@ -8,6 +8,9 @@ visual reference is [mock.html](mock.html).
 
 Status: done — 2026-09-26
 
+Superseded in part by [pill-over-full-screen](../2026-09-26-pill-over-full-screen/index.md)
+(the panel shows over full-screen apps; without a pill it uses the work area).
+
 ## Goals
 
 - The answer appears where the user is already looking (by the pill), not in the middle of the
