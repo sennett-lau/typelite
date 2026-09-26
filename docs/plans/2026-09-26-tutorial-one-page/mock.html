@@ -1,0 +1,746 @@
+<title>Typelite Shortcut Tutorial</title>
+<style>
+  :root {
+    --page-bg: #f2f3f6; --page-ink: #1b1d22; --page-muted: #5d6270; --page-line: #dcdfe6; --page-card: #fff;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  * { box-sizing: border-box; }
+  body { background: var(--page-bg); color: var(--page-ink); font-family: var(--ui); font-size: 15px; line-height: 1.5; padding-inline: 20px; padding-block: 32px 64px; }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); }
+  h1 { margin: 4px 0 6px; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.15; text-wrap: balance; }
+  .lead { margin: 0; color: var(--page-muted); max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--page-line); border-radius: 9px; overflow: hidden; background: var(--page-card); }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: transparent; color: var(--page-ink); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #0a84ff; color: #fff; }
+  .seg button:focus-visible { outline: 2px solid #0a84ff; outline-offset: -2px; }
+  .label { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: .06em; text-transform: uppercase; }
+  .notes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; padding: 14px 18px; font-size: 14px; color: var(--page-muted); }
+  .notes b { color: var(--page-ink); }
+  .notes ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .desk { border-radius: 16px; padding: 34px 24px; border: 1px solid var(--page-line); background: radial-gradient(90% 90% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%); }
+  .desk.dk { background: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%); }
+
+  /* App tokens: light Native Glass / dark Aurora */
+  .app {
+    --glass: rgba(246,246,248,.66); --content: rgba(255,255,255,.76); --card: #fff; --ink: #1d1d1f; --muted: #6e6e73; --faint: #8e8e93;
+    --line: rgba(0,0,0,.09); --hair: rgba(0,0,0,.06); --accent: #0a84ff; --accent-ink: #fff; --accent-soft: rgba(10,132,255,.12);
+    --ok: #30d158; --err: #ff453a; --field: rgba(0,0,0,.045); --key: #fff; --key-line: #d2d2d7; --tint-a: transparent; --tint-b: transparent;
+    color: var(--ink); font-family: var(--ui); font-size: 13px;
+  }
+  .app.dk {
+    color-scheme: dark;
+    --glass: rgba(18,24,34,.52); --content: rgba(14,20,30,.58); --card: rgba(36,44,60,.7); --ink: #f1f6ff; --muted: #a6b3c8; --faint: #6f7d94;
+    --line: rgba(255,255,255,.12); --hair: rgba(255,255,255,.08); --accent: #3fd8c2; --accent-ink: #04241f; --accent-soft: rgba(63,216,194,.18);
+    --field: rgba(255,255,255,.06); --key: #2c3646; --key-line: #445066; --tint-a: rgba(63,216,194,.24); --tint-b: rgba(175,82,222,.24);
+  }
+  .win { max-width: 760px; margin: 0 auto; border-radius: 12px; overflow: hidden; position: relative;
+    background: radial-gradient(60% 50% at 90% 0%, var(--tint-a), transparent 70%), radial-gradient(50% 45% at 10% 100%, var(--tint-b), transparent 70%), var(--content);
+    backdrop-filter: blur(30px) saturate(1.8); -webkit-backdrop-filter: blur(30px) saturate(1.8);
+    box-shadow: 0 30px 60px rgba(20,20,50,.28), 0 0 0 .5px rgba(0,0,0,.2); }
+  .lights { display: flex; gap: 8px; padding: 14px 16px 0; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+
+  /* Onboarding */
+  .ob { padding: 14px 40px 26px; min-height: 470px; display: flex; flex-direction: column; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 26px; }
+  .dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--hair); }
+  .dots span.done { background: var(--muted); opacity: .5; }
+  .dots span.now { width: 18px; background: var(--accent); }
+  .ob h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .ob .sub { margin: 4px 0 22px; color: var(--muted); }
+  .card { background: var(--card); border-radius: 12px; box-shadow: 0 0 0 .5px var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; align-items: flex-start; gap: 12px; }
+  .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .ic svg { width: 18px; height: 18px; }
+  .card h3 { margin: 0; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tag { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em; }
+  .card p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+  .card.fixed { height: 214px; justify-content: space-between; }
+  .card-body { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 0; padding-top: 2px; }
+  .status { display: flex; flex-direction: column; gap: 8px; }
+  .status-line { display: flex; align-items: center; gap: 8px; min-height: 22px; flex-wrap: wrap; }
+  .badge { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .badge.err { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
+  .badge.busy { background: var(--field); color: var(--ink); }
+  .status-detail { font-size: 12px; color: var(--muted); line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .models.one { grid-template-columns: minmax(0, 1fr); }
+  .model { all: unset; box-sizing: border-box; border-radius: 9px; padding: 9px 11px; box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .model b { font-size: 12.5px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .model span { font-size: 11.5px; color: var(--muted); }
+  .model[aria-checked="true"] { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .model:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .models.one .model { cursor: default; }
+  .hw { font-size: 11.5px; color: var(--muted); }
+  .card-foot { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 7px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  .btn.ghost { background: var(--field); color: var(--ink); }
+  .btn:focus-visible, .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .link { font: inherit; font-size: 12.5px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+  .link.muted { color: var(--muted); }
+  .progress { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .track { height: 6px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .25s linear; }
+  .progress-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .ready { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); }
+  .check { width: 18px; height: 18px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; flex: none; }
+  .check::after { content: ""; width: 7px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+  .errline { color: var(--err); font-size: 12.5px; }
+  .below { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 12px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .ob-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 26px; }
+
+  /* Sheet */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); display: flex; align-items: flex-start; justify-content: center; padding: 56px 20px 20px; }
+  .scrim[hidden] { display: none; }
+  .sheet { width: min(460px, 100%); background: var(--card); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 .5px var(--line); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .app.dk .sheet { background: #1f2735; }
+  .sheet h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .sheet .sub { margin: -8px 0 0; color: var(--muted); font-size: 12.5px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .fields { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .fields label { color: var(--muted); font-size: 12.5px; }
+  .fields input { font: inherit; font-size: 12.5px; padding: 6px 9px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields input:focus { outline: none; border-color: var(--accent); }
+  .fields input.mono { font-family: var(--mono); font-size: 12px; }
+  .sheet-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fields select { font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields select:focus { outline: none; border-color: var(--accent); }
+  .fields [hidden] { display: none !important; }
+  .hint { grid-column: 2; font-size: 11.5px; color: var(--muted); margin-top: -3px; line-height: 1.5; }
+  .hint button { all: unset; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: 11px; }
+  .hint button:focus-visible { outline: 2px solid var(--accent); }
+  .result { font-size: 12px; color: var(--muted); }
+  .result.ok { color: var(--ok); }
+  .saved { display: flex; flex-direction: column; border-radius: 9px; box-shadow: 0 0 0 .5px var(--line); overflow: hidden; }
+  .saved button { all: unset; display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 12.5px; }
+  .saved button + button { border-top: 1px solid var(--hair); }
+  .saved button[aria-pressed="true"] { background: var(--accent-soft); }
+  .saved button span:last-child { color: var(--muted); font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Settings */
+  .set { display: grid; grid-template-columns: 180px minmax(0, 1fr); min-height: 500px; }
+  .side { background: var(--glass); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--hair); }
+  .brand { font-weight: 600; font-size: 14px; padding: 10px 8px 12px; }
+  .nav { padding: 6px 9px; border-radius: 7px; font-size: 13px; color: var(--ink); }
+  .nav.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .main { padding: 30px 28px 28px; min-width: 0; }
+  .main h2 { margin: 0 0 12px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .toolbar { display: flex; gap: 4px; margin: -4px 0 18px; border-bottom: 1px solid var(--hair); padding-bottom: 10px; flex-wrap: wrap; }
+  .toolbar button { all: unset; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 8px; font-size: 11px; color: var(--muted); cursor: pointer; min-width: 56px; }
+  .toolbar button svg { width: 20px; height: 20px; }
+  .toolbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .toolbar button:focus-visible { outline: 2px solid var(--accent); }
+  .engine { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .subtabs { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 8px; background: var(--hair); gap: 2px; }
+  .subtabs button { all: unset; font-size: 12.5px; padding: 4px 12px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+  .subtabs button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 .5px var(--line); font-weight: 600; }
+  .subtabs button:focus-visible { outline: 2px solid var(--accent); }
+  .ghead { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin: 20px 4px 7px; flex-wrap: wrap; }
+  .glabel { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .picker { font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line); color: var(--ink); border: 0; }
+  .group { background: var(--card); border-radius: 10px; box-shadow: 0 0 0 .5px var(--line); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; min-height: 42px; flex-wrap: wrap; }
+  .row + .row { border-top: 1px solid var(--hair); }
+  .row .l { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+  .row .l small { color: var(--muted); font-size: 11.5px; }
+  .row .v { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .row input { font: inherit; font-family: var(--mono); font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: min(300px, 100%); }
+  .pop { font-size: 12.5px; padding: 4px 10px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line), 0 1px 2px rgba(0,0,0,.08); }
+  .pop::after { content: " ⌄"; color: var(--muted); }
+  .dim { color: var(--muted); font-size: 12px; }
+
+  [data-screen][hidden] { display: none !important; }
+  @media (max-width: 720px) {
+    .ob { padding: 10px 18px 20px; }
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .side { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--hair); }
+    .main { padding: 20px 16px; }
+    .fields { grid-template-columns: minmax(0, 1fr); }
+    .desk { padding: 16px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .track i { transition: none; } }
+</style>
+<style>
+  .frame { position: relative; margin: 0 auto; width: min(760px, 100%); }
+  .win.fixed { display: flex; flex-direction: column; overflow: hidden; }
+  .top { height: 36px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+  .top .lights { padding: 0; }
+  .dots2 { display: flex; justify-content: center; gap: 6px; flex: none; }
+  .dots2 span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+  .dots2 span.done { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .dots2 span.now { background: var(--accent); width: 18px; border-radius: 3px; }
+  .head { flex: none; text-align: center; padding: 14px 32px 12px; }
+  .head h2 { margin: 0; font-size: 21px; letter-spacing: -.01em; text-wrap: balance; }
+  .head .sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+  .body { flex: 1; min-height: 0; overflow: auto; padding: 4px 32px 8px; }
+  .inner { width: min(420px, 100%); margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .foot2 { flex: none; display: flex; align-items: center; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid var(--hair); }
+  .foot2 .grow { flex: 1; }
+  kbd.k { font-family: inherit; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); border-bottom-width: 2px; color: var(--ink); }
+  kbd.big { font-size: 20px; padding: 6px 14px; border-radius: 9px; border-bottom-width: 3px; }
+  .keycard { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 18px 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .keycard .keys { display: flex; gap: 8px; align-items: center; cursor: pointer; padding: 10px 18px; border-radius: 10px; border: 1px dashed var(--line); }
+  .keycard .keys:hover { border-color: var(--accent); }
+  .keycard .plus { color: var(--faint); font-size: 16px; }
+  .hint { font-size: 12px; color: var(--faint); margin: 0; text-align: center; }
+  .row2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
+  .row2 small { display: block; color: var(--faint); font-size: 11.5px; }
+  select.pick { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--ink); }
+  .how { font-size: 13px; color: var(--muted); margin: 0; text-align: center; line-height: 1.9; }
+  .script { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 12px 16px; }
+  .script .lbl { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .script p { margin: 4px 0 0; font-size: 16px; line-height: 1.45; color: var(--ink); }
+  textarea.box { font: inherit; font-size: 13px; width: 100%; box-sizing: border-box; resize: none; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); height: 62px; }
+  textarea.box:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .result { min-height: 40px; display: flex; flex-direction: column; gap: 3px; font-size: 12.5px; }
+  .said { color: var(--faint); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status { margin: 0; display: flex; align-items: center; gap: 6px; }
+  .status.good { color: var(--ok); } .status.bad { color: var(--muted); } .status.wait { color: var(--muted); }
+  .status svg { width: 14px; height: 14px; flex: none; }
+  .status button { all: unset; cursor: pointer; color: var(--accent); font-weight: 600; margin-left: 4px; }
+  .askwin { position: absolute; right: -8px; top: 120px; width: 220px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 16px 40px rgba(0,0,0,.25); padding: 12px; font-size: 12.5px; z-index: 3; }
+  .askwin b { display: block; font-size: 11px; color: var(--faint); margin-bottom: 4px; }
+  .fitbadge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+  .fitbadge.ok { background: color-mix(in srgb, #34c759 18%, transparent); color: #1f8a3b; }
+  .fitbadge.no { background: color-mix(in srgb, #ff3b30 16%, transparent); color: #c62d24; }
+  .langs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .chip.plain { background: var(--field); color: var(--ink); font-weight: 500; }
+  .note2 { font-size: 12px; color: var(--muted); margin: 0; text-align: center; }
+
+  .app { --res: var(--accent); } .app.green { --res: var(--ok); }
+  .rcard { border-radius: 12px; padding: 12px 16px; border: 1px solid color-mix(in srgb, var(--res) 35%, transparent); background: color-mix(in srgb, var(--res) 9%, var(--card)); animation: rin .28s cubic-bezier(.2,0,0,1) both; }
+  @keyframes rin { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .rcard .rt { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--res); margin: 0; }
+  .rcard .rt svg { width: 16px; height: 16px; }
+  .rcard .diff { margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: var(--ink); }
+  .rcard .diff del { color: var(--faint); text-decoration-color: color-mix(in srgb, var(--err) 70%, transparent); text-decoration-thickness: 1.5px; }
+  .rcard .diff .arrow { color: var(--faint); margin: 0 6px; }
+  .rcard .cap { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 8px 0 0; }
+  .working { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); margin: 0; }
+  .dotsw { display: inline-flex; gap: 3px; }
+  .dotsw i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: bl 1s infinite ease-in-out; }
+  .dotsw i:nth-child(2) { animation-delay: .15s; } .dotsw i:nth-child(3) { animation-delay: .3s; }
+  @keyframes bl { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  textarea.box.done { border-color: color-mix(in srgb, var(--res) 55%, transparent); }
+  .play { all: unset; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--accent); padding: 5px 4px; }
+  @media (prefers-reduced-motion: reduce) { .rcard, .dotsw i { animation: none; } }
+
+  /* Fixed slots: the top card, the box and the result line keep their size in every state. */
+  .script, .rcard { box-sizing: border-box; height: 96px; padding: 12px 16px; border-width: 1px; border-style: solid; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .script { border-color: var(--hair); }
+  .script .lbl, .rcard .rt { height: 18px; line-height: 18px; margin: 0; }
+  .rcard .rt { font-size: 13px; }
+  .script p, .rcard .diff { margin: 6px 0 0; font-size: 15px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .rcard { animation: fadein .25s ease both; }
+  @keyframes fadein { from { opacity: .0; } to { opacity: 1; } }
+  .result { height: 44px; min-height: 0; overflow: visible; justify-content: flex-start; }
+  .status, .working { min-height: 26px; line-height: 26px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+  .status.wait, .status.bad { display: block; }
+  .status.bad svg { display: inline-block; vertical-align: -2px; margin-right: 5px; }
+  .status.bad button { margin-left: 6px; }
+  .status kbd.k, .how kbd.k { margin: 0 1px;  font-size: 11px; line-height: 16px; padding: 1px 6px; vertical-align: middle; }
+
+  .langrow { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .langrow .hdr { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+  .langrow .hdr small { color: var(--faint); font-size: 11.5px; }
+  .lchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px; }
+  .lchip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 6px 4px 10px; border-radius: 999px; background: var(--field); color: var(--ink); }
+  .lchip .n { font-size: 10.5px; font-weight: 700; color: var(--faint); }
+  .lchip button { all: unset; cursor: pointer; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+  .lchip button:hover { background: var(--hair); }
+  .addlang { all: unset; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent); padding: 4px 8px; border-radius: 999px; border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent); }
+  .addlang[disabled] { opacity: .4; cursor: default; }
+  .empty { font-size: 12.5px; color: var(--faint); }
+  .preview { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0 2px; }
+  .preview .cap { font-size: 12px; color: var(--muted); text-align: center; margin: 0; line-height: 1.8; }
+  .pillx { height: 36px; border-radius: 18px; background: rgba(30,30,32,.78); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 10px 30px rgba(20,20,40,.22); display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; color: #fff; transform: scale(1.35); transform-origin: center; margin: 6px 0; }
+  .pillx .rec { width: 8px; height: 8px; border-radius: 50%; background: #ff453a; flex: none; }
+  .pillx .wave { display: flex; align-items: center; gap: 2px; height: 16px; }
+  .pillx .wave i { width: 2px; border-radius: 1px; background: rgba(255,255,255,.85); }
+  .pillx .x { font-size: 11px; color: rgba(255,255,255,.6); margin-left: 4px; }
+  .pillx .chip { height: 18px; min-width: 22px; padding: 0 5px; border-radius: 9px; border: 1px solid rgba(255,255,255,.3); display: grid; place-items: center; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8); background: none; }
+  .pillx .chip.on { background: var(--pill-accent, #0a84ff); border-color: var(--pill-accent, #0a84ff); color: #fff; }
+  .app.dk .pillx .chip.on { background: #3fd8c2; border-color: #3fd8c2; color: #06201c; }
+  .pillx .lname { font-size: 11px; font-weight: 500; color: rgba(255,255,255,.88); }
+  .pillx .lname { max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pillx .pips { display: inline-flex; gap: 3px; margin-left: 2px; }
+  .pillx .pips i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.3); }
+  .pillx .pips i.on { background: #fff; }
+  .pillx .count { font-size: 10px; color: rgba(255,255,255,.55); font-variant-numeric: tabular-nums; }
+  .pillx .kbdp { font-size: 10px; padding: 0 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,.3); color: rgba(255,255,255,.7); }
+
+  .slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .slot { height: 32px; border-radius: 9px; background: var(--field); display: flex; align-items: center; gap: 6px; padding: 0 4px 0 9px; min-width: 0; font-size: 12.5px; color: var(--ink); }
+  .slot .n { font-size: 10.5px; font-weight: 700; color: var(--faint); flex: none; }
+  .slot .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot button.rm { all: unset; cursor: pointer; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); font-size: 11px; flex: none; }
+  .slot button.rm:hover { background: var(--hair); }
+  .slot.add { all: unset; box-sizing: border-box; height: 32px; border-radius: 9px; border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); font-size: 12.5px; font-weight: 600; display: grid; place-items: center; cursor: pointer; }
+  .slot.ghost { background: none; border: 1px dashed var(--hair); }
+  .lchips.one { flex-wrap: nowrap; }
+  .lchips.one .lchip { min-width: 0; max-width: calc((100% - 12px) / 3); }
+  .lchips.one .lchip .t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lchips.one .addlang { flex: none; }
+  .pillx .lname.mq { text-overflow: clip; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6px, #000 calc(100% - 6px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 6px, #000 calc(100% - 6px), transparent 100%); }
+  .pillx .lname.mq > span { display: inline-block; padding: 0 6px; animation: mq var(--dur, 6s) ease-in-out infinite; }
+  @keyframes mq { 0%, 18% { transform: translateX(0); } 50%, 68% { transform: translateX(var(--shift)); } 100% { transform: translateX(0); } }
+  @media (prefers-reduced-motion: reduce) { .pillx .lname.mq > span { animation: none; } .pillx .lname.mq { text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; } }
+
+  .pillx { overflow: hidden; }
+  .pillx.resizing .lname, .pillx.resizing .pips, .pillx.resizing .chip, .pillx.resizing .kbdp, .pillx.resizing .count { animation: pin .22s cubic-bezier(.2,0,0,1) .08s both; }
+  @keyframes pin { from { opacity: 0; filter: blur(2px); } to { opacity: 1; filter: none; } }
+  @media (prefers-reduced-motion: reduce) { .pillx .lname, .pillx .pips, .pillx .chip, .slot, .lchip { animation: none; } }
+
+  /* Agreed pill: taller, wider for long names, on a desktop-like backdrop so it is visible in both themes. */
+  .stagebg { width: 100%; box-sizing: border-box; border-radius: 12px; padding: 18px 12px; display: grid; place-items: center;
+    background: radial-gradient(70% 90% at 15% 0%, #c9d6ec, transparent 70%), radial-gradient(60% 80% at 90% 100%, #e3d6f0, transparent 70%), #dfe5ef; }
+  .app.dk .stagebg { background: radial-gradient(70% 90% at 15% 0%, #1d3246, transparent 70%), radial-gradient(60% 80% at 90% 100%, #2c1f40, transparent 70%), #12151c; }
+  .pillx { height: 40px; border-radius: 20px; gap: 9px; padding: 0 12px 0 14px; transform: none; margin: 0; background: rgba(28,28,30,.82); border: 1px solid rgba(255,255,255,.16); box-shadow: 0 10px 28px rgba(10,10,30,.35); }
+  .pillx .lname { font-size: 12px; max-width: 180px; flex: none; }
+  .pillx .wave { height: 18px; }
+  .pillx .pips i { width: 6px; height: 6px; }
+  .pillx .lname.mq { text-overflow: clip; }
+  .pillx .lname.mq > span { padding: 0; animation: marq var(--dur, 8s) linear infinite; white-space: nowrap; }
+  .pillx .lname.mq > span b { font-weight: inherit; padding-right: 28px; }
+  @keyframes marq { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* The pill's own background: dark glass with the recording aurora inside it (as in the app). */
+  .pillx { position: relative; isolation: isolate; flex: none;
+    background:
+      radial-gradient(60% 140% at 18% 50%, rgba(10,132,255,.42), transparent 70%),
+      radial-gradient(55% 140% at 85% 50%, rgba(175,82,222,.38), transparent 70%),
+      rgba(28,28,30,.9);
+    border-color: rgba(255,255,255,.22); }
+  .app.dk .pillx { background:
+      radial-gradient(60% 140% at 18% 50%, rgba(63,216,194,.36), transparent 70%),
+      radial-gradient(55% 140% at 85% 50%, rgba(175,82,222,.36), transparent 70%),
+      rgba(20,22,26,.92);
+    border-color: rgba(255,255,255,.2); box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(63,216,194,.12); }
+
+  .legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 18px; margin: 0; font-size: 12.5px; color: var(--muted); }
+  .legend .sep { font-style: normal; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend span.off { opacity: .45; }
+  .legend { gap: 6px 0; }
+  .legend .sep { color: var(--faint); margin: 0 12px; font-weight: 700; }
+  .legend kbd.k { font-size: 11px; line-height: 16px; padding: 1px 6px; }
+
+  .selblock { box-sizing: border-box; height: 72px; overflow: hidden; padding: 11px 14px; border-radius: 10px; background: var(--card); border: 1px solid var(--hair); font-size: 14px; line-height: 1.5; color: var(--ink); cursor: text; user-select: text; -webkit-user-select: text; }
+  .selblock::selection, .selblock *::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+  .selblock.done { border-color: color-mix(in srgb, var(--res) 55%, transparent); }
+  .selblock:focus { outline: none; }
+  .pillx .lname.click { cursor: pointer; border-radius: 6px; padding: 1px 4px; margin: 0 -4px; }
+  .pillx .lname.click:hover { background: rgba(255,255,255,.12); }
+
+  /* Title + content are one block, centred vertically (and horizontally) between the dots and the footer.
+     When the block is taller than the space, it starts at the top and scrolls. */
+  .body.mid { display: flex; flex-direction: column; padding: 0 32px; }
+  .midin { margin-block: auto; padding-block: 12px 16px; }
+  .midin .head { padding: 0 0 22px; }
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-okc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12.5l3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · design iteration · v2</div>
+    <h1>Onboarding: one short page at a time</h1>
+    <p class="lead">Each shortcut gets a setup page, then one page per exercise. Nothing scrolls: the badge checks every page at the chosen window height.</p>
+  </header>
+  <div class="bar">
+    <span class="label">Page</span>
+    <div class="seg" role="group" aria-label="Page" id="pages"></div>
+  </div>
+  <div class="bar">
+    <span class="label">State</span>
+    <div class="seg" role="group" aria-label="State">
+      <button type="button" data-k="st" data-v="ready" aria-pressed="true">Ready</button>
+      <button type="button" data-k="st" data-v="listening" aria-pressed="false">Listening</button>
+      <button type="button" data-k="st" data-v="writing" aria-pressed="false">Writing</button>
+      <button type="button" data-k="st" data-v="success" aria-pressed="false">Success</button>
+      <button type="button" data-k="st" data-v="miss" aria-pressed="false">Not quite</button>
+      <button type="button" data-k="st" data-v="nospeech" aria-pressed="false">No speech</button>
+    </div>
+    <button class="play" type="button" id="play">▶ Play a full run</button>
+  </div>
+  <div class="bar">
+    <span class="label">Translate languages</span>
+    <div class="seg" role="group" aria-label="Languages">
+      <button type="button" data-k="nl" data-v="0" aria-pressed="false">None</button>
+      <button type="button" data-k="nl" data-v="1" aria-pressed="false">1</button>
+      <button type="button" data-k="nl" data-v="2" aria-pressed="false">2</button>
+      <button type="button" data-k="nl" data-v="3" aria-pressed="true">3</button>
+    </div>
+    <span class="label">Demo name</span>
+    <div class="seg" role="group" aria-label="Demo language name (preview only)">
+      <button type="button" data-k="names" data-v="normal" aria-pressed="false">Normal</button>
+      <button type="button" data-k="names" data-v="long" aria-pressed="true">Long</button>
+      <button type="button" data-k="names" data-v="xlong" aria-pressed="false">Very long</button>
+    </div>
+    <span class="label">Switch key</span>
+    <div class="seg" role="group" aria-label="Switch language key">
+      <button type="button" data-k="sw" data-v="⇧" aria-pressed="true">Shift</button>
+      <button type="button" data-k="sw" data-v="⌃" aria-pressed="false">Control</button>
+      <button type="button" data-k="sw" data-v="" aria-pressed="false">Off</button>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="label">Window height</span>
+    <div class="seg" role="group" aria-label="Window height">
+      <button type="button" data-k="h" data-v="700" aria-pressed="true">700 (default)</button>
+      <button type="button" data-k="h" data-v="600" aria-pressed="false">600</button>
+      <button type="button" data-k="h" data-v="520" aria-pressed="false">520</button>
+      <button type="button" data-k="h" data-v="900" aria-pressed="false">900 (enlarged)</button>
+    </div>
+    <span class="fitbadge ok" id="fit">Fits</span>
+    <span class="label">Success colour</span>
+    <div class="seg" role="group" aria-label="Success colour">
+      <button type="button" id="c-accent" aria-pressed="true">Primary</button>
+      <button type="button" id="c-green" aria-pressed="false">Green</button>
+    </div>
+    <span class="label">Theme</span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="true">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="app" id="app">
+      <div class="frame">
+        <div class="win fixed" id="win" style="height:700px">
+          <div class="top"><div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div></div>
+          <div class="dots2" id="dots"></div>
+          <div class="body mid" id="body"><div class="midin">
+            <div class="head"><h2 id="title"></h2><p class="sub" id="sub"></p></div>
+            <div class="inner" id="inner"></div>
+          </div></div>
+          <div class="foot2" id="foot"></div>
+        </div>
+        <div class="askwin" id="askwin" hidden><b>Ask anything</b>15% of 240 is <strong>36</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>What changed from today's design</b>
+    <ul>
+      <li>The shortcut (and, for Translate, the language) is set on its own page. Each exercise then has its own page: the line to read, one box where the text lands, and one result line.</li>
+      <li>After a run: "Typelite is writing…" while the text is typed into the box; the result appears only once the text has fully arrived. On success, the "Read this" card turns into a green result card that shows what changed (removed words struck through, or before → after).</li>
+      <li>Next, Skip and Back live in the footer; "Try again" is a link on the result line. Next unlocks after a success (Skip always works).</li>
+      <li>Ask's question exercise has no box: the answer opens in the Ask window, shown at the right.</li>
+      <li>Title and content are one block, centred between the step dots (top) and the Back/Next footer (bottom), with 22 pt between the title and the content. Try Window height → 900 to see an enlarged window.</li>
+      <li>The step dots now count 3 pages per shortcut (setup + 2 exercises).</li>
+      <li>The pill preview shows the recording aurora inside the pill (as in the app), so it stands out in light and dark. It grows with the language name; only names wider than about 180 pt scroll as a continuous marquee to the left.</li>
+      <li><b>Translate keys:</b> the first key of the Translate shortcut stops (Fn); the Switch language key switches (⇧ by default, follows Settings). Pressing the whole shortcut again also stops. The hints name each key by its job.</li>
+      <li><b>Agreed for Translate setup:</b> no language by default (Try it disabled until one is added; the pill preview still shows, without a language name); the list is three slots in one row (empty slot = "+ Add", no add button at three); the pill shows the active language name plus one dot per language (B); a name that does not fit slides back and forth (plain ellipsis with Reduce Motion); the hint names the user's own Switch language key.</li>
+      <li>Setup pages only set the keys. Recording is always press to start, press again to stop; hold-to-talk stays in Settings → General.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEYS = { dictation: ['Fn'], translate: ['Fn', '⇧'], ask: ['Fn', 'Space'] };
+  var ROLE = {
+    dictation: { name: 'Dictate', sub: 'Speak, and get clean text in any app.' },
+    translate: { name: 'Translate', sub: 'Speak, and get it written in another language.' },
+    ask: { name: 'Ask anything', sub: 'Ask a question, or change selected text by voice.' }
+  };
+  var EX = {
+    dictation: [
+      { title: 'Change your mind', script: "Let's have lunch at 1… oh no, let's do it at 2.", said: "Let's have lunch at 1 oh no let's do it at 2", wrote: "Let's have lunch at 2.", miss: "Let's have lunch at 1, oh no, let's do it at 2.", ok: 'Only your correction was kept.', diff: [["Let's have lunch at "], ['1… oh no, let’s do it at ', 1], ['2.']] },
+      { title: 'Fillers disappear', script: 'Um, so, I think we should, like, ship it on Friday.', said: 'Um so I think we should like ship it on Friday', wrote: 'I think we should ship it on Friday.', miss: '', ok: 'Fillers removed.', diff: [['Um, so, ', 1], ['I think we should, '], ['like, ', 1], ['ship it on Friday.']] }
+    ],
+    translate: [
+      { title: 'Speak and translate', adapt: true, scriptLabel: 'Say this in your own language, or anything you like', how: 'Press {k} to start, read the line, then press {stop} to stop.', howHold: 'Press {k} to start, read the line, then press {stop} to stop.', script: '早晨，我哋聽日下晝可唔可以見面？', said: '早晨，我哋聽日下晝可唔可以見面？', wrote: 'Good morning, can we meet tomorrow afternoon?', miss: '', ok: 'Translated into English.', from: '早晨，我哋聽日下晝可唔可以見面？' },
+      { title: 'Translate a selection', adaptSel: true, select: true, prefill: '今天下午三点开会', scriptLabel: 'What happens', script: 'The selected text below is replaced by its English translation.', how: 'Keep the text highlighted, press {k}, then press {k} again without speaking.', howHold: 'Keep the text highlighted, then hold {k} for a moment without speaking.', said: '', wrote: 'The meeting is at 3 pm today.', miss: '', ok: 'Selection translated.', from: '今天下午三点开会' }
+    ],
+    ask: [
+      { title: 'Ask a question', script: 'What is fifteen percent of two hundred forty?', said: 'What is fifteen percent of two hundred forty?', wrote: '', panel: true, miss: '', ok: 'Answered in the Ask window.', from: 'What is fifteen percent of two hundred forty?', to: '15% of 240 is 36.' },
+      { title: 'Edit by voice', select: true, prefill: 'Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.', scriptLabel: 'Then say', script: 'Make this shorter.', how: 'Keep the text highlighted, press {k}, say the line, then press {k} again.', howHold: 'Keep the text highlighted, press {k}, say the line, then press {k} again.', said: 'Make this shorter.', wrote: 'Did you get a chance to look at my draft? No rush.', miss: '', ok: 'Rewritten shorter.', from: 'Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.' }
+    ]
+  };
+  var PAGES = [];
+  ['dictation', 'translate', 'ask'].forEach(function (r) {
+    PAGES.push({ role: r, kind: 'setup', label: ROLE[r].name + ' · shortcut' });
+    EX[r].forEach(function (e, i) { PAGES.push({ role: r, kind: 'ex', i: i, label: ROLE[r].name + ' · ' + (i + 1) }); });
+  });
+  var st = { page: 3, st: 'ready', hold: '0', h: '700', typed: null, nl: '3', sw: '⇧', pill: 'b', names: 'long', ll: 'slots' };
+  var timers = [];
+  var pages = document.getElementById('pages');
+  PAGES.forEach(function (p, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = p.label; b.setAttribute('aria-pressed', String(i === 3));
+    b.onclick = function () { timers.forEach(clearTimeout); st.page = i; st.st = 'ready'; st.typed = null; syncSeg(); render(); };
+    pages.appendChild(b);
+  });
+  function syncSeg() {
+    pages.querySelectorAll('button').forEach(function (b, i) { b.setAttribute('aria-pressed', String(i === st.page)); });
+    document.querySelectorAll('[data-k="st"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === st.st)); });
+  }
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function ic(id) { return '<svg aria-hidden="true"><use href="#' + id + '"/></svg>'; }
+  function kbd(keys, big) { return keys.map(function (k) { return '<kbd class="k' + (big ? ' big' : '') + '">' + k + '</kbd>'; }).join(big ? '<span class="plus">+</span>' : ' + '); }
+
+  var LANG_SETS = {
+    normal: [['繁體中文（香港）', '港', '繁體中文（香港）'], ['English', 'EN', 'English'], ['日本語', '日', '日本語']],
+    long: [['Português (Brasil)', 'PT', 'Português (Brasil)'], ['Bahasa Indonesia', 'ID', 'Bahasa Indonesia'], ['繁體中文（香港）', '港', '繁體中文（香港）']],
+    short: [['Português (Brasil)', 'PT', 'Português BR'], ['Bahasa Indonesia', 'ID', 'Indonesia'], ['繁體中文（香港）', '港', '廣東話']],
+    xlong: [['Kiswahili (Tanzania, Kenya na Afrika Mashariki)', 'SW', 'Kiswahili (Tanzania, Kenya na Afrika Mashariki)'], ['English', 'EN', 'English'], ['繁體中文（香港）', '港', '繁體中文（香港）']]
+  };
+  var LANGS = LANG_SETS.normal;
+  // The line to say is always in another language than the first target, so the translation is visible.
+  var TRANSLATIONS = {
+    '繁體中文（香港）': '早晨，我哋聽日下晝可唔可以見面？',
+    'Português (Brasil)': 'Bom dia, podemos nos encontrar amanhã à tarde?',
+    'Kiswahili (Tanzania, Kenya na Afrika Mashariki)': 'Habari ya asubuhi, tunaweza kukutana kesho mchana?',
+    '日本語': 'おはようございます。明日の午後、会えますか？',
+    'Bahasa Indonesia': 'Selamat pagi, bisakah kita bertemu besok sore?'
+  };
+  function adaptTranslate() {
+    LANGS = LANG_SETS[st.names] || LANG_SETS.normal;
+    var first = +st.nl > 0 ? LANGS[0][0] : 'English';
+    if (first === 'English') {
+      var zh = '早晨，我哋聽日下晝可唔可以見面？';
+      return { script: zh, said: zh, from: zh, wrote: 'Good morning, can we meet tomorrow afternoon?', ok: 'Translated into English.' };
+    }
+    var en = 'Good morning, can we meet tomorrow afternoon?';
+    return { script: en, said: en, from: en, wrote: TRANSLATIONS[first] || en, ok: 'Translated into ' + first + '.' };
+  }
+  var SEL_TRANSLATIONS = {
+    '繁體中文（香港）': '今日下晝3點開會',
+    'Português (Brasil)': 'A reunião começa às três da tarde.',
+    'Kiswahili (Tanzania, Kenya na Afrika Mashariki)': 'Mkutano unaanza saa tisa mchana.',
+    '日本語': '会議は今日の午後3時に始まります。',
+    'Bahasa Indonesia': 'Rapat dimulai pukul tiga sore ini.'
+  };
+  function adaptSelection() {
+    LANGS = LANG_SETS[st.names] || LANG_SETS.normal;
+    var first = +st.nl > 0 ? LANGS[0][0] : 'English';
+    if (first === 'English') return { prefill: '今天下午三点开会', from: '今天下午三点开会', wrote: 'The meeting is at 3 pm today.', ok: 'Selection translated into English.', script: 'The highlighted text below is replaced by its English translation.' };
+    var en = 'The meeting starts at three this afternoon.';
+    return { prefill: en, from: en, wrote: SEL_TRANSLATIONS[first] || en, ok: 'Selection translated into ' + first + '.', script: 'The highlighted text below is replaced by its ' + first + ' translation.' };
+  }
+  function pillHtml(n, active) {
+    LANGS = LANG_SETS[st.names] || LANG_SETS.normal;
+    var bars = [6, 11, 7, 14, 9, 12, 5, 10, 13, 7].map(function (h) { return '<i style="height:' + h + 'px"></i>'; }).join('');
+    var h = '<div class="pillx" aria-label="Translate pill preview"><span class="rec"></span><span class="wave">' + bars + '</span>';
+    var list = LANGS.slice(0, n);
+    if (n === 0) h += '';
+    else if (n === 1) h += '<span class="lname" title="' + list[0][0] + '">' + list[0][2] + '</span>';
+    else if (st.pill === 'a') h += list.map(function (l, i) { return '<span class="chip' + (i === active ? ' on' : '') + '">' + l[1] + '</span>'; }).join('');
+    else if (st.pill === 'b') h += '<span class="lname click" role="button" tabindex="0" title="' + list[active][0] + ' — click to switch">' + list[active][2] + '</span><span class="pips">' + list.map(function (_, i) { return '<i class="' + (i === active ? 'on' : '') + '"></i>'; }).join('') + '</span>';
+    else h += '<span class="lname" title="' + list[active][0] + '">' + list[active][2] + '</span>' + (st.sw ? '<span class="kbdp">' + st.sw + '</span>' : '<span class="count">' + (active + 1) + '/' + n + '</span>');
+    return h + '<span class="x">✕</span></div>';
+  }
+  function translateBlock() {
+    LANGS = LANG_SETS[st.names] || LANG_SETS.normal;
+    var n = +st.nl, list = LANGS.slice(0, n);
+    var h = '<div class="langrow"><div class="hdr"><span>Translate into</span><small>' + n + ' of 3</small></div>';
+    function rm(l) { return '<button class="rm" type="button" aria-label="Remove ' + l[0] + '">✕</button>'; }
+    if (st.ll === 'slots') {
+      h += '<div class="slots">';
+      for (var i = 0; i < 3; i++) {
+        var l = list[i];
+        if (l) h += '<div class="slot" title="' + l[0] + '">' + (n > 1 ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span class="nm">' + l[0] + '</span>' + rm(l) + '</div>';
+        else if (i === n) h += '<button class="slot add" type="button">+ Add</button>';
+        else h += '<div class="slot ghost" aria-hidden="true"></div>';
+      }
+      h += '</div>';
+    } else {
+      h += '<div class="lchips one">';
+      if (!n) h += '<span class="empty">No language yet.</span>';
+      h += list.map(function (l, i) {
+        var label = st.ll === 'codes' ? l[1] : l[0];
+        return '<span class="lchip" title="' + l[0] + '">' + (n > 1 ? '<span class="n">' + (i + 1) + '</span>' : '') + '<span class="t">' + label + '</span><button type="button" aria-label="Remove ' + l[0] + '">✕</button></span>';
+      }).join('');
+      if (n < 3) h += '<button class="addlang" type="button">+ Add</button>';
+      h += '</div>';
+    }
+    {
+      h += '<div class="preview">' + pillHtml(n, n ? (st.active || 0) % n : 0);
+      if (n === 0) h += '<p class="cap">Add a language, and the pill will show it while you record.</p>';
+      else if (n === 1) h += '<p class="cap">While recording, the pill shows the language.</p>';
+      else if (st.sw) h += '<p class="cap">While recording, press <kbd class="k">' + st.sw + '</kbd> or click the name to switch language.</p>';
+      else h += '<p class="cap">Click the name on the pill to switch language.</p>';
+      h += '</div>';
+    }
+    return h + '</div>';
+  }
+  function render() {
+    var oldPill = document.querySelector('.pillx');
+    var oldW = oldPill ? oldPill.offsetWidth : 0;
+    var p = PAGES[st.page], r = p.role, keys = KEYS[r], hold = st.hold === '1' && r !== 'ask';
+    // dots: 4 setup steps before + one dot per page here
+    var d = ''; for (var i = 0; i < 4; i++) d += '<span class="done"></span>';
+    PAGES.forEach(function (_, i) { d += '<span class="' + (i < st.page ? 'done' : i === st.page ? 'now' : '') + '"></span>'; });
+    document.getElementById('dots').innerHTML = d;
+    var t = document.getElementById('title'), s = document.getElementById('sub'), inner = document.getElementById('inner'), foot = document.getElementById('foot');
+    var h = '';
+    var isLast = st.page === PAGES.length - 1;
+    if (p.kind === 'setup') {
+      t.textContent = ROLE[r].name; s.textContent = ROLE[r].sub;
+      h += '<div class="keycard"><div class="keys" role="button" tabindex="0" title="Click, then press new keys">' + kbd(keys, true) + '</div><p class="hint">' + (r === 'ask' ? 'Press to start, press again to send.' : r === 'translate' ? 'Press to start. While recording, ' + kbd([keys[0]]) + ' stops.' : 'Press to start, press again to stop.') + ' Click the keys to choose different ones.</p></div>';
+      if (r === 'translate') h += translateBlock();
+      h += '<p class="note2">Next: ' + EX[r].length + ' short exercises to try it.</p>';
+      var noLang = r === 'translate' && st.nl === '0';
+      foot.innerHTML = '<button class="btn ghost" type="button">Back</button><span class="grow"></span><button class="btn" type="button"' + (noLang ? ' disabled style="opacity:.45" title="Add a language first"' : '') + '>Try it</button>';
+    } else {
+      var x = EX[r][p.i];
+      if (x.adapt) x = Object.assign({}, x, adaptTranslate());
+      if (x.adaptSel) x = Object.assign({}, x, adaptSelection());
+      t.textContent = x.title; s.textContent = ROLE[r].name + ' · exercise ' + (p.i + 1) + ' of ' + EX[r].length;
+      var how = x.how ? (hold ? x.howHold : x.how).replace(/\{k\}/g, kbd(keys)).replace(/\{stop\}/g, kbd([keys[0]])) :
+        (hold ? 'Hold ' + kbd(keys) + ', read the line, then let go.' : 'Press ' + kbd(keys) + ', read the line, press ' + kbd(keys) + ' again.');
+      if (r === 'translate' && p.i === 0) {
+        var canSwitch = +st.nl > 1 && st.sw;
+        var SEP = '<i class="sep" aria-hidden="true">·</i>';
+        h += '<p class="legend"><span>' + kbd(keys) + ' Start</span>' + SEP +
+          '<span class="' + (canSwitch ? '' : 'off') + '" title="' + (canSwitch ? '' : (st.sw ? 'Add a second language to switch' : 'Set a Switch language key in Settings')) + '">' + (st.sw ? kbd([st.sw]) : '<kbd class="k">—</kbd>') + ' Switch language</span>' + SEP +
+          '<span>' + kbd([keys[0]]) + ' Stop</span></p>';
+      } else h += '<p class="how">' + how + '</p>';
+      var done = st.st === 'success';
+      if (done) {
+        h += '<div class="rcard"><p class="rt">' + ic('i-okc') + esc(x.ok) + '</p>';
+        if (x.diff) h += '<p class="diff">' + x.diff.map(function (d) { return d[1] ? '<del>' + esc(d[0]) + '</del>' : esc(d[0]); }).join('') + '</p>';
+        else if (x.from) h += '<p class="diff"><del>' + esc(x.from.length > 60 ? x.from.slice(0, 58) + '…' : x.from) + '</del><span class="arrow">→</span>' + esc(x.to || x.wrote) + '</p>';
+        h += '</div>';
+      } else if (x.script) {
+        h += '<div class="script"><span class="lbl">' + (x.scriptLabel || 'Read this') + '</span><p>' + esc(x.script) + '</p></div>';
+      }
+      var box = x.prefill || '';
+      if (done && x.wrote) box = x.wrote;
+      if (st.st === 'writing') box = st.typed != null ? st.typed : (x.wrote || '').slice(0, Math.ceil((x.wrote || '').length / 2));
+      if (st.st === 'miss') box = x.miss || x.said;
+      if (x.select) h += '<div class="selblock' + (done ? ' done' : '') + '" id="box" tabindex="0" aria-label="Text to select">' + esc(box) + '</div>';
+      else if (!x.panel) h += '<textarea class="box' + (done ? ' done' : '') + '" id="box" aria-label="Your text appears here" placeholder="Your text appears here">' + esc(box) + '</textarea>';
+      h += '<div class="result">';
+      if (st.st === 'ready') h += '<p class="status wait">' + (x.select ? 'The text above is highlighted for you.' : '') + '</p>';
+      if (st.st === 'listening') {
+        if (r === 'translate') h += '<p class="status wait">Listening… press ' + kbd([keys[0]]) + ' to stop' + (+st.nl > 1 && st.sw ? ', ' + kbd([st.sw]) + ' to switch language.' : '.') + '</p>';
+        else h += '<p class="status wait">Listening… press ' + kbd(keys) + ' again when you finish.</p>';
+      }
+      if (st.st === 'writing') h += '<p class="working"><span class="dotsw"><i></i><i></i><i></i></span>' + (x.panel ? 'Thinking…' : 'Typelite is writing…') + '</p>';
+      if (done) h += '';
+      if (st.st === 'miss') h += '<p class="status bad">' + ic('i-info') + 'Not quite what we expected.<button type="button">Try again</button></p>';
+      if (st.st === 'nospeech') h += '<p class="status bad">' + ic('i-info') + 'Didn’t catch that.<button type="button">Try again</button></p>';
+      h += '</div>';
+      foot.innerHTML = '<button class="btn ghost" type="button">Back</button><span class="grow"></span>' +
+        (st.st === 'success' ? '' : '<button class="btn ghost" type="button">Skip</button>') +
+        '<button class="btn" type="button"' + (st.st === 'success' ? '' : ' disabled style="opacity:.45"') + '>' + (isLast ? 'Finish' : 'Next') + '</button>';
+    }
+    inner.innerHTML = h;
+    document.getElementById('askwin').hidden = !(p.kind === 'ex' && EX[r][p.i].panel && st.st === 'success');
+    var sb = inner.querySelector('.selblock');
+    if (sb && st.st === 'ready') { try { var range = document.createRange(); range.selectNodeContents(sb); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); } catch (e) {} }
+    checkFit();
+    marquee();
+    // Smooth size change: start the new pill at the old width and animate to its own width.
+    var pill = document.querySelector('.pillx');
+    if (pill && oldW && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      var newW = pill.offsetWidth;
+      if (Math.abs(newW - oldW) > 1) {
+        pill.classList.add('resizing');
+        pill.style.width = oldW + 'px';
+        pill.getBoundingClientRect();
+        pill.style.transition = 'width .28s cubic-bezier(.2,0,0,1)';
+        pill.style.width = newW + 'px';
+        var clear = function () { pill.style.width = ''; pill.style.transition = ''; };
+        pill.addEventListener('transitionend', function done(e) { if (e.target !== pill) return; clear(); pill.removeEventListener('transitionend', done); });
+        setTimeout(clear, 400);
+      }
+    }
+  }
+  // "+ Add" and ✕ work in the mockup, so the transition can be tried directly.
+  document.getElementById('inner').addEventListener('click', function (e) {
+    if (e.target.closest('.pillx .lname.click')) { st.active = ((st.active || 0) + 1) % Math.max(1, +st.nl); render(); return; }
+    var n = +st.nl;
+    if (e.target.closest('.slot.add, .addlang')) n = Math.min(3, n + 1);
+    else if (e.target.closest('.rm, .lchip button')) n = Math.max(0, n - 1);
+    else return;
+    st.nl = String(n);
+    document.querySelectorAll('[data-k="nl"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === st.nl)); });
+    render();
+  });
+  var NAME_MAX = 180;
+  function marquee() {
+      document.querySelectorAll('.pillx .lname').forEach(function (el) {
+        if (el.classList.contains('mq')) return;
+        // Compare with the name's fixed limit (180 pt), not the pill's width during a resize animation.
+        var probe = document.createElement('span');
+        probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font:' + getComputedStyle(el).font;
+        probe.textContent = el.textContent;
+        document.body.appendChild(probe);
+        var natural = probe.offsetWidth;
+        probe.remove();
+        if (natural <= NAME_MAX) return;
+        var text = el.textContent;
+        el.classList.add('mq');
+        el.innerHTML = '<span><b>' + text + '</b><b>' + text + '</b></span>';
+        var one = el.querySelector('b').offsetWidth;
+        el.style.setProperty('--dur', Math.max(5, one / 28) + 's');
+      });
+  }
+  function checkFit() {
+    var body = document.getElementById('body'), badge = document.getElementById('fit');
+    requestAnimationFrame(function () {
+      var over = body.scrollHeight - body.clientHeight > 1;
+      badge.className = 'fitbadge ' + (over ? 'no' : 'ok');
+      badge.textContent = over ? 'Scrolls at ' + st.h + ' pt' : 'Fits at ' + st.h + ' pt';
+    });
+  }
+  var timers = [];
+  function setState(v) { st.st = v; st.typed = null; syncSeg(); render(); }
+  document.getElementById('play').onclick = function () {
+    timers.forEach(clearTimeout); timers = [];
+    var p = PAGES[st.page];
+    if (p.kind !== 'ex') { st.page = PAGES.findIndex(function (q) { return q.kind === 'ex'; }); p = PAGES[st.page]; }
+    var x = EX[p.role][p.i], full = x.wrote || '';
+    setState('ready');
+    timers.push(setTimeout(function () { setState('listening'); }, 600));
+    timers.push(setTimeout(function () { st.st = 'writing'; st.typed = x.prefill && !x.panel ? x.prefill : ''; syncSeg(); render(); }, 2600));
+    // typing starts after "working" (transcribe + polish) — like the real pipeline
+    var t0 = 3600, step = 28;
+    if (!x.panel) for (var i = 1; i <= full.length; i++) (function (n) {
+      timers.push(setTimeout(function () { var b = document.getElementById('box'); st.typed = full.slice(0, n); if (b) { if (b.tagName === 'TEXTAREA') b.value = st.typed; else b.textContent = st.typed; } }, t0 + n * step));
+    })(i);
+    // result appears only after the paste has finished
+    timers.push(setTimeout(function () { setState('success'); }, t0 + (x.panel ? 900 : full.length * step) + 350));
+  };
+  document.querySelectorAll('[data-k]').forEach(function (b) {
+    b.onclick = function () {
+      b.parentNode.querySelectorAll('button').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      timers.forEach(clearTimeout); st.typed = null;
+      st[b.getAttribute('data-k')] = b.getAttribute('data-v');
+      document.getElementById('win').style.height = st.h + 'px';
+      render();
+    };
+  });
+  var app = document.getElementById('app'), desk = document.getElementById('desk');
+  function theme(dk) { app.classList.toggle('dk', dk); desk.classList.toggle('dk', dk);
+    document.getElementById('t-light').setAttribute('aria-pressed', String(!dk)); document.getElementById('t-dark').setAttribute('aria-pressed', String(dk)); }
+  function col(g) { app.classList.toggle('green', g); document.getElementById('c-accent').setAttribute('aria-pressed', String(!g)); document.getElementById('c-green').setAttribute('aria-pressed', String(g)); }
+  document.getElementById('c-accent').onclick = function () { col(false); };
+  document.getElementById('c-green').onclick = function () { col(true); };
+  document.getElementById('t-light').onclick = function () { theme(false); };
+  document.getElementById('t-dark').onclick = function () { theme(true); };
+  try { if (matchMedia('(prefers-color-scheme: dark)').matches) theme(true); } catch (e) {}
+  syncSeg();
+  render();
+})();
+</script>
