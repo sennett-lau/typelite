@@ -30,6 +30,30 @@ pub const ASK_CANCELLED_ERROR: &str = "ask_cancelled";
 /// capsule's "Didn't catch that" notice ([`show_no_speech`]) instead of the answer window.
 pub const ASK_NO_SPEECH_ERROR: &str = "ask_no_speech";
 
+/// Plan `ask-panel-above-pill`: event with the start of the highlighted text (or `null`) that
+/// the Ask pill shows as a chip while it listens.
+pub const ASK_SELECTION_PREVIEW_EVENT: &str = "ask:selection_preview";
+/// How many characters of the highlight the pill's chip shows.
+pub const SELECTION_PREVIEW_CHARS: usize = 18;
+
+/// The chip text for a highlight: its first [`SELECTION_PREVIEW_CHARS`] characters on one line,
+/// with "…" when there is more. Only the pill shows it; it is never logged.
+pub fn selection_preview(selected_text: &str) -> Option<String> {
+    let one_line = selected_text
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if one_line.is_empty() {
+        return None;
+    }
+    let mut preview: String = one_line.chars().take(SELECTION_PREVIEW_CHARS).collect();
+    if one_line.chars().count() > SELECTION_PREVIEW_CHARS {
+        preview = preview.trim_end().to_string();
+        preview.push('…');
+    }
+    Some(preview)
+}
+
 /// Shows "Didn't catch that" in the capsule: nothing was heard, so nothing is asked.
 pub(crate) fn show_no_speech(app: &tauri::AppHandle) {
     tracing::info!("Ask: no speech; nothing is asked");
@@ -197,6 +221,8 @@ pub struct AskDictationSession {
 pub struct AskDictationStartResult {
     used_selected_text: bool,
     selected_text_truncated: bool,
+    /// Plan `ask-panel-above-pill`: the start of the highlight for the pill's chip.
+    selected_text_preview: Option<String>,
 }
 
 impl AskDictationStartResult {
@@ -211,6 +237,9 @@ impl AskDictationStartResult {
             selected_text_truncated: selected_text_metadata
                 .as_ref()
                 .is_some_and(|selected_text| selected_text.truncated),
+            selected_text_preview: selected_text_metadata
+                .as_ref()
+                .and_then(|selected_text| selection_preview(&selected_text.text)),
         }
     }
 }
@@ -916,6 +945,8 @@ pub(crate) async fn start_reserved_ask_dictation(
     client: tauri::State<'_, reqwest::Client>,
     include_selected_text: bool,
 ) -> Result<AskDictationStartResult, String> {
+    // Plan `ask-panel-above-pill`: a new run closes the panel from the last one.
+    crate::ask_panel::close(&app);
     let result = async {
         let config = config_state.load().await.map_err(|e| e.to_string())?;
         // Plan `setup-without-dead-ends`: Ask needs both services. Show the setup message in the
@@ -1031,6 +1062,11 @@ pub(crate) async fn start_reserved_ask_dictation(
             return Ok(start_result);
         }
 
+        // Before the state, so the pill opens with the chip (or without a stale one).
+        let _ = app.emit(
+            ASK_SELECTION_PREVIEW_EVENT,
+            start_result.selected_text_preview.clone(),
+        );
         emit_capsule_state(&app, PipelineState::AskRecording);
         let _ = app.emit("recording:deadline", recording_deadline.event);
         let state_inner = state.0.clone();
@@ -1953,6 +1989,42 @@ mod tests {
     }
 
     #[test]
+    fn the_pill_chip_shows_the_start_of_the_highlight_on_one_line() {
+        assert_eq!(selection_preview("short"), Some("short".to_string()));
+        assert_eq!(
+            selection_preview("idempotent, so retries after a timeout"),
+            Some("idempotent, so ret…".to_string())
+        );
+        // Exactly 18 characters: no ellipsis.
+        assert_eq!(
+            selection_preview("123456789012345678"),
+            Some("123456789012345678".to_string())
+        );
+        assert_eq!(
+            selection_preview("  two\n\tlines  here "),
+            Some("two lines here".to_string())
+        );
+        // A cut at a space does not leave it before the ellipsis.
+        assert_eq!(
+            selection_preview("seventeen letters and more"),
+            Some("seventeen letters…".to_string())
+        );
+        // Characters, not bytes.
+        assert_eq!(
+            selection_preview("這是一段很長的中文選取文字用來測試截斷功能是否正確"),
+            Some("這是一段很長的中文選取文字用來測試截…".to_string())
+        );
+        assert_eq!(selection_preview(" \n "), None);
+
+        let start = AskDictationStartResult::from_selected_text(Some("  hello world  "));
+        assert_eq!(start.selected_text_preview.as_deref(), Some("hello world"));
+        assert_eq!(
+            AskDictationStartResult::from_selected_text(None).selected_text_preview,
+            None
+        );
+    }
+
+    #[test]
     fn pending_ask_message_is_consumed_once() {
         let state = AskDictationState::default();
         state.set_pending_result(AskDictationResult::new(
@@ -1974,6 +2046,7 @@ mod tests {
         state.set_pending_recording_started(AskDictationStartResult {
             used_selected_text: true,
             selected_text_truncated: false,
+            selected_text_preview: Some("Selected".to_string()),
         });
         match state.take_pending_message().unwrap() {
             PendingAskMessage::RecordingStarted(result) => {

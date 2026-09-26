@@ -7,6 +7,8 @@ import {
   getCapsuleFocusable,
   getCapsuleState,
   getCapsuleVisibility,
+  ASK_RECORDING_SIZE,
+  ASK_RECORDING_WITH_SELECTION_SIZE,
   getPillSize,
   getSizeForState,
   growFirstSize,
@@ -334,5 +336,39 @@ describe('pill follows the cursor screen', () => {
     // Right external: logical x 726..3286, y 982..2422.
     expect(moved.left).toBe(Math.round(726 + 1280 - 87))
     expect(capsuleOrigin(moved, 60).y).toBe(2422 - 80 - 60)
+  })
+})
+
+// Plan `ask-panel-above-pill`: the Ask pill widens for its highlight chip.
+describe('Ask pill with a highlight', () => {
+  it('is wider while listening with a highlight, at the same height', () => {
+    expect(getPillSize('ask_recording', 'ask', false, NO_TRANSLATE_LANGUAGE)).toEqual(
+      ASK_RECORDING_SIZE,
+    )
+    expect(getPillSize('ask_recording', 'ask', false, NO_TRANSLATE_LANGUAGE, null, true)).toEqual(
+      ASK_RECORDING_WITH_SELECTION_SIZE,
+    )
+    expect(ASK_RECORDING_WITH_SELECTION_SIZE.width).toBeGreaterThan(ASK_RECORDING_SIZE.width)
+    expect(ASK_RECORDING_WITH_SELECTION_SIZE.height).toBe(ASK_RECORDING_SIZE.height)
+    expect(
+      getSizeForState(
+        'ask_recording',
+        false,
+        false,
+        false,
+        'ask',
+        false,
+        NO_TRANSLATE_LANGUAGE,
+        false,
+        null,
+        true,
+      ),
+    ).toEqual(ASK_RECORDING_WITH_SELECTION_SIZE)
+  })
+
+  it('does not change the thinking pill', () => {
+    expect(getPillSize('ask_thinking', 'ask', false, NO_TRANSLATE_LANGUAGE, null, true)).toEqual(
+      getPillSize('ask_thinking', 'ask', false, NO_TRANSLATE_LANGUAGE),
+    )
   })
 })
