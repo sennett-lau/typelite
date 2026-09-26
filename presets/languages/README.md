@@ -47,6 +47,7 @@ summary: Natural Mexican Spanish with Mexican vocabulary and usted/tú as spoken
 authors: [your-github-name]
 license: CC0-1.0
 model_hint: Works with small 4B instruct models.
+detect_codes: [es]
 ---
 
 ## Instructions
@@ -62,14 +63,14 @@ Write natural Mexican Spanish, the way people in Mexico write messages...
 
 ## Front matter
 
-One `key: value` per line. Values are text (quotes optional), a whole number, or a list in
-square brackets `[a, b]`. No other YAML features.
+One `key: value` per line. Values are text (quotes optional), a whole number, `true` or
+`false`, or a list in square brackets `[a, b]`. No other YAML features.
 
 | Key | Required | What to put |
 |---|---|---|
 | `id` | yes | Same as the folder name. See "Naming". |
 | `name` | yes | Name shown in the app, at most 60 characters. English first, native name after it is welcome. |
-| `version` | yes | `1` for a new preset. Add one every time you change the text or `languages`. |
+| `version` | yes | `1` for a new preset. Add one every time you change the text, `languages` or the recognition fields. |
 | `format` | yes | Always `1` for now. |
 | `tier` | yes | `community`. Only maintainers use `official`. |
 | `languages` | yes | Language codes this preset is for (see below). |
@@ -79,6 +80,9 @@ square brackets `[a, b]`. No other YAML features.
 | `license` | yes | Always `CC0-1.0` (see "Licence"). |
 | `model_hint` | no | A tip about models, at most 140 characters. |
 | `deprecated` | no | Only when retiring a preset: the reason, for example `Replaced by spanish-mexico-casual`. |
+| `detect_codes` | no | Language codes speech recognition reports for this language, for example `[es]` or `[yue, zh]`. See "Recognition". |
+| `hints` | no | Characters or words that only this language uses, for example `[嘅, 咗, 喺]`. See "Recognition". |
+| `require_hint` | no | `true` when a detected code alone is not enough and a hint must be found. Default `false`. |
 
 ### Language codes
 
@@ -94,6 +98,28 @@ and a region: `en`, `en-GB`, `pt-BR`, `zh-Hant-HK`, `yue-Hant-HK`.
   (Traditional). A Cantonese preset lists `zh-Hant-HK` and `yue-Hant-HK`.
 - The language part must be in `language-codes.json`. If yours is missing, add it there (code
   and English name from the IANA subtag registry) in the same pull request.
+
+### Recognition
+
+When Typelite polishes (cleans up) a dictation, it adds the notes of at most one of the user's
+languages: the one the speech is in. Your preset tells it how to recognise that language:
+
+1. **Hints first.** If the transcript contains any of your `hints`, your language is a
+   candidate; the language with the most hints found wins. Pick characters or words that only
+   your language uses, not ones it shares with a neighbour: Cantonese `嘅 咗 喺 唔 聽日`, not
+   `我 你` (Mandarin has those too). Hints made of letters must match a whole word. At most 60
+   hints, each at most 24 characters.
+2. **Then the detected language.** Speech recognition (Whisper) reports a code such as `en`,
+   `es`, `zh` or `yue`. If it is in your `detect_codes`, your language is used, unless you set
+   `require_hint: true`.
+3. **Otherwise** no language notes are added.
+
+Set `require_hint: true` when your language shares its speech code with another written form.
+Whisper reports `zh` for both Mandarin and Cantonese, so the Cantonese preset requires a hint:
+a Mandarin sentence without Cantonese words then gets no Cantonese rules. A language with its
+own code (English, Spanish) needs no hints at all.
+
+Users can add their own hints in the app; yours are the starting point.
 
 ## Body
 
@@ -157,7 +183,8 @@ Reviewers check that:
 - the examples are correct, natural, short and your own;
 - a native or fluent speaker has approved the text;
 - there is nothing hateful, political or promotional, no links and no personal data (naming slang or swear words so the AI keeps them as spoken is fine);
-- `version` went up if the text or `languages` changed.
+- `version` went up if the text, `languages` or the recognition fields changed;
+- hints are specific to the language, and `require_hint` is set when the speech code is shared.
 
 A `NOTES.md` next to the preset with a few test sentences, the model you used and what came out
 makes review much faster.

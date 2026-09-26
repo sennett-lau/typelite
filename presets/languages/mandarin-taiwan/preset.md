@@ -1,7 +1,7 @@
 ---
 id: mandarin-taiwan
 name: Mandarin (Taiwan) 臺灣華語
-version: 1
+version: 2
 format: 1
 tier: official
 languages: [zh-Hant-TW, cmn-Hant-TW]
@@ -9,6 +9,9 @@ applies_to: [polish, translate]
 summary: Natural Taiwan Mandarin in Traditional characters, with Taiwan vocabulary.
 authors: [sennett-lau]
 license: CC0-1.0
+detect_codes: [zh]
+hints: [軟體, 網路, 筆電, 計程車, 公車, 簡訊, 程式, 捷運, 超商, 腳踏車]
+require_hint: true
 ---
 
 ## Instructions
