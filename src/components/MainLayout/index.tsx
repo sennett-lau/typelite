@@ -8,7 +8,7 @@ import {
   endpointState,
   type EndpointState,
 } from '../../lib/connectionStatus'
-import { BrandMark } from '../ui/BrandMark'
+import appIcon from '../../assets/typelite-icon.png'
 import { AccessibilityBanner } from './AccessibilityBanner'
 
 interface NavItem {
@@ -110,10 +110,19 @@ export function MainLayout({ children }: Props) {
       <div className="drag-strip" data-tauri-drag-region aria-hidden="true" />
 
       <aside className="sidebar flex w-[208px] shrink-0 flex-col px-2.5 pt-11 pb-3">
-        <div className="flex items-center gap-[9px] px-2 pb-3.5 text-[15px] font-semibold tracking-[-0.01em]">
-          <span className="text-accent">
-            <BrandMark size={22} />
-          </span>
+        {/* Plan `home-refresh`: the app icon (28 pt, rounded) left of the name in 18 pt bold. */}
+        <div
+          className="flex items-center gap-[9px] px-2 pb-4 text-[18px] font-bold tracking-[-0.01em]"
+          data-testid="sidebar-brand"
+        >
+          <img
+            src={appIcon}
+            alt=""
+            width={28}
+            height={28}
+            className="h-7 w-7 flex-none rounded-[7px]"
+            draggable={false}
+          />
           {t('app.name')}
         </div>
 

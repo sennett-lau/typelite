@@ -6,6 +6,9 @@ polish on/off).
 
 Status: agreed — 2026-09-25
 
+Superseded in part by [home-refresh](../2026-09-26-home-refresh/index.md) (Insights shows the
+average run across all presets).
+
 ## Why it is needed
 
 Speech recognition is not streaming. Typelite records until the user stops, then uploads the

@@ -75,7 +75,7 @@
     "stt_unreachable": "Could not reach the speech server ({{details}}). Check the address in Settings → Speech and that the server is running."
   },
   "home": {
-    "welcome": "Welcome to Typelite",
+    "headline": "Just say it.",
     "currentConfig": "Your setup",
     "sttProvider": "Speech preset",
     "llmProvider": "AI preset",
@@ -101,10 +101,9 @@
       "switchScene": "Switch prompt preset",
       "switchSceneDesc": "Move to the next prompt preset",
       "openApp": "Open Typelite",
-      "openAppDesc": "Bring up the main window",
-      "translateSwitchHint": "{{key}} to switch language"
+      "openAppDesc": "Bring up the main window"
     },
-    "subtitle": "Press a shortcut anywhere, speak, and polished text is typed for you.",
+    "subtitle": "Press a shortcut anywhere, speak, and clean text lands where you're typing.",
     "takeTour": "Take the shortcut tour",
     "setup": {
       "title": "Finish setup",
@@ -118,24 +117,16 @@
       "otherOptions": "Other options"
     },
     "speed": {
-      "title": "Speed",
+      "title": "Insights",
       "empty": "Dictate once to see where the time goes.",
-      "lastRun": "Last run",
+      "noFinished": "No run has finished yet. Dictate once to see where the time goes.",
+      "average": "Average",
+      "runsOne": "1 run across all presets",
+      "runsMany": "{{count}} runs across all presets",
       "totalText": "{{time}} from stop to text",
-      "totalAnswer": "{{time}} from stop to answer",
-      "forSpeech": "for {{time}} of speech",
-      "failed": "This run ended with an error ({{code}}).",
-      "skipped": "skipped",
-      "typical": "Typical",
-      "basedOnOne": "Median of 1 run with the current presets",
-      "basedOnMany": "Median of {{count}} runs with the current presets",
-      "noTypical": "No finished runs with the current presets yet.",
       "steps": {
-        "recording": "Finish recording",
         "speech": "Speech recognition",
         "ai": "AI polish",
-        "aiTranslate": "AI translation",
-        "aiAnswer": "AI answer",
         "paste": "Paste"
       },
       "tips": {
