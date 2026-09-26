@@ -19,7 +19,6 @@ export const links = {
   aiDocs: `${BLOB}/docs/guides/ai-polish/README.md`,
   models: `${BLOB}/docs/guides/models.md`,
   languages: `${BLOB}/docs/guides/languages.md`,
-  benchmarks: `${BLOB}/docs/guides/benchmarks.md`,
   presets: `${TREE}/presets/languages`,
   presetCatalogue: `${BLOB}/presets/languages/README.md`,
   contributing: `${BLOB}/CONTRIBUTING.md`,
