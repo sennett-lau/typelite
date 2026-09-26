@@ -119,6 +119,14 @@ GPL projects.
   beat the Dock (20) and menu bar (24) that slide in over it: `NSStatusWindowLevel` (25).
   `overlay_window.rs` does all three for the pill and Ask windows. Position overlays from the
   monitor's `workArea` (`visibleFrame`), not a fixed Dock-sized offset.
+- A live Tauri window is key-value observed (WebKit watches it), so its class is
+  `NSKVONotifying_TaoWindow` on top of `TaoWindow`, not `TaoWindow`. Never `object_setClass` an
+  observed object naively: observed setters stop notifying, and when an earlier observer
+  removes itself (WebKit does at window close) KVO throws "Cannot remove an observer … not
+  registered", which aborts Rust. `overlay_window.rs` re-observes the old KVO class's keys and
+  routes removals of pre-swap observers through the old class (plan `pill-over-full-screen`,
+  `kvo.md`). Success logs "Overlay window capsule: now a non-activating panel" (and `ask`);
+  "kept as a window" means the swap was skipped.
 - Qwen3.5 in Ollama thinks by default. Through the OpenAI API without a thinking-off flag it
   thinks for about 27 s and returns empty `content`. Use a non-thinking instruct model, or send
   `reasoning_effort: "none"`.

@@ -37,6 +37,7 @@ Changes decisions in earlier plans:
 | Level `NSStatusWindowLevel` (25) | In full screen the Dock (20) and menu bar (24) slide in over the app, and the pill sits at the bottom; 25 is the lowest standard level above both. Pop-up menus (101) stay above the pill. |
 | Applied at startup, when the Ask window is recreated, each time the Ask panel shows, and after "Show in Dock" changes | Cheap and idempotent; covers every path that could create or reset the window. |
 | The panel swap only happens when the window's class and memory layout are exactly what Tauri creates; otherwise the window keeps its class and only gets the behavior and level | Never risk a crash on a Tauri update; the log says which path was taken. |
+| Tauri's class counts with or without the key-value-observing class on top (`NSKVONotifying_TaoWindow`, what a live window has), and observing is carried over to the panel | WebKit observes the window; without carrying it over, observed setters go quiet and WebKit's removal at window close throws and aborts the app ([kvo.md](kvo.md)). |
 | The pill's bottom edge sits 16 pt above the bottom of the screen's work area, centred on the work area | 16 pt (half the pill's height) reads as resting on the Dock or the screen edge, clears rounded display corners and keeps the 6 pt hide slide on screen. Centring on the work area keeps the pill in the middle of the usable space when the Dock is on the left or right. |
 | Work areas come from Tauri's monitor `workArea` (macOS `visibleFrame`), converted with each monitor's own scale | No new native code; the mixed-scale rule from `CLAUDE.md`. An auto-hidden Dock or a full-screen Space reports the whole screen, so the pill sits near the bottom there. |
 | The pill's right-click menu grows upwards from the pill's bottom edge | The pill is now close to the screen edge; a menu centred on it would run off the screen. |
@@ -46,6 +47,7 @@ Changes decisions in earlier plans:
 | File | Covers |
 |---|---|
 | [full-screen.md](full-screen.md) | Why the pill was missing over full-screen apps, the window setup, activation policy, and the manual test. |
+| [kvo.md](kvo.md) | How the panel swap works on a window that is already key-value observed, the log lines, and the alternatives considered. |
 | [placement.md](placement.md) | Where the pill sits on each screen: work area, gap, Dock positions, full screen, mixed scale. |
 
 ## Open questions
