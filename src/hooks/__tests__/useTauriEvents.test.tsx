@@ -74,6 +74,36 @@ describe('useTauriEvents', () => {
     expect(useAppStore.getState().hotkeyRegistrationError).toBeNull()
   })
 
+  it('applies language settings saved by an automatic preset update', async () => {
+    const base = useAppStore.getState().config
+    const unsaved = { ...base.translation, targets: ['en', 'ja'] }
+    useAppStore.setState({ config: { ...base, translation: unsaved }, savedConfig: base })
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('language-library:changed')).toBe(true))
+
+    const languages = {
+      'zh-Hant-HK': {
+        instructions: null,
+        library_preset: { id: 'cantonese-hong-kong', version: 3, sha256: 'b'.repeat(64) },
+        auto_update: true,
+      },
+    }
+    act(() => {
+      eventListeners.get('language-library:changed')?.({ payload: { languages } })
+    })
+    const state = useAppStore.getState()
+    expect(state.config.translation.languages).toEqual(languages)
+    expect(state.savedConfig?.translation.languages).toEqual(languages)
+    // Unsaved list edits stay.
+    expect(state.config.translation.targets).toEqual(['en', 'ja'])
+
+    // A plain cache change carries no languages and changes nothing.
+    act(() => {
+      eventListeners.get('language-library:changed')?.({ payload: { languages: null } })
+    })
+    expect(useAppStore.getState().config.translation.languages).toEqual(languages)
+  })
+
   it('shows a setup message with its Settings pane and leaves the status dots alone', async () => {
     useAppStore.setState({ speechHealth: null })
     render(<HookHarness />)

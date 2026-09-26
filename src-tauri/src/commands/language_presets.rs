@@ -5,14 +5,24 @@ use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 use serde::Serialize;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 use crate::llm::language_library::{
     self as library,
     fetch::{self, FetchError},
-    store::{AutoUpdateRecord, LibraryStore},
-    IndexEntry, Preset,
+    store::{AutoUpdateRecord, IndexMeta, LibraryStore},
+    Index, IndexEntry, Preset,
 };
+use crate::storage::{AppConfig, LibraryPresetRef};
+
+/// Emitted when the library cache or an automatic update changed; the payload holds the saved
+/// `translation.languages` when an update changed them.
+pub const LIBRARY_CHANGED_EVENT: &str = "language-library:changed";
+/// The daily check runs at most this often.
+const AUTO_UPDATE_INTERVAL_SECS: i64 = 24 * 60 * 60;
+/// How often the app looks whether the daily check is due, and the wait after startup.
+const AUTO_UPDATE_POLL: std::time::Duration = std::time::Duration::from_secs(60 * 60);
+const AUTO_UPDATE_STARTUP_DELAY: std::time::Duration = std::time::Duration::from_secs(90);
 
 fn http_client() -> &'static reqwest::Client {
     static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
@@ -141,7 +151,14 @@ pub async fn list_language_presets(
     let store = library_store(&app)?;
     let (index, offline) =
         match fetch::refresh_index(http_client(), library::LIBRARY_BASE_URL, &store).await {
-            Ok(index) => (index, false),
+            Ok(index) => {
+                // Settings may now know about newer versions ("Update" tags).
+                let _ = app.emit(
+                    LIBRARY_CHANGED_EVENT,
+                    serde_json::json!({ "languages": null }),
+                );
+                (index, false)
+            }
             Err(error) => {
                 if let FetchError::Invalid(reason) = &error {
                     tracing::warn!("Language presets: {reason}");
@@ -189,7 +206,9 @@ pub(crate) fn versions_in_use(
         .filter(|preset| preset.id == id)
         .map(|preset| preset.sha256.clone())
         .collect();
-    keep.push(newest.to_string());
+    if !newest.is_empty() {
+        keep.push(newest.to_string());
+    }
     keep
 }
 
@@ -248,6 +267,160 @@ pub fn get_language_library_status(app: tauri::AppHandle) -> Result<LibraryStatu
     })
 }
 
+// ─── Automatic updates ───
+
+/// The chosen languages that want automatic updates: on, auto-update on, using a preset.
+pub(crate) fn auto_update_languages(config: &AppConfig) -> Vec<(String, LibraryPresetRef)> {
+    config
+        .translation
+        .targets
+        .iter()
+        .filter_map(|code| {
+            let settings = config.translation.language(code)?;
+            let preset = settings.library_preset.clone()?;
+            (settings.enabled && settings.auto_update).then(|| (code.clone(), preset))
+        })
+        .collect()
+}
+
+/// Whether the daily check is due.
+pub(crate) fn auto_check_due(meta: &IndexMeta, now: i64) -> bool {
+    meta.auto_checked_at
+        .is_none_or(|checked| now - checked >= AUTO_UPDATE_INTERVAL_SECS)
+}
+
+/// The languages to move to a newer version: auto-update on and not edited. Edited languages
+/// keep their text; the sheet offers the new version instead.
+pub(crate) fn plan_auto_updates(config: &AppConfig, index: &Index) -> Vec<(String, IndexEntry)> {
+    auto_update_languages(config)
+        .into_iter()
+        .filter(|(code, _)| {
+            config
+                .translation
+                .language(code)
+                .is_some_and(|settings| settings.instructions.is_none())
+        })
+        .filter_map(|(code, preset)| {
+            let entry = index.entry(&preset.id)?;
+            (entry.version > preset.version).then(|| (code, entry.clone()))
+        })
+        .collect()
+}
+
+/// Applies downloaded versions to the languages in `plan`. Returns the records of what changed.
+pub(crate) fn apply_auto_updates(
+    config: &mut AppConfig,
+    updates: &[(String, Preset)],
+    now: i64,
+) -> Vec<(String, AutoUpdateRecord)> {
+    let mut records = Vec::new();
+    for (code, preset) in updates {
+        let Some(settings) = config.translation.languages.get_mut(code) else {
+            continue;
+        };
+        let Some(current) = settings.library_preset.as_mut() else {
+            continue;
+        };
+        if current.id != preset.id || preset.version <= current.version {
+            continue;
+        }
+        records.push((
+            code.clone(),
+            AutoUpdateRecord {
+                id: preset.id.clone(),
+                from: current.version,
+                to: preset.version,
+                at: now,
+            },
+        ));
+        *current = LibraryPresetRef {
+            id: preset.id.clone(),
+            version: preset.version,
+            sha256: preset.sha256.clone(),
+        };
+    }
+    records
+}
+
+/// Plan `language-prompt-library`: the daily check. Runs only while a chosen language with
+/// auto-update on uses a preset, at most once a day; fetches the index (conditional GET) and
+/// moves languages that are not edited to the newest version. Logs ids, versions and codes.
+pub async fn run_auto_update(app: &tauri::AppHandle) {
+    let config_manager = app.state::<crate::storage::ConfigManager>();
+    let Ok(config) = config_manager.load().await else {
+        return;
+    };
+    if auto_update_languages(&config).is_empty() {
+        return;
+    }
+    let Ok(store) = library_store(app) else {
+        return;
+    };
+    let now = fetch::now_unix();
+    if !auto_check_due(&store.index_meta(), now) {
+        return;
+    }
+    let _ = store.mark_auto_checked(now);
+    let index = match fetch::refresh_index(http_client(), library::LIBRARY_BASE_URL, &store).await {
+        Ok(index) => index,
+        Err(error) => {
+            tracing::info!("Language presets: daily check skipped: {error}");
+            return;
+        }
+    };
+    let mut downloaded = Vec::new();
+    for (code, entry) in plan_auto_updates(&config, &index) {
+        match fetch::ensure_preset(http_client(), library::LIBRARY_BASE_URL, &store, &entry.id)
+            .await
+        {
+            Ok((_, preset)) => downloaded.push((code, preset)),
+            Err(error) => tracing::warn!(
+                "Language presets: could not update {} for {code}: {error}",
+                entry.id
+            ),
+        }
+    }
+    // Load again: the user may have saved while the downloads ran.
+    let Ok(mut config) = config_manager.load().await else {
+        return;
+    };
+    let records = apply_auto_updates(&mut config, &downloaded, now);
+    if !records.is_empty() {
+        if let Err(error) = config_manager.save(&config).await {
+            tracing::warn!("Language presets: could not save the updates: {error}");
+            return;
+        }
+        for (code, record) in &records {
+            tracing::info!(
+                "Language presets: {code} updated automatically: {} v{} -> v{}",
+                record.id,
+                record.from,
+                record.to
+            );
+            let _ = store.record_update(code, record.clone());
+            store.prune(&record.id, &versions_in_use(&config, &record.id, ""));
+        }
+    }
+    let _ = app.emit(
+        LIBRARY_CHANGED_EVENT,
+        serde_json::json!({
+            "languages": (!records.is_empty()).then(|| config.translation.languages.clone()),
+        }),
+    );
+}
+
+/// Starts the daily check loop (after a short delay at startup, then every hour it looks
+/// whether a check is due).
+pub fn start_auto_updates(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(AUTO_UPDATE_STARTUP_DELAY).await;
+        loop {
+            run_auto_update(&app).await;
+            tokio::time::sleep(AUTO_UPDATE_POLL).await;
+        }
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -290,6 +463,95 @@ mod tests {
         let list = preset_list(&index, &store, "en", true);
         assert!(list.offline);
         assert_eq!(list.presets.len(), 1);
+    }
+
+    fn config_with(languages: serde_json::Value) -> AppConfig {
+        AppConfig::from_stored_value(serde_json::json!({
+            "translation": {
+                "targets": ["zh-Hant-HK", "en", "zh-Hant-TW"],
+                "active_target": "en",
+                "languages": languages
+            }
+        }))
+        .unwrap()
+    }
+
+    fn reference(id: &str, version: i64) -> serde_json::Value {
+        serde_json::json!({"id": id, "version": version, "sha256": "a".repeat(64)})
+    }
+
+    /// Plan `language-prompt-library`: only languages that are on, use a preset and have
+    /// auto-update on take part; edited ones are offered the update instead of getting it.
+    #[test]
+    fn auto_updates_apply_only_to_languages_that_are_not_edited() {
+        let config = config_with(serde_json::json!({
+            "zh-Hant-HK": {"library_preset": reference("cantonese-hong-kong", 1), "auto_update": true},
+            "en": {"library_preset": reference("english", 1), "auto_update": true, "instructions": "Mine."},
+            "zh-Hant-TW": {"library_preset": reference("mandarin-taiwan", 1)}
+        }));
+        let codes: Vec<String> = auto_update_languages(&config)
+            .into_iter()
+            .map(|(code, _)| code)
+            .collect();
+        assert_eq!(codes, ["zh-Hant-HK", "en"]);
+
+        let index = repository_index();
+        let plan: Vec<String> = plan_auto_updates(&config, &index)
+            .into_iter()
+            .map(|(code, entry)| format!("{code}:{}:v{}", entry.id, entry.version))
+            .collect();
+        assert_eq!(plan, ["zh-Hant-HK:cantonese-hong-kong:v2"]);
+
+        // Off: not checked at all.
+        let off = config_with(serde_json::json!({
+            "zh-Hant-HK": {"library_preset": reference("cantonese-hong-kong", 1), "auto_update": true, "enabled": false}
+        }));
+        assert!(auto_update_languages(&off).is_empty());
+        // Already at the newest version: nothing to do.
+        let current = config_with(serde_json::json!({
+            "zh-Hant-HK": {"library_preset": reference("cantonese-hong-kong", 2), "auto_update": true}
+        }));
+        assert!(plan_auto_updates(&current, &index).is_empty());
+    }
+
+    #[test]
+    fn applying_an_update_moves_the_language_and_records_it() {
+        let mut config = config_with(serde_json::json!({
+            "zh-Hant-HK": {"library_preset": reference("cantonese-hong-kong", 1), "auto_update": true}
+        }));
+        let bytes = std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../presets/languages/cantonese-hong-kong/preset.md"),
+        )
+        .unwrap();
+        let preset = library::parse_preset("cantonese-hong-kong", &bytes).unwrap();
+        let records = apply_auto_updates(&mut config, &[("zh-Hant-HK".into(), preset.clone())], 50);
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].1.from, 1);
+        assert_eq!(records[0].1.to, preset.version);
+        let stored = config.translation.languages["zh-Hant-HK"]
+            .library_preset
+            .clone()
+            .unwrap();
+        assert_eq!(stored.version, preset.version);
+        assert_eq!(stored.sha256, preset.sha256);
+        // Applying the same version again changes nothing.
+        assert!(apply_auto_updates(&mut config, &[("zh-Hant-HK".into(), preset)], 60).is_empty());
+    }
+
+    #[test]
+    fn the_daily_check_runs_at_most_once_a_day() {
+        let never = IndexMeta::default();
+        assert!(auto_check_due(&never, 1_000));
+        let recent = IndexMeta {
+            auto_checked_at: Some(1_000),
+            ..IndexMeta::default()
+        };
+        assert!(!auto_check_due(
+            &recent,
+            1_000 + AUTO_UPDATE_INTERVAL_SECS - 1
+        ));
+        assert!(auto_check_due(&recent, 1_000 + AUTO_UPDATE_INTERVAL_SECS));
     }
 
     #[test]

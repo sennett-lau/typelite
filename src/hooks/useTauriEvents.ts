@@ -10,6 +10,7 @@ import type {
   InsertResult,
   PipelineState,
   RecordingDeadlineSnapshot,
+  TranslationLanguageSettings,
   VoiceMode,
 } from '../stores/appStore'
 import { toast } from '../components/toast-service'
@@ -180,6 +181,15 @@ export function useTauriEvents() {
     addListener<void>('hotkey:registration-recovered', () => {
       setHotkeyRegistrationError(null)
     })
+    // Plan `language-prompt-library`: an automatic preset update saved new language settings.
+    addListener<{ languages?: Record<string, TranslationLanguageSettings> | null }>(
+      'language-library:changed',
+      (payload) => {
+        if (payload?.languages) {
+          useAppStore.getState().applyPersistedTranslationLanguages(payload.languages)
+        }
+      },
+    )
     addListener<Partial<AppConfig>>('config:patch', (patch) => {
       applyPersistedConfigPatch(patch)
       if (patch.ui_language) {
