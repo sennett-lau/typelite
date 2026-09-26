@@ -916,6 +916,8 @@ pub(crate) async fn start_reserved_ask_dictation(
     client: tauri::State<'_, reqwest::Client>,
     include_selected_text: bool,
 ) -> Result<AskDictationStartResult, String> {
+    // Plan `ask-panel-above-pill`: a new run closes the panel from the last one.
+    crate::ask_panel::close(&app);
     let result = async {
         let config = config_state.load().await.map_err(|e| e.to_string())?;
         // Plan `setup-without-dead-ends`: Ask needs both services. Show the setup message in the
