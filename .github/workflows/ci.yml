@@ -1,0 +1,71 @@
+# The offline gate from CONTRIBUTING.md, on macOS (Apple Silicon).
+#
+# macOS runners are free on public repositories. On a private repository each macOS minute
+# counts ten times against the free Actions quota; to run this only by hand there, delete the
+# `pull_request:` trigger below and keep `workflow_dispatch:`.
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: macos-14
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain (from rust-toolchain.toml)
+        run: |
+          rustup toolchain install || rustup show
+          rustc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # Also type-checks. The Rust build embeds `dist/`, so this runs first.
+      - name: Build the frontend
+        run: npm run build
+
+      - name: Rust format
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      - name: Rust tests
+        working-directory: src-tauri
+        run: cargo test --lib
+
+      - name: Frontend tests
+        run: npx vitest run
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src/
+
+      - name: Format
+        run: npx prettier --check src
+
+      - name: Docs (service cards and generated tables)
+        run: npm run docs:check
+
+      - name: Language presets
+        run: node scripts/language-presets.mjs --check
