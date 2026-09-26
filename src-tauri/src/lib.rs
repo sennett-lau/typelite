@@ -13,6 +13,7 @@ pub mod llm;
 pub mod native_hotkey;
 pub mod native_keys;
 pub mod output;
+pub mod overlay_window;
 pub mod pipeline;
 pub mod platform;
 pub mod readiness;
@@ -136,6 +137,9 @@ pub(crate) fn apply_dock_visibility(app: &tauri::AppHandle, show_in_dock: bool) 
             tracing::warn!("Failed to set macOS activation policy: {error}");
             return;
         }
+        // The switch must not undo the pill's full-screen setup (plan `pill-over-full-screen`),
+        // so it is applied again.
+        apply_overlay_windows(app);
         if main_was_visible {
             let handle = app.clone();
             let _ = app.run_on_main_thread(move || {
@@ -148,6 +152,18 @@ pub(crate) fn apply_dock_visibility(app: &tauri::AppHandle, show_in_dock: bool) 
     }
     #[cfg(not(target_os = "macos"))]
     let _ = (app, show_in_dock);
+}
+
+/// Labels of the windows that float over other apps: the pill and the Ask panel.
+const OVERLAY_WINDOW_LABELS: [&str; 2] = ["capsule", ask_panel::ASK_WINDOW_LABEL];
+
+/// Lets the pill and the Ask panel show over full-screen apps (see `overlay_window`).
+pub(crate) fn apply_overlay_windows(app: &tauri::AppHandle) {
+    for label in OVERLAY_WINDOW_LABELS {
+        if let Some(window) = app.get_webview_window(label) {
+            overlay_window::make_overlay(&window);
+        }
+    }
 }
 
 fn sync_auto_start_preference(
@@ -256,6 +272,7 @@ pub fn ensure_ask_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::Webv
     match build_ask_window(handle) {
         Ok(window) => {
             attach_ask_window_close_handler(handle, &window);
+            overlay_window::make_overlay(&window);
             Ok(window)
         }
         Err(error) => {

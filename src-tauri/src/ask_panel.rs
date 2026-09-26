@@ -319,6 +319,8 @@ pub fn show(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWindow> {
     let state = app.state::<AskPanelState>();
     // The window can never become key, so clicks reach its buttons while the app keeps focus.
     let _ = window.set_focusable(false);
+    // Allowed over full-screen apps (idempotent; see `overlay_window`).
+    crate::overlay_window::make_overlay(&window);
     if let Some(frame) = state.open(current_anchor(app, &window, &state)) {
         apply_frame(&window, frame);
     }
