@@ -13,6 +13,7 @@ import type {
   BrowserTarget,
 } from '../stores/appStore'
 import type { RunTiming } from './speed'
+import type { SpeedSummary } from './speedStats'
 
 // Pipeline commands
 export async function startRecording(): Promise<void> {
@@ -49,6 +50,24 @@ export async function getRunTimings(): Promise<RunTiming[]> {
 /** Plan `speed-by-preset`: Settings → System → "Clear insights data" deletes the kept timings. */
 export async function clearRunTimings(): Promise<void> {
   return invoke('clear_run_timings')
+}
+
+/** Plan `typing-speed-and-nudge`: speaking and typing speed for Insights. */
+export async function getSpeedStats(): Promise<SpeedSummary> {
+  return invoke('get_speed_stats')
+}
+
+/** Plan `typing-speed-and-nudge`: Settings → "Reset speed stats". */
+export async function resetSpeedStats(): Promise<void> {
+  return invoke('reset_speed_stats')
+}
+
+/**
+ * Plan `typing-speed-and-nudge`: the typing nudge closed. With `forever` ("Don't show again") it
+ * never shows again.
+ */
+export async function dismissTypingNudge(forever: boolean): Promise<void> {
+  return invoke('dismiss_typing_nudge', { forever })
 }
 
 export async function setActiveTranslationTarget(code: string): Promise<TranslationConfig> {

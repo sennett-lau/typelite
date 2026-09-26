@@ -6,6 +6,7 @@ import type { HotkeyMode, OutputMode, ShortcutBinding } from '../../stores/appSt
 import {
   getPlatformCapabilities,
   getHotkeyStatus,
+  resetSpeedStats,
   resumeHotkey,
   startAskFlow,
 } from '../../lib/tauri'
@@ -18,6 +19,7 @@ import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
 import { targetLanguageLabel } from '../../lib/constants'
+import { toast } from '../toast-service'
 
 const MAC_ACCESSIBILITY_HOTKEY_ERROR = 'Accessibility permission may be denied'
 
@@ -297,6 +299,37 @@ export function GeneralPane() {
             value={config.output_mode}
             onChange={(v) => setOutputMode(v as OutputMode)}
           />
+        </Row>
+      </Group>
+
+      {/* Plan `typing-speed-and-nudge`: speaking and typing speed on Home → Insights. */}
+      <Group label={t('settings.generalPane.insights')}>
+        <Row
+          label={t('settings.generalPane.measureTypingSpeed')}
+          help={t('settings.generalPane.measureTypingSpeedDesc')}
+        >
+          <Toggle
+            checked={config.measure_typing_speed}
+            onChange={(checked) => updateConfig({ measure_typing_speed: checked })}
+            label={t('settings.generalPane.measureTypingSpeed')}
+            hideLabel
+          />
+        </Row>
+        <Row
+          label={t('settings.generalPane.resetSpeedStats')}
+          help={t('settings.generalPane.resetSpeedStatsDesc')}
+        >
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              resetSpeedStats()
+                .then(() => toast.success(t('settings.generalPane.resetDone')))
+                .catch((error) => console.error('Failed to reset speed stats:', error))
+            }}
+          >
+            {t('settings.generalPane.reset')}
+          </button>
         </Row>
       </Group>
     </div>
