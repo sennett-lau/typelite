@@ -75,7 +75,7 @@
     "stt_unreachable": "无法连接语音服务（{{details}}）。请检查「设置 → 语音」中的地址，并确认服务正在运行。"
   },
   "home": {
-    "welcome": "欢迎使用 Typelite",
+    "headline": "说出来就好。",
     "currentConfig": "你的设置",
     "sttProvider": "语音预设",
     "llmProvider": "AI 预设",
@@ -101,10 +101,9 @@
       "switchScene": "切换提示词预设",
       "switchSceneDesc": "切换到下一个提示词预设",
       "openApp": "打开 Typelite",
-      "openAppDesc": "显示主窗口",
-      "translateSwitchHint": "按 {{key}} 切换语言"
+      "openAppDesc": "显示主窗口"
     },
-    "subtitle": "在任何地方按下快捷键说话，润色后的文字会替你输入。",
+    "subtitle": "在任何地方按下快捷键说话，整洁的文字就会出现在你正在输入的地方。",
     "takeTour": "体验快捷键教程",
     "setup": {
       "title": "完成设置",
