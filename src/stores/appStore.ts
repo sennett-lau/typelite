@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { MAX_TRANSLATION_TARGETS, canonicalTranslationCode } from '../lib/constants'
+import { compactKeyLabel, fullKeyLabel } from '../lib/keyLabels'
 
 export type PipelineState =
   | 'idle'
@@ -883,46 +884,51 @@ export function hotkeyFromCapturedKeys(keys: string[]): string | null {
   return binding ? hotkeyFromBinding(binding) : null
 }
 
-const keyLabels: Record<string, string> = {
-  Ctrl: 'Control',
-  Super: 'Command',
-  PageUp: 'Page Up',
-  PageDown: 'Page Down',
-}
-
-function keyLabel(name: string): string {
-  if (keyLabels[name]) return keyLabels[name]
-  // Insert a space before each capital that follows a lower-case letter: RightShift -> Right Shift.
-  return name.replace(/([a-z])([A-Z])/g, '$1 $2')
-}
-
-/**
- * Human-readable shortcut: `displayHotkey('End+RightShift')` → `End + Right Shift`.
- * Accepts a hotkey string or a list of key names and keeps their order.
- */
-export function displayHotkey(value: string | string[]): string {
-  const keys = Array.isArray(value)
+function hotkeyKeyNames(value: string | string[]): string[] {
+  // A bare "+" key would be split away; hotkeys never use it, so no special case.
+  return Array.isArray(value)
     ? value
     : value
         .split('+')
         .map((part) => part.trim())
         .filter(Boolean)
-  // A bare "+" key would be split away; hotkeys never use it, so no special case.
-  return keys.map(keyLabel).join(' + ')
 }
 
 /**
- * Display a stored binding with all keys in rank order (special keys and modifiers first,
- * the typing key last), so `{modifiers: ["End"], primary: "RightShift"}` and
- * `{modifiers: ["RightShift"], primary: "End"}` both read `End + Right Shift`.
+ * Plan `compact-key-labels`: a shortcut as short plain text, keeping the key order:
+ * `displayHotkey('End+RightShift')` → `End + ⇧R`. Accepts a hotkey string or a list of key
+ * names. For accessible names and tooltips use `describeHotkey`.
  */
-export function displayBinding(binding: ShortcutBinding): string {
+export function displayHotkey(value: string | string[]): string {
+  return hotkeyKeyNames(value).map(compactKeyLabel).join(' + ')
+}
+
+/** A shortcut with full key names: `describeHotkey('End+RightShift')` → `End + Right Shift`. */
+export function describeHotkey(value: string | string[]): string {
+  return hotkeyKeyNames(value).map(fullKeyLabel).join(' + ')
+}
+
+/**
+ * The key names of a stored binding in rank order (special keys and modifiers first, the
+ * typing key last), so `{modifiers: ["End"], primary: "RightShift"}` and
+ * `{modifiers: ["RightShift"], primary: "End"}` both give `["End", "RightShift"]`.
+ */
+export function bindingKeyNames(binding: ShortcutBinding): string[] {
   const rank = (key: string) => {
     const index = modifierOrder.indexOf(key)
     return index === -1 ? modifierOrder.length : index
   }
-  const keys = [...binding.modifiers, binding.primary].sort((a, b) => rank(a) - rank(b))
-  return displayHotkey(keys)
+  return [...binding.modifiers, binding.primary].sort((a, b) => rank(a) - rank(b))
+}
+
+/** A stored binding as short plain text in rank order: `End + ⇧R`. */
+export function displayBinding(binding: ShortcutBinding): string {
+  return displayHotkey(bindingKeyNames(binding))
+}
+
+/** A stored binding with full key names in rank order: `End + Right Shift`. */
+export function describeBinding(binding: ShortcutBinding): string {
+  return describeHotkey(bindingKeyNames(binding))
 }
 
 export function bindingFromHotkey(value: string): ShortcutBinding | null {
