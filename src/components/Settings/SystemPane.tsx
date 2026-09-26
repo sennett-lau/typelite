@@ -1,7 +1,46 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
+import { clearRunTimings } from '../../lib/tauri'
 import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
+
+/**
+ * Plan `speed-by-preset`: deletes the run timings behind Home's Insights (durations, sizes and
+ * preset ids only; there is never any dictated text in them).
+ */
+function ClearInsightsRow() {
+  const { t } = useTranslation()
+  const [state, setState] = useState<'idle' | 'busy' | 'cleared' | 'failed'>('idle')
+
+  const clear = () => {
+    setState('busy')
+    clearRunTimings()
+      .then(() => setState('cleared'))
+      .catch((error) => {
+        console.error('[settings] failed to clear insights data', error)
+        setState('failed')
+      })
+  }
+
+  return (
+    <Row label={t('settings.clearInsights')} help={t('settings.clearInsightsHint')}>
+      {state === 'cleared' && (
+        <span className="text-[12px] text-text-secondary" role="status">
+          {t('settings.insightsCleared')}
+        </span>
+      )}
+      {state === 'failed' && (
+        <span className="text-[12px] text-error" role="status">
+          {t('settings.clearInsightsFailed')}
+        </span>
+      )}
+      <button type="button" className="btn-secondary" onClick={clear} disabled={state === 'busy'}>
+        {t('settings.clearInsightsButton')}
+      </button>
+    </Row>
+  )
+}
 
 /**
  * Settings → System: how Typelite sits in macOS. "Launch at login" is applied through the
@@ -32,6 +71,9 @@ export function SystemPane() {
             hideLabel
           />
         </Row>
+      </Group>
+      <Group label={t('settings.systemInsights')}>
+        <ClearInsightsRow />
       </Group>
     </div>
   )

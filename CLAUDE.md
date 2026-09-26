@@ -26,6 +26,10 @@ building a feature.
   service is used only when the user opts in with their own key (plan `qwen-cloud-speech`).
 - Must be reliable and safe: no telemetry, no cloud sign-in, audio stays on the user's machines
   unless they choose such a service.
+- "No history" is about content: Typelite never stores what the user said (audio, transcripts,
+  answers, pasted text). It does keep run timings for Insights on Home: durations, sizes, preset
+  ids/models, mode, outcome and language, the last 200 runs in `run-timings.json` in the app data
+  folder. Settings → System → Clear insights data deletes them (plan `speed-by-preset`).
 - Main target is macOS (Apple Silicon, M1 Pro, 32 GB, macOS 26). Windows is a non-goal for now.
 - Keep resource use low. The LLM only rephrases and summarises; it does not need a large model.
 

@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { useAppStore } from '../../stores/appStore'
 import {
   addRun,
+  aiPresetSpeeds,
   averageTimes,
   currentPresets,
   formatMs,
   mean,
   median,
+  RUN_CAPACITY,
+  speechPresetSpeeds,
   speedTip,
+  trimmedMean,
   type StepId,
 } from '../speed'
 import { makeRun } from '../../test-utils/runTiming'
@@ -139,12 +143,87 @@ describe('formatMs', () => {
 })
 
 describe('addRun', () => {
-  it('drops a run it already has and keeps the last 50', () => {
-    const runs = Array.from({ length: 50 }, (_, index) => makeRun({ id: index + 1 }))
-    expect(addRun(runs, makeRun({ id: 50 }))).toBe(runs)
-    const next = addRun(runs, makeRun({ id: 51 }))
-    expect(next).toHaveLength(50)
+  it('drops a run it already has and keeps the last 200', () => {
+    expect(RUN_CAPACITY).toBe(200)
+    const runs = Array.from({ length: RUN_CAPACITY }, (_, index) => makeRun({ id: index + 1 }))
+    expect(addRun(runs, makeRun({ id: 200 }))).toBe(runs)
+    const next = addRun(runs, makeRun({ id: 201 }))
+    expect(next).toHaveLength(RUN_CAPACITY)
     expect(next[0].id).toBe(2)
-    expect(next[49].id).toBe(51)
+    expect(next[RUN_CAPACITY - 1].id).toBe(201)
+  })
+})
+
+describe('trimmedMean', () => {
+  it('is the plain mean below three values', () => {
+    expect(trimmedMean([])).toBeNull()
+    expect(trimmedMean([400])).toBe(400)
+    expect(trimmedMean([400, 600])).toBe(500)
+  })
+
+  it('drops the slowest value from three on, one per ten values', () => {
+    // A cold first run after a model load does not count.
+    expect(trimmedMean([9000, 400, 500])).toBe(450)
+    expect(trimmedMean([...Array(19).fill(100), 5000])).toBe(100)
+    expect(trimmedMean([...Array(18).fill(100), 5000, 6000])).toBe(100)
+  })
+})
+
+describe('aiPresetSpeeds', () => {
+  it('groups finished runs that used AI by preset and model, fastest first', () => {
+    const runs = [
+      ...[300, 400, 500].map((aiMs, i) =>
+        makeRun({ id: i + 1, aiPresetId: 'slow', aiMs: aiMs * 2 }),
+      ),
+      ...[300, 400, 500].map((aiMs, i) => makeRun({ id: i + 10, aiPresetId: 'fast', aiMs })),
+      makeRun({ id: 20, aiPresetId: 'fast', aiMs: 50, outcome: 'llm_failed' }),
+      makeRun({ id: 21, aiPresetId: 'fast', aiMs: null }),
+      makeRun({ id: 22, aiPresetId: 'fast', aiModel: 'other-model', aiMs: 100 }),
+    ]
+
+    const speeds = aiPresetSpeeds(runs)
+    expect(speeds.map((speed) => [speed.presetId, speed.model, speed.runCount])).toEqual([
+      ['fast', 'qwen3:4b', 3],
+      ['slow', 'qwen3:4b', 3],
+      ['fast', 'other-model', 1],
+    ])
+    // Trimmed: the slowest of three is left out.
+    expect(speeds[0].average).toBe(350)
+    expect(speeds[0].fastest).toBe(true)
+    expect(speeds[1].average).toBe(700)
+    expect(speeds[1].fastest).toBe(false)
+    // Fewer than three runs: listed, not ranked.
+    expect(speeds[2].average).toBeNull()
+    expect(speeds[2].fastest).toBe(false)
+  })
+
+  it('gives no Fastest tag when only one preset is ranked', () => {
+    const runs = [1, 2, 3].map((id) => makeRun({ id }))
+    const speeds = aiPresetSpeeds(runs)
+    expect(speeds).toHaveLength(1)
+    expect(speeds[0].fastest).toBe(false)
+  })
+})
+
+describe('speechPresetSpeeds', () => {
+  it('ranks by recognition time per second of audio', () => {
+    const runs = [
+      // 2000 ms for 4 s of audio = 500 ms per second.
+      ...[1, 2, 3].map((id) =>
+        makeRun({ id, speechPresetId: 'server', speechMs: 2000, recordingSecs: 4 }),
+      ),
+      // 1000 ms for 1 s = 1000 ms per second: slower although each run was shorter.
+      ...[4, 5, 6].map((id) =>
+        makeRun({ id, speechPresetId: 'builtin', speechMs: 1000, recordingSecs: 1 }),
+      ),
+      makeRun({ id: 7, speechPresetId: 'server', recordingSecs: 0 }),
+    ]
+
+    const speeds = speechPresetSpeeds(runs)
+    expect(speeds.map((speed) => [speed.presetId, speed.average, speed.runCount])).toEqual([
+      ['server', 500, 3],
+      ['builtin', 1000, 3],
+    ])
+    expect(speeds[0].fastest).toBe(true)
   })
 })
