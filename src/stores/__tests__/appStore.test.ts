@@ -89,7 +89,7 @@ describe('appStore', () => {
       expect(config.speech_presets).toEqual([
         {
           id: 'builtin-speech-this-mac',
-          name: 'Built-in (this Mac)',
+          name: 'Built-in (on-device)',
           kind: 'builtin',
           base_url: '',
           model: 'large-v3-turbo',
@@ -104,7 +104,7 @@ describe('appStore', () => {
       expect(config.ai_presets).toEqual([
         {
           id: 'builtin-ai-this-mac',
-          name: 'Built-in (this Mac)',
+          name: 'Built-in (on-device)',
           kind: 'builtin',
           base_url: '',
           model: 'qwen3-4b',

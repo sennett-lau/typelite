@@ -66,7 +66,9 @@ GPL projects.
 ## Testing and logs
 
 - Offline gate: `cd src-tauri && cargo test --lib`, `cargo fmt --check`, `npx vitest run`,
-  `npx tsc --noEmit`, `npx eslint src/`, `npx prettier --check src`.
+  `npx tsc --noEmit`, `npx eslint src/`, `npx prettier --check src`, `npm run docs:check`
+  (service cards and generated doc tables, plan `docs-structure`),
+  `node scripts/language-presets.mjs --check`.
 - End-to-end against real servers: `bash scripts/e2e.sh` (whisper.cpp + an OpenAI-compatible
   chat server; set `TYPELITE_E2E_AI_URL` etc., see `src-tauri/tests/e2e_services.rs`). Speech
   audio is synthesised with macOS `say`. Built-in AI: `bash scripts/build-llama-server.sh`, then

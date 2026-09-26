@@ -68,7 +68,7 @@ export function installedBuiltin(
 ): SpeechPreset {
   return {
     id: 'builtin-speech-this-mac',
-    name: 'Built-in (this Mac)',
+    name: 'Built-in (on-device)',
     kind: 'builtin',
     base_url: '',
     model,
@@ -83,7 +83,7 @@ export function installedBuiltin(
 export function installedAiBuiltin(model = 'qwen3-4b', verified_at: number | null = 5): AiPreset {
   return {
     id: 'builtin-ai-this-mac',
-    name: 'Built-in (this Mac)',
+    name: 'Built-in (on-device)',
     kind: 'builtin',
     base_url: '',
     model,

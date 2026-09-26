@@ -280,7 +280,7 @@
       "microphone": "语音输入",
       "microphoneSub": "选择你的麦克风",
       "speechRecognition": "语音识别",
-      "speechRecognitionSub": "把你的语音转成文字。它在这台 Mac 上运行。",
+      "speechRecognitionSub": "把你的语音转成文字。它在这台电脑 上运行。",
       "aiPolish": "AI 润色",
       "aiPolishSub": "整理你说的话：去掉口头禅、应用更正、加上标点。",
       "dictate": "听写",
@@ -420,7 +420,7 @@
     "test": "测试",
     "connectionSuccess": "连接成功",
     "connectionFailed": "连接失败",
-    "storedLocally": "保存在这台 Mac 的 macOS 钥匙串中。",
+    "storedLocally": "保存在这台电脑 的 macOS 钥匙串中。",
     "credentialSaveFailed": "无法保存 API Key 到系统凭据库。{{details}}",
     "model": "模型",
     "baseUrl": "Base URL",
@@ -792,7 +792,7 @@
       "sourceEdited": "基于 {{name}} · 已编辑",
       "sourceBuiltinEdited": "内置说明 · 已编辑",
       "sourceBuiltin": "内置说明",
-      "sourceMissing": "{{name}} 预设 · v{{version}} · 这台 Mac 上没有文件，正在使用内置说明",
+      "sourceMissing": "{{name}} 预设 · v{{version}} · 这台电脑 上没有文件，正在使用内置说明",
       "switchLabel": "为{{language}}使用说明",
       "edit": "编辑",
       "editLabel": "编辑{{language}}",
@@ -813,7 +813,7 @@
       "browse": "浏览预设",
       "change": "更换",
       "downloadAgain": "重新下载",
-      "missingNote": "这台 Mac 上没有这个预设的文件，因此正在使用内置说明。",
+      "missingNote": "这台电脑 上没有这个预设的文件，因此正在使用内置说明。",
       "count": "{{count}} / {{max}}",
       "autoUpdate": "自动更新这个预设",
       "autoUpdateHelp": "每天检查一次 GitHub 并使用最新版本。",
@@ -872,7 +872,7 @@
     "export": "导出…",
     "fileType": "Typelite 预设",
     "exportTitle": "导出预设",
-    "exportHelp": "选择要放进文件的已保存预设。内置预设只留在这台 Mac 上。",
+    "exportHelp": "选择要放进文件的已保存预设。内置预设只留在这台电脑 上。",
     "exportListLabel": "要导出的预设",
     "exportNone": "没有可导出的已保存预设。内置预设和地址中仍有占位符的预设不会被导出。",
     "exportConfirm": "导出…",
@@ -967,7 +967,7 @@
     },
     "builtinTitle": "内置",
     "recommended": "推荐",
-    "builtinBody": "在这台 Mac 上的 Typelite 里直接运行 Whisper。无需安装其他软件。",
+    "builtinBody": "在这台电脑 上的 Typelite 里直接运行 Whisper。无需安装其他软件。",
     "changeModel": "更换模型",
     "download": "下载",
     "use": "使用",
@@ -977,9 +977,9 @@
       "small": "更快"
     },
     "modelDetail": "Whisper {{id}} · {{size}}",
-    "checkingMac": "正在检查这台 Mac…",
+    "checkingMac": "正在检查这台电脑…",
     "nothingInstalled": "没有安装任何内容",
-    "testedOnThisMac": "在这台 Mac 上测试用时 {{time}}",
+    "testedOnThisMac": "在这台电脑 上测试用时 {{time}}",
     "testedIn": "测试用时 {{time}}",
     "badges": {
       "downloading": "正在下载 {{percent}}%",
@@ -993,7 +993,7 @@
       "testFailed": "测试失败"
     },
     "hardware": {
-      "long": "这台 Mac：{{chip}}，{{memory}} GB 内存。",
+      "long": "这台电脑：{{chip}}，{{memory}} GB 内存。",
       "short": "{{chip}} · {{memory}} GB",
       "unknownChip": "未知芯片",
       "noSpace": "可用空间不足，无法下载模型：需要 {{needed}} GB，当前可用 {{available}} GB。",
@@ -1035,7 +1035,7 @@
     "engines": {
       "builtin": {
         "title": "内置",
-        "detail": "在这台 Mac 上的 Typelite 里运行 Whisper"
+        "detail": "在这台电脑 上的 Typelite 里运行 Whisper"
       },
       "server": {
         "title": "你的服务器或 API 密钥",
@@ -1045,14 +1045,14 @@
     "languageGroup": "语言",
     "spokenLanguage": "说话语言",
     "spokenLanguageHelp": "自动检测可以处理混合语言",
-    "notAvailable": "这台 Mac 不可用"
+    "notAvailable": "这台电脑 不可用"
   },
   "ai": {
     "engineLabel": "AI 润色使用",
     "engines": {
       "builtin": {
         "title": "内置",
-        "detail": "在这台 Mac 上运行一个小型开源模型"
+        "detail": "在这台电脑 上运行一个小型开源模型"
       },
       "server": {
         "title": "你的服务器或 API 密钥",
@@ -1065,7 +1065,7 @@
     "skipHint": "听写仍可使用，会粘贴原始转写文字"
   },
   "aiSetup": {
-    "builtinBody": "在这台 Mac 上的 Typelite 里运行一个小型开源模型。无需安装其他软件。",
+    "builtinBody": "在这台电脑 上的 Typelite 里运行一个小型开源模型。无需安装其他软件。",
     "progressLabel": "AI 模型下载",
     "testing": "正在启动模型并测试…",
     "models": {
@@ -1081,7 +1081,7 @@
       "serverMissing": "这个 Typelite 版本没有内置 AI 服务器。请改用你自己的服务器或 API 密钥。"
     },
     "hardware": {
-      "none": "这台 Mac 无法流畅运行内置 AI 模型。请改用你自己的服务器或 API 密钥。",
+      "none": "这台电脑 无法流畅运行内置 AI 模型。请改用你自己的服务器或 API 密钥。",
       "serverMissing": "这个 Typelite 版本没有内置 AI 服务器。请改用你自己的服务器或 API 密钥。",
       "leftOut": {
         "needs_apple_silicon": "内置 AI 需要 Apple 芯片的 Mac。",

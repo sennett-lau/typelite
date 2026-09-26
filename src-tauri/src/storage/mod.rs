@@ -584,7 +584,13 @@ pub fn now_unix_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Id of the "Built-in (this Mac)" speech preset that Quick setup creates (plan
+/// Name of the Built-in speech and AI presets.
+pub const BUILTIN_PRESET_NAME: &str = "Built-in (on-device)";
+/// The Built-in presets' name before plan `docs-structure`; stored configs that still hold it get
+/// the current name (see `normalize_presets`).
+const LEGACY_BUILTIN_PRESET_NAME: &str = "Built-in (this Mac)";
+
+/// Id of the "Built-in (on-device)" speech preset that Quick setup creates (plan
 /// `quick-speech-setup`).
 pub const BUILTIN_WHISPER_PRESET_ID: &str = "builtin-speech-this-mac";
 
@@ -651,12 +657,12 @@ impl SpeechPreset {
         }
     }
 
-    /// The "Built-in (this Mac)" preset for a model (plan `quick-speech-setup`). Every config has
+    /// The "Built-in (on-device)" preset for a model (plan `quick-speech-setup`). Every config has
     /// one (plan `two-tab-speech`); `model_file` is empty until a model is downloaded.
     pub fn builtin_whisper(model_id: &str, model_file: &str) -> Self {
         Self {
             id: BUILTIN_WHISPER_PRESET_ID.to_string(),
-            name: "Built-in (this Mac)".to_string(),
+            name: BUILTIN_PRESET_NAME.to_string(),
             kind: SpeechProviderKind::Builtin,
             model: model_id.to_string(),
             model_file: model_file.to_string(),
@@ -739,7 +745,7 @@ impl SpeechPreset {
     }
 }
 
-/// Id of the "Built-in (this Mac)" AI preset (plan `ai-polish-setup`): llama.cpp's `llama-server`,
+/// Id of the "Built-in (on-device)" AI preset (plan `ai-polish-setup`): llama.cpp's `llama-server`,
 /// started by Typelite on this Mac. Every config has it, with or without a downloaded model.
 pub const BUILTIN_LLAMA_PRESET_ID: &str = "builtin-ai-this-mac";
 
@@ -801,12 +807,12 @@ impl AiPreset {
         }
     }
 
-    /// The "Built-in (this Mac)" AI preset for a model (plan `ai-polish-setup`); `model_file` is
+    /// The "Built-in (on-device)" AI preset for a model (plan `ai-polish-setup`); `model_file` is
     /// empty until a model is downloaded.
     pub fn builtin_llama(model_id: &str, model_file: &str) -> Self {
         Self {
             id: BUILTIN_LLAMA_PRESET_ID.to_string(),
-            name: "Built-in (this Mac)".to_string(),
+            name: BUILTIN_PRESET_NAME.to_string(),
             kind: AiProviderKind::Builtin,
             model: model_id.to_string(),
             model_file: model_file.to_string(),
@@ -917,7 +923,7 @@ impl VerifiablePreset for SpeechPreset {
         &self.id
     }
     fn is_builtin(&self) -> bool {
-        // The "Built-in (this Mac)" preset is made by Quick setup, not from a template, so a
+        // The "Built-in (on-device)" preset is made by Quick setup, not from a template, so a
         // template migration must keep it.
         self.builtin && !self.is_builtin_whisper()
     }
@@ -1363,7 +1369,7 @@ impl AppConfig {
         mark_verified(&mut self.speech_presets, tested, at)
     }
 
-    /// Plan `quick-speech-setup`: adds (or updates) the "Built-in (this Mac)" preset for an
+    /// Plan `quick-speech-setup`: adds (or updates) the "Built-in (on-device)" preset for an
     /// installed model and makes it the active speech preset. The preset starts unverified; the
     /// automatic test after setup marks it ready.
     pub fn install_builtin_whisper(&mut self, model_id: &str, model_file: &str) -> SpeechPreset {
@@ -1433,7 +1439,7 @@ impl AppConfig {
         mark_verified(&mut self.ai_presets, tested, at)
     }
 
-    /// Plan `ai-polish-setup`: the "Built-in (this Mac)" AI preset, if the config has one (it
+    /// Plan `ai-polish-setup`: the "Built-in (on-device)" AI preset, if the config has one (it
     /// always does after `normalize_values`).
     pub fn builtin_ai_preset(&self) -> Option<&AiPreset> {
         self.ai_presets
@@ -1638,6 +1644,9 @@ impl AppConfig {
         for preset in &mut self.speech_presets {
             preset.id = unique_preset_id(&preset.id, &mut seen_ids);
             preset.name = preset_name_or_default(&preset.name, &preset.model);
+            if preset.is_builtin_whisper() && preset.name == LEGACY_BUILTIN_PRESET_NAME {
+                preset.name = BUILTIN_PRESET_NAME.to_string();
+            }
             if preset.is_builtin_whisper() {
                 preset.base_url.clear();
                 preset.model_file = preset.model_file.trim().to_string();
@@ -1670,6 +1679,9 @@ impl AppConfig {
         for preset in &mut self.ai_presets {
             preset.id = unique_preset_id(&preset.id, &mut seen_ids);
             preset.name = preset_name_or_default(&preset.name, &preset.model);
+            if preset.is_builtin_llama() && preset.name == LEGACY_BUILTIN_PRESET_NAME {
+                preset.name = BUILTIN_PRESET_NAME.to_string();
+            }
             if preset.is_builtin_llama() {
                 preset.base_url.clear();
                 preset.model_file = preset.model_file.trim().to_string();
@@ -2833,7 +2845,7 @@ mod tests {
         assert_eq!(config.speech_presets.len(), count);
         assert_eq!(config.speech_presets[0], first);
         assert_eq!(config.active_speech_preset_id, BUILTIN_WHISPER_PRESET_ID);
-        assert_eq!(first.name, "Built-in (this Mac)");
+        assert_eq!(first.name, "Built-in (on-device)");
         assert!(
             !config.speech_ready(),
             "ready only after the automatic test"
@@ -3008,6 +3020,31 @@ mod tests {
         assert_eq!(config.ai_presets, AiPreset::builtin_templates());
         assert_eq!(config.active_speech_preset_id, BUILTIN_SPEECH_PRESET_ID);
         assert_eq!(config.active_ai_preset_id, BUILTIN_AI_PRESET_ID);
+    }
+
+    #[test]
+    fn built_in_presets_lose_the_old_this_mac_name() {
+        // Plan `docs-structure`: "Built-in (this Mac)" became "Built-in (on-device)". A name the
+        // user typed for a server preset is left alone.
+        let config = AppConfig::from_stored_value(serde_json::json!({
+            "speech_presets": [
+                {"id": BUILTIN_WHISPER_PRESET_ID, "name": "Built-in (this Mac)", "kind": "builtin",
+                 "model": "small", "model_file": "", "language": "auto", "builtin": true},
+                {"id": "mine", "name": "Built-in (this Mac)", "base_url": "http://192.0.2.5:8000/v1",
+                 "model": "m", "language": "auto"}
+            ],
+            "active_speech_preset_id": BUILTIN_WHISPER_PRESET_ID,
+            "ai_presets": [
+                {"id": BUILTIN_LLAMA_PRESET_ID, "name": "Built-in (this Mac)", "kind": "builtin",
+                 "model": "qwen3-4b", "model_file": "", "builtin": true}
+            ],
+            "active_ai_preset_id": BUILTIN_LLAMA_PRESET_ID
+        }))
+        .unwrap();
+
+        assert_eq!(config.speech_presets[0].name, BUILTIN_PRESET_NAME);
+        assert_eq!(config.speech_presets[1].name, "Built-in (this Mac)");
+        assert_eq!(config.ai_presets[0].name, BUILTIN_PRESET_NAME);
     }
 
     #[test]

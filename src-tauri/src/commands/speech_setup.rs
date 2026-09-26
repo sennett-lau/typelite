@@ -1,5 +1,5 @@
 //! Plan `quick-speech-setup`: Quick speech setup. Downloads a Whisper model, creates and selects
-//! the "Built-in (this Mac)" preset, tests it, and marks it ready.
+//! the "Built-in (on-device)" preset, tests it, and marks it ready.
 //!
 //! The work runs in a background task owned by the backend, so it keeps going when the user
 //! leaves the onboarding step or Settings. Every change of the status is sent to all windows
