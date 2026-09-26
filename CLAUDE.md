@@ -22,8 +22,10 @@ building a feature.
 
 ## Hard constraints
 
-- Everything must be free and open source. No paid APIs, no subscriptions, no cloud STT/LLM.
-- Must be reliable and safe: no telemetry, no cloud sign-in, audio stays on the user's machines.
+- Everything must be free and open source. No paid APIs or cloud STT/LLM by default; a cloud
+  service is used only when the user opts in with their own key (plan `qwen-cloud-speech`).
+- Must be reliable and safe: no telemetry, no cloud sign-in, audio stays on the user's machines
+  unless they choose such a service.
 - Main target is macOS (Apple Silicon, M1 Pro, 32 GB, macOS 26). Windows is a non-goal for now.
 - Keep resource use low. The LLM only rephrases and summarises; it does not need a large model.
 

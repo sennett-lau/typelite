@@ -701,7 +701,8 @@
     "durationMinute": "{{count}} minute",
     "durationMinutes": "{{count}} minutes",
     "reasons": {
-      "clientBuffer": "Limited by the app’s safe local audio buffer."
+      "clientBuffer": "Limited by the app’s safe local audio buffer.",
+      "provider": "Limited by this service’s maximum audio length."
     }
   },
   "mic": {
@@ -907,6 +908,7 @@
     "apiKeyPlaceholder": "Optional",
     "name": "Name",
     "namePlaceholder": "Filled in for you",
+    "qwenCloudNote": "Qwen Cloud: sent to Qwen’s own speech API. Recordings up to 4 min 50 s.",
     "test": "Test",
     "testing": "Testing…",
     "works": "Works · {{time}}",

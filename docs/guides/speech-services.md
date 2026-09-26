@@ -1,7 +1,7 @@
 # Speech services
 
 Typelite can send your recordings to any speech service that uses the OpenAI transcription API
-(`POST <address>/audio/transcriptions`). In **Settings → Speech → Presets** (or "Use your own
+(`POST <address>/audio/transcriptions`), and to [Qwen Cloud](#qwen-cloud), which has its own API. In **Settings → Speech → Presets** (or "Use your own
 server or API key…" during setup), enter the service's **Address**, **Model** and, for cloud
 services, your **API key**, then press **Test**.
 
@@ -18,6 +18,7 @@ Prefer to keep everything on your Mac? Use **Built-in** instead; no account or s
 | Groq | cloud | `https://api.groq.com/openai/v1` | `whisper-large-v3-turbo` | required (free tier) |
 | Mistral | cloud | `https://api.mistral.ai/v1` | `voxtral-mini-latest` | required |
 | Together AI | cloud | `https://api.together.xyz/v1` | `openai/whisper-large-v3` | required |
+| Qwen Cloud | cloud | `https://token-plan.maas.qwencloudapi.com/api/v1` | `qwen-audio-3.0-asr-flash` | required |
 
 Other services that follow the same API should work too: enter their address and model.
 
@@ -51,6 +52,32 @@ services receive your audio.
 1. Sign in at [api.together.ai](https://api.together.ai).
 2. Your key is under **Settings → API Keys**.
 
+## Qwen Cloud
+
+Qwen Cloud's speech model does not use the OpenAI transcription API. Typelite recognises it by
+the address and sends the recording to Qwen's own speech API instead; the form shows
+"Qwen Cloud: sent to Qwen's own speech API" under the fields.
+
+- **Address:** `https://token-plan.maas.qwencloudapi.com/api/v1`. The console shows an address
+  ending in `/compatible-mode/v1` next to your key; you can paste that too, and Typelite changes
+  it to `/api/v1` when you press Test or Save (the speech model does not work on the
+  compatible-mode address). Alibaba Model Studio (DashScope) addresses such as
+  `https://dashscope-intl.aliyuncs.com/api/v1` are sent the same way, but only the Token Plan
+  address has been tested.
+- **Model:** `qwen-audio-3.0-asr-flash`.
+- **API key:** required.
+- **Recording limit:** at most 290 seconds (4 min 50 s), 4 minutes by default. Qwen returns
+  nothing for audio over 5 minutes, which looks the same as silence, so Settings → Speech →
+  Recording caps the limit while a Qwen Cloud preset is in use. Your longer choice is kept for
+  other presets.
+- **Languages:** leave the language on auto-detect for mixed English, Mandarin and Cantonese.
+  Chinese comes back in **Simplified characters**, and Cantonese as colloquial Cantonese (for
+  example `听日下昼三点开会得唔得`), not in Traditional characters.
+
+Getting a key:
+1. Sign in to the Qwen Cloud console and subscribe to a **Token Plan**.
+2. Create an API key and copy it into Typelite, together with the address above.
+
 ## Running your own server
 
 - whisper.cpp on this Mac, or on another computer: see [Speech recognition](speech-recognition.md).
@@ -62,8 +89,8 @@ services receive your audio.
 |---|---|
 | Speech server offline | The server is running and the address and port are right. |
 | Speech server timed out | The server is busy or too slow; try a smaller model or a GPU server. |
-| HTTP 401 / rejected the API key | The key is correct and has billing or credit. |
-| HTTP 404 | The address ends with `/v1` (or the service's base path), not the full `/audio/transcriptions` path. |
+| HTTP 401 / rejected the API key | The key is correct and has billing or credit. For Qwen Cloud, `InvalidApiKey` means the key is wrong or not for this address. |
+| HTTP 404 | The address ends with `/v1` (or the service's base path), not the full `/audio/transcriptions` path. For Qwen Cloud, `Model not exist.` means the model name is wrong. |
 
 ## Share presets
 
