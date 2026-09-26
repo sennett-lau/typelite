@@ -60,7 +60,14 @@ async function renderPage(role: ShortcutRole) {
 }
 
 /** Text content of an element, whitespace collapsed (key caps are separate elements). */
-const text = (element: Element | null) => element?.textContent?.replace(/\s+/g, ' ').trim()
+// Text as a screen reader reads it: a key cap's visible symbol (aria-hidden) is left out, so a
+// cap reads by its full name (plan `compact-key-labels`).
+const text = (element: Element | null) => {
+  if (!element) return undefined
+  const copy = element.cloneNode(true) as Element
+  copy.querySelectorAll('kbd > [aria-hidden="true"]').forEach((node) => node.remove())
+  return copy.textContent?.replace(/\s+/g, ' ').trim()
+}
 
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState())
@@ -114,11 +121,13 @@ describe('ShortcutSetupPage keys (plan tutorial-one-page)', () => {
 
   it('names the stop key on the Translate page and "send" on the Ask page', async () => {
     await renderPage('translate')
+    // The field's accessible name uses full key names; the large caps show ⇧ with a small L.
     const field = screen.getByRole('button', { name: 'Fn + Left Shift' })
-    expect(Array.from(field.querySelectorAll('kbd')).map((kbd) => kbd.textContent)).toEqual([
-      'Fn',
-      'Left Shift',
-    ])
+    const caps = Array.from(field.querySelectorAll('kbd.kbd-large'))
+    expect(caps.map((kbd) => kbd.getAttribute('title'))).toEqual(['Fn', 'Left Shift'])
+    expect(caps[0].textContent).toBe('Fn')
+    expect(caps[1].querySelector('[aria-hidden="true"]')?.textContent).toBe('⇧L')
+    expect(caps[1].querySelector('.kbd-side')).toHaveTextContent('L')
     const hint = screen.getByText(/Press to start\. While recording,/)
     expect(text(hint)).toBe(
       'Press to start. While recording, Fn stops. Click the keys to choose different ones.',
@@ -269,9 +278,13 @@ describe('Translate languages and pill preview (plan tutorial-one-page)', () => 
 
     const switchCaption = caption()
     expect(text(switchCaption)).toBe(
-      'While recording, press Shift (either side) or click the name to switch language.',
+      'While recording, press Shift or click the name to switch language.',
     )
-    expect(within(switchCaption).getByText('Shift (either side)').tagName).toBe('KBD')
+    // Either Shift: a bare ⇧ cap, no side letter, full name as tooltip.
+    const switchCap = switchCaption!.querySelector('kbd')!
+    expect(switchCap).toHaveAttribute('title', 'Shift')
+    expect(switchCap.querySelector('.kbd-glyph')).toHaveTextContent('⇧')
+    expect(switchCap.querySelector('.kbd-side')).toBeNull()
 
     // Clicking the name switches the preview's language, like the real pill.
     const name = screen.getByRole('button', { name: 'English' })

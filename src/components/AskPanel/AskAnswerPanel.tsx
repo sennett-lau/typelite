@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { copyAskText, insertAskText } from '../../lib/tauri'
 import type { AskDictationResult } from '../../lib/tauri'
+import { KeyCap } from '../ui/KeyCap'
 
 /** What the panel shows: an Ask result, or an error message. */
 export type AskPanelContent =
@@ -210,7 +211,7 @@ export function AskAnswerPanel({
       )}
       <div className="flex items-center gap-1.5 pt-2 pr-2.5 pb-2.5 pl-3.5">
         <span className="ask-glass-hint">
-          <kbd>Esc</kbd> {t('askPanel.escToClose')}
+          <KeyCap name="Escape" className="" /> {t('askPanel.escToClose')}
         </span>
         {actions}
       </div>

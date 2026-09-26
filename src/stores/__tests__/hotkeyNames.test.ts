@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   bindingFromHotkey,
+  bindingKeyNames,
   capturedKeysNeedModifier,
+  describeBinding,
+  describeHotkey,
   displayBinding,
   displayHotkey,
   hotkeyBindingIdentity,
@@ -10,22 +13,30 @@ import {
 } from '../appStore'
 
 describe('displayHotkey', () => {
-  it('spaces out key names', () => {
-    expect(displayHotkey('End+RightShift')).toBe('End + Right Shift')
-    expect(displayHotkey(['RightCommand', 'K'])).toBe('Right Command + K')
-    expect(displayHotkey('Ctrl+/')).toBe('Control + /')
+  it('shows compact labels with the side as a plain letter', () => {
+    expect(displayHotkey('End+RightShift')).toBe('End + ⇧R')
+    expect(displayHotkey(['RightCommand', 'K'])).toBe('⌘R + K')
+    expect(displayHotkey('Ctrl+/')).toBe('⌃ + /')
     expect(displayHotkey('PageDown')).toBe('Page Down')
     expect(displayHotkey('F13')).toBe('F13')
   })
 
+  it('describes hotkeys with full key names', () => {
+    expect(describeHotkey('End+RightShift')).toBe('End + Right Shift')
+    expect(describeHotkey(['RightCommand', 'K'])).toBe('Right Command + K')
+    expect(describeHotkey('Ctrl+/')).toBe('Control + /')
+  })
+
   it('shows stored bindings in rank order whatever the stored primary is', () => {
-    expect(displayBinding({ modifiers: ['End'], primary: 'RightControl' })).toBe(
+    expect(displayBinding({ modifiers: ['End'], primary: 'RightControl' })).toBe('End + ⌃R')
+    expect(describeBinding({ modifiers: ['End'], primary: 'RightControl' })).toBe(
       'End + Right Control',
     )
-    expect(displayBinding({ modifiers: ['RightShift'], primary: 'End' })).toBe('End + Right Shift')
-    expect(displayBinding({ modifiers: ['Command', 'Shift'], primary: 'K' })).toBe(
-      'Command + Shift + K',
-    )
+    expect(bindingKeyNames({ modifiers: ['RightShift'], primary: 'End' })).toEqual([
+      'End',
+      'RightShift',
+    ])
+    expect(displayBinding({ modifiers: ['Command', 'Shift'], primary: 'K' })).toBe('⌘ + ⇧ + K')
   })
 })
 

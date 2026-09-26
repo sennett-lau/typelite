@@ -1,4 +1,4 @@
-import { displayBinding } from '../../stores/appStore'
+import { bindingKeyNames } from '../../stores/appStore'
 import type {
   AppConfig,
   HotkeyConfig,
@@ -59,9 +59,9 @@ export function roleBindings(hotkeys: HotkeyConfig, role: ShortcutRole): Shortcu
   return primary ? [primary] : []
 }
 
-/** The key cap labels of a binding, in display order ("Fn + Left Shift" → ["Fn", "Left Shift"]). */
+/** The key names of a binding, in display order (`["Fn", "LeftShift"]`); empty when unset. */
 export function bindingKeys(binding: ShortcutBinding | null | undefined): string[] {
-  return binding ? displayBinding(binding).split(' + ') : []
+  return binding ? bindingKeyNames(binding) : []
 }
 
 /**

@@ -5,9 +5,10 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { MoreHorizontal, Plus, X } from 'lucide-react'
 import {
   bindingFromHotkey,
+  bindingKeyNames,
   capturedKeysNeedModifier,
-  displayBinding,
-  displayHotkey,
+  describeBinding,
+  describeHotkey,
   hotkeyBindingIdentity,
   hotkeyFromCapturedKeys,
   isMacPlatform,
@@ -21,6 +22,7 @@ import {
   startShortcutCapture,
   stopShortcutCapture,
 } from '../../lib/tauri'
+import { KeyCap } from '../ui/KeyCap'
 
 const STANDALONE_KEYS = new Set([
   'Space',
@@ -55,7 +57,10 @@ const STANDALONE_KEYS = new Set([
 const MAX_BINDINGS = 3
 
 interface HotkeyRecorderProps {
-  /** What the field shows when it is not recording. */
+  /**
+   * What the field shows when it is not recording, with full key names ("End + Right Shift").
+   * With `keycaps` it is only read by screen readers.
+   */
   value: string
   onSaved: (hotkey: string) => void
   validateHotkey?: (hotkey: string) => string | null
@@ -63,8 +68,8 @@ interface HotkeyRecorderProps {
   autoStart?: boolean
   onCancel?: () => void
   /**
-   * Draw the idle value as key caps, one per key (Settings → General). The plain `value` text
-   * stays in the field for screen readers.
+   * Key names (`["End", "RightShift"]`) to draw the idle value as key caps, one per key
+   * (plan `compact-key-labels`). The plain `value` text stays in the field for screen readers.
    */
   keycaps?: string[]
   /**
@@ -74,7 +79,7 @@ interface HotkeyRecorderProps {
   large?: boolean
 }
 
-/** The idle field content: key caps when given, else the plain text. */
+/** The field content: key caps when given (idle, or the keys held while recording), else text. */
 function IdleValue({
   value,
   keycaps,
@@ -95,7 +100,7 @@ function IdleValue({
         {keycaps.map((key, index) => (
           <span key={`${key}-${index}`} className="inline-flex items-center gap-2">
             {large && index > 0 && <span className="text-[16px] text-text-tertiary">+</span>}
-            <kbd className={large ? 'kbd kbd-large' : 'kbd'}>{key}</kbd>
+            <KeyCap name={key} className={large ? 'kbd kbd-large' : 'kbd'} />
           </span>
         ))}
       </span>
@@ -111,11 +116,6 @@ function fieldClass(recording: boolean, large: boolean): string {
       ? 'border-border-focus bg-bg-tertiary text-text-primary ring-2 ring-accent/20'
       : 'border-transparent bg-bg-secondary text-text-primary hover:border-border'
   }`
-}
-
-/** Key cap labels for a binding, in display order. */
-function bindingKeycaps(binding: ShortcutBinding): string[] {
-  return displayBinding(binding).split(' + ')
 }
 
 /**
@@ -259,7 +259,7 @@ function NativeHotkeyRecorder({
         >
           {recording ? (
             live.length > 0 ? (
-              displayHotkey(live)
+              <IdleValue value={describeHotkey(live)} keycaps={live} large={large} />
             ) : (
               t('shortcutCapture.pressKeys')
             )
@@ -452,7 +452,15 @@ function WebHotkeyRecorder({
           className={fieldClass(recording, large)}
         >
           {recording ? (
-            pending || modifierHint || t('settings.pressKeyCombination')
+            pending ? (
+              <IdleValue
+                value={describeHotkey(pending)}
+                keycaps={pending.split('+')}
+                large={large}
+              />
+            ) : (
+              modifierHint || t('settings.pressKeyCombination')
+            )
           ) : (
             <IdleValue value={value} keycaps={keycaps} large={large} />
           )}
@@ -575,8 +583,8 @@ export function ShortcutBindingList({
             >
               <div className="min-w-0 flex-1">
                 <HotkeyRecorder
-                  value={displayBinding(binding)}
-                  keycaps={showKeycaps ? bindingKeycaps(binding) : undefined}
+                  value={describeBinding(binding)}
+                  keycaps={showKeycaps ? bindingKeyNames(binding) : undefined}
                   disabled={disabled}
                   validateHotkey={(hotkey) => validate(hotkey, index)}
                   onSaved={(hotkey) => saveAt(index, hotkey)}

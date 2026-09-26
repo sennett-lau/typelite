@@ -1,18 +1,10 @@
 import { Fragment } from 'react'
+import { KeyCaps as SharedKeyCaps } from '../ui/KeyCap'
 import type { KeyTokenName } from './keyTokens'
 
-/** Small inline key caps joined by "+", for use inside a sentence. */
+/** Small inline key caps joined by "+", for use inside a sentence. `keys` are key names. */
 export function KeyCaps({ keys }: { keys: string[] }) {
-  return (
-    <>
-      {keys.map((key, index) => (
-        <Fragment key={`${key}-${index}`}>
-          {index > 0 && ' + '}
-          <kbd className="kbd kbd-inline">{key}</kbd>
-        </Fragment>
-      ))}
-    </>
-  )
+  return <SharedKeyCaps keys={keys} className="kbd kbd-inline" joiner="plus" />
 }
 
 /**

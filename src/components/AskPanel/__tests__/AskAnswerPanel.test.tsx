@@ -69,7 +69,11 @@ describe('AskAnswerPanel', () => {
     expect(
       screen.getByText('Sending the same request twice has the same effect as sending it once.'),
     ).toBeDefined()
-    expect(screen.getByText('Esc')).toBeDefined()
+    // Plan `compact-key-labels`: the cap shows "esc" and reads "Escape".
+    const esc = screen.getByTitle('Escape')
+    expect(esc.tagName).toBe('KBD')
+    expect(esc.querySelector('[aria-hidden="true"]')?.textContent).toBe('esc')
+    expect(esc.querySelector('.sr-only')?.textContent).toBe('Escape')
     expect(screen.getByText('to close')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
     expect(screen.getByRole('button', { name: 'Insert at the cursor' }).textContent).toBe('Insert')
