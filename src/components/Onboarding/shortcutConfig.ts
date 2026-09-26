@@ -1,8 +1,19 @@
-import type { HotkeyConfig, ShortcutBinding, TranslationConfig } from '../../stores/appStore'
+import { displayBinding } from '../../stores/appStore'
+import type {
+  AppConfig,
+  HotkeyConfig,
+  ShortcutBinding,
+  TranslationConfig,
+} from '../../stores/appStore'
+import { MAX_TRANSLATION_TARGETS } from '../../lib/constants'
 import { setShortcutGate } from '../../lib/tauri'
 import type { GatedShortcutRole, ShortcutGate } from '../../lib/tauri'
+import { EXERCISES } from './exercises'
+import type { Exercise } from './exercises'
 
 export type ShortcutRole = 'dictation' | 'translate' | 'ask'
+
+export const SHORTCUT_ROLES: ShortcutRole[] = ['dictation', 'translate', 'ask']
 
 /**
  * Plan `onboarding-shortcut-gate`: the shortcut roles an onboarding page lets run. A page
@@ -48,19 +59,65 @@ export function roleBindings(hotkeys: HotkeyConfig, role: ShortcutRole): Shortcu
   return primary ? [primary] : []
 }
 
+/** The key cap labels of a binding, in display order ("Fn + Left Shift" → ["Fn", "Left Shift"]). */
+export function bindingKeys(binding: ShortcutBinding | null | undefined): string[] {
+  return binding ? displayBinding(binding).split(' + ') : []
+}
+
 /**
- * The translation config after picking `code` as the one target: it becomes the active
- * target and the first slot. If it already sat in another slot, the old first language
- * moves there, so the other slots (editable in Settings) keep their languages.
+ * Plan `tutorial-one-page`: one onboarding page of the shortcut part. Each role has a setup page
+ * (its keys; Translate also its languages), then one page per exercise.
  */
-export function translationWithFirstTarget(
+export type ShortcutPage =
+  | { role: ShortcutRole; kind: 'setup' }
+  | { role: ShortcutRole; kind: 'exercise'; exercise: Exercise; number: number; total: number }
+
+export const SHORTCUT_PAGES: ShortcutPage[] = SHORTCUT_ROLES.flatMap((role): ShortcutPage[] => [
+  { role, kind: 'setup' },
+  ...EXERCISES[role].map(
+    (exercise, index): ShortcutPage => ({
+      role,
+      kind: 'exercise',
+      exercise,
+      number: index + 1,
+      total: EXERCISES[role].length,
+    }),
+  ),
+])
+
+/** A setup page is done when the role has a shortcut, and Translate at least one language. */
+export function setupComplete(config: AppConfig, role: ShortcutRole): boolean {
+  if (roleBindings(config.hotkeys, role).length === 0) return false
+  return role !== 'translate' || config.translation.targets.length > 0
+}
+
+/**
+ * Plan `tutorial-one-page`: the translation config after adding `code` in the next free slot. The
+ * first language becomes the active one.
+ */
+export function translationWithTarget(
   translation: TranslationConfig,
   code: string,
 ): TranslationConfig {
-  const targets = [...translation.targets]
-  const existing = targets.indexOf(code)
-  if (existing > 0) targets[existing] = targets[0]
-  if (targets.length === 0) targets.push(code)
-  else targets[0] = code
-  return { targets, active_target: code }
+  const { targets } = translation
+  if (!code || targets.includes(code) || targets.length >= MAX_TRANSLATION_TARGETS) {
+    return translation
+  }
+  const active = targets.includes(translation.active_target) ? translation.active_target : code
+  return { ...translation, targets: [...targets, code], active_target: active }
+}
+
+/**
+ * The translation config after removing `code`. Removing the active language makes the first
+ * remaining one active; removing the last one leaves no language.
+ */
+export function translationWithoutTarget(
+  translation: TranslationConfig,
+  code: string,
+): TranslationConfig {
+  const targets = translation.targets.filter((target) => target !== code)
+  const active = targets.includes(translation.active_target)
+    ? translation.active_target
+    : (targets[0] ?? '')
+  return { ...translation, targets, active_target: active }
 }
