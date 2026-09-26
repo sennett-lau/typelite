@@ -28,6 +28,10 @@ Steps 1–4 stay as they are (welcome, microphone, speech, AI). Then, for Dictat
 Ask anything in turn: the setup page, exercise 1, exercise 2. That is 13 dots. The shortcut tour
 from Home starts at the Dictate setup page and cannot go back past it.
 
+The shortcut gate of plan `onboarding-shortcut-gate` follows the pages: a setup page allows no
+shortcut (it only records keys), an exercise page allows its own role (Translate also the
+Switch language key).
+
 ## Setup page
 
 - Title: the role name; subtitle: what it does.

@@ -1,17 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
-
-/** Widest the language name gets before it scrolls (plan `tutorial-one-page`). */
-export const PILL_NAME_MAX_WIDTH = 180
+import { useReducedMotion } from 'framer-motion'
+import { measurePillNameWidth } from '../../lib/textWidth'
+import { NAME_MAX_WIDTH, marqueeDurationSeconds, nameDisplay } from '../Capsule/translatePill'
 
 /** Waveform bar heights of the static preview, in points. */
 const BARS = [6, 11, 7, 14, 9, 12, 5, 10, 13, 7]
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false
-}
 
 interface Props {
   /** Display names of the chosen languages, in slot order. */
@@ -23,35 +18,25 @@ interface Props {
 }
 
 /**
- * Plan `tutorial-one-page`: a static copy of the Translate recording pill (the design of plan
- * `translate-pill-and-keys`) for the onboarding setup page. Dark glass with the aurora inside,
+ * Plan `tutorial-one-page`: a static copy of the Translate recording pill of plan
+ * `translate-pill-and-keys`, for the onboarding setup page. Dark glass with the aurora inside,
  * 40 pt tall: red dot, waveform, the active language name and one dot per language. The name
- * grows the pill up to 180 pt, then scrolls as a continuous marquee (an ellipsis with Reduce
- * Motion). The pill's width animates when the content changes.
+ * uses the real pill's classes and rules: it grows the pill up to 180 pt, then scrolls as a
+ * marquee (an ellipsis with Reduce Motion). The preview's width animates when the content
+ * changes. Nothing here touches the real pill or a recording.
  */
 export function TranslatePillPreview({ names, active, onSwitch }: Props) {
   const { t } = useTranslation()
+  const reduced = useReducedMotion() ?? false
   const name = names[active] ?? ''
-  const measureRef = useRef<HTMLSpanElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-  const [nameWidth, setNameWidth] = useState(0)
   const [width, setWidth] = useState<number | null>(null)
-  const marquee = nameWidth > PILL_NAME_MAX_WIDTH && !prefersReducedMotion()
 
-  // Natural width of the name, measured by a hidden copy (0 in tests, where nothing lays out).
+  // The pill takes its content's width; CSS animates the change (0 in tests: no layout).
   useLayoutEffect(() => {
-    setNameWidth(measureRef.current?.offsetWidth ?? 0)
-  }, [name])
-
-  // The pill takes its content's width; CSS animates the change.
-  useLayoutEffect(() => {
-    const content = contentRef.current
-    if (!content) return
-    const next = content.offsetWidth
+    const next = contentRef.current?.offsetWidth ?? 0
     setWidth(next > 0 ? next + 2 : null)
-  }, [name, names.length, marquee])
-
-  const canSwitch = names.length >= 2
+  }, [name, names.length, reduced])
 
   return (
     <div
@@ -64,9 +49,6 @@ export function TranslatePillPreview({ names, active, onSwitch }: Props) {
           : t('onboarding.translate.preview')
       }
     >
-      <span ref={measureRef} className="pill-preview-measure" aria-hidden="true">
-        {name}
-      </span>
       <div ref={contentRef} className="pill-preview-content">
         <span className="pill-preview-rec" aria-hidden="true" />
         <span className="pill-preview-wave" aria-hidden="true">
@@ -75,18 +57,18 @@ export function TranslatePillPreview({ names, active, onSwitch }: Props) {
           ))}
         </span>
         {name && (
-          <PillName
+          <PreviewName
+            key={name}
             name={name}
-            // About 28 pt per second, as in the agreed mock.
-            marqueeSeconds={marquee ? Math.max(5, (nameWidth + 28) / 28) : 0}
-            canSwitch={canSwitch}
+            reduced={reduced}
+            canSwitch={names.length >= 2}
             onSwitch={onSwitch}
           />
         )}
-        {canSwitch && (
-          <span className="pill-preview-dots" aria-hidden="true">
-            {names.map((_, index) => (
-              <i key={index} data-active={index === active} />
+        {names.length >= 2 && (
+          <span className="pill-lang-dots" aria-hidden="true">
+            {names.map((language, index) => (
+              <i key={language} className={index === active ? 'pill-lang-dot-on' : undefined} />
             ))}
           </span>
         )}
@@ -98,45 +80,53 @@ export function TranslatePillPreview({ names, active, onSwitch }: Props) {
   )
 }
 
-function PillName({
+function PreviewName({
   name,
-  marqueeSeconds,
+  reduced,
   canSwitch,
   onSwitch,
 }: {
   name: string
-  /** Seconds per marquee loop; 0 when the name fits (no marquee). */
-  marqueeSeconds: number
+  reduced: boolean
   canSwitch: boolean
   onSwitch: () => void
 }) {
   const { t } = useTranslation()
-  const marquee = marqueeSeconds > 0
-  const className = `pill-preview-name ${marquee ? 'pill-preview-name-marquee' : ''}`
+  const natural = measurePillNameWidth(name)
+  const display = nameDisplay(natural, reduced)
+  const style: CSSProperties & Record<'--pill-marquee-duration', string> = {
+    width: Math.min(Math.ceil(natural), NAME_MAX_WIDTH),
+    '--pill-marquee-duration': `${marqueeDurationSeconds(natural).toFixed(2)}s`,
+  }
+  const className = `pill-lang-name ${display === 'marquee' ? 'pill-lang-marquee' : ''}`
   // Two copies side by side scroll by half their width: a seamless loop.
-  const text = marquee ? (
-    <span style={{ ['--marquee-duration' as string]: `${marqueeSeconds}s` }}>
-      <span>{name}</span>
-      <span aria-hidden="true">{name}</span>
-    </span>
-  ) : (
-    name
-  )
+  const content =
+    display === 'marquee' ? (
+      <span className="pill-lang-marquee-track" aria-hidden="true">
+        <span>{name}</span>
+        <span>{name}</span>
+      </span>
+    ) : (
+      name
+    )
   if (!canSwitch) {
     return (
-      <span className={className} title={name}>
-        {text}
+      <span className={className} style={style} title={name} data-display={display}>
+        {content}
       </span>
     )
   }
   return (
     <button
       type="button"
-      className={className}
+      className={`${className} pill-lang-switch`}
+      style={style}
       title={t('onboarding.translate.switchTitle', { language: name })}
+      aria-label={name}
+      data-display={display}
       onClick={onSwitch}
     >
-      {text}
+      {content}
     </button>
   )
 }

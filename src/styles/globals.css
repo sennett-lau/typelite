@@ -1463,7 +1463,8 @@ body,
   }
 
   /* The recording pill preview (the design of plan `translate-pill-and-keys`), on a small
-     desktop-like backdrop so it shows in both themes. */
+     desktop-like backdrop so it shows in both themes. The name and dots use the real pill's
+     `.pill-lang-*` classes. */
   .pill-preview-stage {
     display: grid;
     width: 100%;
@@ -1552,79 +1553,6 @@ body,
     width: 2px;
     border-radius: 1px;
     background: rgba(255, 255, 255, 0.85);
-  }
-  .pill-preview-name {
-    display: block;
-    max-width: 180px;
-    flex: none;
-    overflow: hidden;
-    margin: 0 -4px;
-    padding: 1px 4px;
-    border: none;
-    border-radius: 6px;
-    background: none;
-    color: rgba(255, 255, 255, 0.88);
-    font: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  button.pill-preview-name {
-    cursor: pointer;
-  }
-  button.pill-preview-name:hover {
-    background: rgba(255, 255, 255, 0.12);
-  }
-  button.pill-preview-name:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.7);
-  }
-  .pill-preview-name-marquee {
-    text-overflow: clip;
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      transparent 0,
-      #000 6px,
-      #000 calc(100% - 6px),
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      90deg,
-      transparent 0,
-      #000 6px,
-      #000 calc(100% - 6px),
-      transparent 100%
-    );
-  }
-  .pill-preview-name-marquee > span {
-    display: inline-block;
-    animation: pill-preview-marquee var(--marquee-duration, 8s) linear infinite;
-  }
-  .pill-preview-name-marquee > span > span {
-    padding-right: 28px;
-  }
-  .pill-preview-measure {
-    position: absolute;
-    visibility: hidden;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    pointer-events: none;
-  }
-  .pill-preview-dots {
-    display: inline-flex;
-    flex: none;
-    gap: 3px;
-    margin-left: 2px;
-  }
-  .pill-preview-dots i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-  }
-  .pill-preview-dots i[data-active='true'] {
-    background: #ffffff;
   }
   .pill-preview-close {
     flex: none;
@@ -1994,15 +1922,6 @@ body,
     opacity: 1;
   }
 }
-@keyframes pill-preview-marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
 /* ─── Reduced Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *,

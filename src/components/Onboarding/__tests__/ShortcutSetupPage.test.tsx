@@ -188,7 +188,7 @@ describe('Translate languages and pill preview (plan tutorial-one-page)', () => 
     expect(within(slots()).getByRole('combobox', { name: 'Add a language' })).toBeInTheDocument()
     expect(slots().querySelectorAll('.lang-slot-empty')).toHaveLength(2)
     expect(screen.getByRole('group', { name: 'Recording pill preview' })).toBeInTheDocument()
-    expect(document.querySelector('.pill-preview-name')).toBeNull()
+    expect(document.querySelector('.pill-preview .pill-lang-name')).toBeNull()
     expect(text(caption())).toBe('Add a language, and the pill will show it while you record.')
   })
 
@@ -226,7 +226,7 @@ describe('Translate languages and pill preview (plan tutorial-one-page)', () => 
     ).toEqual(['1', '2', '3'])
     // No add slot at three.
     expect(screen.queryByRole('combobox', { name: 'Add a language' })).toBeNull()
-    expect(document.querySelectorAll('.pill-preview-dots i')).toHaveLength(3)
+    expect(document.querySelectorAll('.pill-preview .pill-lang-dots i')).toHaveLength(3)
   })
 
   it('removes a language; removing the active one makes the first remaining one active', async () => {
@@ -247,6 +247,22 @@ describe('Translate languages and pill preview (plan tutorial-one-page)', () => 
     expect(screen.getByRole('combobox', { name: 'Add a language' })).toBeInTheDocument()
   })
 
+  it('grows with the name up to 180 pt, then scrolls a longer name as a marquee', async () => {
+    setTargets(['en'])
+    await renderPage('translate')
+    const short = document.querySelector('.pill-preview .pill-lang-name') as HTMLElement
+    expect(short).toHaveAttribute('data-display', 'full')
+    expect(short.style.width).not.toBe('180px')
+    cleanup()
+
+    setTargets(['zh-Hant-HK'])
+    await renderPage('translate')
+    const long = document.querySelector('.pill-preview .pill-lang-name') as HTMLElement
+    expect(long).toHaveAttribute('data-display', 'marquee')
+    expect(long.style.width).toBe('180px')
+    expect(long.querySelectorAll('.pill-lang-marquee-track > span')).toHaveLength(2)
+  })
+
   it('explains switching with the Switch language key, or by clicking the name', async () => {
     setTargets(['en', 'ja'], 'en')
     await renderPage('translate')
@@ -259,13 +275,13 @@ describe('Translate languages and pill preview (plan tutorial-one-page)', () => 
 
     // Clicking the name switches the preview's language, like the real pill.
     const name = screen.getByRole('button', { name: 'English' })
-    expect(document.querySelector('.pill-preview-dots i[data-active="true"]')).toBe(
-      document.querySelectorAll('.pill-preview-dots i')[0],
+    expect(document.querySelector('.pill-preview .pill-lang-dots i.pill-lang-dot-on')).toBe(
+      document.querySelectorAll('.pill-preview .pill-lang-dots i')[0],
     )
     fireEvent.click(name)
     expect(screen.getByRole('button', { name: '日本語' })).toBeInTheDocument()
-    expect(document.querySelector('.pill-preview-dots i[data-active="true"]')).toBe(
-      document.querySelectorAll('.pill-preview-dots i')[1],
+    expect(document.querySelector('.pill-preview .pill-lang-dots i.pill-lang-dot-on')).toBe(
+      document.querySelectorAll('.pill-preview .pill-lang-dots i')[1],
     )
     cleanup()
 
