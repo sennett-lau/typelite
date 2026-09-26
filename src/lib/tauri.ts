@@ -90,6 +90,84 @@ export async function getTranslationLanguageDefaults(): Promise<Record<string, s
   return invoke('get_translation_language_defaults')
 }
 
+// ─── Plan `language-prompt-library`: language presets from the repository ───
+
+/** One preset in the Browse list. */
+export interface PresetListing {
+  id: string
+  name: string
+  tier: 'official' | 'community' | string
+  summary: string
+  languages: string[]
+  /** The regional note used for this language ("notes for en-GB"). */
+  variant: string | null
+  version: number
+  authors: string[]
+  model_hint: string | null
+  downloaded: boolean
+}
+
+export interface PresetList {
+  presets: PresetListing[]
+  related: string[]
+  offline: boolean
+}
+
+/** A preset rendered for one language. */
+export interface PresetDetail {
+  id: string
+  name: string
+  tier: string
+  summary: string
+  version: number
+  sha256: string
+  authors: string[]
+  model_hint: string | null
+  text: string
+  variant: string | null
+  detect_codes: string[]
+  hints: string[]
+  require_hint: boolean
+  applies_to: string[]
+}
+
+export interface AutoUpdateRecord {
+  id: string
+  from: number
+  to: number
+  /** Unix seconds. */
+  at: number
+}
+
+export interface LibraryStatus {
+  latest: Record<string, { version: number; sha256: string }>
+  updates: Record<string, AutoUpdateRecord>
+}
+
+/** Browse: refreshes the library index and lists the presets for `code`. */
+export async function listLanguagePresets(code: string): Promise<PresetList> {
+  return invoke('list_language_presets', { code })
+}
+
+/** Preview: downloads and verifies preset `id` if needed, rendered for `code`. */
+export async function downloadLanguagePreset(id: string, code: string): Promise<PresetDetail> {
+  return invoke('download_language_preset', { id, code })
+}
+
+/** A stored version of a preset, rendered for `code`; null when missing or damaged. */
+export async function loadLanguagePreset(
+  id: string,
+  sha256: string,
+  code: string,
+): Promise<PresetDetail | null> {
+  return invoke('load_language_preset', { id, sha256, code })
+}
+
+/** Newest versions from the cached index and the automatic updates (no network). */
+export async function getLanguageLibraryStatus(): Promise<LibraryStatus> {
+  return invoke('get_language_library_status')
+}
+
 export type AppMatcherType = 'native_bundle_id' | 'native_executable' | 'exact_web_host'
 
 export interface MappingCandidateView {
