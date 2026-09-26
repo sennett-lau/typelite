@@ -247,6 +247,10 @@ pub async fn update_config(
     }
 
     update_runtime_caches(&cache, &ask_cache, &role_cache, &close_tray_cache, &config);
+    // Plan `typing-speed-and-nudge`: "Measure typing speed" takes effect at once.
+    if let Some(stats) = app.try_state::<crate::speed_stats::SpeedStats>() {
+        stats.set_enabled(config.measure_typing_speed);
+    }
     emit_config_patch(&app, &patch);
     if patch.get("ui_language").is_some() {
         crate::refresh_tray(&app);

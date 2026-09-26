@@ -232,6 +232,9 @@ fn register_configured_shortcuts_guarded(
             Some(Arc::new(move |role| {
                 gate_allows_role(&role_gate_handle, role)
             })),
+            // Plan `typing-speed-and-nudge`: typed keystrokes count towards typing speed.
+            app.try_state::<crate::speed_stats::SpeedStats>()
+                .map(|stats| crate::speed_stats::keystroke_observer(stats.inner().clone())),
             Arc::new(move |event| {
                 crate::hotkey::handle_hotkey_role_event(handle.clone(), event.role, event.state);
             }),

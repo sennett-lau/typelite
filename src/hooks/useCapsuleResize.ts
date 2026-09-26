@@ -74,6 +74,11 @@ export const SETUP_ERROR_SIZE: CapsuleSize = { width: 320, height: PILL_HEIGHT }
 export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 308, height: PILL_HEIGHT }
 /** The Copy pill for a longer result; its preview ends with an ellipsis. */
 export const COPY_PILL_SIZE: CapsuleSize = { width: 368, height: PILL_HEIGHT }
+/**
+ * Plan `typing-speed-and-nudge`: the typing nudge (icon, one sentence with the Dictate key,
+ * "Don't show again" and ✕).
+ */
+export const NUDGE_PILL_SIZE: CapsuleSize = { width: 440, height: PILL_HEIGHT }
 const IDLE_SIZE: CapsuleSize = { width: PILL_HEIGHT, height: PILL_HEIGHT }
 
 /** Up to this visual length (CJK characters count double) a result fits the short Copy pill. */
@@ -124,6 +129,8 @@ export function getPillSize(
   switch (capsuleState) {
     case 'copy':
       return copyPillSize(copyOffer)
+    case 'nudge':
+      return NUDGE_PILL_SIZE
     case 'error':
       return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
     case 'recording':
@@ -152,6 +159,8 @@ export interface CapsuleVisibilityInput {
   doneFlash?: boolean
   /** Plan `copy-when-no-field`: the Copy pill offers a result. */
   copyPill?: boolean
+  /** Plan `typing-speed-and-nudge`: the typing nudge shows. */
+  typingNudge?: boolean
 }
 
 /** The idle capsule is always hidden; it shows only while working, or for an error or menu. */
@@ -162,6 +171,7 @@ export function getCapsuleVisibility({
   pipelineState,
   doneFlash = false,
   copyPill = false,
+  typingNudge = false,
 }: CapsuleVisibilityInput): boolean {
   return (
     contextMenuOpen ||
@@ -169,23 +179,26 @@ export function getCapsuleVisibility({
     hasError ||
     doneFlash ||
     copyPill ||
+    typingNudge ||
     pipelineState !== 'idle'
   )
 }
 
 /**
- * The state the pill shows: an error first, then the done flash or the Copy pill once the
- * pipeline is idle, else the pipeline state.
+ * The state the pill shows: an error first, then the done flash, the Copy pill or the typing
+ * nudge once the pipeline is idle, else the pipeline state.
  */
 export function getCapsuleState(
   pipelineState: string,
   hasError: boolean,
   doneFlash: boolean,
   copyPill = false,
+  typingNudge = false,
 ): string {
   if (hasError) return 'error'
   if (doneFlash && pipelineState === 'idle') return 'done'
   if (copyPill && pipelineState === 'idle') return 'copy'
+  if (typingNudge && pipelineState === 'idle') return 'nudge'
   return pipelineState
 }
 
@@ -320,11 +333,12 @@ export function getSizeForState(
   doneFlash = false,
   copyOffer: CopyOffer | null = null,
   askWithSelection = false,
+  typingNudge = false,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
   if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translate)
   if (expanded) return { width: 220, height: 90 }
-  const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null)
+  const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null, typingNudge)
   return getPillSize(
     capsuleState,
     activeVoiceMode,
@@ -370,6 +384,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const translateDots = translatePill.dots
   const copyOffer = useAppStore((s) => s.copyOffer)
   const askWithSelection = useAppStore((s) => s.askSelectionPreview !== null)
+  const typingNudge = useAppStore((s) => s.typingNudge)
   const anchor = useRef<CapsuleAnchor | null>(null)
   /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
   const anchorMonitor = useRef<string | null>(null)
@@ -392,6 +407,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     pipelineState,
     doneFlash,
     copyPill: copyOffer !== null,
+    typingNudge,
   })
 
   useEffect(() => {
@@ -406,6 +422,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       doneFlash,
       copyOffer,
       askWithSelection,
+      typingNudge,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
@@ -508,6 +525,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     doneFlash,
     copyOffer,
     askWithSelection,
+    typingNudge,
     shouldShow,
     setContextMenuReady,
   ])
@@ -578,5 +596,6 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     doneFlash,
     copyOffer,
     askWithSelection,
+    typingNudge,
   )
 }

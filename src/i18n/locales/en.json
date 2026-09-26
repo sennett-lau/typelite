@@ -116,6 +116,13 @@
       "setUp": "Set up",
       "otherOptions": "Other options"
     },
+    "speedCompare": {
+      "speaking": "Speaking",
+      "typing": "Typing",
+      "wpm": "WPM",
+      "times": "{{value}}×",
+      "fasterThanTyping": "faster than typing"
+    },
     "speed": {
       "title": "Insights",
       "empty": "Dictate once to see where the time goes.",
@@ -305,6 +312,11 @@
     "copied": "Copied",
     "copyResult": "Copy the result",
     "copyHint": "No text field to paste into. Copy the result (Esc closes)",
+    "nudge": {
+      "text": "Typing a lot? Press {{key}} to say it instead.",
+      "dontShowAgain": "Don't show again",
+      "close": "Close"
+    },
     "errorOccurred": "An error occurred",
     "accessibilityRequired": "Accessibility needed — open Settings",
     "errors": {
@@ -517,6 +529,13 @@
     "clearInsightsButton": "Clear",
     "insightsCleared": "Cleared",
     "clearInsightsFailed": "Could not clear the data.",
+    "measureTypingSpeed": "Measure typing speed",
+    "measureTypingSpeedHint": "Counts keystrokes and typing time to show your typing speed. Which keys you press is never stored.",
+    "resetSpeedStats": "Reset speed stats",
+    "resetSpeedStatsHint": "Clears the speaking and typing speed shown in Insights.",
+    "resetSpeedStatsButton": "Reset",
+    "speedStatsReset": "Reset",
+    "resetSpeedStatsFailed": "Could not reset the speed stats.",
     "groupPreset": "Presets",
     "groupServer": "Server",
     "groupRecording": "Recording",
