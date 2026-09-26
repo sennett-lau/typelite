@@ -55,11 +55,22 @@ pub struct PolishRequest {
     pub polish_chinese_script: String,
     pub translate_enabled: bool,
     pub target_lang: String,
-    /// Plan `translation-language-presets`: the user's instructions for `target_lang`, empty for
-    /// the built-in default.
+    /// Plan `translation-language-presets`: the language section of a translation into
+    /// `target_lang`; empty for the built-in default. Plan `language-prompt-library`: the
+    /// pipeline fills in the effective text (or the plain text when the language is off).
     pub translation_instructions: String,
+    /// Plan `language-prompt-library`: the router's language for polish, if any.
+    #[serde(default)]
+    pub polish_language_notes: Option<PolishLanguageNotes>,
     pub selected_text: Option<String>,
     pub voice_intent: crate::voice_intent::VoiceIntent,
+}
+
+/// The notes of the language a dictation is in (plan `language-prompt-library`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PolishLanguageNotes {
+    pub code: String,
+    pub text: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -140,6 +151,7 @@ mod context_prompt_contract_tests {
             translate_enabled: true,
             target_lang: "en",
             translation_instructions: "",
+            polish_language_notes: None,
             has_selected_text: false,
             voice_intent: None,
         })
@@ -232,6 +244,7 @@ mod context_prompt_contract_tests {
             translate_enabled: false,
             target_lang: "en",
             translation_instructions: "",
+            polish_language_notes: None,
             has_selected_text: true,
             voice_intent: Some(&intent),
         });
