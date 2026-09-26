@@ -8,6 +8,8 @@ is the pill preview on the "Translate · shortcut" page of [mock.html](mock.html
 
 Status: done — 2026-09-26
 
+Pill height superseded by [compact-pill](../2026-09-26-compact-pill/index.md) (32 pt).
+
 Changes decisions in earlier plans:
 - [aurora-pill](../2026-09-25-aurora-pill/index.md): the pill is 40 pt high (was 36) with more
   inner padding, and the Translate recording pill no longer shows three chips.
