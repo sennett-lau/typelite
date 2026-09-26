@@ -90,7 +90,7 @@ export function CapsuleCopy({ offer, active }: CapsuleCopyProps) {
 
   return (
     <div
-      className="relative z-10 flex h-full min-w-0 items-center gap-2 pl-3.5 pr-[5px]"
+      className="relative z-10 flex h-full min-w-0 items-center gap-2 pl-3.5 pr-[7px]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       data-testid="capsule-copy"

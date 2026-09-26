@@ -28,7 +28,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../../hooks/useCapsuleResize', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../hooks/useCapsuleResize')>()),
-  useCapsuleResize: () => ({ width: 216, height: 36 }),
+  useCapsuleResize: () => ({ width: 224, height: 40 }),
 }))
 
 vi.mock('../../../lib/tauri', () => ({
@@ -86,17 +86,17 @@ describe('Capsule flow states', () => {
     expect(screen.getByText('capsule.transcribing')).toBeInTheDocument()
     expect(screen.queryByText(/hello world/)).toBeNull()
     expect(screen.getByTestId('capsule-aurora')).toHaveAttribute('data-mode', 'working')
-    expect(shell().style.width).toBe('132px')
+    expect(shell().style.width).toBe('140px')
 
     useAppStore.setState({ pipelineState: 'polishing' })
     rerender(<Capsule />)
     expect(screen.getByText('capsule.polishing')).toBeInTheDocument()
-    expect(shell().style.width).toBe('132px')
+    expect(shell().style.width).toBe('140px')
 
     useAppStore.setState({ pipelineState: 'outputting' })
     rerender(<Capsule />)
     expect(screen.getByText('capsule.pasting')).toBeInTheDocument()
-    expect(shell().style.width).toBe('132px')
+    expect(shell().style.width).toBe('140px')
   })
 
   it('flashes done after pasting, then hides', () => {
@@ -161,7 +161,7 @@ describe('Capsule flow states', () => {
     const { container } = render(<Capsule />)
 
     expect(screen.getByTestId('capsule-aurora')).toHaveAttribute('data-mode', 'listening')
-    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('150px')
+    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('160px')
   })
 
   it('does not start dictation when the idle capsule is clicked', () => {
@@ -250,7 +250,7 @@ describe('Capsule flow states', () => {
 
     expect(screen.queryByRole('group', { name: 'translate.chipsLabel' })).toBeNull()
     expect(screen.getByText('日本語')).toBeInTheDocument()
-    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('232px')
+    expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('240px')
   })
 
   it('switches the target on chip click without stopping or restarting recording', async () => {
@@ -291,12 +291,12 @@ describe('Capsule flow states', () => {
     const { container, rerender } = render(<Capsule />)
     const shell = () => container.querySelector('.pill') as HTMLElement
 
-    expect(shell().style.width).toBe('232px')
-    expect(shell().style.height).toBe('36px')
+    expect(shell().style.width).toBe('240px')
+    expect(shell().style.height).toBe('40px')
 
     useAppStore.setState({ activeVoiceMode: 'dictate' })
     rerender(<Capsule />)
-    expect(shell().style.width).toBe('150px')
+    expect(shell().style.width).toBe('160px')
   })
 
   it('shows the waveform while Ask is recording', () => {
@@ -306,6 +306,6 @@ describe('Capsule flow states', () => {
 
     expect(screen.getByTestId('waveform')).toBeInTheDocument()
     const shell = container.querySelector('.pill') as HTMLElement
-    expect(shell.style.width).toBe('150px')
+    expect(shell.style.width).toBe('160px')
   })
 })

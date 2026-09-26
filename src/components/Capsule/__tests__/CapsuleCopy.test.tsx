@@ -28,7 +28,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../../hooks/useCapsuleResize', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../hooks/useCapsuleResize')>()),
-  useCapsuleResize: () => ({ width: 360, height: 36 }),
+  useCapsuleResize: () => ({ width: 368, height: 40 }),
 }))
 
 vi.mock('../../../lib/tauri', () => ({
@@ -74,8 +74,8 @@ describe('Copy pill', () => {
     expect(screen.getByText(LONG)).toHaveClass('truncate')
     expect(screen.getByRole('button', { name: 'capsule.copyResult' })).toBeInTheDocument()
     expect(screen.getByTestId('capsule-copy-countdown')).toHaveAttribute('pathLength', '100')
-    expect(shell().style.width).toBe('360px')
-    expect(shell().style.height).toBe('36px')
+    expect(shell().style.width).toBe('368px')
+    expect(shell().style.height).toBe('40px')
     expect(shell()).not.toHaveClass('pill-gone')
     // No aurora light behind the Copy pill.
     expect(screen.queryByTestId('capsule-aurora')).toBeNull()
@@ -85,7 +85,7 @@ describe('Copy pill', () => {
     useAppStore.setState({ copyOffer: offer('我哋聽日四點開會。', 'ja') })
     render(<Capsule />)
 
-    expect(shell().style.width).toBe('300px')
+    expect(shell().style.width).toBe('308px')
     expect(screen.getByText('日')).toHaveClass('pill-lang')
   })
 

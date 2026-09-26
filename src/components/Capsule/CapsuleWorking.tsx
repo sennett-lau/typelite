@@ -29,7 +29,7 @@ export function CapsuleWorking({ label, cancelLabel, icon }: CapsuleWorkingProps
   const stopPointerPropagation = (event: React.PointerEvent) => event.stopPropagation()
 
   return (
-    <div className="relative z-10 flex h-full items-center gap-2 px-3">
+    <div className="relative z-10 flex h-full items-center gap-2 pl-3.5 pr-3">
       {icon}
       <p className="min-w-0 flex-1 truncate text-center text-[11px] font-medium leading-4 text-white">
         {label}
