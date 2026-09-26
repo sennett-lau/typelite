@@ -8,6 +8,10 @@ ships with sensible built-in instructions, so nothing needs to be set up.
 
 Status: building — 2026-09-26
 
+Superseded in part by [language-prompt-library](../2026-09-26-language-prompt-library/index.md):
+the per-language AI model is removed (translation uses the AI polish preset again), the
+instructions also apply to polish, and Settings shows language rows instead of chips.
+
 Changes one decision in [translate-controls](../2026-09-25-translate-controls/index.md): the
 Hong Kong variant (`zh-Hant-HK`) now translates into written Cantonese as Hongkongers type it,
 not into formal written Chinese. Users who want formal written Chinese edit its instructions.

@@ -18,6 +18,7 @@ summary: Clear, natural English that keeps the speaker's tone, with spelling per
 authors: [sennett-lau]
 license: CC0-1.0
 model_hint: Works with small 4B instruct models.
+detect_codes: [en]
 ---
 
 ## Instructions
@@ -47,7 +48,7 @@ Node generator and the app parse this subset only, so there is no YAML library t
 |---|---|---|
 | `id` | yes | Slug `^[a-z0-9]+(-[a-z0-9]+)*$`, 3–48 characters, equal to the folder name. |
 | `name` | yes | Display name, at most 60 characters. English, optionally with the native name: `Cantonese (Hong Kong) 廣東話`. |
-| `version` | yes | Positive integer. Every change to the body or `languages` raises it by one. |
+| `version` | yes | Positive integer. Every change to the body, `languages` or the recognition fields raises it by one. |
 | `format` | yes | Format version of this file, `1` today. The app skips presets with a format it does not know. |
 | `tier` | yes | `official` (maintained by the project) or `community`. Only maintainers set `official`. |
 | `languages` | yes | Non-empty list of BCP 47 tags `language[-Script][-REGION]`: language 2–3 lower-case letters listed in `language-codes.json`, script 4 letters title case, region 2 upper-case letters or 3 digits. No tag may be a prefix of another in the same list (`[en, en-GB]` is redundant). Matching is in [language-matching.md](language-matching.md). |
@@ -57,8 +58,29 @@ Node generator and the app parse this subset only, so there is no YAML library t
 | `license` | yes | Must be `CC0-1.0`. |
 | `model_hint` | no | At most 140 characters, shown next to the preset: "4B models slip into written Chinese; 7B or larger follows it better." A hint, never enforced. |
 | `deprecated` | no | A short reason. The app no longer lists the preset but keeps it working for users who have it. |
+| `detect_codes` | no | Speech-recognition language codes that mean "this language" for the polish router: 2–3 lower-case letters as Whisper reports them (`en`, `zh`, `yue`), at most 8, no duplicates. Missing or empty: speech detection never picks this preset's language; only hints can. |
+| `hints` | no | Characters or words that mark a transcript as this language (Cantonese `嘅 咗 喺`), at most 60, each 1–24 characters, no duplicates, no `,` `[` `]` `"`. |
+| `require_hint` | no | `true` or `false` (default). `true`: a detected code alone is not enough; a hint must match. Needs `hints`. For languages whose speech code is shared with another written form (Whisper reports `zh` for Mandarin and for Cantonese). |
 
 Unknown keys are an error, so a typo (`language:`) does not silently drop a field.
+
+### Recognition fields
+
+`detect_codes`, `hints` and `require_hint` (added while building, see [index](index.md)) tell the
+polish router in [language-matching.md](language-matching.md) when a transcript is in the
+preset's language. They are data, so the app has no rules for any particular language. The
+seed presets use:
+
+| Preset | `detect_codes` | `hints` | `require_hint` |
+|---|---|---|---|
+| `cantonese-hong-kong` | `[yue, zh]` | Cantonese-only characters and words: 嘅 咗 喺 啲 冇 唔 佢 嚟 哋 嘢 咁 係咪 聽日 琴日 點解 邊度 而家 得閒 … | `true`: Whisper says `zh` for Mandarin too, so plain Mandarin must not get Cantonese rules. |
+| `english` | `[en]` | none | `false` |
+| `mandarin-taiwan` | `[zh]` | Taiwan-only wording: 軟體 網路 筆電 計程車 公車 簡訊 程式 捷運 超商 腳踏車 | `true`: a `zh` transcript may be mainland Mandarin or Cantonese; without a Taiwan word or a user hint the notes are not added. |
+
+`require_hint: true` for Taiwan Mandarin is a judgement call: Taiwan-specific words are rarer in
+short dictations than Cantonese particles, so the preset is used less often, but it is never
+applied to Simplified or Cantonese speech. Users who dictate only Taiwan Mandarin add their own
+hints, or a contributor can change it.
 
 ## Body
 

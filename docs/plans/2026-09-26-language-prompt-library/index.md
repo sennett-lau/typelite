@@ -1,22 +1,32 @@
 # Language prompt library
 
 A library of language instructions ("language presets") kept as Markdown files in the Typelite
-repository. When a user adds a language, Typelite offers the presets that fit it, downloads the
-one they pick straight from GitHub, checks its SHA-256, and fills that language's instructions
-with it. The user can still edit the text. The project ships a few official presets (Cantonese
-as Hong Kong people type it, a shared English one, Taiwan Mandarin); anyone can add more by pull
-request. One preset can serve many language codes: every English variant (en-US, en-GB, en-AU…)
-finds the same `english` preset, and that preset carries short notes for each region, so no file
-is copied per region.
+repository. Each language the user chose in **Settings → AI → Translation** can use a preset
+from the library, the built-in default, or the user's own text. Typelite lists the presets that
+fit the language, downloads the one the user picks straight from GitHub, checks its SHA-256, and
+fills that language's instructions with it. The same instructions are used when translating into
+the language and when polishing speech in it: a small router picks, per dictation, which of the
+user's languages the transcript is in (hint words first, then the language speech recognition
+reported), and adds only that language's notes to the polish prompt. The project ships a few
+official presets (Cantonese as Hong Kong people type it, a shared English one, Taiwan Mandarin);
+anyone can add more by pull request. One preset can serve many language codes: every English
+variant (en-US, en-GB, en-AU…) finds the same `english` preset, which carries short notes for
+each region.
 
-Status: draft — 2026-09-26
+Status: building — 2026-09-26
 
 Builds on [translation-language-presets](../2026-09-26-translation-language-presets/index.md)
-(per-language instructions with built-in defaults). It changes one of that plan's non-goals: a
-language's instructions can now also apply to polish, not only to translation (see
-[app-behaviour.md](app-behaviour.md)). It does not change [preset-sharing](../2026-09-25-preset-sharing/index.md):
-that plan shares speech and AI server presets as a local file; this one shares prompt text
-through the repository.
+(per-language instructions with built-in defaults) and changes two of its decisions:
+
+- A language's instructions now also apply to polish, not only to translation (see
+  [app-behaviour.md](app-behaviour.md) and [language-matching.md](language-matching.md)).
+- **The per-language AI model is removed.** Translation uses the AI polish preset again; stored
+  `ai_preset_id` values are dropped when the config is loaded (logged once). Languages route
+  prompts only, not AI servers.
+
+It does not change [preset-sharing](../2026-09-25-preset-sharing/index.md): that plan shares
+speech and AI server presets as a local file; this one shares prompt text through the
+repository. The agreed screens are in [mock.html](mock.html).
 
 ## Goals
 
@@ -26,20 +36,20 @@ through the repository.
   regional variants of a language and short per-region notes inside it.
 - One small generated `index.json`, so the app fetches one file to list what exists, then
   downloads a single preset and verifies it by size and SHA-256.
-- The user always sees the full text before it is used, can edit it, and decides when an
-  upstream update replaces it.
+- The user sees the full text before choosing a preset, can edit it, and decides per language
+  whether new versions apply by themselves.
+- Polish uses a language's notes only when the transcript is in that language, decided by data
+  in the preset (speech codes and hint words), not by language-specific code in the app.
 - A validation script and a test that reject bad presets before they reach users.
 
 ## Non-goals
 
-- Running code from a preset. Presets are prompt text, nothing else.
+- Running code from a preset. Presets are prompt text and word lists, nothing else.
 - A server, account, rating, download counter or any other telemetry.
-- Implementing the app side now. This plan designs it; the repository part (layout, seed
-  presets, index generator, validation test) is built.
-- Choosing which language a dictation is in (the language router question stays parked). Polish
-  uses the simple rule in [app-behaviour.md](app-behaviour.md).
+- Routing AI requests to different AI servers per language (removed, see above).
 - Adding regional variants (en-GB, pt-BR…) to the app's language list. The matching works with
   today's codes and is ready for variants; the list itself is a separate decision.
+- Changing the onboarding translate step; it keeps its own language slots.
 
 ## Key decisions
 
@@ -47,47 +57,64 @@ through the repository.
 |---|---|
 | One folder per preset under `presets/languages/<id>/`, keyed by a unique slug, not by language | A preset can cover many languages, and one language can have many presets; a slug folder has one owner and no duplicates. |
 | One file per preset, `preset.md`: YAML front matter plus fixed sections (`## Instructions`, optional `## Variant: <tag>` notes, optional `## Examples`) | One download, one hash, and the whole prompt is reviewable in one place. |
-| `languages` is a list of BCP 47 tags; a shorter tag matches every longer tag that starts with it (`en` matches `en-GB`, `zh-Hant` matches `zh-Hant-HK`) | The shared English case needs no list of every region; a regional preset still matches only its region. |
+| `languages` is a list of BCP 47 tags; a shorter tag matches every longer tag that starts with it | The shared English case needs no list of every region; a regional preset still matches only its region. |
 | Regional differences go in `## Variant: <tag>` sections of the shared preset, and only the matching one is inserted | No copied files per region; en-GB and en-US download the same file with the same hash. |
-| The app shows most specific match first, then official before community, then by name | The preset written for exactly this variant is the best guess; official ones are maintained. |
+| The list shows the built-in default first, then presets: most specific match first, official before community, then by name | The built-in text is always there and offline; the preset written for exactly this variant is the best guess. |
 | `version` is a positive integer | Prompt text has no API to break; "bigger number is newer" is all the app needs. |
-| `applies_to` is a list: `polish`, `translate` | Extensible (for example Ask later) without "both/all" values. |
+| Recognition data lives in the preset: `detect_codes`, `hints`, `require_hint` | The app has no language-specific rules; a contributor who knows the language decides how to recognise it. |
 | Contributions are licensed CC0-1.0 | The text is copied into users' settings, edited, and may become a built-in default in MIT code; CC0 needs no notice to follow it around. |
 | `presets/languages/index.json` is generated by `scripts/language-presets.mjs` and checked in; a Rust test fails when it is stale or a preset is invalid | The app reads one small file; a forgotten regeneration cannot reach users. |
-| The generator is plain Node with no packages; the test is a second, independent parser in Rust | Contributors need only Node, which the repository already needs; the Rust parser is the one the app will use, so the test also checks the two agree. |
-| The app fetches from `raw.githubusercontent.com/.../main/presets/languages/`, verifies size and SHA-256 from the index, and refetches the index once on a mismatch | New presets reach users when merged, not at the next app release; the hash keeps the file and the index consistent. |
-| Fetching is a plain GET with no identifiers, only when the user browses, plus at most one update check a day while a downloaded preset is in use; it can be turned off | No telemetry, and a user who wants no network contact can have none. |
-| Downloaded text never changes by itself; an update is offered, and the user takes it, keeps theirs, or views the difference first | Prompt text changes the output; the user sees every text before it is used. |
-| The fixed output rules (output only the text, target language lock, Chinese script) stay in code around the preset | A preset, like a user edit, cannot break the output. |
-| Polish applies a language preset only for the language the transcript is in, matched against the user's chosen languages | Keeps the prompt small for 4B models and keeps Cantonese rules out of English dictation. |
+| The generator is plain Node with no packages; the app has a second, independent parser in Rust | Contributors need only Node; the app validates downloads with the same rules as CI. |
+| The app fetches from `raw.githubusercontent.com/.../main/presets/languages/`, verifies size and SHA-256 from the index | New presets reach users when merged, not at the next app release; the hash keeps the file and the index consistent. |
+| Fetching is a plain GET with no identifiers: when the user browses, and at most once a day while a language with auto-update on uses a preset | No telemetry; a user who never turns auto-update on and never browses makes no network contact. |
+| Auto-update is per language and off by default; it never replaces text the user edited | The user decides which languages may change by themselves; edits are never lost. |
+| One on/off switch per language covers both translation and polish | One idea to learn; off means plain translation and no notes in polish. |
+| Polish adds the notes of at most one language, chosen by the router (hints, then the detected speech language) | Keeps the prompt small for 4B models and keeps Cantonese rules out of English dictation. |
+| The fixed output rules (output only the text, target language lock, Chinese script, "clean, do not translate" for polish) stay in code around the language text | A preset, like a user edit, cannot break the output. |
+| Settings shows one row per language, with the order being the Switch-language order | The mock showed chips with a pencil could not hold the source line, the switch and the update tag. |
+
+## Changes from the draft
+
+The draft (same folder, before building) was revised with the user; these changed:
+
+- **No compare view.** An edited language with a newer preset offers **Keep mine** or **Use vN
+  instead** (which previews the new text first). Comparing line by line was more UI than the
+  choice needs.
+- **Auto-update per language**, off by default, instead of "never automatic" plus a global
+  "Check for preset updates" switch in General. The daily check runs only while at least one
+  language with auto-update on uses a preset.
+- **A single on/off per language** instead of a `use_for: [polish, translate]` list.
+- **No per-language AI model** (see above).
+- **Recognition hints**: new front matter fields, the user's own hints, and a router that
+  replaces the draft's "exactly one detected-language match" rule, so Cantonese and Mandarin
+  (both reported as `zh`) can be told apart.
+- **Rows instead of chips** in Settings, with drag to reorder and a full-width Add row.
+- The "About language presets" link replaces inline help in the Translation section.
 
 ## Parts
 
 | File | Covers |
 |---|---|
 | [repository-layout.md](repository-layout.md) | Folder tree, file names, the generated index, where the tooling lives. |
-| [preset-format.md](preset-format.md) | Front matter schema, body sections, rendering, limits, licence. |
-| [language-matching.md](language-matching.md) | How a selected language code finds presets; the shared English worked example; ordering. |
+| [preset-format.md](preset-format.md) | Front matter schema (including recognition fields), body sections, rendering, limits, licence. |
+| [language-matching.md](language-matching.md) | How a selected language code finds presets and ordering; the polish router. |
 | [fetch-and-verify.md](fetch-and-verify.md) | Where the app downloads from, index format, hash check, caching, offline, privacy. |
-| [app-behaviour.md](app-behaviour.md) | Browsing, download, edit, updates, defaults vs presets vs own text, polish and translation. |
+| [app-behaviour.md](app-behaviour.md) | Settings rows, the language sheet, browse and preview, updates, config, polish and translation. |
 | [safety.md](safety.md) | Why a preset cannot do harm, and the limits that keep it so. |
 | [contributing.md](contributing.md) | How people add or change presets, naming, review checklist, validation. |
+| [mock.html](mock.html) | The agreed screens: Settings rows, the language sheet, browse and preview. |
 
 ## Open questions
 
 - Should official presets become the built-in defaults (embedded at build time with
   `include_str!`), so there is one source for the Cantonese text? Today the built-in default in
-  `llm/prompt.rs` and the `cantonese-hong-kong` preset are separate texts.
-- Polish rule when the detected language is ambiguous: whisper reports `zh` for both Mandarin
-  and Cantonese. If the user chose both `zh-Hans` and `zh-Hant-HK`, which preset applies? Draft
-  answer: none, and the log says so. Also needs the detected language to be passed from the
-  speech step, which it is not today.
+  `llm/prompt.rs` and the `cantonese-hong-kong` preset are separate texts, and a language on its
+  built-in text takes part in polish routing only through the user's own hints.
 - Should the library address be overridable (a fork or a mirror on the user's own server)? A
   hidden config value costs little and fits "self-hosted".
 - A GitHub Actions check for pull requests that touch `presets/` (runs the generator's
   `--check`). The repository has no CI yet.
-- Where per-language settings live once they also serve polish: keep the stored key
-  `translation.languages` for compatibility, or move it to a top-level `languages` map with a
-  one-time migration.
+- Where per-language settings live now that they also serve polish: the stored key stays
+  `translation.languages` for compatibility.
 - Whether the app's language list gains regional variants (en-GB, en-AU, pt-BR, es-MX) and a
   free "add any language" field, and in which plan.

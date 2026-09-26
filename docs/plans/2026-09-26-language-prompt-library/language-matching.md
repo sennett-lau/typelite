@@ -1,7 +1,8 @@
 # Language matching
 
 How the app finds the presets for a language code the user selected, in which order it shows
-them, and how the shared English preset serves every English variant. Back to [index](index.md).
+them, how the shared English preset serves every English variant, and how polish decides which
+of the user's languages a transcript is in (the router). Back to [index](index.md).
 
 ## Step 1: normalise the selected code
 
@@ -83,6 +84,53 @@ is already downloaded (same id, version and hash), so nothing is fetched. It is 
 rendered with no note because there is no `en-NZ` variant section, until someone adds one: a
 pull request of a few lines in the same file, not a new preset.
 
+## The polish router
+
+Translation knows its target, so it needs no routing. Polish does: the router picks at most one
+of the user's languages for each dictation, and only that language's notes go into the polish
+prompt (see [app-behaviour.md](app-behaviour.md)). It runs only for Dictate with no selected
+text and no translation.
+
+**Candidates:** the user's chosen languages that are **on**, in list order. Each has:
+
+- its speech codes: the `detect_codes` of the preset it uses (none without a preset: the
+  built-in texts are written for translation);
+- its hints: the preset's `hints` plus the user's own `user_hints`;
+- `require_hint` from the preset.
+
+A preset whose `applies_to` does not include `polish` is not a candidate, unless the user
+edited its text.
+
+**Steps:**
+
+1. **Hints.** For every candidate, count its distinct hints found in the transcript: a hint of
+   letters (Latin, Cyrillic…) must match a whole word, case-insensitively; any other hint (Chinese
+   characters) matches anywhere. The candidate with the most hints wins; a tie goes to the first
+   in list order. At least one hint must be found.
+2. **Detected language.** Else, if speech recognition reported a language code, the first
+   candidate in list order whose speech codes include it **and** that does not require a hint.
+3. **None.** Else no language notes: plain polish, exactly as before this plan.
+
+**The detected language** comes from the speech step: built-in whisper.cpp reports the language
+it decoded; an OpenAI-compatible server returns `language` with `response_format=verbose_json`
+(Typelite asks for it when the speech preset auto-detects, and falls back to plain JSON, for the
+rest of the session, if the server refuses it). Whisper may report full names (`english`), which
+are turned into codes (`en`). A speech preset with a fixed language (not `auto`) counts as that
+language. Other providers report nothing, and step 2 is skipped.
+
+**Worked examples** (the user's languages: Chinese (Traditional, Hong Kong) with the
+`cantonese-hong-kong` preset, then English with the `english` preset):
+
+| Transcript | Detected | Result | Why |
+|---|---|---|---|
+| 我今日好忙，唔得閒食飯 | `zh` | Hong Kong | hints 唔, 得閒 |
+| 我今天很忙，没空吃饭 | `zh` | none | no hint, and Hong Kong requires one |
+| Can you check the deadline for the proposal? | `en` | English | detected `en` |
+| 我聽日要present個proposal | `zh` | Hong Kong | hint 聽日 |
+| ¿Podemos vernos mañana por la tarde? | `es` | none | `es` is not one of the user's languages |
+
+The log records the decision with codes, names and counts only, never the transcript.
+
 ## Considered
 
 - **Full RFC 4647 lookup with every CLDR alias**: the preset set is small; a prefix match plus
@@ -91,3 +139,9 @@ pull request of a few lines in the same file, not a new preset.
   US-only presets, which is wrong for a user who never said US.
 - **Matching in both directions** (plain `en` also matches `en-AU` presets directly): mixes
   regional presets into the general case; they stay reachable under "related".
+- **Routing by detected language only** (the draft): Whisper reports `zh` for Mandarin and for
+  Cantonese, so a user with both could never get the right notes; hints fix that with data.
+- **Script detection in the app** (Traditional vs Simplified): language-specific code, and both
+  Cantonese and Taiwan Mandarin are Traditional.
+- **Letting the AI pick the language**: one more request per dictation, and slower than a
+  substring count.
