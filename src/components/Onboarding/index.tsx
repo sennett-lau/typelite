@@ -14,26 +14,42 @@ import { WelcomeStep } from './WelcomeStep'
 import { MicrophoneStep } from './MicrophoneStep'
 import { SttSetupStep } from './SttSetupStep'
 import { LlmSetupStep } from './LlmSetupStep'
-import { ShortcutStep } from './ShortcutStep'
-import { applyShortcutGate, shortcutGateForRole } from './shortcutConfig'
-import type { ShortcutRole } from './shortcutConfig'
+import { ShortcutSetupPage } from './ShortcutSetupPage'
+import { ExercisePage } from './ExercisePage'
+import {
+  SHORTCUT_PAGES,
+  applyShortcutGate,
+  setupComplete,
+  shortcutGateForRole,
+} from './shortcutConfig'
+import type { ShortcutPage, ShortcutRole } from './shortcutConfig'
+import { skippedStatus } from './exerciseFlow'
+import type { ExerciseStatus } from './exerciseFlow'
+import type { ExerciseId } from './exercises'
 import { usePermissions } from './usePermissions'
 import { slideRight } from '../../lib/animations'
 
-/** Welcome + permissions, microphone, speech, AI, then the three shortcut tutorials. */
-export const TOTAL_STEPS = 7
+/**
+ * Welcome + permissions, microphone, speech, AI, then the shortcut pages (plan
+ * `tutorial-one-page`): per shortcut a setup page and one page per exercise.
+ */
+export const TOTAL_STEPS = SHORTCUT_TOUR_FIRST_STEP + SHORTCUT_PAGES.length
 
-/** Step index of the AI step, the last step before the shortcut tutorials. */
+/** Step index of the AI step, the last step before the shortcut pages. */
 const AI_STEP = 3
 
-/** Step index of each shortcut tutorial. */
-const SHORTCUT_STEPS: Record<number, ShortcutRole> = {
-  [SHORTCUT_TOUR_FIRST_STEP]: 'dictation',
-  [SHORTCUT_TOUR_FIRST_STEP + 1]: 'translate',
-  [SHORTCUT_TOUR_FIRST_STEP + 2]: 'ask',
+/** The shortcut page shown at `step`, if it is one. */
+function shortcutPageAt(step: number): ShortcutPage | undefined {
+  return step >= SHORTCUT_TOUR_FIRST_STEP
+    ? SHORTCUT_PAGES[step - SHORTCUT_TOUR_FIRST_STEP]
+    : undefined
 }
 
-type PracticeDone = Record<ShortcutRole, boolean>
+const ROLE_TITLE: Record<ShortcutRole, { title: string; subtitle: string }> = {
+  dictation: { title: 'onboarding.steps.dictate', subtitle: 'onboarding.steps.dictateSub' },
+  translate: { title: 'onboarding.steps.translate', subtitle: 'onboarding.steps.translateSub' },
+  ask: { title: 'onboarding.steps.ask', subtitle: 'onboarding.steps.askSub' },
+}
 
 export function Onboarding() {
   const { t } = useTranslation()
@@ -46,12 +62,12 @@ export function Onboarding() {
   const speechReady = useAppStore((s) => isSpeechReady(s.config))
   const aiReady = useAppStore((s) => isAiReady(s.config))
   const permissions = usePermissions(step === 0)
-  // Kept here (not in the step) so Back and Next keep a finished tutorial finished.
-  const [practiceDone, setPracticeDone] = useState<PracticeDone>({
-    dictation: false,
-    translate: false,
-    ask: false,
-  })
+  const page = shortcutPageAt(step)
+  const setupDone = useAppStore((s) =>
+    page?.kind === 'setup' ? setupComplete(s.config, page.role) : false,
+  )
+  // Kept here (not in the page) so Back and Next keep a passed exercise passed.
+  const [statuses, setStatuses] = useState<Partial<Record<ExerciseId, ExerciseStatus>>>({})
   const [finishError, setFinishError] = useState<string | null>(null)
 
   // Start from the saved config, so values saved earlier (or on a previous launch) show up
@@ -68,19 +84,21 @@ export function Onboarding() {
     }
   }, [setConfig])
 
-  const shortcutRole = SHORTCUT_STEPS[step]
-
-  // Plan `onboarding-shortcut-gate`: until onboarding is finished only the shortcut this page
-  // teaches may run; other pages allow none. The backend starts closed, so this only opens it.
+  // Plan `onboarding-shortcut-gate`: until onboarding is finished only the shortcut an exercise
+  // page teaches may run; setup pages and the other steps allow none. The backend starts closed,
+  // so this only opens it.
+  const gateRole = page?.kind === 'exercise' ? page.role : undefined
   useEffect(() => {
-    void applyShortcutGate(shortcutGateForRole(shortcutRole))
-  }, [shortcutRole])
+    void applyShortcutGate(shortcutGateForRole(gateRole))
+  }, [gateRole])
+
   const isLast = step === TOTAL_STEPS - 1
+  const exerciseDone = page?.kind === 'exercise' && statuses[page.exercise.id] === 'done'
   // The tour starts at the Dictate step; the earlier steps are already done.
   const firstStep = tour ? SHORTCUT_TOUR_FIRST_STEP : 0
 
   const canNext = (() => {
-    if (shortcutRole) return practiceDone[shortcutRole]
+    if (page) return page.kind === 'setup' ? setupDone : exerciseDone
     switch (step) {
       case 0:
         return permissions.allGranted
@@ -103,9 +121,21 @@ export function Onboarding() {
       subtitle: t('onboarding.steps.speechRecognitionSub'),
     },
     { title: t('onboarding.steps.aiPolish'), subtitle: t('onboarding.steps.aiPolishSub') },
-    { title: t('onboarding.steps.dictate'), subtitle: t('onboarding.steps.dictateSub') },
-    { title: t('onboarding.steps.translate'), subtitle: t('onboarding.steps.translateSub') },
-    { title: t('onboarding.steps.ask'), subtitle: t('onboarding.steps.askSub') },
+    ...SHORTCUT_PAGES.map((shortcutPage) =>
+      shortcutPage.kind === 'setup'
+        ? {
+            title: t(ROLE_TITLE[shortcutPage.role].title),
+            subtitle: t(ROLE_TITLE[shortcutPage.role].subtitle),
+          }
+        : {
+            title: t(`onboarding.exercises.${shortcutPage.exercise.id}.title`),
+            subtitle: t('onboarding.exercises.subtitle', {
+              role: t(ROLE_TITLE[shortcutPage.role].title),
+              n: shortcutPage.number,
+              total: shortcutPage.total,
+            }),
+          },
+    ),
   ]
 
   const saveBestEffort = async () => {
@@ -122,7 +152,7 @@ export function Onboarding() {
   }
 
   /**
-   * Ends onboarding and opens Home. `tourDone` is true after the Ask step; the tour flag is
+   * Ends onboarding and opens Home. `tourDone` is true after the last exercise; the tour flag is
    * saved on its own so a skipped tour can be offered again later.
    */
   const finish = async (tourDone: boolean) => {
@@ -180,8 +210,22 @@ export function Onboarding() {
     setOnboardingCompleted(true)
   }
 
-  const markDone = (role: ShortcutRole) =>
-    setPracticeDone((previous) => (previous[role] ? previous : { ...previous, [role]: true }))
+  const markDone = (id: ExerciseId) =>
+    setStatuses((previous) => (previous[id] === 'done' ? previous : { ...previous, [id]: 'done' }))
+
+  // Skip: the exercise counts as skipped (a passed one stays done), and the next page opens.
+  const handleSkip = async () => {
+    if (page?.kind !== 'exercise') return
+    const id = page.exercise.id
+    setStatuses((previous) => ({ ...previous, [id]: skippedStatus(previous[id]) }))
+    await handleNext()
+  }
+
+  const nextLabel = isLast
+    ? t('onboarding.layout.finish')
+    : page?.kind === 'setup'
+      ? t('onboarding.layout.tryIt')
+      : t('onboarding.layout.next')
 
   return (
     <OnboardingLayout
@@ -191,9 +235,10 @@ export function Onboarding() {
       subtitle={titles[step]?.subtitle}
       canNext={canNext}
       canBack={step > firstStep}
-      nextLabel={isLast ? t('onboarding.layout.finish') : t('onboarding.layout.next')}
+      nextLabel={nextLabel}
       onNext={handleNext}
       onBack={handleBack}
+      onSkip={page?.kind === 'exercise' && !exerciseDone ? handleSkip : undefined}
       onClose={tour ? handleCloseTour : undefined}
       wideContent={step === 2}
     >
@@ -210,12 +255,12 @@ export function Onboarding() {
           {step === 1 && <MicrophoneStep />}
           {step === 2 && <SttSetupStep onSkip={() => goTo(AI_STEP)} />}
           {step === AI_STEP && <LlmSetupStep onSkip={leaveAiStep} />}
-          {shortcutRole && (
-            <ShortcutStep
-              key={shortcutRole}
-              role={shortcutRole}
-              done={practiceDone[shortcutRole]}
-              onDone={() => markDone(shortcutRole)}
+          {page?.kind === 'setup' && <ShortcutSetupPage role={page.role} />}
+          {page?.kind === 'exercise' && (
+            <ExercisePage
+              role={page.role}
+              exercise={page.exercise}
+              onPassed={() => markDone(page.exercise.id)}
             />
           )}
           {finishError && (

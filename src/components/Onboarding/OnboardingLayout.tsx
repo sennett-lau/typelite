@@ -12,6 +12,8 @@ interface Props {
   nextLabel?: string
   onNext: () => void
   onBack: () => void
+  /** Plan `tutorial-one-page`: shows Skip next to Next (the exercise pages). */
+  onSkip?: () => void
   /** Replaces the default close action (quit the app), for example to return to Home. */
   onClose?: () => void
   /** A wider step area (the speech step's Built-in card, plan `two-tab-speech`). */
@@ -29,6 +31,7 @@ export function OnboardingLayout({
   nextLabel,
   onNext,
   onBack,
+  onSkip,
   onClose,
   wideContent = false,
   children,
@@ -81,7 +84,7 @@ export function OnboardingLayout({
           </div>
         </div>
 
-        <div className="flex flex-none items-center justify-between px-8 py-4">
+        <div className="flex flex-none items-center px-8 py-4">
           <button
             type="button"
             onClick={onBack}
@@ -90,6 +93,16 @@ export function OnboardingLayout({
           >
             {t('onboarding.layout.back')}
           </button>
+          <span className="flex-1" />
+          {onSkip && (
+            <button
+              type="button"
+              onClick={onSkip}
+              className="btn-secondary mr-2 px-4 py-1.5 text-[13px]"
+            >
+              {t('onboarding.layout.skip')}
+            </button>
+          )}
           <button
             type="button"
             onClick={onNext}
