@@ -427,15 +427,25 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
     expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
   })
 
-  it('allows only the shortcut each tutorial step teaches', async () => {
-    useAppStore.setState({ onboardingStep: 4 })
+  it('allows only the shortcut each exercise page teaches; setup pages allow none', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.correction })
     render(<Onboarding />)
     await waitFor(() => expect(lastGate()).toEqual(['dictation']))
 
-    goToStep(5)
+    goToStep(PAGE.fillers)
+    expect(lastGate()).toEqual(['dictation'])
+
+    // Plan `tutorial-one-page`: a shortcut's setup page records keys; nothing runs there.
+    goToStep(PAGE.translateSetup)
+    expect(lastGate()).toEqual([])
+
+    goToStep(PAGE.speakTranslate)
     expect(lastGate()).toEqual(['translate', 'switchLanguage'])
 
-    goToStep(6)
+    goToStep(PAGE.askSetup)
+    expect(lastGate()).toEqual([])
+
+    goToStep(PAGE.edit)
     expect(lastGate()).toEqual(['ask'])
 
     // Back to a setup step closes the gate again.
@@ -443,10 +453,10 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
     expect(lastGate()).toEqual([])
   })
 
-  it('opens every shortcut when onboarding finishes on the Ask step', async () => {
-    useAppStore.setState({ onboardingStep: 6 })
+  it('opens every shortcut when onboarding finishes on the last exercise', async () => {
+    useAppStore.setState({ onboardingStep: PAGE.edit })
     render(<Onboarding />)
-    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
     await waitFor(() => expect(useAppStore.getState().onboardingCompleted).toBe(true))
@@ -469,9 +479,9 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
 
   it('keeps the gate closed when saving on Finish fails', async () => {
     vi.mocked(tauri.updateConfig).mockRejectedValue('disk full')
-    useAppStore.setState({ onboardingStep: 6 })
+    useAppStore.setState({ onboardingStep: PAGE.edit })
     render(<Onboarding />)
-    fireEvent.click(screen.getByRole('button', { name: 'Complete ask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pass edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
 
     expect(await screen.findByText('Could not save: disk full')).toBeInTheDocument()
@@ -482,7 +492,10 @@ describe('Onboarding shortcut gate (plan onboarding-shortcut-gate)', () => {
     // After a finished onboarding everything was allowed; the tour re-enters onboarding.
     useAppStore.getState().startShortcutTour()
     render(<Onboarding />)
-    await waitFor(() => expect(lastGate()).toEqual(['dictation']))
+    // The tour opens on the Dictate setup page (nothing allowed), then its first exercise.
+    await waitFor(() => expect(lastGate()).toEqual([]))
+    goToStep(PAGE.correction)
+    expect(lastGate()).toEqual(['dictation'])
     expect(tauri.setShortcutGate).not.toHaveBeenCalledWith('all')
 
     fireEvent.click(screen.getByRole('button', { name: 'Close tour' }))
