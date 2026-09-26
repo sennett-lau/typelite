@@ -2014,6 +2014,20 @@ impl PipelineHandle {
             );
         }
 
+        // Plan `typing-speed-and-nudge`: a pasted result adds to the speaking speed. Only the
+        // word count and the recording length are kept; the text is not.
+        if !self.abort_flag.load(Ordering::SeqCst)
+            && polish_outcome.error_code.is_none()
+            && !final_text.trim().is_empty()
+        {
+            if let Some(stats) = self
+                .app_handle
+                .try_state::<crate::speed_stats::SpeedStats>()
+            {
+                stats.record_speaking(&final_text, upload_probe.snapshot().recording_secs());
+            }
+        }
+
         // Compute recording duration
         let duration_ms = self
             .recording_start
