@@ -10,13 +10,15 @@
   Free and open source (MIT) · No account · No telemetry · Runs on your computer or your own servers
 </p>
 
-<!--
-  Hero image or GIF. Uncomment when the file exists (see docs/media/README.md).
+<p align="center">
+  <a href="https://sennett-lau.github.io/typelite/">Website</a> ·
+  <a href="https://github.com/sennett-lau/typelite/releases">Download</a> ·
+  <a href="docs/guides/README.md">Guides</a>
+</p>
 
 <p align="center">
-  <img src="docs/media/pill-dictate.gif" width="800" alt="Typelite's pill dictating into a text field">
+  <img src="docs/media/hero.gif" width="800" alt="Typelite's pill listening at the bottom of the screen, then clean text is pasted into a chat: fillers and a self-correction are removed">
 </p>
--->
 
 Typelite is a voice keyboard for macOS. Hold or tap a shortcut and speak. Typelite turns your
 speech into text, removes fillers, applies your self-corrections, adds punctuation and pastes the
@@ -123,6 +125,26 @@ Typelite is inspired by [Typeless](https://www.typeless.com/), a polished commer
 
 Keys are shown as macOS menus show them (⇧ is Shift). Every shortcut can be changed, and
 hold-to-talk is available too.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/translate.gif" alt="Translate: the pill shows the target language and switches it mid-recording"><br><b>Translate</b>: switch language while you speak</td>
+    <td width="50%"><img src="docs/media/ask.gif" alt="Ask anything: an answer about highlighted text appears in a glass panel above the pill"><br><b>Ask anything</b>: answers above the pill</td>
+  </tr>
+  <tr>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/media/home-dark.png"><img src="docs/media/home.png" alt="Home: shortcuts and Insights, speaking against typing speed and a comparison of presets"></picture><br><b>Home</b>: shortcuts and Insights</td>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/media/settings-languages-dark.png"><img src="docs/media/settings-languages.png" alt="Settings, AI: translation languages with their language presets"></picture><br><b>Languages</b>: presets per language</td>
+  </tr>
+  <tr>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/media/onboarding-dark.png"><img src="docs/media/onboarding.png" alt="Guided setup: the Translate shortcut with its key caps and the pill preview"></picture><br><b>Guided setup</b> with a hands-on tutorial</td>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="docs/media/copy-pill-dark.png"><img src="docs/media/copy-pill.png" alt="The Copy pill: the result with a Copy button whose border counts down"></picture><br><b>Copy pill</b>: when there is nowhere to paste</td>
+  </tr>
+</table>
+
+The images are rendered from the app's own components and the website's demos; see
+[docs/media](docs/media/README.md).
 
 ## Documentation
 
