@@ -1,23 +1,36 @@
-//! Plan `language-prompt-library`: checks the language presets in `presets/languages/` at the
-//! repository root, and the generated `index.json` next to them.
+//! Plan `language-prompt-library`: language presets from the repository's `presets/languages/`
+//! folder: parsing and validating `preset.md`, rendering it for one language code, reading the
+//! generated `index.json`, and matching presets to a language code. `store` keeps downloaded
+//! presets on disk and `fetch` downloads them from GitHub.
 //!
-//! Test-only for now. This is a second parser, independent of `scripts/language-presets.mjs`
-//! (the generator contributors run), so the gate fails when a preset is invalid or the index is
-//! stale, and the two parsers must agree. When the app gains the download feature, this parser
-//! and the matching rules below move into app code.
+//! This parser is independent of `scripts/language-presets.mjs` (the generator contributors
+//! run); the tests below run it over every preset in the repository and check that `index.json`
+//! is up to date, so the two must agree. The app uses the same rules to accept a download.
 //!
 //! A preset is `presets/languages/<id>/preset.md`: front matter in a strict YAML subset (one
-//! `key: value` per line; text, integers or `[a, b]` lists), then the sections
+//! `key: value` per line; text, integers, `true`/`false` or `[a, b]` lists), then the sections
 //! `## Instructions`, optional `## Variant: <tag>` notes and optional `## Examples`.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Path, PathBuf};
+pub mod fetch;
+pub mod store;
 
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::OnceLock;
+
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+
+/// Where the app downloads the library from: `{LIBRARY_BASE_URL}/index.json` and
+/// `{LIBRARY_BASE_URL}/<id>/preset.md`. The main branch, so merged presets reach users without
+/// an app release; integrity comes from the sizes and hashes in the index.
+pub const LIBRARY_BASE_URL: &str =
+    "https://raw.githubusercontent.com/sennett-lau/typelite/main/presets/languages";
+/// The language subtags the validator accepts, and the macrolanguage map, built into the app.
+const LANGUAGE_CODES_JSON: &str = include_str!("../../../../presets/languages/language-codes.json");
 
 const PRESET_FORMAT: i64 = 1;
 const INDEX_FORMAT: i64 = 1;
-const MAX_FILE_BYTES: usize = 8 * 1024;
+pub const MAX_FILE_BYTES: usize = 8 * 1024;
 /// Same limit as a language's own instructions in Settings.
 const MAX_RENDERED_CHARS: usize = crate::storage::TRANSLATION_INSTRUCTIONS_MAX_CHARS;
 const MAX_VARIANT_CHARS: usize = 400;
@@ -50,10 +63,12 @@ const TIERS: &[&str] = &["official", "community"];
 const OPERATIONS: &[&str] = &["polish", "translate"];
 const LICENSE: &str = "CC0-1.0";
 /// A preset folder holds the preset and, optionally, notes for reviewers. Nothing else.
+#[cfg(test)]
 const ALLOWED_FILES: &[&str] = &["preset.md", "NOTES.md"];
 
-fn library_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../presets/languages")
+#[cfg(test)]
+fn library_dir() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../presets/languages")
 }
 
 // ─── Parsing ───
@@ -108,29 +123,38 @@ fn parse_value(raw: &str) -> Result<Value, String> {
 
 /// A preset that passed validation.
 #[derive(Debug, Clone)]
-struct Preset {
-    id: String,
-    name: String,
-    version: i64,
-    tier: String,
-    languages: Vec<String>,
-    applies_to: Vec<String>,
-    summary: String,
-    authors: Vec<String>,
-    model_hint: Option<String>,
-    deprecated: Option<String>,
+pub struct Preset {
+    pub id: String,
+    pub name: String,
+    pub version: i64,
+    pub tier: String,
+    pub languages: Vec<String>,
+    pub applies_to: Vec<String>,
+    pub summary: String,
+    pub authors: Vec<String>,
+    pub model_hint: Option<String>,
+    pub deprecated: Option<String>,
     /// Speech-recognition codes that mean this language for the polish router (`yue`, `zh`).
-    detect_codes: Vec<String>,
+    pub detect_codes: Vec<String>,
     /// Characters or words only this language uses.
-    hints: Vec<String>,
+    pub hints: Vec<String>,
     /// A detected code alone is not enough; a hint must match.
-    require_hint: bool,
-    instructions: String,
+    pub require_hint: bool,
+    pub instructions: String,
     /// Variant tag → note.
-    variants: BTreeMap<String, String>,
-    examples: Option<String>,
-    bytes: usize,
-    sha256: String,
+    pub variants: BTreeMap<String, String>,
+    pub examples: Option<String>,
+    pub bytes: usize,
+    pub sha256: String,
+}
+
+impl Preset {
+    /// True when the preset's text is meant for polish (`applies_to` includes `polish`).
+    pub fn applies_to_polish(&self) -> bool {
+        self.applies_to
+            .iter()
+            .any(|operation| operation == "polish")
+    }
 }
 
 /// Front matter fields and `(heading, text)` sections, or the first format error.
@@ -334,6 +358,12 @@ fn recognition_fields(
     (detect_codes, hints, require_hint)
 }
 
+/// Parses and validates a downloaded or stored `preset.md` that should have the id `id`, with
+/// the language codes built into the app.
+pub fn parse_preset(id: &str, bytes: &[u8]) -> Result<Preset, Vec<String>> {
+    validate_preset(id, bytes, &language_codes().languages)
+}
+
 /// Parses and validates one `preset.md`; `folder` is its folder name.
 fn validate_preset(
     folder: &str,
@@ -359,15 +389,7 @@ fn validate_preset(
     }
 
     let id = match fields.get("id") {
-        Some(Value::Text(id))
-            if (3..=48).contains(&id.len())
-                && !id.starts_with('-')
-                && !id.ends_with('-')
-                && !id.contains("--")
-                && id
-                    .chars()
-                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') =>
-        {
+        Some(Value::Text(id)) if is_slug(id) => {
             if id != folder {
                 errors.push(format!("id \"{id}\" differs from its folder \"{folder}\""));
             }
@@ -521,6 +543,25 @@ fn validate_preset(
     }
 }
 
+/// The text the model gets for one of the app's language codes (`en`, `zh-Hant-HK`): the
+/// Instructions, the note of the most specific matching variant, then the Examples.
+pub fn render_for_code(preset: &Preset, code: &str) -> String {
+    render(preset, best_variant(preset, &normalize_code(code)))
+}
+
+/// The variant tag used for one of the app's language codes, if any.
+pub fn variant_for_code<'a>(
+    variants: impl IntoIterator<Item = &'a String>,
+    code: &str,
+) -> Option<&'a str> {
+    let code = normalize_code(code);
+    variants
+        .into_iter()
+        .filter(|tag| tag_matches(tag, &code))
+        .max_by_key(|tag| tag.len())
+        .map(String::as_str)
+}
+
 /// The text the model gets: Instructions, the variant's note (if any), then Examples.
 fn render(preset: &Preset, variant: Option<&str>) -> String {
     let mut parts = vec![preset.instructions.clone()];
@@ -536,20 +577,122 @@ fn render(preset: &Preset, variant: Option<&str>) -> String {
     parts.join("\n\n")
 }
 
-/// The note to use for a selected code: the longest variant tag that matches it.
+/// The note to use for a selected (normalised) code: the longest variant tag that matches it.
 fn best_variant<'a>(preset: &'a Preset, code: &str) -> Option<&'a str> {
-    preset
-        .variants
-        .keys()
-        .filter(|tag| tag_matches(tag, code))
-        .max_by_key(|tag| tag.len())
-        .map(String::as_str)
+    variant_for_code(preset.variants.keys(), code)
+}
+
+// ─── index.json ───
+
+/// One entry of `index.json`. Unknown fields are ignored, so the index can grow.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct IndexEntry {
+    pub id: String,
+    pub name: String,
+    pub version: i64,
+    pub format: i64,
+    pub tier: String,
+    pub languages: Vec<String>,
+    #[serde(default)]
+    pub variants: Vec<String>,
+    #[serde(default)]
+    pub applies_to: Vec<String>,
+    pub summary: String,
+    #[serde(default)]
+    pub authors: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model_hint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated: Option<String>,
+    pub path: String,
+    pub bytes: usize,
+    pub sha256: String,
+}
+
+impl IndexEntry {
+    /// The entry the generator writes for a valid preset.
+    pub fn from_preset(preset: &Preset) -> Self {
+        Self {
+            id: preset.id.clone(),
+            name: preset.name.clone(),
+            version: preset.version,
+            format: PRESET_FORMAT,
+            tier: preset.tier.clone(),
+            languages: preset.languages.clone(),
+            variants: preset.variants.keys().cloned().collect(),
+            applies_to: preset.applies_to.clone(),
+            summary: preset.summary.clone(),
+            authors: preset.authors.clone(),
+            model_hint: preset.model_hint.clone(),
+            deprecated: preset.deprecated.clone(),
+            path: format!("{}/preset.md", preset.id),
+            bytes: preset.bytes,
+            sha256: preset.sha256.clone(),
+        }
+    }
+}
+
+/// The parsed `index.json`: the entries the app understands.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Index {
+    pub presets: Vec<IndexEntry>,
+}
+
+impl Index {
+    pub fn entry(&self, id: &str) -> Option<&IndexEntry> {
+        self.presets.iter().find(|entry| entry.id == id)
+    }
+}
+
+/// Parses `index.json`. Entries with an unknown `format`, a malformed id or hash, or a path
+/// other than `<id>/preset.md` are skipped, so a newer index still works and nothing in it can
+/// point the app anywhere else.
+pub fn parse_index(bytes: &[u8]) -> Result<Index, String> {
+    let json: serde_json::Value = serde_json::from_slice(bytes)
+        .map_err(|error| format!("index.json is not JSON: {error}"))?;
+    if json["format"].as_i64() != Some(INDEX_FORMAT) {
+        return Err("index.json has an unknown format".into());
+    }
+    let entries = json["presets"]
+        .as_array()
+        .ok_or("index.json has no presets list")?;
+    let presets = entries
+        .iter()
+        .filter_map(|value| serde_json::from_value::<IndexEntry>(value.clone()).ok())
+        .filter(|entry| {
+            entry.format == PRESET_FORMAT
+                && is_slug(&entry.id)
+                && entry.path == format!("{}/preset.md", entry.id)
+                && is_sha256(&entry.sha256)
+                && entry.bytes <= MAX_FILE_BYTES
+        })
+        .collect();
+    Ok(Index { presets })
+}
+
+/// A preset id: lowercase letters, digits and single hyphens, 3 to 48 characters.
+pub fn is_slug(id: &str) -> bool {
+    (3..=48).contains(&id.len())
+        && !id.starts_with('-')
+        && !id.ends_with('-')
+        && !id.contains("--")
+        && id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
+
+/// 64 lower-case hex digits.
+pub fn is_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .chars()
+            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
 }
 
 // ─── Matching (see language-matching.md in the plan) ───
 
 /// Fixes case and adds the script to Chinese and Cantonese codes, where it is ambiguous.
-fn normalize_code(code: &str) -> String {
+pub fn normalize_code(code: &str) -> String {
     let parts: Vec<String> = code
         .trim()
         .replace('_', "-")
@@ -587,15 +730,15 @@ fn normalize_code(code: &str) -> String {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct Match {
-    id: String,
+pub struct Match {
+    pub id: String,
     /// Subtags of the best matching tag.
-    specificity: usize,
+    pub specificity: usize,
     /// False when found only through the macrolanguage (`yue` → `zh`).
-    direct: bool,
+    pub direct: bool,
 }
 
-fn best_specificity(preset: &Preset, code: &str) -> Option<usize> {
+fn best_specificity(preset: &IndexEntry, code: &str) -> Option<usize> {
     preset
         .languages
         .iter()
@@ -604,9 +747,15 @@ fn best_specificity(preset: &Preset, code: &str) -> Option<usize> {
         .max()
 }
 
+/// Presets for a selected code, best first, plus the related ones (same language, no match),
+/// with the macrolanguage map built into the app.
+pub fn find_presets_for(presets: &[IndexEntry], code: &str) -> (Vec<Match>, Vec<String>) {
+    find_presets(presets, code, &language_codes().macrolanguages)
+}
+
 /// Presets for a selected code, best first, plus the related ones (same language, no match).
 fn find_presets(
-    presets: &[Preset],
+    presets: &[IndexEntry],
     code: &str,
     macrolanguages: &BTreeMap<String, String>,
 ) -> (Vec<Match>, Vec<String>) {
@@ -615,9 +764,9 @@ fn find_presets(
     let macro_code = macrolanguages
         .get(&language)
         .map(|parent| format!("{parent}{}", &code[language.len()..]));
-    let listed: Vec<&Preset> = presets.iter().filter(|p| p.deprecated.is_none()).collect();
+    let listed: Vec<&IndexEntry> = presets.iter().filter(|p| p.deprecated.is_none()).collect();
 
-    let mut matches: Vec<(Match, &Preset)> = Vec::new();
+    let mut matches: Vec<(Match, &IndexEntry)> = Vec::new();
     for preset in &listed {
         if let Some(specificity) = best_specificity(preset, &code) {
             matches.push((
@@ -671,43 +820,43 @@ fn find_presets(
     (matches.into_iter().map(|(m, _)| m).collect(), related)
 }
 
-// ─── Loading the library ───
+// ─── Language codes ───
 
 struct LanguageCodes {
     languages: BTreeSet<String>,
     macrolanguages: BTreeMap<String, String>,
 }
 
-fn load_language_codes() -> LanguageCodes {
-    let text = std::fs::read_to_string(library_dir().join("language-codes.json"))
-        .expect("read language-codes.json");
-    let json: serde_json::Value = serde_json::from_str(&text).expect("parse language-codes.json");
+fn parse_language_codes(text: &str) -> LanguageCodes {
+    let json: serde_json::Value = serde_json::from_str(text).unwrap_or_default();
     let languages = json["languages"]
         .as_object()
-        .expect("languages map")
-        .keys()
-        .cloned()
-        .collect();
+        .map(|map| map.keys().cloned().collect())
+        .unwrap_or_default();
     let macrolanguages = json["macrolanguages"]
         .as_object()
-        .expect("macrolanguages map")
-        .iter()
-        .map(|(k, v)| {
-            (
-                k.clone(),
-                v.as_str().expect("macrolanguage code").to_string(),
-            )
+        .map(|map| {
+            map.iter()
+                .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
+                .collect()
         })
-        .collect();
+        .unwrap_or_default();
     LanguageCodes {
         languages,
         macrolanguages,
     }
 }
 
+/// `language-codes.json`, built into the app.
+fn language_codes() -> &'static LanguageCodes {
+    static CODES: OnceLock<LanguageCodes> = OnceLock::new();
+    CODES.get_or_init(|| parse_language_codes(LANGUAGE_CODES_JSON))
+}
+
 /// Every preset folder, validated. Panics with every problem found.
+#[cfg(test)]
 fn load_library(codes: &LanguageCodes) -> Vec<Preset> {
-    let mut folders: Vec<PathBuf> = std::fs::read_dir(library_dir())
+    let mut folders: Vec<std::path::PathBuf> = std::fs::read_dir(library_dir())
         .expect("read presets/languages")
         .map(|entry| entry.expect("dir entry").path())
         .filter(|path| path.is_dir())
@@ -750,31 +899,6 @@ fn load_library(codes: &LanguageCodes) -> Vec<Preset> {
     presets
 }
 
-fn index_entry(preset: &Preset) -> serde_json::Value {
-    let mut entry = serde_json::json!({
-        "id": preset.id,
-        "name": preset.name,
-        "version": preset.version,
-        "format": PRESET_FORMAT,
-        "tier": preset.tier,
-        "languages": preset.languages,
-        "variants": preset.variants.keys().collect::<Vec<_>>(),
-        "applies_to": preset.applies_to,
-        "summary": preset.summary,
-        "authors": preset.authors,
-        "path": format!("{}/preset.md", preset.id),
-        "bytes": preset.bytes,
-        "sha256": preset.sha256,
-    });
-    if let Some(hint) = &preset.model_hint {
-        entry["model_hint"] = hint.clone().into();
-    }
-    if let Some(reason) = &preset.deprecated {
-        entry["deprecated"] = reason.clone().into();
-    }
-    entry
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -784,6 +908,10 @@ mod tests {
             .iter()
             .map(|s| s.to_string())
             .collect()
+    }
+
+    fn entries(presets: &[Preset]) -> Vec<IndexEntry> {
+        presets.iter().map(IndexEntry::from_preset).collect()
     }
 
     fn preset_text(front: &str, body: &str) -> String {
@@ -800,8 +928,8 @@ mod tests {
 
     #[test]
     fn every_preset_in_the_repository_is_valid() {
-        let codes = load_language_codes();
-        let presets = load_library(&codes);
+        let codes = language_codes();
+        let presets = load_library(codes);
         let ids: Vec<&str> = presets.iter().map(|p| p.id.as_str()).collect();
         for seed in ["cantonese-hong-kong", "english", "mandarin-taiwan"] {
             assert!(ids.contains(&seed), "seed preset {seed} is missing");
@@ -810,14 +938,14 @@ mod tests {
 
     #[test]
     fn index_json_is_up_to_date() {
-        let codes = load_language_codes();
-        let presets = load_library(&codes);
+        let codes = language_codes();
+        let presets = load_library(codes);
         let text =
             std::fs::read_to_string(library_dir().join("index.json")).expect("read index.json");
         let index: serde_json::Value = serde_json::from_str(&text).expect("parse index.json");
         let expected = serde_json::json!({
             "format": INDEX_FORMAT,
-            "presets": presets.iter().map(index_entry).collect::<Vec<_>>(),
+            "presets": entries(&presets),
         });
         assert_eq!(
             index, expected,
@@ -918,8 +1046,8 @@ mod tests {
 
     #[test]
     fn seed_presets_carry_their_recognition_data() {
-        let codes = load_language_codes();
-        let presets = load_library(&codes);
+        let codes = language_codes();
+        let presets = load_library(codes);
         let by_id = |id: &str| presets.iter().find(|p| p.id == id).unwrap();
         let hk = by_id("cantonese-hong-kong");
         assert_eq!(hk.detect_codes, ["yue", "zh"]);
@@ -1009,8 +1137,8 @@ mod tests {
     /// (plus a more specific community one first), and en-US and en-NZ find the same file.
     #[test]
     fn english_variants_resolve_to_the_shared_english_preset() {
-        let codes = load_language_codes();
-        let mut presets = load_library(&codes);
+        let codes = language_codes();
+        let mut presets = load_library(codes);
         let english = presets.iter().find(|p| p.id == "english").unwrap().clone();
         let mut community = |id: &str, name: &str, tag: &str| {
             let mut preset = english.clone();
@@ -1024,7 +1152,7 @@ mod tests {
         community("british-plain-legal", "British plain legal", "en-GB");
         community("english-australia-casual", "Australian casual", "en-AU");
 
-        let (matches, related) = find_presets(&presets, "en-GB", &codes.macrolanguages);
+        let (matches, related) = find_presets(&entries(&presets), "en-GB", &codes.macrolanguages);
         let ids: Vec<&str> = matches.iter().map(|m| m.id.as_str()).collect();
         assert_eq!(ids, ["british-plain-legal", "english"]);
         assert_eq!(matches[1].specificity, 1);
@@ -1035,40 +1163,40 @@ mod tests {
         assert!(!rendered.contains("American spelling"));
 
         for code in ["en-US", "en-NZ", "en"] {
-            let (matches, _) = find_presets(&presets, code, &codes.macrolanguages);
+            let (matches, _) = find_presets(&entries(&presets), code, &codes.macrolanguages);
             assert!(matches.iter().any(|m| m.id == "english"), "{code}");
         }
         assert_eq!(best_variant(&english, "en-NZ"), None);
         assert_eq!(best_variant(&english, "en"), None);
         // Plain `en` does not directly match presets written for one region.
-        let (matches, related) = find_presets(&presets, "en", &codes.macrolanguages);
+        let (matches, related) = find_presets(&entries(&presets), "en", &codes.macrolanguages);
         assert_eq!(matches.len(), 1);
         assert_eq!(related, ["british-plain-legal", "english-australia-casual"]);
     }
 
     #[test]
     fn chinese_codes_resolve_to_the_right_presets() {
-        let codes = load_language_codes();
-        let presets = load_library(&codes);
+        let codes = language_codes();
+        let presets = load_library(codes);
         for code in ["zh-Hant-HK", "zh-HK", "yue", "yue-HK"] {
-            let (matches, related) = find_presets(&presets, code, &codes.macrolanguages);
+            let (matches, related) = find_presets(&entries(&presets), code, &codes.macrolanguages);
             assert_eq!(matches[0].id, "cantonese-hong-kong", "{code}");
             assert!(matches[0].direct, "{code}");
             assert!(related.contains(&"mandarin-taiwan".to_string()), "{code}");
         }
-        let (matches, related) = find_presets(&presets, "zh-TW", &codes.macrolanguages);
+        let (matches, related) = find_presets(&entries(&presets), "zh-TW", &codes.macrolanguages);
         assert_eq!(matches[0].id, "mandarin-taiwan");
         assert!(related.contains(&"cantonese-hong-kong".to_string()));
         // Simplified Chinese has no preset yet; both Traditional ones are related only.
-        let (matches, related) = find_presets(&presets, "zh", &codes.macrolanguages);
+        let (matches, related) = find_presets(&entries(&presets), "zh", &codes.macrolanguages);
         assert!(matches.is_empty());
         assert_eq!(related, ["cantonese-hong-kong", "mandarin-taiwan"]);
     }
 
     #[test]
     fn macrolanguage_matches_rank_below_direct_ones() {
-        let codes = load_language_codes();
-        let presets = load_library(&codes);
+        let codes = language_codes();
+        let presets = load_library(codes);
         let mut formal = presets
             .iter()
             .find(|p| p.id == "cantonese-hong-kong")
@@ -1079,20 +1207,84 @@ mod tests {
         formal.languages = vec!["zh-Hant-HK".into()];
         let mut all = presets.clone();
         all.push(formal);
-        let (matches, _) = find_presets(&all, "yue-Hant-HK", &codes.macrolanguages);
+        let (matches, _) = find_presets(&entries(&all), "yue-Hant-HK", &codes.macrolanguages);
         assert_eq!(matches[0].id, "cantonese-hong-kong");
         assert_eq!(matches[1].id, "chinese-hong-kong-formal");
         assert!(!matches[1].direct);
     }
 
     #[test]
+    fn the_index_skips_entries_the_app_cannot_use() {
+        let codes = language_codes();
+        let presets = load_library(codes);
+        let mut list = entries(&presets);
+        let mut future = list[0].clone();
+        future.id = "future-format".into();
+        future.path = "future-format/preset.md".into();
+        future.format = 2;
+        let mut escape = list[0].clone();
+        escape.id = "escape".into();
+        escape.path = "../../secrets".into();
+        list.push(future);
+        list.push(escape);
+        let mut json = serde_json::json!({"format": 1, "presets": list});
+        json["presets"][0]["extra_field"] = "ignored".into();
+        let index = parse_index(&serde_json::to_vec(&json).unwrap()).unwrap();
+        let ids: Vec<&str> = index.presets.iter().map(|e| e.id.as_str()).collect();
+        assert_eq!(ids, ["cantonese-hong-kong", "english", "mandarin-taiwan"]);
+
+        assert!(parse_index(br#"{"format": 2, "presets": []}"#).is_err());
+        assert!(parse_index(b"not json").is_err());
+    }
+
+    #[test]
+    fn a_preset_renders_for_the_apps_language_codes() {
+        let codes = language_codes();
+        let presets = load_library(codes);
+        let english = presets.iter().find(|p| p.id == "english").unwrap();
+        // The app's `en` has no region, so no regional note.
+        let plain = render_for_code(english, "en");
+        assert!(!plain.contains("Notes for"));
+        assert!(plain.contains("Examples:"));
+        let british = render_for_code(english, "en-gb");
+        assert!(british.contains("Notes for en-GB:\nBritish spelling"));
+        assert_eq!(
+            variant_for_code(
+                &english.variants.keys().cloned().collect::<Vec<_>>(),
+                "en-US"
+            ),
+            Some("en-US")
+        );
+
+        let hk = presets
+            .iter()
+            .find(|p| p.id == "cantonese-hong-kong")
+            .unwrap();
+        assert!(render_for_code(hk, "zh-Hant-HK").starts_with("Written Cantonese"));
+        assert!(parse_preset(
+            "english",
+            std::fs::read(library_dir().join("english/preset.md"))
+                .unwrap()
+                .as_slice()
+        )
+        .is_ok());
+        assert!(parse_preset(
+            "other",
+            std::fs::read(library_dir().join("english/preset.md"))
+                .unwrap()
+                .as_slice()
+        )
+        .is_err());
+    }
+
+    #[test]
     fn deprecated_presets_are_not_listed() {
-        let codes = load_language_codes();
-        let mut presets = load_library(&codes);
+        let codes = language_codes();
+        let mut presets = load_library(codes);
         for preset in &mut presets {
             preset.deprecated = Some("Replaced".into());
         }
-        let (matches, related) = find_presets(&presets, "en-GB", &codes.macrolanguages);
+        let (matches, related) = find_presets(&entries(&presets), "en-GB", &codes.macrolanguages);
         assert!(matches.is_empty() && related.is_empty());
     }
 }
