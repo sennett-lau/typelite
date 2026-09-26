@@ -42,9 +42,9 @@ describe('translation languages', () => {
 })
 
 describe('switch language key', () => {
-  it('reads bare Shift as either Shift key', () => {
+  it('reads the key by its full name (bare Shift is either Shift key)', () => {
     const shift = { primary: 'Shift', modifiers: [] }
-    expect(switchLanguageLabel(shift, translate)).toBe('Shift (either side)')
+    expect(switchLanguageLabel(shift, translate)).toBe('Shift')
     expect(switchLanguageLabel({ primary: 'RightOption', modifiers: [] }, translate)).toBe(
       'Right Option',
     )

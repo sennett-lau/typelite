@@ -39,8 +39,14 @@ function emit(name: string, payload: unknown) {
 const sleep = (ms: number) => act(() => new Promise((resolve) => setTimeout(resolve, ms)))
 
 /** Text content, whitespace collapsed (key caps are separate elements). */
-const text = (element: Element | null | undefined) =>
-  element?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+// Text as a screen reader reads it: a key cap's visible symbol (aria-hidden) is left out, so a
+// cap reads by its full name (plan `compact-key-labels`).
+const text = (element: Element | null | undefined) => {
+  if (!element) return ''
+  const copy = element.cloneNode(true) as Element
+  copy.querySelectorAll('kbd > [aria-hidden="true"]').forEach((node) => node.remove())
+  return copy.textContent?.replace(/\s+/g, ' ').trim() ?? ''
+}
 
 const ROLE_OF: Record<ExerciseId, ShortcutRole> = {
   correction: 'dictation',
@@ -217,7 +223,19 @@ describe('Translate exercises', () => {
     const { onPassed } = await renderExercise('speakTranslate')
 
     const legend = screen.getByTestId('translate-legend')
-    expect(text(legend)).toBe('Fn + Left Shift Start·Shift (either side) Switch language·Fn Stop')
+    expect(text(legend)).toBe('Fn + Left Shift Start·Shift Switch language·Fn Stop')
+    // The caps show symbols: ⇧ with a small L for Left Shift, a bare ⇧ for either Shift.
+    const caps = Array.from(legend.querySelectorAll('kbd'))
+    expect(caps.map((kbd) => kbd.getAttribute('title'))).toEqual([
+      'Fn',
+      'Left Shift',
+      'Shift',
+      'Fn',
+    ])
+    expect(caps[1].querySelector('.kbd-glyph')).toHaveTextContent('⇧')
+    expect(caps[1].querySelector('.kbd-side')).toHaveTextContent('L')
+    expect(caps[2].querySelector('.kbd-glyph')).toHaveTextContent('⇧')
+    expect(caps[2].querySelector('.kbd-side')).toBeNull()
     // One language: switching is dimmed, with a tooltip.
     const switchItem = screen.getByTestId('legend-switch')
     expect(switchItem).toHaveClass('tutorial-legend-off')
@@ -247,9 +265,7 @@ describe('Translate exercises', () => {
     expect(screen.getByText('Good morning, can we meet tomorrow afternoon?')).toBeInTheDocument()
     expect(screen.getByTestId('legend-switch')).not.toHaveClass('tutorial-legend-off')
     emit('pipeline:voice_mode', 'translate')
-    expect(text(line())).toBe(
-      'Listening… press Fn to stop, Shift (either side) to switch language.',
-    )
+    expect(text(line())).toBe('Listening… press Fn to stop, Shift to switch language.')
   })
 
   it('dims Switch language when the key is off', async () => {

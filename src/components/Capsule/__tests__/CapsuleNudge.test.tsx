@@ -72,6 +72,16 @@ describe('typing nudge', () => {
     expect(nudge.querySelector('kbd')).toHaveTextContent('End')
   })
 
+  it('draws a chord as compact caps that read by full name (plan compact-key-labels)', () => {
+    useAppStore.getState().updateConfig({ hotkey: 'End+RightControl' })
+    render(<Capsule />)
+    const caps = Array.from(screen.getByTestId('capsule-nudge').querySelectorAll('kbd'))
+    expect(caps.map((kbd) => kbd.getAttribute('title'))).toEqual(['End', 'Right Control'])
+    expect(caps.every((kbd) => kbd.classList.contains('pill-nudge-key'))).toBe(true)
+    expect(caps[1].querySelector('[aria-hidden="true"]')?.textContent).toBe('⌃R')
+    expect(caps[1].querySelector('.sr-only')?.textContent).toBe('Right Control')
+  })
+
   it('"Don\'t show again" closes it for good', () => {
     render(<Capsule />)
     fireEvent.click(screen.getByRole('button', { name: "Don't show again" }))

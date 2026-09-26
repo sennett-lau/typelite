@@ -4,7 +4,6 @@ import { CheckCircle2, Info } from 'lucide-react'
 import { useAppStore } from '../../stores/appStore'
 import type { VoiceMode } from '../../stores/appStore'
 import { targetLanguageLabel } from '../../lib/constants'
-import { switchLanguageLabel } from '../../lib/switchLanguage'
 import {
   checkExercise,
   insertedCharCount,
@@ -79,9 +78,7 @@ function ExerciseCard({
   const base = `onboarding.exercises.${id}`
   const keys = bindingKeys(roleBindings(hotkeys, role)[0])
   const stopKeys = keys.slice(0, 1)
-  const switchKeys = hotkeys.switchLanguage
-    ? [switchLanguageLabel(hotkeys.switchLanguage, t)]
-    : null
+  const switchKeys = hotkeys.switchLanguage ? bindingKeys(hotkeys.switchLanguage) : null
   const canSwitch = role === 'translate' && translation.targets.length >= 2 && !!switchKeys
   const holdMode = role !== 'ask' && hotkeys.dictationMode === 'hold'
   const firstTarget = translation.targets[0] ?? ''

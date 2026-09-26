@@ -1,7 +1,7 @@
 import { ChevronRight, Globe, Mic, MessageSquare, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
-  displayBinding,
+  bindingKeyNames,
   findActivePreset,
   useAppStore,
   type ShortcutBinding,
@@ -10,6 +10,7 @@ import { settingsPaneHash } from '../../lib/router'
 import { WHATS_NEW } from '../../lib/whatsNew'
 import { PageFrame } from '../PageFrame'
 import { Group } from '../ui/Group'
+import { KeyCaps } from '../ui/KeyCap'
 import { startShortcutTour, useShortcutTourAvailable } from '../../lib/shortcutTour'
 import { FinishSetup } from './FinishSetup'
 import { SpeedBoard } from './SpeedBoard'
@@ -21,19 +22,14 @@ function openSettings(pane: SettingsPane) {
 }
 
 /** A binding drawn as key caps: one `<kbd>` per key, in display order. */
-function KeyCaps({ binding }: { binding: ShortcutBinding | null }) {
+function BindingCaps({ binding }: { binding: ShortcutBinding | null }) {
   const { t } = useTranslation()
   if (!binding) {
     return <span className="text-[12px] text-text-tertiary">{t('home.notSet')}</span>
   }
-  const keys = displayBinding(binding).split(' + ')
   return (
     <span className="flex flex-none flex-wrap items-center gap-1">
-      {keys.map((key, index) => (
-        <kbd key={`${key}-${index}`} className="kbd">
-          {key}
-        </kbd>
-      ))}
+      <KeyCaps keys={bindingKeyNames(binding)} />
     </span>
   )
 }
@@ -127,7 +123,7 @@ function ShortcutTiles() {
                 </span>
                 <span className="truncate text-[13.5px] font-semibold">{tile.name}</span>
               </span>
-              <KeyCaps binding={tile.binding} />
+              <BindingCaps binding={tile.binding} />
             </button>
           )
         })}
@@ -147,7 +143,7 @@ function ShortcutTiles() {
                 <span>{row.name}</span>
                 <span className="row-help truncate">{row.description}</span>
               </span>
-              <KeyCaps binding={row.binding} />
+              <BindingCaps binding={row.binding} />
             </button>
           ))}
         </div>

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { RotateCw } from 'lucide-react'
 import {
   bindingFromHotkey,
-  displayBinding,
+  describeBinding,
   hotkeyBindingIdentity,
   useAppStore,
 } from '../../stores/appStore'
@@ -79,7 +79,7 @@ export function ShortcutSetupPage({ role }: { role: ShortcutRole }) {
       <div className="tutorial-card flex flex-col items-center gap-2.5 px-4 pt-[18px] pb-3.5">
         <HotkeyRecorder
           large
-          value={current ? displayBinding(current) : t('onboarding.setup.notSet')}
+          value={current ? describeBinding(current) : t('onboarding.setup.notSet')}
           keycaps={keys}
           validateHotkey={validate}
           onSaved={(hotkey) => void save(hotkey)}
