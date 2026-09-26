@@ -90,8 +90,8 @@ want to own the whole pipeline and tune it for their languages.
 - **The pill** follows you to the screen you're working on and never steals focus. **Esc**
   cancels.
 - **Nowhere to paste?** The result stays in the pill with a **Copy** button.
-- **Insights:** how long it usually takes from the end of your speech to the text, and which step
-  takes the time.
+- **Insights:** how fast you speak compared with how fast you type, how long it usually takes from
+  the end of your speech to the text, and how your presets compare.
 - **Guided setup:** permissions, microphone, speech, AI, then a short hands-on tutorial.
 
 All shortcuts are configurable, and hold-to-talk is available too.
@@ -128,7 +128,9 @@ Tools and CMake. Full details are in [CONTRIBUTING.md](CONTRIBUTING.md#setup).
 ## Privacy
 
 - No accounts, no analytics, no telemetry.
-- Typelite keeps no history of what you say. Insights keep only timings of recent runs, in memory.
+- Typelite keeps no history of what you say. Insights keep only timings (durations, sizes, which
+  presets were used) and, if you turn it on, a count of keystrokes, never which keys; **Settings →
+  System → Clear insights data** deletes them.
 - Logs (`~/Library/Logs/Typelite/typelite.log`) contain timings and errors, never your text.
 - Audio goes only where you point it: the built-in models, your own server, or a service you chose.
 
