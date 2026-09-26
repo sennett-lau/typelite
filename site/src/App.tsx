@@ -3,6 +3,7 @@ import { TopBar } from './sections/TopBar'
 import { Hero } from './sections/Hero'
 import { Features } from './sections/Features'
 import { Speed } from './sections/Speed'
+import { Story } from './sections/Story'
 import { Languages } from './sections/Languages'
 import { Setup } from './sections/Setup'
 import { Compare, Footer, OpenSource, Privacy } from './sections/More'
@@ -19,6 +20,7 @@ export function App() {
       <TopBar stats={stats} />
       <main id="main">
         <Hero stats={stats} />
+        <Story />
         <Speed />
         <Features />
         <Languages />
