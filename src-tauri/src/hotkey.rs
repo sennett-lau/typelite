@@ -1064,7 +1064,8 @@ fn handle_advanced_role_shortcut(
     let _ = handle.emit("hotkey:role", role.as_str());
 }
 
-/// What Escape does right now (plans `pill-follows-cursor-and-escape` and `copy-when-no-field`).
+/// What Escape does right now (plans `pill-follows-cursor-and-escape`, `copy-when-no-field` and
+/// `ask-panel-above-pill`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EscapeAction {
     /// Nothing of Typelite's is up: Escape goes to the focused app as usual.
@@ -1076,13 +1077,18 @@ pub enum EscapeAction {
     AbortRun,
     /// The Copy pill is up after a run: close it.
     CloseCopyPill,
+    /// The Ask answer panel is open above the pill: close it.
+    CloseAskPanel,
 }
 
-/// Decides what Escape does. A run wins over the Copy pill (a new run closes the pill anyway).
+/// Decides what Escape does. A run wins over the Copy pill and the Ask panel (a new run closes
+/// them anyway). Escape is Typelite's only while one of these is up; otherwise it reaches the
+/// focused app.
 pub fn escape_action(
     pipeline_state: pipeline::PipelineState,
     ask_busy: bool,
     copy_pill_up: bool,
+    ask_panel_open: bool,
 ) -> EscapeAction {
     if ask_busy {
         EscapeAction::CancelAsk
@@ -1090,6 +1096,8 @@ pub fn escape_action(
         EscapeAction::AbortRun
     } else if copy_pill_up {
         EscapeAction::CloseCopyPill
+    } else if ask_panel_open {
+        EscapeAction::CloseAskPanel
     } else {
         EscapeAction::PassThrough
     }
@@ -1108,7 +1116,12 @@ fn current_escape_action(handle: &tauri::AppHandle) -> EscapeAction {
     let copy_pill_up = pipeline
         .as_ref()
         .is_some_and(|pipeline| pipeline.has_copy_offer());
-    escape_action(pipeline_state, ask_busy, copy_pill_up)
+    escape_action(
+        pipeline_state,
+        ask_busy,
+        copy_pill_up,
+        crate::ask_panel::is_open(handle),
+    )
 }
 
 /// The Escape gate for the native key listener: true when Escape is Typelite's (it is then
@@ -1119,7 +1132,8 @@ pub fn escape_gate(handle: &tauri::AppHandle) -> bool {
 
 /// Escape was pressed while it is Typelite's: cancel the run exactly like the pill's cancel
 /// button (Ask cancel for an Ask run, abort for dictation and Translate), or close the Copy
-/// pill. Runs off the listener thread, because stopping audio capture may take a moment.
+/// pill or the Ask panel. Runs off the listener thread, because stopping audio capture may take
+/// a moment.
 fn cancel_active_run(handle: tauri::AppHandle) {
     tauri::async_runtime::spawn_blocking(move || match current_escape_action(&handle) {
         EscapeAction::CancelAsk => {
@@ -1135,6 +1149,10 @@ fn cancel_active_run(handle: tauri::AppHandle) {
             handle
                 .state::<pipeline::PipelineHandle>()
                 .dismiss_copy_offer();
+        }
+        EscapeAction::CloseAskPanel => {
+            tracing::info!("Escape: closing the Ask panel");
+            crate::ask_panel::close(&handle);
         }
         EscapeAction::PassThrough => {}
     });
@@ -2272,7 +2290,7 @@ mod tests {
     fn escape_cancels_only_while_a_run_is_active() {
         use pipeline::PipelineState::*;
         assert_eq!(
-            escape_action(Idle, false, false),
+            escape_action(Idle, false, false, false),
             EscapeAction::PassThrough,
             "idle Escape passes through"
         );
@@ -2286,13 +2304,13 @@ mod tests {
             AskThinking,
         ] {
             assert_eq!(
-                escape_action(state, false, false),
+                escape_action(state, false, false, false),
                 EscapeAction::AbortRun,
                 "{state:?}"
             );
         }
         assert_eq!(
-            escape_action(Idle, true, false),
+            escape_action(Idle, true, false, false),
             EscapeAction::CancelAsk,
             "Ask starting, recording or thinking"
         );
@@ -2302,14 +2320,82 @@ mod tests {
     fn escape_closes_the_copy_pill_only_when_no_run_is_active() {
         use pipeline::PipelineState::*;
         assert_eq!(
-            escape_action(Idle, false, true),
+            escape_action(Idle, false, true, false),
             EscapeAction::CloseCopyPill
         );
         assert_eq!(
-            escape_action(Recording, false, true),
+            escape_action(Recording, false, true, false),
             EscapeAction::AbortRun
         );
-        assert_eq!(escape_action(Idle, true, true), EscapeAction::CancelAsk);
+        assert_eq!(
+            escape_action(Idle, true, true, false),
+            EscapeAction::CancelAsk
+        );
+    }
+
+    #[test]
+    fn escape_closes_the_ask_panel_only_while_it_is_open() {
+        use pipeline::PipelineState::*;
+        // Plan `ask-panel-above-pill`: swallowed only while the panel is open.
+        assert_eq!(
+            escape_action(Idle, false, false, true),
+            EscapeAction::CloseAskPanel
+        );
+        assert_eq!(
+            escape_action(Idle, false, false, false),
+            EscapeAction::PassThrough
+        );
+        // A run or the Copy pill comes first.
+        assert_eq!(
+            escape_action(Recording, false, false, true),
+            EscapeAction::AbortRun
+        );
+        assert_eq!(
+            escape_action(Idle, true, false, true),
+            EscapeAction::CancelAsk
+        );
+        assert_eq!(
+            escape_action(Idle, false, true, true),
+            EscapeAction::CloseCopyPill
+        );
+    }
+
+    #[test]
+    fn after_escape_or_a_new_run_closes_the_panel_escape_passes_through_again() {
+        use crate::ask_panel::{anchor_on_screen, AskPanelState, LogicalRect};
+        use pipeline::PipelineState::*;
+        let panel = AskPanelState::default();
+        let screen = LogicalRect {
+            x: 0.0,
+            y: 0.0,
+            width: 1512.0,
+            height: 982.0,
+        };
+        panel.open(Some(anchor_on_screen(screen, 36.0)));
+
+        // Escape closes the open panel; the next Escape reaches the app.
+        assert_eq!(
+            escape_action(Idle, false, false, panel.is_open()),
+            EscapeAction::CloseAskPanel
+        );
+        assert!(panel.close());
+        assert_eq!(
+            escape_action(Idle, false, false, panel.is_open()),
+            EscapeAction::PassThrough
+        );
+
+        // A new run closes the panel when it starts: Escape then cancels the run, and once the
+        // run is over it passes through (the panel does not come back).
+        panel.open(Some(anchor_on_screen(screen, 36.0)));
+        assert!(panel.close(), "a new run closes the open panel");
+        assert_eq!(
+            escape_action(Recording, false, false, panel.is_open()),
+            EscapeAction::AbortRun
+        );
+        assert_eq!(
+            escape_action(Idle, false, false, panel.is_open()),
+            EscapeAction::PassThrough
+        );
     }
 
     #[test]

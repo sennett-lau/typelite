@@ -842,9 +842,7 @@ impl crate::voice_intent::executor::VoiceExecutionBackend for PipelineVoiceExecu
         &mut self,
         guard: &TargetAppGuard,
     ) -> std::result::Result<bool, String> {
-        if let Some(window) = self.pipeline.app_handle.get_webview_window("ask") {
-            let _ = window.hide();
-        }
+        crate::ask_panel::close(&self.pipeline.app_handle);
         let detector = self.pipeline.context_detector.clone();
         let guard = guard.clone();
         tokio::task::spawn_blocking(move || detector.restore_target_application(&guard))
@@ -1189,6 +1187,8 @@ impl PipelineHandle {
         self.abort_flag.store(false, Ordering::SeqCst);
         // Plan `copy-when-no-field`: a new run closes a Copy pill that is still up.
         self.dismiss_copy_offer();
+        // Plan `ask-panel-above-pill`: and an Ask panel that is still open.
+        crate::ask_panel::close(&self.app_handle);
 
         // Atomic CAS: only one caller can transition Idle → Preparing. Recording is emitted only
         // after audio capture is ready, so the capsule does not tell users to speak too early.
