@@ -45,7 +45,7 @@ uninstall() {
 }
 
 [[ "${1:-}" == "--uninstall" ]] && uninstall
-[[ "$(uname -s)" == "Darwin" ]] || fail "This script is for macOS. See docs/guides/speech-recognition.md for other systems."
+[[ "$(uname -s)" == "Darwin" ]] || fail "This script is for macOS. See docs/guides/speech/openai-compatible.md for other systems."
 command -v brew >/dev/null || fail "Homebrew is required. Install it from https://brew.sh and run this script again."
 
 say "Installing whisper.cpp with Homebrew"

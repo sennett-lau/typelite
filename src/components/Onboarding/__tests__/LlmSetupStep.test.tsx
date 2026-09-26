@@ -20,7 +20,7 @@ vi.mock('react-i18next', async () => {
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md'
+const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish/README.md'
 const GB = 1024 ** 3
 
 function config() {

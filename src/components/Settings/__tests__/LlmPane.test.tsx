@@ -20,7 +20,7 @@ vi.mock('react-i18next', async () => {
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md'
+const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish/README.md'
 
 const thinkingPreset: AiPreset = {
   ...aiServerPreset('pc-qwen35', 'PC Ollama — Qwen3.5', 'http://192.0.2.10:11434/v1', 'qwen3.5:4b'),
