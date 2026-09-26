@@ -1,0 +1,171 @@
+# Language presets
+
+Language presets tell Typelite's AI how to write one language: which words and grammar to use,
+which script, what stays in English, with a few examples. When someone adds a language in
+Typelite, the app lists the presets that fit it and downloads the one they choose from this
+folder. They can still edit the text in the app.
+
+Anyone can add a preset or improve one with a pull request. You do not need to know Rust or
+TypeScript; a preset is one Markdown file.
+
+The design behind this folder is plan `language-prompt-library`
+([docs/plans/2026-09-26-language-prompt-library](../../docs/plans/2026-09-26-language-prompt-library/index.md)).
+
+## Layout
+
+```
+presets/languages/
+  index.json              generated list of every preset (do not edit by hand)
+  language-codes.json     language codes the validator accepts
+  <id>/preset.md          one preset
+  <id>/NOTES.md           optional notes for reviewers (never downloaded)
+```
+
+A folder is named after the preset's `id`, not after a language. One preset can serve several
+languages (the `english` preset serves every English variant), and one language can have
+several presets (for example written Cantonese and formal written Chinese for Hong Kong).
+
+## Before you start
+
+Look for a preset that already covers your language. If one exists, improve it or add a
+regional note to it (see "Regional notes" below) instead of starting a new one.
+
+## Template
+
+Copy this into `presets/languages/<id>/preset.md`:
+
+```markdown
+---
+id: spanish-mexico
+name: Spanish (Mexico) Español de México
+version: 1
+format: 1
+tier: community
+languages: [es-MX]
+applies_to: [polish, translate]
+summary: Natural Mexican Spanish with Mexican vocabulary and usted/tú as spoken.
+authors: [your-github-name]
+license: CC0-1.0
+model_hint: Works with small 4B instruct models.
+---
+
+## Instructions
+
+Write natural Mexican Spanish, the way people in Mexico write messages...
+
+- ...
+
+## Examples
+
+"..." → ...
+```
+
+## Front matter
+
+One `key: value` per line. Values are text (quotes optional), a whole number, or a list in
+square brackets `[a, b]`. No other YAML features.
+
+| Key | Required | What to put |
+|---|---|---|
+| `id` | yes | Same as the folder name. See "Naming". |
+| `name` | yes | Name shown in the app, at most 60 characters. English first, native name after it is welcome. |
+| `version` | yes | `1` for a new preset. Add one every time you change the text or `languages`. |
+| `format` | yes | Always `1` for now. |
+| `tier` | yes | `community`. Only maintainers use `official`. |
+| `languages` | yes | Language codes this preset is for (see below). |
+| `applies_to` | yes | `[polish, translate]`, or just one of them. |
+| `summary` | yes | One sentence shown in the list, at most 140 characters. |
+| `authors` | yes | GitHub user names. |
+| `license` | yes | Always `CC0-1.0` (see "Licence"). |
+| `model_hint` | no | A tip about models, at most 140 characters. |
+| `deprecated` | no | Only when retiring a preset: the reason, for example `Replaced by spanish-mexico-casual`. |
+
+### Language codes
+
+Use [BCP 47](https://www.rfc-editor.org/info/bcp47) codes: a language, then optionally a script
+and a region: `en`, `en-GB`, `pt-BR`, `zh-Hant-HK`, `yue-Hant-HK`.
+
+- A short code matches every longer one: `en` matches `en-GB`, `en-US` and `en-AU`. Use it for a
+  preset that fits all regions.
+- A regional code matches only that region: `es-MX` is not offered to someone who chose `es-ES`.
+- Do not list both a code and a longer form of it (`[en, en-GB]`); the short one already covers
+  it.
+- For Chinese, give the script: `zh-Hans` (Simplified) or `zh-Hant-TW`, `zh-Hant-HK`
+  (Traditional). A Cantonese preset lists `zh-Hant-HK` and `yue-Hant-HK`.
+- The language part must be in `language-codes.json`. If yours is missing, add it there (code
+  and English name from the IANA subtag registry) in the same pull request.
+
+## Body
+
+The body has these sections, in this order:
+
+- `## Instructions` (required): how to write the language. Write it as a guide for a writer
+  ("Write colloquial written Cantonese…"), not as "Translate into…"; the same text is used when
+  Typelite polishes speech in this language and when it translates into it. Typelite adds its
+  own fixed rules around your text (output only the result, the target language, the Chinese
+  script), so do not repeat those.
+- `## Variant: <code>` (optional, one per code): a short regional note, at most 400
+  characters. Only the note that fits the user's language is sent to the AI.
+- `## Examples` (optional): a few short lines, usually `"source" → result`. Small models learn
+  most from examples; two to four good ones beat ten.
+
+What the AI gets is the Instructions, then the matching regional note, then the Examples. That
+must fit in **2000 characters** for every variant. The validator checks it.
+
+### Regional notes
+
+A shared preset carries short notes per region instead of one file per region:
+
+```markdown
+## Variant: en-GB
+
+British spelling and words: colour, organise, centre, flat, mobile. Dates as 5 October.
+```
+
+Someone who chose English (United Kingdom) gets the Instructions plus this note; someone who
+chose English (United States) gets the same preset with the `en-US` note. To support a new
+region, add a note here rather than a new preset.
+
+## Naming
+
+- The `id` is the language in English, lowercase, then what narrows it (region, then style),
+  joined with `-`: `cantonese-hong-kong`, `mandarin-taiwan`, `english`, `english-plain-legal`,
+  `spanish-mexico`.
+- Only `a-z`, `0-9` and `-`, 3 to 48 characters. No language codes and no personal names in the
+  id.
+- An id never changes and is never reused. To replace a preset, create a new one and set
+  `deprecated` on the old one.
+
+## Check your preset
+
+From the repository root:
+
+```sh
+node scripts/language-presets.mjs          # validate and rewrite index.json
+node scripts/language-presets.mjs --check  # validate only; fails if index.json is out of date
+```
+
+Commit `index.json` together with your preset. The tests fail when it is out of date.
+
+## Review checklist
+
+Reviewers check that:
+
+- the validator passes and `index.json` is regenerated;
+- the text only describes how to write the language; it does not ask the AI to do anything else
+  (answer questions, add notes, change the output language or format);
+- the examples are correct, natural, short and your own;
+- a native or fluent speaker has approved the text;
+- there is nothing offensive, political or promotional, no links and no personal data;
+- `version` went up if the text or `languages` changed.
+
+A `NOTES.md` next to the preset with a few test sentences, the model you used and what came out
+makes review much faster.
+
+## Licence
+
+Presets are released under [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/): no
+rights reserved. The text is copied into people's settings and edited there, and may become a
+built-in default in the app, so it must be free to use without a notice. By opening a pull
+request you agree to release your preset under CC0-1.0. Only submit text you wrote yourself or
+that is already free to use this way. Your name stays in `authors` and is shown in the app.

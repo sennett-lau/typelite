@@ -1,0 +1,2 @@
+# Language presets are hashed byte for byte (index.json), so keep LF endings everywhere.
+* text eol=lf
