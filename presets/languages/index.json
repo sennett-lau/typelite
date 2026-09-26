@@ -55,8 +55,8 @@
     },
     {
       "id": "mandarin-taiwan",
-      "name": "Mandarin (Taiwan) 臺灣華語",
-      "version": 2,
+      "name": "Mandarin (Taiwan) 繁體中文（台灣）",
+      "version": 3,
       "format": 1,
       "tier": "official",
       "languages": [
@@ -68,13 +68,13 @@
         "polish",
         "translate"
       ],
-      "summary": "Natural Taiwan Mandarin in Traditional characters, with Taiwan vocabulary.",
+      "summary": "Natural Taiwan Mandarin in Traditional characters, with Taiwan vocabulary and punctuation.",
       "authors": [
         "sennett-lau"
       ],
       "path": "mandarin-taiwan/preset.md",
-      "bytes": 1191,
-      "sha256": "af61baa36e1cafb7bbd55487fe250cb78aa7b436c9761be409ec7ce6129c5cb6"
+      "bytes": 1827,
+      "sha256": "1828802760c3a780c8aa15a0d839bcc5b13c5704f758dd5d8e1a3d3dd9cd495b"
     }
   ]
 }
