@@ -16,6 +16,34 @@ pub struct WhisperCompatConfig {
     pub model: String,
 }
 
+/// Plan `language-prompt-library`: endpoints that refused `response_format=verbose_json` in this
+/// session. They get plain JSON (no detected language) from then on.
+static NO_VERBOSE_JSON: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+fn verbose_json_refused(endpoint: &str) -> bool {
+    NO_VERBOSE_JSON
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .iter()
+        .any(|known| known == endpoint)
+}
+
+fn remember_verbose_json_refused(endpoint: &str) {
+    let mut refused = NO_VERBOSE_JSON
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    if !refused.iter().any(|known| known == endpoint) {
+        refused.push(endpoint.to_string());
+    }
+}
+
+/// A transcription answer: the text, and the language when the server reported one.
+#[derive(Debug, Clone, PartialEq)]
+struct Answer {
+    text: Option<String>,
+    language: Option<String>,
+}
+
 /// Max audio buffer: ~24 MB PCM ≈ 12.5 min at 16kHz 16-bit mono.
 /// Keeps the resulting WAV under 25 MB, the usual upload limit of OpenAI-compatible servers.
 const MAX_AUDIO_BYTES: usize = 24 * 1024 * 1024;
@@ -28,17 +56,12 @@ pub struct WhisperCompatProvider {
     audio_buffer: Vec<u8>,
     client: reqwest::Client,
     upload_probe: Option<crate::timing::UploadProbe>,
+    detected_language: Option<String>,
 }
 
 impl WhisperCompatProvider {
     pub fn new(provider_config: WhisperCompatConfig) -> Self {
-        Self {
-            provider_config,
-            stt_config: None,
-            audio_buffer: Vec::new(),
-            client: reqwest::Client::new(),
-            upload_probe: None,
-        }
+        Self::with_client(provider_config, reqwest::Client::new())
     }
 
     pub fn with_client(provider_config: WhisperCompatConfig, client: reqwest::Client) -> Self {
@@ -48,6 +71,7 @@ impl WhisperCompatProvider {
             audio_buffer: Vec::new(),
             client,
             upload_probe: None,
+            detected_language: None,
         }
     }
 
@@ -109,6 +133,7 @@ impl SttProvider for WhisperCompatProvider {
     }
 
     async fn disconnect(&mut self) -> Result<Option<String>, AppError> {
+        self.detected_language = None;
         let config = match &self.stt_config {
             Some(c) => c.clone(),
             None => return Ok(None),
@@ -148,14 +173,39 @@ impl SttProvider for WhisperCompatProvider {
             audio_len_secs
         );
 
-        let result = self.upload_wav(&config, wav_data).await;
+        // Plan `language-prompt-library`: with auto-detect, ask for `verbose_json`, which
+        // carries the detected language; a server that refuses it gets plain JSON again.
+        let verbose =
+            config.language.is_none() && !verbose_json_refused(&self.provider_config.endpoint);
+        let retry_copy = verbose.then(|| wav_data.clone());
+        let mut result = self.upload_wav(&config, wav_data, verbose).await;
+        if let Some(wav_data) = retry_copy {
+            if let Err(AppError::Api { status, .. }) = &result {
+                if matches!(status, 400 | 415 | 422) {
+                    tracing::info!(
+                        "{}: the server refused verbose_json (HTTP {status}); using plain JSON",
+                        self.provider_config.provider_name
+                    );
+                    remember_verbose_json_refused(&self.provider_config.endpoint);
+                    result = self.upload_wav(&config, wav_data, false).await;
+                }
+            }
+        }
         if let Some(probe) = &self.upload_probe {
             probe.mark_finished();
+        }
+        let answer = result?;
+        self.detected_language = answer.language.clone();
+        if let Some(language) = &answer.language {
+            tracing::info!(
+                "{}: detected language {language}",
+                self.provider_config.provider_name
+            );
         }
         Ok(accept_transcript(
             &self.provider_config.provider_name,
             &activity,
-            result?,
+            answer.text,
         ))
     }
 
@@ -166,15 +216,21 @@ impl SttProvider for WhisperCompatProvider {
     fn set_upload_probe(&mut self, probe: crate::timing::UploadProbe) {
         self.upload_probe = Some(probe);
     }
+
+    fn detected_language(&self) -> Option<String> {
+        self.detected_language.clone()
+    }
 }
 
 impl WhisperCompatProvider {
-    /// Sends the WAV file, retrying server errors and timeouts up to two times.
+    /// Sends the WAV file, retrying server errors and timeouts up to two times. `verbose` asks
+    /// for `verbose_json`, whose `language` field says what the server heard.
     async fn upload_wav(
         &self,
         config: &SttConfig,
         wav_data: Vec<u8>,
-    ) -> Result<Option<String>, AppError> {
+        verbose: bool,
+    ) -> Result<Answer, AppError> {
         let mut attempt = 0u32;
         loop {
             let file_part = reqwest::multipart::Part::bytes(wav_data.clone())
@@ -189,6 +245,9 @@ impl WhisperCompatProvider {
             // Language hint. `None` means auto-detect, so the field is left out.
             if let Some(ref lang) = config.language {
                 form = form.text("language", lang.clone());
+            }
+            if verbose {
+                form = form.text("response_format", "verbose_json");
             }
 
             let mut request = self
@@ -223,6 +282,9 @@ impl WhisperCompatProvider {
                         let v: serde_json::Value = serde_json::from_str(&body)
                             .map_err(|e| AppError::Config(e.to_string()))?;
                         let text = normalize_transcript(v["text"].as_str().unwrap_or(""));
+                        let language = v["language"]
+                            .as_str()
+                            .and_then(super::normalize_detected_language);
 
                         tracing::info!(
                             "{} transcription: {} chars",
@@ -230,7 +292,10 @@ impl WhisperCompatProvider {
                             text.len()
                         );
 
-                        return Ok(if text.is_empty() { None } else { Some(text) });
+                        return Ok(Answer {
+                            text: (!text.is_empty()).then_some(text),
+                            language,
+                        });
                     } else if status.as_u16() >= 500 && attempt < 2 {
                         let truncate_at = body
                             .char_indices()
@@ -376,6 +441,127 @@ mod tests {
         assert!(marks.finished_at.is_none());
         assert_eq!(marks.wav_bytes, 0);
         assert!((marks.recording_secs() - 2.0).abs() < f64::EPSILON);
+    }
+
+    /// A transcription server that answers `verbose_json` requests with `verbose` and others
+    /// with `plain` (status, body). Returns the endpoint and how many requests asked for it.
+    async fn language_server(
+        verbose: (u16, &'static str),
+        plain: (u16, &'static str),
+    ) -> (String, std::sync::Arc<std::sync::atomic::AtomicUsize>) {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!(
+            "http://{}/v1/audio/transcriptions",
+            listener.local_addr().unwrap()
+        );
+        let verbose_hits = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let counter = verbose_hits.clone();
+        tokio::spawn(async move {
+            while let Ok((mut socket, _)) = listener.accept().await {
+                let counter = counter.clone();
+                tokio::spawn(async move {
+                    let mut request = Vec::new();
+                    let mut buf = [0u8; 65536];
+                    let header_end = loop {
+                        let Ok(n) = socket.read(&mut buf).await else {
+                            return;
+                        };
+                        if n == 0 {
+                            return;
+                        }
+                        request.extend_from_slice(&buf[..n]);
+                        if let Some(at) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+                            break at + 4;
+                        }
+                    };
+                    let headers = String::from_utf8_lossy(&request[..header_end]).to_lowercase();
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|line| line.strip_prefix("content-length:"))
+                        .and_then(|value| value.trim().parse().ok())
+                        .unwrap_or(0);
+                    while request.len() < header_end + length {
+                        match socket.read(&mut buf).await {
+                            Ok(0) | Err(_) => return,
+                            Ok(n) => request.extend_from_slice(&buf[..n]),
+                        }
+                    }
+                    let asks_verbose = request.windows(12).any(|w| w == b"verbose_json");
+                    let (status, body) = if asks_verbose {
+                        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        verbose
+                    } else {
+                        plain
+                    };
+                    let reply = format!(
+                        "HTTP/1.1 {status} X\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+                        body.len()
+                    );
+                    let _ = socket.write_all(reply.as_bytes()).await;
+                });
+            }
+        });
+        (url, verbose_hits)
+    }
+
+    async fn transcribe_with(endpoint: &str, language: Option<&str>) -> WhisperCompatProvider {
+        let mut provider = WhisperCompatProvider::new(WhisperCompatConfig {
+            provider_name: "test-whisper".to_string(),
+            endpoint: endpoint.to_string(),
+            model: "test-model".to_string(),
+        });
+        provider
+            .connect(&SttConfig {
+                language: language.map(str::to_string),
+                ..SttConfig::default()
+            })
+            .await
+            .unwrap();
+        let mut audio = vec![0u8; 16_000];
+        audio.extend(pcm_tone(0.3, 1.0, 16_000));
+        audio.extend(vec![0u8; 16_000]);
+        provider.send_audio(&audio).await.unwrap();
+        let text = provider.disconnect().await.unwrap();
+        assert_eq!(text.as_deref(), Some("Hello there"));
+        provider
+    }
+
+    /// Plan `language-prompt-library`: with auto-detect the provider asks for verbose_json and
+    /// passes the language on; a full name becomes its code.
+    #[tokio::test]
+    async fn verbose_json_reports_the_detected_language() {
+        let (url, verbose_hits) = language_server(
+            (
+                200,
+                r#"{"text":"Hello there","language":"english","segments":[]}"#,
+            ),
+            (200, r#"{"text":"Hello there"}"#),
+        )
+        .await;
+        let provider = transcribe_with(&url, None).await;
+        assert_eq!(provider.detected_language().as_deref(), Some("en"));
+        assert_eq!(verbose_hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+
+        // A fixed language needs no detection: plain JSON, no detected language.
+        let provider = transcribe_with(&url, Some("en")).await;
+        assert_eq!(provider.detected_language(), None);
+        assert_eq!(verbose_hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn a_server_that_refuses_verbose_json_gets_plain_json_from_then_on() {
+        let (url, verbose_hits) = language_server(
+            (400, r#"{"error":"response_format not supported"}"#),
+            (200, r#"{"text":"Hello there"}"#),
+        )
+        .await;
+        let provider = transcribe_with(&url, None).await;
+        assert_eq!(provider.detected_language(), None);
+        assert_eq!(verbose_hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+        // The next recording does not ask again.
+        transcribe_with(&url, None).await;
+        assert_eq!(verbose_hits.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
 
     #[tokio::test]
