@@ -49,7 +49,6 @@ vi.mock('../../../lib/tauri', () => ({
     requested_device_missing: false,
   }),
   stopMicLevelMonitor: vi.fn().mockResolvedValue(undefined),
-  resetSpeedStats: vi.fn().mockResolvedValue(undefined),
 }))
 
 import { GeneralPane } from '../GeneralPane'
@@ -84,7 +83,6 @@ describe('GeneralPane', () => {
       'settings.hotkey',
       'settings.generalPane.recording',
       'settings.generalPane.output',
-      'settings.generalPane.insights',
     ])
     expect(screen.getByText('settings.generalPane.shortcutsHint')).toBeDefined()
   })
@@ -172,23 +170,6 @@ describe('GeneralPane', () => {
     fireEvent.click(within(control).getByText('settings.generalPane.typing'))
     expect(config().output_mode).toBe('keyboard')
     expect(config().insertion_strategy).toBe('auto')
-  })
-
-  it('switches typing speed measuring and resets the speed stats (plan `typing-speed-and-nudge`)', async () => {
-    const { resetSpeedStats } = await import('../../../lib/tauri')
-    render(<GeneralPane />)
-    const insights = screen.getByRole('region', { name: 'settings.generalPane.insights' })
-    expect(within(insights).getByText('settings.generalPane.measureTypingSpeedDesc')).toBeDefined()
-
-    const measure = within(insights).getByRole('switch', {
-      name: 'settings.generalPane.measureTypingSpeed',
-    })
-    expect(config().measure_typing_speed).toBe(true)
-    fireEvent.click(measure)
-    expect(config().measure_typing_speed).toBe(false)
-
-    fireEvent.click(within(insights).getByRole('button', { name: 'settings.generalPane.reset' }))
-    await waitFor(() => expect(resetSpeedStats).toHaveBeenCalledTimes(1))
   })
 
   it('does not hold System settings (they live in Settings → System)', () => {

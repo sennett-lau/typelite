@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
-import { clearRunTimings } from '../../lib/tauri'
+import { clearRunTimings, resetSpeedStats } from '../../lib/tauri'
 import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
 
@@ -43,6 +43,43 @@ function ClearInsightsRow() {
 }
 
 /**
+ * Plan `typing-speed-and-nudge`: clears the speaking and typing totals behind the speed row at the
+ * top of Insights (counts and minutes only).
+ */
+function ResetSpeedStatsRow() {
+  const { t } = useTranslation()
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'failed'>('idle')
+
+  const reset = () => {
+    setState('busy')
+    resetSpeedStats()
+      .then(() => setState('done'))
+      .catch((error) => {
+        console.error('[settings] failed to reset speed stats', error)
+        setState('failed')
+      })
+  }
+
+  return (
+    <Row label={t('settings.resetSpeedStats')} help={t('settings.resetSpeedStatsHint')}>
+      {state === 'done' && (
+        <span className="text-[12px] text-text-secondary" role="status">
+          {t('settings.speedStatsReset')}
+        </span>
+      )}
+      {state === 'failed' && (
+        <span className="text-[12px] text-error" role="status">
+          {t('settings.resetSpeedStatsFailed')}
+        </span>
+      )}
+      <button type="button" className="btn-secondary" onClick={reset} disabled={state === 'busy'}>
+        {t('settings.resetSpeedStatsButton')}
+      </button>
+    </Row>
+  )
+}
+
+/**
  * Settings → System: how Typelite sits in macOS. "Launch at login" is applied through the
  * autostart plugin when the settings are saved; "Show in Dock" switches the macOS activation
  * policy (see `apply_dock_visibility` in `src-tauri/src/lib.rs`).
@@ -73,6 +110,16 @@ export function SystemPane() {
         </Row>
       </Group>
       <Group label={t('settings.systemInsights')}>
+        {/* Plan `typing-speed-and-nudge`: typing speed for the speed row at the top of Insights. */}
+        <Row label={t('settings.measureTypingSpeed')} help={t('settings.measureTypingSpeedHint')}>
+          <Toggle
+            checked={config.measure_typing_speed}
+            onChange={(checked) => updateConfig({ measure_typing_speed: checked })}
+            label={t('settings.measureTypingSpeed')}
+            hideLabel
+          />
+        </Row>
+        <ResetSpeedStatsRow />
         <ClearInsightsRow />
       </Group>
     </div>
