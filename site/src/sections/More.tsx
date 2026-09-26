@@ -324,9 +324,6 @@ export function Footer() {
                   <a href="#setup">Setup</a>
                 </li>
                 <li>
-                  <a href="#benchmarks">Benchmarks</a>
-                </li>
-                <li>
                   <a href={links.releases}>Releases</a>
                 </li>
               </ul>

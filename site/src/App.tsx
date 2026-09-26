@@ -4,7 +4,6 @@ import { Hero } from './sections/Hero'
 import { Features } from './sections/Features'
 import { Languages } from './sections/Languages'
 import { Setup } from './sections/Setup'
-import { Benchmarks } from './sections/Benchmarks'
 import { Compare, Footer, OpenSource, Privacy } from './sections/More'
 
 export function App() {
@@ -21,7 +20,6 @@ export function App() {
         <Features />
         <Languages />
         <Setup />
-        <Benchmarks />
         <Compare />
         <OpenSource stats={stats} />
         <Privacy />
