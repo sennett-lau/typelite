@@ -6,7 +6,7 @@ in another app, a small glass toast where the pill appears suggests the Dictate 
 most once a day. The visual reference is [mock.html](mock.html) (the "Speaking / Typing / N×
 faster" row at the top of Insights, and the "Typing nudge" toast: switch it on in the mock).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 ## Goals
 
