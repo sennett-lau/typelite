@@ -30,7 +30,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../../hooks/useCapsuleResize', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../hooks/useCapsuleResize')>()),
-  useCapsuleResize: () => ({ width: 440, height: 40 }),
+  useCapsuleResize: () => ({ width: 440, height: 32 }),
 }))
 
 vi.mock('../../../lib/tauri', () => ({

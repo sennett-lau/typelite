@@ -28,7 +28,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../../hooks/useCapsuleResize', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../hooks/useCapsuleResize')>()),
-  useCapsuleResize: () => ({ width: 224, height: 40 }),
+  useCapsuleResize: () => ({ width: 224, height: 32 }),
 }))
 
 vi.mock('../../../lib/tauri', () => ({
@@ -324,13 +324,13 @@ describe('Capsule flow states', () => {
     const { container, rerender } = render(<Capsule />)
     const shell = () => container.querySelector('.pill') as HTMLElement
     // 'English' (about 48 pt in tests) and two dots.
-    expect(shell().style.width).toBe('228px')
+    expect(shell().style.width).toBe('226px')
     expect(shell()).not.toHaveClass('pill-size-instant')
 
     // The long name is capped at 180 pt; the CSS on `.pill` animates the width change.
     act(() => useAppStore.setState({ config: translateWith(['en', 'zh-Hant-HK'], 'zh-Hant-HK') }))
     rerender(<Capsule />)
-    expect(shell().style.width).toBe('360px')
+    expect(shell().style.width).toBe('358px')
     expect(shell()).not.toHaveClass('pill-size-instant')
     expect(languageName()).toHaveAttribute('data-display', 'ellipsis')
   })
@@ -345,8 +345,8 @@ describe('Capsule flow states', () => {
     const shell = () => container.querySelector('.pill') as HTMLElement
 
     // 'English' (about 48 pt in tests) and three dots.
-    expect(shell().style.width).toBe('238px')
-    expect(shell().style.height).toBe('40px')
+    expect(shell().style.width).toBe('235px')
+    expect(shell().style.height).toBe('32px')
 
     useAppStore.setState({ activeVoiceMode: 'dictate' })
     rerender(<Capsule />)

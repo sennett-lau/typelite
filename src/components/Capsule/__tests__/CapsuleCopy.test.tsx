@@ -28,7 +28,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../../../hooks/useCapsuleResize', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../hooks/useCapsuleResize')>()),
-  useCapsuleResize: () => ({ width: 368, height: 40 }),
+  useCapsuleResize: () => ({ width: 368, height: 32 }),
 }))
 
 vi.mock('../../../lib/tauri', () => ({
@@ -75,7 +75,7 @@ describe('Copy pill', () => {
     expect(screen.getByRole('button', { name: 'capsule.copyResult' })).toBeInTheDocument()
     expect(screen.getByTestId('capsule-copy-countdown')).toHaveAttribute('pathLength', '100')
     expect(shell().style.width).toBe('368px')
-    expect(shell().style.height).toBe('40px')
+    expect(shell().style.height).toBe('32px')
     expect(shell()).not.toHaveClass('pill-gone')
     // No aurora light behind the Copy pill.
     expect(screen.queryByTestId('capsule-aurora')).toBeNull()

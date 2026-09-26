@@ -207,3 +207,101 @@ mod mac {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::behavior::*;
+    use super::*;
+
+    #[test]
+    fn a_plain_window_gets_every_overlay_bit() {
+        let behavior = overlay_collection_behavior(0);
+        assert_eq!(
+            behavior,
+            CAN_JOIN_ALL_SPACES | STATIONARY | IGNORES_CYCLE | FULL_SCREEN_AUXILIARY
+        );
+    }
+
+    #[test]
+    fn tauris_all_workspaces_bit_is_kept_and_conflicting_bits_are_cleared() {
+        // What Tauri leaves on the window (`visibleOnAllWorkspaces`), plus bits from each
+        // exclusive group that would contradict the overlay behavior.
+        let current = CAN_JOIN_ALL_SPACES
+            | MOVE_TO_ACTIVE_SPACE
+            | MANAGED
+            | TRANSIENT
+            | PARTICIPATES_IN_CYCLE
+            | FULL_SCREEN_PRIMARY
+            | FULL_SCREEN_NONE;
+        let behavior = overlay_collection_behavior(current);
+        assert_eq!(
+            behavior,
+            CAN_JOIN_ALL_SPACES | STATIONARY | IGNORES_CYCLE | FULL_SCREEN_AUXILIARY
+        );
+        for cleared in [
+            MOVE_TO_ACTIVE_SPACE,
+            MANAGED,
+            TRANSIENT,
+            PARTICIPATES_IN_CYCLE,
+            FULL_SCREEN_PRIMARY,
+            FULL_SCREEN_NONE,
+        ] {
+            assert_eq!(behavior & cleared, 0, "bit {cleared:#x} must be cleared");
+        }
+    }
+
+    #[test]
+    fn unrelated_bits_survive_and_applying_twice_changes_nothing() {
+        const FULL_SCREEN_ALLOWS_TILING: usize = 1 << 11;
+        let once = overlay_collection_behavior(FULL_SCREEN_ALLOWS_TILING);
+        assert_ne!(once & FULL_SCREEN_ALLOWS_TILING, 0);
+        assert_eq!(overlay_collection_behavior(once), once);
+        assert_eq!(
+            overlay_style_mask(overlay_style_mask(0)),
+            overlay_style_mask(0)
+        );
+    }
+
+    #[test]
+    fn the_bits_and_level_match_appkit() {
+        // Values from AppKit's NSWindow.h and CGWindowLevel.h.
+        assert_eq!(CAN_JOIN_ALL_SPACES, 1);
+        assert_eq!(STATIONARY, 16);
+        assert_eq!(IGNORES_CYCLE, 64);
+        assert_eq!(FULL_SCREEN_AUXILIARY, 256);
+        assert_eq!(NONACTIVATING_PANEL_STYLE, 128);
+        // NSStatusWindowLevel: above the Dock (20) and the menu bar (24), below pop-up menus.
+        const DOCK_LEVEL: isize = 20;
+        const MAIN_MENU_LEVEL: isize = 24;
+        const POP_UP_MENU_LEVEL: isize = 101;
+        const {
+            assert!(OVERLAY_WINDOW_LEVEL > DOCK_LEVEL);
+            assert!(OVERLAY_WINDOW_LEVEL > MAIN_MENU_LEVEL);
+            assert!(OVERLAY_WINDOW_LEVEL < POP_UP_MENU_LEVEL);
+        }
+    }
+
+    #[test]
+    fn the_panel_swap_needs_the_same_layout() {
+        let window = ClassLayout {
+            instance_size: 24,
+            focusable_offset: Some(16),
+        };
+        assert!(panel_swap_is_safe(window, window));
+        let bigger = ClassLayout {
+            instance_size: 32,
+            ..window
+        };
+        assert!(!panel_swap_is_safe(window, bigger));
+        let moved = ClassLayout {
+            focusable_offset: Some(17),
+            ..window
+        };
+        assert!(!panel_swap_is_safe(window, moved));
+        let missing = ClassLayout {
+            focusable_offset: None,
+            ..window
+        };
+        assert!(!panel_swap_is_safe(missing, missing));
+    }
+}

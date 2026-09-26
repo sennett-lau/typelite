@@ -422,6 +422,32 @@ mod tests {
     }
 
     #[test]
+    fn overlay_windows_are_the_non_focusable_pill_and_ask_windows() {
+        // Plan `pill-over-full-screen`: these windows get the full-screen collection behavior
+        // and level, and must stay non-activating.
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let tauri_config: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(manifest_dir.join("tauri.conf.json")).unwrap(),
+        )
+        .unwrap();
+        let windows = tauri_config["app"]["windows"].as_array().unwrap();
+        for label in OVERLAY_WINDOW_LABELS {
+            let window = windows
+                .iter()
+                .find(|window| window["label"].as_str() == Some(label))
+                .unwrap_or_else(|| panic!("{label} is configured"));
+            assert_eq!(window["focusable"].as_bool(), Some(false), "{label}");
+            assert_eq!(window["focus"].as_bool(), Some(false), "{label}");
+            assert_eq!(window["alwaysOnTop"].as_bool(), Some(true), "{label}");
+            assert_eq!(
+                window["visibleOnAllWorkspaces"].as_bool(),
+                Some(true),
+                "{label}"
+            );
+        }
+    }
+
+    #[test]
     fn main_window_config_is_glass_without_title_bar() {
         let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let tauri_config: serde_json::Value = serde_json::from_str(
@@ -1094,7 +1120,8 @@ pub fn run() {
             if !onboarding_completed {
                 tracing::info!("Shortcut gate: none (onboarding not finished)");
             }
-            // Windows start hidden, so the Dock choice applies before any window shows.
+            // Windows start hidden, so the Dock choice applies before any window shows. It
+            // also sets up the pill and the Ask panel for full-screen Spaces.
             apply_dock_visibility(&app_handle, initial_config.show_in_dock);
             app.manage(config_manager);
             app.manage(dictionary_store);
