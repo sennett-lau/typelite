@@ -55,7 +55,7 @@ and expects a JSON answer with the text, and with `verbose_json` the language it
 
 - It ends before `/audio/transcriptions`; Typelite adds that part.
 - A server on another computer uses that computer's address, for example
-  `http://192.168.1.20:8000/v1`, or its name on a private network such as Tailscale.
+  `http://192.0.2.20:8000/v1`, or its name on a private network such as Tailscale.
 - `http://` is fine on your own network; cloud services use `https://`.
 
 ## Running your own server
