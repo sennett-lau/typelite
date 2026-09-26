@@ -2812,6 +2812,8 @@ section {
   }
 }
 .lane {
+  position: relative;
+  transition: box-shadow 0.5s ease;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2840,7 +2842,12 @@ section {
   font-size: 13px;
   white-space: nowrap;
 }
+.lane-num {
+  position: relative;
+  display: inline-block;
+}
 .lane-count b {
+  display: inline-block;
   color: var(--text);
   font-size: 24px;
   font-weight: 700;
@@ -2858,6 +2865,7 @@ section {
   height: 100%;
   border-radius: 999px;
   background: var(--lane);
+  transform-origin: 0 50%;
 }
 .lane:last-child .lane-bar i {
   background: linear-gradient(90deg, var(--aurora-a), var(--aurora-b));
@@ -2877,6 +2885,62 @@ section {
 .lane:last-child .lane-text {
   color: var(--text);
 }
+.lane-lead {
+  margin-right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 4px;
+}
+/* The finish: the speaking lane lights up, a sheen crosses it and sparks fly off the count. */
+.lane.lane-done {
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, transparent),
+    0 12px 36px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.lane-sheen-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.lane-sheen {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in srgb, var(--aurora-a) 18%, transparent),
+    color-mix(in srgb, var(--aurora-b) 18%, transparent),
+    transparent
+  );
+}
+.sparks {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+.sparks i {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  border-radius: 50%;
+}
+.race-clock {
+  display: inline-block;
+  transition: color 0.3s ease;
+}
+.race-clock.is-done {
+  color: var(--accent-ink);
+}
 .lane-rate {
   color: var(--text-3);
   font-size: 12.5px;
@@ -2892,6 +2956,7 @@ section {
   font-size: 15px;
 }
 .race-x {
+  display: inline-block;
   padding: 4px 12px;
   border-radius: 999px;
   background: var(--accent-soft);
