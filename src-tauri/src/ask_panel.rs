@@ -33,7 +33,7 @@ pub const CAPSULE_WINDOW_PADDING: f64 = 12.0;
 /// (`CAPSULE_BOTTOM_MARGIN` in `useCapsuleResize`).
 const CAPSULE_BOTTOM_MARGIN: f64 = 80.0;
 /// Without a pill ever seen: its usual height.
-const DEFAULT_PILL_HEIGHT: f64 = 36.0;
+const DEFAULT_PILL_HEIGHT: f64 = 40.0;
 
 /// A rectangle in global logical points (y grows downwards, as Tauri reports it).
 #[derive(Debug, Clone, Copy, PartialEq)]
