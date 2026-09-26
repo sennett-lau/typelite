@@ -221,9 +221,7 @@ export function HeroFrame({ t }: { t: number }) {
           <span className="caption-label">
             <IconSparkle size={14} /> Typelite types
           </span>
-          <p className="caption-text caption-clean">
-            {!inHold && u >= DONE ? ex.clean : ' '}
-          </p>
+          <p className="caption-text caption-clean">{!inHold && u >= DONE ? ex.clean : ' '}</p>
         </div>
       </div>
     </>

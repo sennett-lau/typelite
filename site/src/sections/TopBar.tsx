@@ -3,6 +3,7 @@ import { formatCount, useScrolled, useTheme, type RepoStats } from '../lib/hooks
 import { links } from '../links'
 
 const NAV = [
+  ['Why voice', '#faster'],
   ['Features', '#features'],
   ['Languages', '#languages'],
   ['Setup', '#setup'],

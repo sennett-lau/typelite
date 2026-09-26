@@ -2127,6 +2127,145 @@ section {
   font-weight: 600;
 }
 
+/* ─── Faster than typing ─── */
+.race {
+  max-width: 980px;
+  margin-inline: auto;
+  padding: 26px 28px 24px;
+}
+.race-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-right: 36px;
+}
+.race-clock {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.lanes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .lanes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.lane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface-solid);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.lane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.lane-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.lane-label svg {
+  color: var(--lane);
+}
+.lane-count {
+  color: var(--text-2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.lane-count b {
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.lane-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--field);
+  overflow: hidden;
+}
+.lane-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--lane);
+}
+.lane:last-child .lane-bar i {
+  background: linear-gradient(90deg, var(--aurora-a), var(--aurora-b));
+}
+.lane-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 124px;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-mask-image: linear-gradient(transparent 0, #000 30%);
+  mask-image: linear-gradient(transparent 0, #000 30%);
+}
+.lane:last-child .lane-text {
+  color: var(--text);
+}
+.lane-rate {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.race-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+.race-x {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 18px;
+  font-weight: 800;
+}
+.race-note {
+  margin: 16px auto 0;
+  color: var(--text-2);
+  font-size: 15px;
+  text-align: center;
+}
+.footnote {
+  max-width: 820px;
+  margin: 14px auto 0;
+  color: var(--text-3);
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+.footnote a {
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* ─── Tables ─── */
 .table-wrap {
   overflow-x: auto;

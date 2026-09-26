@@ -315,6 +315,9 @@ export function Footer() {
               <h3 id="f-product">Product</h3>
               <ul>
                 <li>
+                  <a href="#faster">Faster than typing</a>
+                </li>
+                <li>
                   <a href="#features">Features</a>
                 </li>
                 <li>
