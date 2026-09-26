@@ -195,7 +195,6 @@ export function Onboarding() {
       onNext={handleNext}
       onBack={handleBack}
       onClose={tour ? handleCloseTour : undefined}
-      centerContent={step === 0}
       wideContent={step === 2}
     >
       <AnimatePresence mode="wait">
