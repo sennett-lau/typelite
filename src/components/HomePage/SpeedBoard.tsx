@@ -2,27 +2,31 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listen } from '@tauri-apps/api/event'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { Lightbulb } from 'lucide-react'
+import { ChevronRight, Lightbulb } from 'lucide-react'
 import { useAppStore } from '../../stores/appStore'
 import { getRunTimings } from '../../lib/tauri'
 import {
   addRun,
+  aiPresetSpeeds,
   averageTimes,
   formatMs,
+  formatSeconds,
   INSIGHT_STEPS,
   RUN_TIMING_EVENT,
   SPEECH_GUIDE_URL,
   speedTip,
+  speechPresetSpeeds,
   STEP_COLOR,
   type AverageTimes,
+  type PresetSpeed,
   type RunTiming,
   type StepId,
 } from '../../lib/speed'
 import { Group } from '../ui/Group'
 
 /**
- * Loads the kept runs when Home opens and adds each new run from its event. Runs live only in
- * the backend's memory, so a closed Home misses nothing: it asks again when it opens.
+ * Loads the kept runs when Home opens and adds each new run from its event. The backend keeps
+ * the runs (plan `speed-by-preset`), so a closed Home misses nothing: it asks again when it opens.
  */
 function useRunTimings(): RunTiming[] {
   const [runs, setRuns] = useState<RunTiming[]>([])
@@ -141,6 +145,142 @@ function AverageRun({ average }: { average: AverageTimes }) {
   )
 }
 
+/** One list of the comparison: a row per preset with its run count, a bar and its average. */
+function PresetList({
+  title,
+  speeds,
+  color,
+  nameOf,
+  testId,
+}: {
+  title: React.ReactNode
+  speeds: PresetSpeed[]
+  color: string
+  nameOf: (speed: PresetSpeed) => string
+  testId: string
+}) {
+  const { t } = useTranslation()
+  const slowest = Math.max(1, ...speeds.map((speed) => speed.average ?? 0))
+
+  return (
+    <div className="min-w-0" data-testid={testId}>
+      <h5 className="m-0 mt-1.5 mb-2 text-[11px] font-semibold tracking-[0.06em] text-text-tertiary uppercase">
+        {title}
+      </h5>
+      {speeds.length === 0 ? (
+        <p className="m-0 text-[12px] text-text-secondary">{t('home.speed.compare.empty')}</p>
+      ) : (
+        <ul className="m-0 list-none space-y-1 p-0">
+          {speeds.map((speed) => {
+            const name = nameOf(speed)
+            return (
+              <li
+                key={`${speed.presetId}-${speed.model}`}
+                data-testid="compare-row"
+                className="grid grid-cols-[minmax(0,1fr)_90px_52px] items-center gap-2 text-[12px]"
+              >
+                <span className="flex min-w-0 items-baseline gap-1" title={name}>
+                  <span className="truncate text-text-primary">{name}</span>
+                  {speed.fastest && (
+                    <span className="fastest-tag">{t('home.speed.compare.fastest')}</span>
+                  )}
+                  <small className="flex-none text-[11px] text-text-tertiary">
+                    {speed.runCount === 1
+                      ? t('home.speed.compare.runsOne')
+                      : t('home.speed.compare.runsMany', { count: speed.runCount })}
+                  </small>
+                </span>
+                <span className="h-1.5 overflow-hidden rounded-full bg-bg-secondary">
+                  {speed.average !== null && (
+                    <span
+                      className="block h-full min-w-[3px] rounded-full"
+                      style={{ width: `${(speed.average / slowest) * 100}%`, background: color }}
+                    />
+                  )}
+                </span>
+                <span className="text-right font-mono text-text-primary tabular-nums">
+                  {speed.average === null ? '—' : formatSeconds(speed.average)}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Plan `speed-by-preset`: "Compare presets", collapsed by default. It opens with a height
+ * animation (a grid row going from 0fr to 1fr, see `.collapsible` in globals.css) and ranks the AI
+ * presets by AI time and the speech presets by recognition time per second of audio.
+ */
+function ComparePresets({ runs }: { runs: RunTiming[] }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const aiPresets = useAppStore((s) => s.config.ai_presets)
+  const speechPresets = useAppStore((s) => s.config.speech_presets)
+
+  const nameOf =
+    (presets: { id: string; name: string }[] | undefined) =>
+    (speed: PresetSpeed): string => {
+      const preset = (presets ?? []).find((candidate) => candidate.id === speed.presetId)
+      const name = preset
+        ? preset.name.trim() || t('presets.unnamed')
+        : t('home.speed.compare.deleted')
+      return speed.model ? `${name} · ${speed.model}` : name
+    }
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="compare-presets"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full cursor-pointer items-center gap-1.5 border-x-0 border-t border-b-0 border-solid border-hairline bg-transparent px-3.5 py-2.5 text-left text-[12.5px] font-semibold text-accent"
+      >
+        <ChevronRight
+          size={13}
+          aria-hidden="true"
+          className={`transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+        />
+        {t('home.speed.compare.title')}
+      </button>
+      <div id="compare-presets" className="collapsible" data-open={open} inert={!open}>
+        <div>
+          <div className="grid grid-cols-2 gap-4 px-3.5 pt-1 pb-3.5">
+            <PresetList
+              testId="compare-ai"
+              title={t('home.speed.compare.ai')}
+              speeds={aiPresetSpeeds(runs)}
+              color={STEP_COLOR.ai}
+              nameOf={nameOf(aiPresets)}
+            />
+            <PresetList
+              testId="compare-speech"
+              title={
+                <>
+                  {t('home.speed.compare.speech')}{' '}
+                  <span className="font-normal tracking-normal normal-case">
+                    {t('home.speed.compare.perSecond')}
+                  </span>
+                </>
+              }
+              speeds={speechPresetSpeeds(runs)}
+              color={STEP_COLOR.speech}
+              nameOf={nameOf(speechPresets)}
+            />
+            <p className="col-span-2 m-0 text-[11.5px] text-text-tertiary">
+              {t('home.speed.compare.note')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 /** One tip for the slowest step of the average run. */
 function Tip({ average }: { average: AverageTimes }) {
   const { t } = useTranslation()
@@ -192,6 +332,7 @@ export function SpeedBoard() {
       {average ? (
         <>
           <AverageRun average={average} />
+          <ComparePresets runs={runs} />
           <Tip average={average} />
         </>
       ) : (

@@ -1084,7 +1084,10 @@ pub fn run() {
             app.manage(shared_client);
             app.manage(context_detector);
             app.manage(pipeline_handle);
-            app.manage(timing::RunTimingBuffer::default());
+            // Plan `speed-by-preset`: run timings (durations only) are kept in the app data folder.
+            app.manage(timing::RunTimingBuffer::load(
+                data_dir.join(timing::RUN_TIMINGS_FILE),
+            ));
             app.manage(commands::speech_setup::SpeechSetupState::default());
             // Plan `quick-speech-setup`: tell the built-in speech engine where models live, and
             // drop presets whose model file is gone.
@@ -1417,15 +1420,12 @@ pub fn run() {
             commands::config::set_shortcut_tour_state,
             readiness::open_settings_pane,
             timing::get_run_timings,
+            timing::clear_run_timings,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
-            // Plan `speed-board`: the Speed board's run timings never outlive the app.
             if let tauri::RunEvent::Exit = _event {
-                if let Some(buffer) = _app.try_state::<timing::RunTimingBuffer>() {
-                    buffer.clear();
-                }
                 // Plan `quick-speech-setup`: free the built-in speech model before exit, or GGML's
                 // Metal cleanup aborts the process.
                 stt::builtin::engine().unload();

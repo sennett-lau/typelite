@@ -39,10 +39,16 @@ export async function dismissCopyOffer(): Promise<void> {
 }
 
 /**
- * Plan `speed-board`: the last runs' step timings (memory only), oldest first, for the Speed board.
+ * Plans `speed-board` and `speed-by-preset`: the kept runs' step timings (durations only, kept in
+ * the app data folder), oldest first, for Insights on Home.
  */
 export async function getRunTimings(): Promise<RunTiming[]> {
   return invoke('get_run_timings')
+}
+
+/** Plan `speed-by-preset`: Settings → System → "Clear insights data" deletes the kept timings. */
+export async function clearRunTimings(): Promise<void> {
+  return invoke('clear_run_timings')
 }
 
 export async function setActiveTranslationTarget(code: string): Promise<TranslationConfig> {
