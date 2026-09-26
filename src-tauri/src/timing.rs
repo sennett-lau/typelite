@@ -1,27 +1,35 @@
-//! Plan `speed-board`: per-run step timings for the Speed board on Home.
+//! Plans `speed-board` and `speed-by-preset`: per-run step timings for Insights on Home.
 //!
-//! Every Dictate, Translate and Ask run records how long each step after "stop" took. The
-//! records live only in this process's memory (the last [`RUN_TIMING_CAPACITY`] runs) and are
-//! gone when the app quits. They hold durations, sizes and which preset/model was used, never
-//! audio, transcripts or answers.
+//! Every Dictate, Translate and Ask run records how long each step after "stop" took. The last
+//! [`RUN_TIMING_CAPACITY`] records are kept in memory and in a small JSON file in the app data
+//! folder ([`RUN_TIMINGS_FILE`]), so the preset comparison survives a restart. A record holds
+//! durations, sizes, the mode, the outcome, the speech language and which preset/model was used;
+//! never audio, transcripts, answers or any other dictated content. "Clear insights data" in
+//! Settings → System deletes the file ([`clear_run_timings`]).
 
 use std::collections::VecDeque;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager};
 
-/// How many runs the board keeps.
-pub const RUN_TIMING_CAPACITY: usize = 50;
+/// How many runs are kept (plan `speed-by-preset`).
+pub const RUN_TIMING_CAPACITY: usize = 200;
+/// File in the app data folder that holds the kept runs.
+pub const RUN_TIMINGS_FILE: &str = "run-timings.json";
+/// Format version of [`RUN_TIMINGS_FILE`].
+const RUN_TIMINGS_FILE_VERSION: u32 = 1;
 /// Event sent to the frontend after each run, with one [`RunTiming`] as payload.
 pub const RUN_TIMING_EVENT: &str = "timing:run";
 /// Outcome of a run that ended normally.
 pub const OUTCOME_OK: &str = "ok";
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RunMode {
+    #[default]
     Dictate,
     Translate,
     Ask,
@@ -37,9 +45,12 @@ impl RunMode {
     }
 }
 
-/// One run as the Speed board sees it. All times are milliseconds after the user pressed stop.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+/// One run as Insights sees it. All times are milliseconds after the user pressed stop.
+///
+/// Missing fields read as their default, so a file written by an older or newer version still
+/// loads.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct RunTiming {
     /// Increases by one per run; lets the frontend drop an event it already has.
     pub id: u64,
@@ -212,35 +223,110 @@ struct BufferInner {
     next_id: u64,
 }
 
+/// The contents of [`RUN_TIMINGS_FILE`].
+#[derive(Serialize, Deserialize)]
+struct RunTimingsFile {
+    version: u32,
+    runs: Vec<RunTiming>,
+}
+
+/// Reads the kept runs from `path`, oldest first and at most [`RUN_TIMING_CAPACITY`]. A missing
+/// file is an empty list; an unreadable or corrupt file is ignored (and replaced by the next
+/// run that is recorded).
+fn read_runs(path: &Path) -> Vec<RunTiming> {
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Vec::new(),
+        Err(error) => {
+            tracing::warn!("Insights: could not read {}: {error}", path.display());
+            return Vec::new();
+        }
+    };
+    match serde_json::from_str::<RunTimingsFile>(&text) {
+        Ok(file) => {
+            let mut runs = file.runs;
+            if runs.len() > RUN_TIMING_CAPACITY {
+                runs.drain(..runs.len() - RUN_TIMING_CAPACITY);
+            }
+            runs
+        }
+        Err(error) => {
+            tracing::warn!(
+                "Insights: ignoring an unreadable {}: {error}",
+                path.display()
+            );
+            Vec::new()
+        }
+    }
+}
+
+/// Writes the runs to `path` through a temporary file, so a crash never leaves half a file.
+fn write_runs(path: &Path, runs: &VecDeque<RunTiming>) -> std::io::Result<()> {
+    let file = RunTimingsFile {
+        version: RUN_TIMINGS_FILE_VERSION,
+        runs: runs.iter().cloned().collect(),
+    };
+    let json = serde_json::to_vec(&file).map_err(std::io::Error::other)?;
+    let temp = path.with_extension("json.tmp");
+    std::fs::write(&temp, json)?;
+    std::fs::rename(&temp, path)
+}
+
 /// The last [`RUN_TIMING_CAPACITY`] runs, oldest first. Managed as Tauri state.
+///
+/// Made with [`RunTimingBuffer::load`] it also keeps the runs in a file; `Default` keeps them in
+/// memory only (tests).
 #[derive(Default)]
-pub struct RunTimingBuffer(Mutex<BufferInner>);
+pub struct RunTimingBuffer {
+    inner: Mutex<BufferInner>,
+    path: Option<PathBuf>,
+}
 
 impl RunTimingBuffer {
+    /// Loads the runs kept in `path` and keeps writing new runs there.
+    pub fn load(path: PathBuf) -> Self {
+        let runs: VecDeque<RunTiming> = read_runs(&path).into();
+        let next_id = runs.iter().map(|run| run.id).max().unwrap_or(0);
+        Self {
+            inner: Mutex::new(BufferInner { runs, next_id }),
+            path: Some(path),
+        }
+    }
+
     /// Assembles the run, stores it (dropping the oldest when full) and returns it.
     pub fn record(&self, marks: &RunMarks, presets: RunPresets) -> RunTiming {
-        let mut inner = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         inner.next_id += 1;
         let run = assemble_run_timing(inner.next_id, marks, presets);
-        if inner.runs.len() >= RUN_TIMING_CAPACITY {
+        while inner.runs.len() >= RUN_TIMING_CAPACITY {
             inner.runs.pop_front();
         }
         inner.runs.push_back(run.clone());
+        if let Some(path) = &self.path {
+            if let Err(error) = write_runs(path, &inner.runs) {
+                tracing::warn!("Insights: could not save {}: {error}", path.display());
+            }
+        }
         run
     }
 
     /// All kept runs, oldest first.
     pub fn list(&self) -> Vec<RunTiming> {
-        let inner = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         inner.runs.iter().cloned().collect()
     }
 
-    pub fn clear(&self) {
-        self.0
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .runs
-            .clear();
+    /// Forgets every run and deletes the file. Ids keep increasing.
+    pub fn clear(&self) -> std::io::Result<()> {
+        let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        inner.runs.clear();
+        match &self.path {
+            Some(path) => match std::fs::remove_file(path) {
+                Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
+                _ => Ok(()),
+            },
+            None => Ok(()),
+        }
     }
 }
 
@@ -273,6 +359,15 @@ pub fn record_run(app: &tauri::AppHandle, marks: &RunMarks, config: &crate::stor
 #[tauri::command]
 pub fn get_run_timings(buffer: tauri::State<'_, RunTimingBuffer>) -> Vec<RunTiming> {
     buffer.list()
+}
+
+/// Settings → System → "Clear insights data": forgets every kept run and deletes the file.
+#[tauri::command]
+pub fn clear_run_timings(buffer: tauri::State<'_, RunTimingBuffer>) -> Result<(), String> {
+    buffer.clear().map_err(|error| {
+        tracing::warn!("Insights: could not delete the timings file: {error}");
+        error.to_string()
+    })
 }
 
 #[cfg(test)]
@@ -444,7 +539,7 @@ mod tests {
     }
 
     #[test]
-    fn buffer_keeps_only_the_last_fifty_runs_oldest_first() {
+    fn buffer_keeps_only_the_last_runs_up_to_the_capacity_oldest_first() {
         let buffer = RunTimingBuffer::default();
         let base = Instant::now();
         for _ in 0..(RUN_TIMING_CAPACITY + 5) {
@@ -463,7 +558,7 @@ mod tests {
         let base = Instant::now();
         buffer.record(&marks(RunMode::Dictate, base), presets());
         buffer.record(&marks(RunMode::Ask, base), presets());
-        buffer.clear();
+        buffer.clear().unwrap();
         assert!(buffer.list().is_empty());
 
         let next = buffer.record(&marks(RunMode::Translate, base), presets());
@@ -491,5 +586,127 @@ mod tests {
         assert!(!keys
             .iter()
             .any(|key| key.contains("text") || key.contains("answer")));
+    }
+
+    /// A fresh, empty folder for one test.
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "typelite-timing-{name}-{}-{:?}",
+            std::process::id(),
+            Instant::now()
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn runs_survive_a_restart_through_the_file() {
+        let dir = temp_dir("roundtrip");
+        let path = dir.join(RUN_TIMINGS_FILE);
+        let base = Instant::now();
+        let buffer = RunTimingBuffer::load(path.clone());
+        let first = buffer.record(&marks(RunMode::Dictate, base), presets());
+        let second = buffer.record(&marks(RunMode::Ask, base), presets());
+        drop(buffer);
+
+        let reloaded = RunTimingBuffer::load(path.clone());
+        assert_eq!(reloaded.list(), vec![first, second]);
+        // Ids go on from the highest kept id.
+        let third = reloaded.record(&marks(RunMode::Translate, base), presets());
+        assert_eq!(third.id, 3);
+        assert_eq!(RunTimingBuffer::load(path).list().len(), 3);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn file_keeps_at_most_the_capacity() {
+        let dir = temp_dir("cap");
+        let path = dir.join(RUN_TIMINGS_FILE);
+        let base = Instant::now();
+        let buffer = RunTimingBuffer::load(path.clone());
+        for _ in 0..(RUN_TIMING_CAPACITY + 3) {
+            buffer.record(&marks(RunMode::Dictate, base), presets());
+        }
+
+        let reloaded = RunTimingBuffer::load(path.clone()).list();
+        assert_eq!(reloaded.len(), RUN_TIMING_CAPACITY);
+        assert_eq!(reloaded.first().unwrap().id, 4);
+
+        // A file with too many runs (written by hand or another version) is cut on load.
+        let too_many: Vec<RunTiming> = (1..=(RUN_TIMING_CAPACITY as u64 + 10))
+            .map(|id| RunTiming {
+                id,
+                ..RunTiming::default()
+            })
+            .collect();
+        let json = serde_json::json!({ "version": 1, "runs": too_many });
+        std::fs::write(&path, json.to_string()).unwrap();
+        let cut = RunTimingBuffer::load(path).list();
+        assert_eq!(cut.len(), RUN_TIMING_CAPACITY);
+        assert_eq!(cut.first().unwrap().id, 11);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn corrupt_or_missing_file_starts_empty_and_is_replaced() {
+        let dir = temp_dir("corrupt");
+        let path = dir.join(RUN_TIMINGS_FILE);
+        assert!(RunTimingBuffer::load(path.clone()).list().is_empty());
+
+        std::fs::write(&path, "{ not json").unwrap();
+        let buffer = RunTimingBuffer::load(path.clone());
+        assert!(buffer.list().is_empty());
+        buffer.record(&marks(RunMode::Dictate, Instant::now()), presets());
+        assert_eq!(RunTimingBuffer::load(path).list().len(), 1);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_run_with_missing_or_extra_fields_still_loads() {
+        let dir = temp_dir("fields");
+        let path = dir.join(RUN_TIMINGS_FILE);
+        let json = r#"{"version":1,"runs":[{"id":5,"mode":"ask","speechMs":900,"outcome":"ok","someFutureField":3}]}"#;
+        std::fs::write(&path, json).unwrap();
+
+        let runs = RunTimingBuffer::load(path).list();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].id, 5);
+        assert_eq!(runs[0].mode, RunMode::Ask);
+        assert_eq!(runs[0].speech_ms, 900);
+        assert_eq!(runs[0].ai_ms, None);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn clear_deletes_the_file() {
+        let dir = temp_dir("clear");
+        let path = dir.join(RUN_TIMINGS_FILE);
+        let buffer = RunTimingBuffer::load(path.clone());
+        buffer.record(&marks(RunMode::Dictate, Instant::now()), presets());
+        assert!(path.exists());
+
+        buffer.clear().unwrap();
+        assert!(buffer.list().is_empty());
+        assert!(!path.exists());
+        // Clearing again (no file) is fine.
+        buffer.clear().unwrap();
+        assert!(RunTimingBuffer::load(path).list().is_empty());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn the_file_holds_no_text() {
+        let dir = temp_dir("notext");
+        let path = dir.join(RUN_TIMINGS_FILE);
+        RunTimingBuffer::load(path.clone())
+            .record(&marks(RunMode::Dictate, Instant::now()), presets());
+        let json: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        let run = json["runs"][0].as_object().unwrap();
+        assert!(!run.keys().any(|key| key.contains("text")
+            || key.contains("answer")
+            || key.contains("transcript")));
+        let _ = std::fs::remove_dir_all(dir);
     }
 }
