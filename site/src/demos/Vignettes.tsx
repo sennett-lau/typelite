@@ -14,10 +14,17 @@ import {
 } from '../components/Pill'
 import { Stage } from '../components/Stage'
 import { KeyCap } from '../components/KeyCap'
+import { KeySync, type KeySignal } from '../lib/keySignal'
 
 const fade = (t: number, at: number, len = 0.3): CSSProperties => {
   const p = easeOut(progress(t, at, at + len))
   return { opacity: p, transform: `translateY(${(1 - p) * 6}px)` }
+}
+
+/** A damped spring from 0 to 1 over `x` seconds (overshoots a little, then settles). */
+function spring(x: number): number {
+  if (x <= 0) return 0
+  return 1 - Math.exp(-x * 9) * Math.cos(x * 14)
 }
 
 /* ─── Dictate: fillers out, corrections applied, punctuation in ─── */
@@ -32,7 +39,7 @@ const CLEANUPS: { raw: string; clean: string }[] = [
 ]
 const CLEAN_EACH = 3.6
 
-export function DictateVignette() {
+export function DictateVignette({ keys }: { keys?: KeySignal }) {
   return (
     <Stage
       duration={CLEANUPS.length * CLEAN_EACH}
@@ -45,8 +52,11 @@ export function DictateVignette() {
         const u = t - i * CLEAN_EACH
         const ex = CLEANUPS[i]
         const cutOn = u > 1.0
+        // Fn starts the recording and stops it again just before the cleanup.
+        const down = u < 0.22 || (u >= 0.8 && u < 1.0)
         return (
           <div className="clean-demo">
+            <KeySync signal={keys} down={down} />
             <div className="clean-line" style={fade(u, 0)}>
               <small>You say</small>
               {ex.raw.split(' ').map((w, k) => {
@@ -103,7 +113,7 @@ function translateWidth(nameWidth: number, dots: number) {
   return Math.max(RECORDING_WIDTH, fixed + nameWidth + 8 + (dots * 5 + (dots - 1) * 4) + 8)
 }
 
-export function TranslateVignette() {
+export function TranslateVignette({ keys }: { keys?: KeySignal }) {
   const [extra, setExtra] = useState(0)
   return (
     <Stage
@@ -136,7 +146,7 @@ export function TranslateVignette() {
                     <button
                       key={lang.name}
                       type="button"
-                      className="pill-lang-name pill-lang-switch"
+                      className="pill-lang-name pill-lang-switch pill-lang-swap"
                       style={{ width: lang.width }}
                       lang={lang.lang}
                       aria-label={`Translating into ${lang.name}. Click to switch language.`}
@@ -145,9 +155,11 @@ export function TranslateVignette() {
                       {lang.name}
                     </button>
                     <span className="pill-lang-dots" aria-hidden="true">
-                      {LANGS.map((l, k) => (
-                        <i key={l.name} className={k === active ? 'on' : undefined} />
+                      {LANGS.map((l) => (
+                        <i key={l.name} />
                       ))}
+                      {/* The active dot slides to its place when the language changes. */}
+                      <b style={{ transform: `translateX(${active * 9}px)` }} />
                     </span>
                   </>
                 }
@@ -174,8 +186,10 @@ export function TranslateVignette() {
             </>
           )
         }
+        const shortcutDown = u < 0.22 || (u >= TR_STOP - 0.22 && u < TR_STOP)
         return (
           <div className="translate-demo">
+            <KeySync signal={keys} down={shortcutDown} />
             <div className="translate-out" aria-live="off">
               <small>{u >= TR_DONE ? `Pasted · ${lang.name}` : 'You say'}</small>
               {u >= TR_DONE ? (
@@ -211,7 +225,7 @@ const ASK_THINK = 3.9
 const ASK_ANSWER = 5.0
 const ASK_END = 10.5
 
-export function AskVignette() {
+export function AskVignette({ keys }: { keys?: KeySignal }) {
   return (
     <Stage
       duration={12}
@@ -224,7 +238,11 @@ export function AskVignette() {
         const speaking = speechBetween(ASK_REC + 0.3, ASK_THINK - 0.3)
         const showPill = t >= ASK_REC && t < ASK_ANSWER
         const panel = t >= ASK_ANSWER && t < ASK_END
-        const p = easeOut(progress(t, ASK_ANSWER, ASK_ANSWER + 0.26))
+        // The panel rises on a spring: it overshoots a touch and settles.
+        const rise = spring(t - ASK_ANSWER)
+        const p = easeOut(progress(t, ASK_ANSWER, ASK_ANSWER + 0.2))
+        const down =
+          (t >= ASK_REC - 0.22 && t < ASK_REC) || (t >= ASK_THINK - 0.22 && t < ASK_THINK)
         const out = 1 - progress(t, ASK_END - 0.3, ASK_END)
         let width = 320
         let content
@@ -252,6 +270,7 @@ export function AskVignette() {
         }
         return (
           <div className="ask-demo">
+            <KeySync signal={keys} down={down} />
             <div className="ask-doc" aria-hidden="true">
               Typelite is a voice keyboard for macOS.{' '}
               <mark style={{ '--hl': `${hl}%` } as CSSProperties}>
@@ -266,7 +285,7 @@ export function AskVignette() {
                   aria-label="Ask answer"
                   style={{
                     opacity: p * out,
-                    transform: `translateY(${(1 - p) * 8}px) scale(${0.97 + 0.03 * p})`,
+                    transform: `translateY(${((1 - rise) * 22).toFixed(2)}px) scale(${(0.94 + 0.06 * rise).toFixed(4)})`,
                   }}
                 >
                   <div className="ask-head">
