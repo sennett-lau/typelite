@@ -701,7 +701,8 @@
     "durationMinute": "{{count}} 分钟",
     "durationMinutes": "{{count}} 分钟",
     "reasons": {
-      "clientBuffer": "受应用本地音频缓冲区的安全上限限制。"
+      "clientBuffer": "受应用本地音频缓冲区的安全上限限制。",
+      "provider": "受该服务的最长音频时长限制。"
     }
   },
   "mic": {
@@ -907,6 +908,7 @@
     "apiKeyPlaceholder": "可选",
     "name": "名称",
     "namePlaceholder": "会自动填写",
+    "qwenCloudNote": "Qwen Cloud：发送到 Qwen 自己的语音 API。录音最长 4 分 50 秒。",
     "test": "测试",
     "testing": "正在测试…",
     "works": "可用 · {{time}}",

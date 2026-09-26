@@ -21,6 +21,7 @@ import {
   updateDictionaryEntry,
   waitForAccessibilityPermission,
 } from '../tauri'
+import { BUILTIN_SPEECH_PRESETS } from '../../stores/appStore'
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
@@ -157,14 +158,22 @@ describe('preset commands', () => {
     expect(invoke).toHaveBeenCalledWith('open_settings_pane', { pane: 'stt' })
   })
 
-  it('resolves the recording limit from the mode and seconds only', async () => {
-    vi.mocked(invoke).mockResolvedValueOnce({})
+  it('resolves the recording limit from the mode, seconds and the preset on screen', async () => {
+    vi.mocked(invoke).mockResolvedValue({})
 
     await getSttRecordingCapability('custom', 300)
-
     expect(invoke).toHaveBeenCalledWith('get_stt_recording_capability', {
       mode: 'custom',
       customSeconds: 300,
+      preset: null,
+    })
+
+    const preset = BUILTIN_SPEECH_PRESETS[0]
+    await getSttRecordingCapability('auto', 600, preset)
+    expect(invoke).toHaveBeenCalledWith('get_stt_recording_capability', {
+      mode: 'auto',
+      customSeconds: 600,
+      preset,
     })
   })
 })
