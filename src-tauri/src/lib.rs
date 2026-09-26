@@ -334,6 +334,29 @@ mod tests {
     }
 
     #[test]
+    fn cli_toggle_and_ask_are_gated_until_onboarding_is_finished() {
+        // Plan `onboarding-shortcut-gate`: `typelite toggle` is a dictation, `typelite ask` is Ask.
+        use shortcut_gate::{ShortcutGate, ShortcutGateRequest};
+        let toggle = cli_action_role(CliAction::Toggle);
+        let ask = cli_action_role(CliAction::Ask);
+        assert_eq!(toggle, hotkey::HotkeyRole::Dictation);
+        assert_eq!(ask, hotkey::HotkeyRole::Ask);
+
+        let first_run = ShortcutGate::at_startup(false);
+        assert!(!first_run.allows(toggle));
+        assert!(!first_run.allows(ask));
+
+        let ask_step =
+            ShortcutGate::from_request(ShortcutGateRequest::Roles(vec!["ask".into()])).unwrap();
+        assert!(!ask_step.allows(toggle));
+        assert!(ask_step.allows(ask));
+
+        let finished = ShortcutGate::at_startup(true);
+        assert!(finished.allows(toggle));
+        assert!(finished.allows(ask));
+    }
+
+    #[test]
     fn ask_window_close_keeps_popup_available_for_future_results() {
         assert!(should_preserve_auxiliary_window_on_close("ask"));
         assert!(!should_preserve_auxiliary_window_on_close("main"));

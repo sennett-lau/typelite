@@ -2209,4 +2209,161 @@ mod tests {
         assert_eq!(output.capture_events.len(), 1);
         assert!(output.capture_events[0].cancelled);
     }
+
+    // Plan `onboarding-shortcut-gate`.
+
+    /// The user's bindings, Switch language on Left Shift during Translate, Escape as the
+    /// cancel key, and the onboarding role gate (closed, as at a first-run start). Returns the
+    /// gate and one "run active" flag that drives both the Switch language and cancel gates.
+    fn gated_matcher() -> (
+        ChordMatcher,
+        crate::shortcut_gate::ShortcutGateState,
+        Arc<std::sync::atomic::AtomicBool>,
+    ) {
+        let gate = crate::shortcut_gate::ShortcutGateState::new(
+            crate::shortcut_gate::ShortcutGate::at_startup(false),
+        );
+        let active = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let role_gate = gate.clone();
+        let cancel_flag = Arc::clone(&active);
+        let switch_flag = Arc::clone(&active);
+        let matcher = ChordMatcher::new(vec![
+            binding(HotkeyRole::Dictation, &[END]),
+            binding(HotkeyRole::Ask, &[END, RIGHT_CONTROL]),
+            binding(HotkeyRole::TranslateSelection, &[END, RIGHT_SHIFT]),
+            binding(HotkeyRole::SwitchLanguage, &[LEFT_SHIFT]),
+        ])
+        .with_switch_gate(Arc::new(move || {
+            switch_flag.load(std::sync::atomic::Ordering::SeqCst)
+        }))
+        .with_role_gate(Arc::new(move |role| role_gate.allows(role)))
+        .with_cancel_key(
+            ESCAPE,
+            Arc::new(move || cancel_flag.load(std::sync::atomic::Ordering::SeqCst)),
+        );
+        (matcher, gate, active)
+    }
+
+    fn gate_for(names: &[&str]) -> crate::shortcut_gate::ShortcutGate {
+        crate::shortcut_gate::ShortcutGate::from_request(
+            crate::shortcut_gate::ShortcutGateRequest::Roles(
+                names.iter().map(|name| name.to_string()).collect(),
+            ),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn gated_shortcuts_fire_nothing_and_pass_through() {
+        let (mut matcher, _gate, _active) = gated_matcher();
+        // End alone, End + Right Control, End + Right Shift: nothing fires and nothing is
+        // swallowed, so End moves the cursor in the focused app as if Typelite were not there.
+        let (events, swallows) = run(
+            &mut matcher,
+            &[
+                down(END),
+                repeat(END),
+                up(END),
+                down(RIGHT_CONTROL),
+                down(END),
+                up(END),
+                up(RIGHT_CONTROL),
+                down(RIGHT_SHIFT),
+                down(END),
+                up(END),
+                up(RIGHT_SHIFT),
+            ],
+        );
+        assert!(events.is_empty());
+        assert!(swallows.iter().all(|swallow| !swallow));
+    }
+
+    #[test]
+    fn a_tutorial_step_makes_only_its_role_live() {
+        let (mut matcher, gate, _active) = gated_matcher();
+        gate.set(gate_for(&["dictation"]));
+        // Bare End is Dictation. With Ask and Translate gated it has no larger live chord, so
+        // it fires at once instead of waiting for the release.
+        let (events, swallows) = run(&mut matcher, &[down(END)]);
+        assert_eq!(events, vec![(HotkeyRole::Dictation, Pressed)]);
+        assert_eq!(swallows, vec![true]);
+        let (events, _) = run(&mut matcher, &[up(END)]);
+        assert_eq!(events, vec![(HotkeyRole::Dictation, Released)]);
+        // Ask is gated on the Dictate step: End + Right Control fires Dictation, never Ask.
+        let (events, _) = run(
+            &mut matcher,
+            &[down(RIGHT_CONTROL), down(END), up(END), up(RIGHT_CONTROL)],
+        );
+        assert!(events
+            .iter()
+            .all(|(role, _)| *role == HotkeyRole::Dictation));
+
+        gate.set(gate_for(&["ask"]));
+        let (events, swallows) = run(
+            &mut matcher,
+            &[down(RIGHT_CONTROL), down(END), up(END), up(RIGHT_CONTROL)],
+        );
+        assert_eq!(
+            events,
+            vec![(HotkeyRole::Ask, Pressed), (HotkeyRole::Ask, Released)]
+        );
+        assert_eq!(swallows, vec![false, true, true, false]);
+        // Bare End is Dictation, gated on the Ask step: it fires nothing. End is still part of
+        // the live Ask chord, and a standalone key of a live chord is always swallowed.
+        let (events, swallows) = run(&mut matcher, &[down(END), up(END)]);
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![true, true]);
+    }
+
+    #[test]
+    fn the_translate_step_allows_translate_and_switch_language() {
+        let (mut matcher, gate, active) = gated_matcher();
+        gate.set(gate_for(&["translate", "switchLanguage"]));
+        let (events, _) = run(&mut matcher, &[down(RIGHT_SHIFT), down(END)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Pressed)]);
+        // A Translate recording runs: Left Shift switches the language.
+        set(&active, true);
+        let (events, swallows) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::SwitchLanguage, Pressed),
+                (HotkeyRole::SwitchLanguage, Released)
+            ]
+        );
+        assert_eq!(swallows, vec![true, true]);
+
+        // Without `switchLanguage` in the gate the key is left alone even during a Translate run.
+        gate.set(gate_for(&["translate"]));
+        let (events, swallows) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![false, false]);
+    }
+
+    #[test]
+    fn escape_cancels_an_active_run_even_when_everything_is_gated() {
+        let (mut matcher, _gate, active) = gated_matcher();
+        set(&active, true);
+        let (events, swallows) = run(&mut matcher, &[down(ESCAPE), up(ESCAPE)]);
+        assert_eq!(events, vec![(HotkeyRole::Cancel, Pressed)]);
+        assert_eq!(swallows, vec![true, true]);
+    }
+
+    #[test]
+    fn opening_the_gate_restores_the_normal_bindings() {
+        let (mut matcher, gate, _active) = gated_matcher();
+        gate.set(crate::shortcut_gate::ShortcutGate::All);
+        // With every role live, bare End waits for its release (End + Right Shift is larger).
+        let (events, swallows) = run(&mut matcher, &[down(END)]);
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![true]);
+        let (events, _) = run(&mut matcher, &[up(END)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::Dictation, Pressed),
+                (HotkeyRole::Dictation, Released)
+            ]
+        );
+    }
 }
