@@ -18,7 +18,7 @@ and check the microphone chosen in Settings. The log line `speech check: …` gi
 
 ## It is slow
 
-The Test button and the **Speed board** on the Home page measure the whole round trip: upload,
+The Test button and the **Insights** panel on the Home page measure the whole round trip: upload,
 recognition and the reply. Ways to speed it up:
 
 - On an Intel Mac, or with Built-in on an older Mac, use a GPU computer on your network or a
