@@ -315,6 +315,26 @@ describe('Capsule flow states', () => {
     expect((container.querySelector('.pill') as HTMLElement).style.width).toBe('160px')
   })
 
+  it('resizes the shell to the new name when the language changes during a recording', () => {
+    useAppStore.setState({
+      pipelineState: 'recording',
+      activeVoiceMode: 'translate',
+      config: translateWith(['en', 'zh-Hant-HK'], 'en'),
+    })
+    const { container, rerender } = render(<Capsule />)
+    const shell = () => container.querySelector('.pill') as HTMLElement
+    // 'English' (about 48 pt in tests) and two dots.
+    expect(shell().style.width).toBe('228px')
+    expect(shell()).not.toHaveClass('pill-size-instant')
+
+    // The long name is capped at 180 pt; the CSS on `.pill` animates the width change.
+    act(() => useAppStore.setState({ config: translateWith(['en', 'zh-Hant-HK'], 'zh-Hant-HK') }))
+    rerender(<Capsule />)
+    expect(shell().style.width).toBe('360px')
+    expect(shell()).not.toHaveClass('pill-size-instant')
+    expect(languageName()).toHaveAttribute('data-display', 'ellipsis')
+  })
+
   it('widens the capsule shell for the language while Translate is recording', () => {
     useAppStore.setState({
       pipelineState: 'recording',
