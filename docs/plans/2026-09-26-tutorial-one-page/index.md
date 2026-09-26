@@ -7,7 +7,7 @@ and the footer, so nothing scrolls at the default window size. An exercise page 
 element in a fixed slot, and its result appears only once the pasted text has fully arrived.
 The visual reference is [mock.html](mock.html).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 Supersedes in part [guided-tutorial](../2026-09-25-guided-tutorial/index.md) (the exercise card,
 the before/after panel and the in-card buttons) and the default language of
