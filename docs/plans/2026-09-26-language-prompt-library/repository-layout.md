@@ -38,10 +38,13 @@ src-tauri/src/llm/
   it (sections, see [preset-format.md](preset-format.md)). No images, no scripts, no other
   assets.
 - **`NOTES.md` is optional** and explains the preset to reviewers (sources, why a word choice,
-  test sentences and results with a given model). It is not in the index.
+  test sentences and results with a given model). It is not in the index. Any other file in a
+  preset folder fails validation.
 - **`language-codes.json`** lists the primary language subtags the validator accepts (`en`,
-  `zh`, `yue`, `ja`…), with English names. Adding a language starts with a line here, so a typo
-  like `zh-Hant-KH` fails early and a new language is a visible decision in review.
+  `zh`, `yue`, `ja`…), with English names, plus the macrolanguage map used for matching
+  (`yue` → `zh`, `cmn` → `zh`). Adding a language starts with a line here, so a typo like
+  `zn-Hant-HK` fails early and a new language is a visible decision in review. Regions and
+  scripts are only checked for form, not against a list.
 - **`index.json` is generated and checked in.** `node scripts/language-presets.mjs` writes it;
   `node scripts/language-presets.mjs --check` exits non-zero when a preset is invalid or the
   index is stale. The Rust test does the same checks with its own parser. The file has no
