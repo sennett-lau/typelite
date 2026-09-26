@@ -447,6 +447,20 @@ export async function resumeHotkey(): Promise<void> {
   return invoke('resume_hotkey')
 }
 
+/**
+ * Shortcut roles the backend lets run (plan `onboarding-shortcut-gate`), named as the backend's
+ * `HotkeyRole::as_str` writes them.
+ */
+export type GatedShortcutRole = 'dictation' | 'translate' | 'switchLanguage' | 'ask'
+
+/** `'all'` for normal use, or the roles the current onboarding page allows (may be empty). */
+export type ShortcutGate = 'all' | GatedShortcutRole[]
+
+/** Tells the backend which shortcut roles may run now. Escape to cancel is never gated. */
+export async function setShortcutGate(allowed: ShortcutGate): Promise<void> {
+  return invoke('set_shortcut_gate', { allowed })
+}
+
 // Ask Anything
 export async function askAnything(question: string): Promise<string> {
   return invoke('ask_anything', { question: question.trim() })

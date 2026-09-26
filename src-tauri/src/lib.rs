@@ -17,6 +17,7 @@ pub mod platform;
 pub mod readiness;
 pub mod recording_deadline;
 pub mod selection;
+pub mod shortcut_gate;
 pub mod storage;
 pub mod stt;
 pub mod timing;
@@ -333,6 +334,29 @@ mod tests {
     }
 
     #[test]
+    fn cli_toggle_and_ask_are_gated_until_onboarding_is_finished() {
+        // Plan `onboarding-shortcut-gate`: `typelite toggle` is a dictation, `typelite ask` is Ask.
+        use shortcut_gate::{ShortcutGate, ShortcutGateRequest};
+        let toggle = cli_action_role(CliAction::Toggle);
+        let ask = cli_action_role(CliAction::Ask);
+        assert_eq!(toggle, hotkey::HotkeyRole::Dictation);
+        assert_eq!(ask, hotkey::HotkeyRole::Ask);
+
+        let first_run = ShortcutGate::at_startup(false);
+        assert!(!first_run.allows(toggle));
+        assert!(!first_run.allows(ask));
+
+        let ask_step =
+            ShortcutGate::from_request(ShortcutGateRequest::Roles(vec!["ask".into()])).unwrap();
+        assert!(!ask_step.allows(toggle));
+        assert!(ask_step.allows(ask));
+
+        let finished = ShortcutGate::at_startup(true);
+        assert!(finished.allows(toggle));
+        assert!(finished.allows(ask));
+    }
+
+    #[test]
     fn ask_window_close_keeps_popup_available_for_future_results() {
         assert!(should_preserve_auxiliary_window_on_close("ask"));
         assert!(!should_preserve_auxiliary_window_on_close("main"));
@@ -534,7 +558,14 @@ struct WindowState {
 }
 
 #[tauri::command]
-async fn start_recording(state: tauri::State<'_, pipeline::PipelineHandle>) -> Result<(), String> {
+async fn start_recording(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, pipeline::PipelineHandle>,
+) -> Result<(), String> {
+    // Plan `onboarding-shortcut-gate`: nothing starts a dictation during onboarding.
+    if !shortcut_gate::allows(&app, hotkey::HotkeyRole::Dictation) {
+        return Err("Finish setup first".to_string());
+    }
     state.start().await.map_err(|e| e.to_string())
 }
 
@@ -811,7 +842,19 @@ fn parse_cli_action(args: &[String]) -> Option<CliAction> {
     actions.next().is_none().then_some(action)
 }
 
+/// The shortcut role a command-line action stands for (plan `onboarding-shortcut-gate`):
+/// `toggle` is a plain dictation, `ask` is Ask anything.
+fn cli_action_role(action: CliAction) -> hotkey::HotkeyRole {
+    match action {
+        CliAction::Toggle => hotkey::HotkeyRole::Dictation,
+        CliAction::Ask => hotkey::HotkeyRole::Ask,
+    }
+}
+
 fn dispatch_cli_action(app: &tauri::AppHandle, action: CliAction) {
+    if !shortcut_gate::allows(app, cli_action_role(action)) {
+        return;
+    }
     match action {
         CliAction::Toggle => {
             let app_handle = app.clone();
@@ -1013,6 +1056,16 @@ pub fn run() {
             let mut initial_config =
                 tauri::async_runtime::block_on(config_manager.load()).unwrap_or_default();
             sync_auto_start_preference(&app_handle, &config_manager, &mut initial_config);
+            // Plan `onboarding-shortcut-gate`: until onboarding is finished no shortcut runs.
+            // Set before any shortcut is registered, so nothing slips through before the
+            // window loads and tells us which page it shows.
+            let onboarding_completed = config_manager.onboarding_completed();
+            app.manage(shortcut_gate::ShortcutGateState::new(
+                shortcut_gate::ShortcutGate::at_startup(onboarding_completed),
+            ));
+            if !onboarding_completed {
+                tracing::info!("Shortcut gate: none (onboarding not finished)");
+            }
             // Windows start hidden, so the Dock choice applies before any window shows.
             apply_dock_visibility(&app_handle, initial_config.show_in_dock);
             app.manage(config_manager);
@@ -1105,6 +1158,7 @@ pub fn run() {
                             refresh_tray(app);
                         }
                     }
+                    "record" if !shortcut_gate::allows(app, hotkey::HotkeyRole::Dictation) => {}
                     "record" => {
                         let handle = app.clone();
                         tauri::async_runtime::spawn(async move {
@@ -1336,6 +1390,7 @@ pub fn run() {
             commands::misc::update_ask_hotkey,
             commands::misc::pause_hotkey,
             commands::misc::resume_hotkey,
+            commands::misc::set_shortcut_gate,
             commands::misc::refresh_tray_labels,
             commands::misc::get_platform_capabilities,
             commands::misc::get_hotkey_registration_error,

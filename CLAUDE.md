@@ -72,7 +72,8 @@ GPL projects.
   the per-step breakdown. Ask the user for this file when debugging a report.
 - Drive a dictation without the keyboard: `/Applications/Typelite.app/Contents/MacOS/typelite
   toggle` starts, a second call stops. The result is pasted into the frontmost app, so open an
-  empty TextEdit document first.
+  empty TextEdit document first. Until onboarding is finished the command does nothing
+  (plan `onboarding-shortcut-gate`); the log shows it at debug level.
 
 ## Lessons learned (do not relearn these)
 
