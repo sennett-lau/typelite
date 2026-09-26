@@ -123,5 +123,5 @@ The speech numbers are approximate and come from Typelite's own timing log
 7. **Write down** the hardware, the server and its version, the model file and quantisation, the
    context size, and what else was running.
 
-For speech recognition, Typelite's **Speed board** (on the Home page) shows the time each step of
+For speech recognition, the **Insights** panel on Typelite's Home page shows the time each step of
 your recent dictations took, and the log's `[Pipeline Timing]` lines give the same numbers.
