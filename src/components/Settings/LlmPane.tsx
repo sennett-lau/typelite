@@ -14,7 +14,7 @@ import { ContextAdaptationApps } from './ContextAdaptationApps'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { LanguageRows } from './languages/LanguageRows'
 import { LANGUAGE_PRESETS_GUIDE_URL, useLibraryStatus } from './languages/languageLibrary'
-import { TranslationLanguageSheet } from './TranslationLanguageSheet'
+import { LanguageSheet } from './languages/LanguageSheet'
 import { AppStyleMappingDialog } from './AppStyleMappingDialog'
 import { ManageAppMappingsDialog } from './ManageAppMappingsDialog'
 
@@ -343,7 +343,11 @@ export function LlmPane() {
       )}
 
       {editingLanguage && (
-        <TranslationLanguageSheet code={editingLanguage} onClose={() => setEditingLanguage(null)} />
+        <LanguageSheet
+          code={editingLanguage}
+          status={libraryStatus}
+          onClose={() => setEditingLanguage(null)}
+        />
       )}
 
       {manageMappingsOpen && (
