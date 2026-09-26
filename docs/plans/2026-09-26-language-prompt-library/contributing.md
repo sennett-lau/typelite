@@ -42,7 +42,7 @@ contributor-facing version is `presets/languages/README.md`. Back to [index](ind
   instructions about anything but writing.
 - Examples are correct, natural, short, and the contributor's own.
 - A native or fluent speaker has approved the text (a reviewer, or a linked comment).
-- Nothing offensive, political or promotional; no links, no personal data.
+- Nothing hateful, political or promotional; no links, no personal data. Naming slang or swear words so the model keeps them as spoken is fine (dictation must not censor the speaker).
 - `tier: official` only in pull requests by maintainers.
 - The `version` went up if the body or `languages` changed.
 
@@ -59,6 +59,7 @@ on:
   `## Variant` tag not matched by `languages` or given twice;
 - rendered text over 2000 characters for any variant, or a file over 8 KiB;
 - CR line endings, a byte-order mark or a file that is not UTF-8;
+- a file other than `preset.md` and `NOTES.md` in a preset folder;
 - an `index.json` that differs from what the generator would write.
 
 ## Considered
