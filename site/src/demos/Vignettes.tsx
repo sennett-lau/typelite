@@ -14,6 +14,7 @@ import {
   speechBetween,
 } from '../components/Pill'
 import { Stage } from '../components/Stage'
+import { KeyCap } from '../components/KeyCap'
 
 const fade = (t: number, at: number, len = 0.3): CSSProperties => {
   const p = easeOut(progress(t, at, at + len))
@@ -193,7 +194,7 @@ export function TranslateVignette() {
             </Pill>
             <div className="translate-keys" aria-hidden="true">
               <span>Switch language</span>
-              <kbd className={`kbd ${shiftDown ? 'is-down' : ''}`}>⇧</kbd>
+              <KeyCap name="Shift" down={shiftDown} />
               <span>or click the name</span>
             </div>
           </div>
