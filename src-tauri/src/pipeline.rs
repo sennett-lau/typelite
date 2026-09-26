@@ -340,16 +340,16 @@ fn request_translation(
     )
 }
 
-/// Plan `translation-language-presets`: the AI preset for this request (the translation
-/// language's own preset when it has one, else the AI polish preset). Logs the preset id and the
-/// language code, never text.
+/// The AI preset for this request: always the AI polish preset (plan `language-prompt-library`
+/// removed the per-language model). Logs the preset id and the translation language code, never
+/// text.
 fn request_ai_preset<'a>(
     config: &'a storage::AppConfig,
     translate_enabled: bool,
     target_lang: &str,
 ) -> &'a storage::AiPreset {
     let translation_target = translate_enabled.then_some(target_lang);
-    let preset = config.ai_preset_for_request(translation_target);
+    let preset = config.active_ai_preset();
     tracing::info!(
         "AI request: preset={} translation={}",
         preset.id,
@@ -3736,103 +3736,41 @@ mod tests {
         );
     }
 
-    /// `translate_run_config` with a second AI preset (`pc`) that Hong Kong Chinese uses.
-    fn config_with_hong_kong_preset(active: &str) -> storage::AppConfig {
-        let mut config = translate_run_config(active);
+    /// Plan `language-prompt-library`: every translation uses the AI polish preset, whatever
+    /// the language, including after switching language during a run.
+    #[test]
+    fn translation_requests_use_the_ai_polish_preset() {
+        let mut config = translate_run_config("zh-Hant-HK");
         config.ai_presets.push(storage::AiPreset::server(
             "pc",
             "PC",
             "http://192.0.2.10:11434/v1",
             "cantonese-model",
         ));
-        config.translation.languages.insert(
-            "zh-Hant-HK".to_string(),
-            storage::TranslationLanguageSettings {
-                ai_preset_id: Some("pc".to_string()),
-                instructions: None,
-            },
-        );
-        config
-    }
-
-    #[test]
-    fn translation_requests_use_the_target_language_preset() {
-        let config = config_with_hong_kong_preset("zh-Hant-HK");
         let polish = config.active_ai_preset().id.clone();
-        assert_eq!(request_ai_preset(&config, true, "zh-Hant-HK").id, "pc");
-        // Other languages, and polish without translation, keep the AI polish preset.
+        assert_eq!(request_ai_preset(&config, true, "zh-Hant-HK").id, polish);
         assert_eq!(request_ai_preset(&config, true, "ja").id, polish);
         assert_eq!(request_ai_preset(&config, false, "zh-Hant-HK").id, polish);
 
-        // Highlight-and-translate with no speech goes into the active language.
         let instruction = crate::voice_intent::language::SELECTION_TRANSLATE_INSTRUCTION;
         let intent = translate_selection_intent(instruction, &config);
         let (translate, target) = request_translation(&intent, instruction, &config);
-        assert_eq!(request_ai_preset(&config, translate, &target).id, "pc");
-        // A language named in speech picks that language's preset.
-        let intent = translate_selection_intent("translate this into Japanese", &config);
-        let (translate, target) =
-            request_translation(&intent, "translate this into Japanese", &config);
-        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
-    }
-
-    #[test]
-    fn switching_language_during_a_run_picks_the_new_target_preset() {
-        let mut config = config_with_hong_kong_preset("en");
-        let polish = config.active_ai_preset().id.clone();
-        let (translate, target) = request_translation(
-            &route_pipeline_voice_intent(
-                crate::voice_intent::VoiceMode::Translate,
-                "see you tomorrow",
-                None,
-                &config,
-            ),
-            "see you tomorrow",
-            &config,
-        );
-        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
-
-        let mut operation =
-            TranslationOperationState::new("en".to_string(), &config.translation.targets);
-        operation.cycle_target().unwrap();
-        // stop() copies the finalized target into the run's config.
-        config.translation.active_target = operation.finalize();
-        let (translate, target) = request_translation(
-            &route_pipeline_voice_intent(
-                crate::voice_intent::VoiceMode::Translate,
-                "see you tomorrow",
-                None,
-                &config,
-            ),
-            "see you tomorrow",
-            &config,
-        );
         assert_eq!(target, "zh-Hant-HK");
-        assert_eq!(request_ai_preset(&config, translate, &target).id, "pc");
-    }
-
-    #[test]
-    fn a_deleted_language_preset_falls_back_to_the_polish_preset() {
-        let mut config = config_with_hong_kong_preset("zh-Hant-HK");
-        config.ai_presets.retain(|preset| preset.id != "pc");
-        assert_eq!(
-            request_ai_preset(&config, true, "zh-Hant-HK").id,
-            config.active_ai_preset().id
-        );
+        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
     }
 
     #[test]
     fn run_timing_records_the_preset_the_request_used() {
-        let config = config_with_hong_kong_preset("zh-Hant-HK");
+        let config = translate_run_config("zh-Hant-HK");
         let polish = config.active_ai_preset().id.clone();
         assert_eq!(
-            config_for_run_timing(&config, Some("pc".to_string()))
-                .active_ai_preset()
-                .id,
-            "pc"
+            config_for_run_timing(&config, None).active_ai_preset().id,
+            polish
         );
         assert_eq!(
-            config_for_run_timing(&config, None).active_ai_preset().id,
+            config_for_run_timing(&config, Some(polish.clone()))
+                .active_ai_preset()
+                .id,
             polish
         );
     }

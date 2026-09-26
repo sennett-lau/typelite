@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { isCustomTranslationLanguage, useAppStore } from '../../stores/appStore'
+import { isDefaultLanguageSettings, languageSettings, useAppStore } from '../../stores/appStore'
 import type { PolishStyle } from '../../stores/appStore'
 import { getLatestMappingCandidate, listCustomAppMappings } from '../../lib/tauri'
 import type { CustomAppMappingView, MappingCandidateView } from '../../lib/tauri'
@@ -251,7 +251,7 @@ export function LlmPane() {
             value={config.translation}
             onChange={(translation) => updateConfig({ translation })}
             onEdit={setEditingLanguage}
-            isCustom={(code) => isCustomTranslationLanguage(config, code)}
+            isCustom={(code) => !isDefaultLanguageSettings(languageSettings(config, code))}
           />
         </Row>
         <Row label={t('settings.translationMode')} help={t('settings.translationModeDesc')}>
