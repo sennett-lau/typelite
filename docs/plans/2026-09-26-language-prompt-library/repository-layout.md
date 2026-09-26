@@ -24,7 +24,7 @@ presets/
 scripts/
   language-presets.mjs        ← builds index.json; `--check` validates and fails if stale
 src-tauri/src/llm/
-  language_library.rs         ← test-only for now: independent parser, validation, matching
+  language_library.rs         ← the app's parser, validation, matching, download and cache
 ```
 
 ## Rules

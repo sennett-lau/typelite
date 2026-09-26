@@ -17,14 +17,18 @@ so. Back to [index](index.md).
 - **Verified.** The app accepts a downloaded file only if its size and SHA-256 match the index
   and it passes the same validation as CI.
 - **Seen before use.** The full rendered text is shown before the first use and before every
-  update. Nothing changes silently.
+  update the user takes by hand. A language changes by itself only when the user turned on its
+  auto-update, never over edited text, and the sheet then says so.
 
 ## What a preset cannot change
 
-The rendered text goes into the `<language_instructions>` slot, exactly like a user's own text,
-with the same sanitising (a closing tag is neutralised). Around it the prompt keeps, in code:
+The rendered text goes into the `<language_instructions>` slot (translation) or the
+`<language_notes>` slot (polish), exactly like a user's own text, with the same sanitising (the
+tags are neutralised). Hints are only counted in the transcript; they never reach the prompt.
+Around it the prompt keeps, in code:
 
-- the operation (clean, translate) and "output only the result, no notes or quotes";
+- the operation (clean, translate) and "output only the result, no notes or quotes"; for polish,
+  "do not translate";
 - the target-language lock and "no bilingual output" for translation;
 - the `[CHINESE_SCRIPT]` rule for Chinese targets;
 - the security rules that treat the transcript as data.
@@ -34,7 +38,7 @@ in the preview and can reset with one button.
 
 ## Privacy
 
-- Fetching is a plain GET to GitHub, on demand or once a day for updates, and can be turned off
+- Fetching is a plain GET to GitHub, on demand or once a day for languages with auto-update on
   ([fetch-and-verify.md](fetch-and-verify.md)). No identifiers, no telemetry, no ratings or
   download counts.
 - The logs record preset ids, versions and language codes, never the text of a preset or of a

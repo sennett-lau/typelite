@@ -44,14 +44,17 @@ contributor-facing version is `presets/languages/README.md`. Back to [index](ind
 - A native or fluent speaker has approved the text (a reviewer, or a linked comment).
 - Nothing hateful, political or promotional; no links, no personal data. Naming slang or swear words so the model keeps them as spoken is fine (dictation must not censor the speaker).
 - `tier: official` only in pull requests by maintainers.
-- The `version` went up if the body or `languages` changed.
+- The `version` went up if the body, `languages` or the recognition fields changed.
+- Hints are words or characters only this language uses (not ones shared with a neighbour), and
+  `require_hint` is set when the speech code is shared (`zh`).
 
 ## Validation
 
 `node scripts/language-presets.mjs --check` and the Rust test `llm::language_library` both fail
 on:
 
-- a missing, unknown or badly typed front matter key, or a value over its limit;
+- a missing, unknown or badly typed front matter key, or a value over its limit (including
+  `detect_codes`, `hints` and `require_hint`, which needs hints);
 - an `id` that is not a valid slug, differs from its folder, or appears twice;
 - a language tag that is not well formed, whose primary subtag is not in
   `language-codes.json`, or that is a prefix of another tag in the same list;
