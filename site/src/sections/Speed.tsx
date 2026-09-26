@@ -80,7 +80,10 @@ function Lane({
   finished?: number
 }) {
   const shown = WORDS.slice(0, Math.floor(words)).join(' ')
-  const pop = finished >= 0 ? 1 + 0.18 * Math.max(0, 1 - finished / 0.5) * Math.sin(Math.min(1, finished / 0.5) * Math.PI) : 1
+  const pop =
+    finished >= 0
+      ? 1 + 0.18 * Math.max(0, 1 - finished / 0.5) * Math.sin(Math.min(1, finished / 0.5) * Math.PI)
+      : 1
   return (
     <div
       className={`lane ${finished >= 0 ? 'lane-done' : ''}`}
@@ -90,7 +93,9 @@ function Lane({
         <span className="lane-sheen-clip" aria-hidden="true">
           <span
             className="lane-sheen"
-            style={{ transform: `translateX(${(-100 + 300 * easeOut(finished / 1.2)).toFixed(1)}%)` }}
+            style={{
+              transform: `translateX(${(-100 + 300 * easeOut(finished / 1.2)).toFixed(1)}%)`,
+            }}
           />
         </span>
       )}
@@ -159,7 +164,9 @@ export function Speed() {
                   <span className="caption-label">One minute of writing, sped up</span>
                   <span
                     className={`race-clock ${done ? 'is-done' : ''}`}
-                    style={tick ? { transform: `scale(${(1 + 0.15 * tick).toFixed(3)})` } : undefined}
+                    style={
+                      tick ? { transform: `scale(${(1 + 0.15 * tick).toFixed(3)})` } : undefined
+                    }
                   >
                     {seconds === 60 ? '1:00' : `0:${String(seconds).padStart(2, '0')}`}
                   </span>
@@ -206,16 +213,24 @@ export function Speed() {
         <p className="footnote" data-reveal>
           Rates are rounded down and vary from person to person. Typing: an average of 52 words per
           minute across 168,000 volunteers (
-          <a rel="noopener" href="https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf">
+          <a
+            rel="noopener"
+            href="https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf"
+          >
             Dhakal et al., CHI 2018
           </a>
           ). Speaking: about 196 words per minute measured in telephone conversations (
-          <a rel="noopener" href="https://www.isca-archive.org/interspeech_2006/yuan06_interspeech.html">
+          <a
+            rel="noopener"
+            href="https://www.isca-archive.org/interspeech_2006/yuan06_interspeech.html"
+          >
             Yuan, Liberman and Cieri, Interspeech 2006
           </a>
           ) and 153 for English speech input on a phone (
-          <a rel="noopener" href="https://arxiv.org/abs/1608.07323">Ruan et al., 2016</a>); we use a conservative
-          150.
+          <a rel="noopener" href="https://arxiv.org/abs/1608.07323">
+            Ruan et al., 2016
+          </a>
+          ); we use a conservative 150.
         </p>
       </div>
     </section>
