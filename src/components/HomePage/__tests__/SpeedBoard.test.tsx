@@ -156,6 +156,89 @@ describe('SpeedBoard (Insights)', () => {
     expect(within(average).getByTestId('speed-step-speech')).toHaveTextContent('1.5 s')
   })
 
+  describe('Compare presets', () => {
+    function setPresetNames() {
+      const config = useAppStore.getState().config
+      useAppStore.setState({
+        config: {
+          ...config,
+          ai_presets: [
+            { ...config.ai_presets[0], id: 'ai-fast', name: 'Fast server' },
+            { ...config.ai_presets[0], id: 'ai-slow', name: 'Slow laptop' },
+          ],
+          speech_presets: [{ ...config.speech_presets[0], id: 'speech-1', name: 'My whisper' }],
+        },
+      })
+    }
+
+    const comparisonRuns = () => [
+      ...[1, 2, 3].map((id) => run({ id, aiPresetId: 'ai-fast', aiMs: 400 })),
+      ...[4, 5, 6].map((id) => run({ id, aiPresetId: 'ai-slow', aiMs: 800 })),
+      run({ id: 7, aiPresetId: 'ai-gone', aiMs: 300 }),
+    ]
+
+    it('is collapsed by default and opens and closes from its button', async () => {
+      await renderBoard(comparisonRuns())
+
+      const toggle = screen.getByRole('button', { name: 'Compare presets' })
+      const panel = document.getElementById('compare-presets')!
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      expect(toggle).toHaveAttribute('aria-controls', 'compare-presets')
+      expect(panel).toHaveAttribute('data-open', 'false')
+      expect(panel).toHaveAttribute('inert')
+
+      fireEvent.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      expect(panel).toHaveAttribute('data-open', 'true')
+      expect(panel).not.toHaveAttribute('inert')
+
+      fireEvent.click(toggle)
+      expect(panel).toHaveAttribute('data-open', 'false')
+    })
+
+    it('ranks AI presets by average time with names, run counts and a Fastest tag', async () => {
+      setPresetNames()
+      await renderBoard(comparisonRuns())
+      fireEvent.click(screen.getByRole('button', { name: 'Compare presets' }))
+
+      const ai = screen.getByTestId('compare-ai')
+      expect(ai).toHaveTextContent('AI polish')
+      const rows = within(ai).getAllByTestId('compare-row')
+      expect(rows).toHaveLength(3)
+      expect(rows[0]).toHaveTextContent('Fast server · qwen3:4b')
+      expect(rows[0]).toHaveTextContent('Fastest')
+      expect(rows[0]).toHaveTextContent('3 runs')
+      expect(rows[0]).toHaveTextContent('0.40 s')
+      expect(rows[1]).toHaveTextContent('Slow laptop · qwen3:4b')
+      expect(rows[1]).not.toHaveTextContent('Fastest')
+      expect(rows[1]).toHaveTextContent('0.80 s')
+      // A deleted preset with too few runs: listed by the fallback name, not ranked.
+      expect(rows[2]).toHaveTextContent('Deleted preset · qwen3:4b')
+      expect(rows[2]).toHaveTextContent('1 run')
+      expect(rows[2]).toHaveTextContent('—')
+    })
+
+    it('shows speech presets per second of audio and the note', async () => {
+      setPresetNames()
+      await renderBoard([1, 2, 3].map((id) => run({ id, speechMs: 1200, recordingSecs: 4 })))
+      fireEvent.click(screen.getByRole('button', { name: 'Compare presets' }))
+
+      const speech = screen.getByTestId('compare-speech')
+      expect(speech).toHaveTextContent('Speech recognition (per 1 s of audio)')
+      const rows = within(speech).getAllByTestId('compare-row')
+      expect(rows).toHaveLength(1)
+      expect(rows[0]).toHaveTextContent('My whisper · large-v3-turbo')
+      expect(rows[0]).toHaveTextContent('0.30 s')
+      expect(rows[0]).not.toHaveTextContent('Fastest')
+      expect(screen.getByText(/A preset needs 3 runs before it is ranked/)).toBeInTheDocument()
+    })
+
+    it('says so when a list has no finished runs', async () => {
+      await renderBoard([run({ aiMs: null })])
+      expect(screen.getByTestId('compare-ai')).toHaveTextContent('No finished runs yet.')
+    })
+  })
+
   it('stops listening when Home closes', async () => {
     await renderBoard([])
     cleanup()
