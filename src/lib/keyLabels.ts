@@ -50,6 +50,9 @@ const SPECIAL: Record<string, { symbol: string; full: string }> = {
   PageDown: { symbol: 'Page Down', full: 'Page Down' },
 }
 
+/** Symbols drawn a little larger than words in a key cap, so ⌃ reads as well as "End". */
+export const KEY_SYMBOLS = new Set(['⌃', '⌥', '⇧', '⌘', '↩', '⌫', '⌦', '⇥', '←', '→', '↑', '↓'])
+
 export function keyParts(name: string): KeyParts {
   const generic = GENERIC[name]
   if (generic) {
