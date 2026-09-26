@@ -66,7 +66,7 @@ describe('TranslationTargets', () => {
   })
 
   it('keeps per-language settings when the list changes', () => {
-    const languages = { ja: { ai_preset_id: 'pc', instructions: null } }
+    const languages = { ja: { instructions: 'Polite.' } }
     const onChange = renderTargets({ targets: ['en', 'ja'], active_target: 'en', languages })
 
     fireEvent.click(screen.getByRole('button', { name: 'translate.remove 日本語' }))

@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { targetLanguageLabel } from '../../lib/constants'
-import { TRANSLATION_INSTRUCTIONS_MAX_CHARS, isBuiltinAi, useAppStore } from '../../stores/appStore'
+import { TRANSLATION_INSTRUCTIONS_MAX_CHARS, useAppStore } from '../../stores/appStore'
 import { loadTranslationDefaults, saveTranslationLanguage } from './translationLanguages'
 
 /**
@@ -16,13 +16,6 @@ export function TranslationLanguageSheet({ code, onClose }: { code: string; onCl
   const config = useAppStore((s) => s.config)
   const fieldId = useId()
   const stored = config.translation.languages?.[code]
-  const presets = config.ai_presets
-  const storedPresetDeleted = Boolean(
-    stored?.ai_preset_id && !presets.some((preset) => preset.id === stored.ai_preset_id),
-  )
-  const [presetId, setPresetId] = useState(() =>
-    storedPresetDeleted ? '' : (stored?.ai_preset_id ?? ''),
-  )
   const [defaultText, setDefaultText] = useState<string | null>(null)
   const [text, setText] = useState<string | null>(stored?.instructions ?? null)
   const [loadError, setLoadError] = useState(false)
@@ -69,7 +62,7 @@ export function TranslationLanguageSheet({ code, onClose }: { code: string; onCl
     const trimmed = value.trim()
     try {
       await saveTranslationLanguage(code, {
-        ai_preset_id: presetId || null,
+        ...stored,
         instructions: isDefault || trimmed === '' ? null : trimmed,
       })
       onClose()
@@ -94,30 +87,6 @@ export function TranslationLanguageSheet({ code, onClose }: { code: string; onCl
           <p className="m-0 mt-1 text-[12px] text-text-secondary">
             {t('translate.language.sheetHelp')}
           </p>
-        </div>
-
-        <div className="form-grid">
-          <label htmlFor={`${fieldId}-model`}>{t('translate.language.model')}</label>
-          <div className="min-w-0">
-            <select
-              id={`${fieldId}-model`}
-              value={presetId}
-              onChange={(event) => setPresetId(event.target.value)}
-              className="popup"
-            >
-              <option value="">{t('translate.language.sameAsPolish')}</option>
-              {presets.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {isBuiltinAi(preset) ? t('translate.language.builtinPreset') : preset.name}
-                </option>
-              ))}
-            </select>
-            {storedPresetDeleted && presetId === '' && (
-              <span className="mt-1 block text-[11.5px] text-warning">
-                {t('translate.language.presetDeleted')}
-              </span>
-            )}
-          </div>
         </div>
 
         <div className="flex min-w-0 flex-col gap-1.5">

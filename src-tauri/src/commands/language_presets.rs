@@ -157,18 +157,40 @@ pub async fn list_language_presets(
 #[tauri::command]
 pub async fn download_language_preset(
     app: tauri::AppHandle,
+    config_manager: tauri::State<'_, crate::storage::ConfigManager>,
     id: String,
     code: String,
 ) -> Result<PresetDetail, String> {
     let store = library_store(&app)?;
     let (_, preset) =
         fetch::ensure_preset(http_client(), library::LIBRARY_BASE_URL, &store, &id).await?;
+    if let Ok(config) = config_manager.load().await {
+        store.prune(&id, &versions_in_use(&config, &id, &preset.sha256));
+    }
     tracing::info!(
         "Language presets: {} v{} ready for {code}",
         preset.id,
         preset.version
     );
     Ok(detail(&preset, &code))
+}
+
+/// The stored versions of `id` to keep: the ones languages use, plus `newest`.
+pub(crate) fn versions_in_use(
+    config: &crate::storage::AppConfig,
+    id: &str,
+    newest: &str,
+) -> Vec<String> {
+    let mut keep: Vec<String> = config
+        .translation
+        .languages
+        .values()
+        .filter_map(|settings| settings.library_preset.as_ref())
+        .filter(|preset| preset.id == id)
+        .map(|preset| preset.sha256.clone())
+        .collect();
+    keep.push(newest.to_string());
+    keep
 }
 
 /// A stored version of a preset rendered for `code`, or `None` when it is missing or damaged
