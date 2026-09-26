@@ -74,7 +74,7 @@ Presets are small Markdown files. If you speak a language well, you can improve 
 
 ### Translate with quick language switching
 
-Choose up to three target languages. While you speak, press the Switch key (Shift by default) or
+Choose up to three target languages. While you speak, press the Switch key (⇧ Shift by default) or
 click the language name on the pill to change the target. The recording keeps going. Highlight
 text and press Translate to replace it with its translation.
 
@@ -111,17 +111,18 @@ Typelite is inspired by [Typeless](https://www.typeless.com/), a polished commer
 | Feature | What it does | Default keys |
 |---|---|---|
 | Dictate | Speak, and clean text is pasted where you are typing. | Fn |
-| Translate | Speak, and it is written in another language. | Fn + Shift |
+| Translate | Speak, and it is written in another language. | Fn + ⇧ |
 | Ask anything | Ask a question, or highlight text and say "make this shorter". Answers show in a panel above the pill. | Fn + Space |
-| Switch language | Change the translation target while you speak. | Shift |
-| Cancel | Stop the current recording or processing. Nothing is pasted. | Esc |
+| Switch language | Change the translation target while you speak. | ⇧ |
+| Cancel | Stop the current recording or processing. Nothing is pasted. | esc |
 | The pill | Shows recording, transcribing and polishing on the screen you are working on. It never takes focus. | |
 | Copy pill | When there is nowhere to paste, the result stays in the pill with a Copy button. | |
 | Presets | Save several speech and AI setups, switch between them, and export or import them. | |
 | Insights | Your speaking speed against your typing speed, time from speech to text, and how your presets compare. | |
 | Typing nudge | After a minute of steady typing, a small hint suggests saying it instead. At most once a day. | |
 
-Every shortcut can be changed, and hold-to-talk is available too.
+Keys are shown as macOS menus show them (⇧ is Shift). Every shortcut can be changed, and
+hold-to-talk is available too.
 
 ## Documentation
 
