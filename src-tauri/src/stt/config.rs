@@ -88,7 +88,7 @@ pub fn build_qwen_cloud_config(
 /// Builds the uploader settings for a speech preset.
 pub fn build_whisper_config(preset: &SpeechPreset) -> Result<WhisperCompatConfig, String> {
     if preset.is_builtin_whisper() {
-        return Err("This preset runs on this Mac and has no server".to_string());
+        return Err("This preset runs on this computer and has no server".to_string());
     }
     if preset.is_qwen_cloud() {
         return Err("This preset uses the Qwen Cloud API".to_string());

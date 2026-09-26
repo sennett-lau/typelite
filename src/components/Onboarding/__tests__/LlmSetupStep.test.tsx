@@ -20,7 +20,7 @@ vi.mock('react-i18next', async () => {
   return { useTranslation: () => ({ t: translate }) }
 })
 
-const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md'
+const GUIDE = 'https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish/README.md'
 const GB = 1024 ** 3
 
 function config() {
@@ -87,7 +87,7 @@ describe('LlmSetupStep', () => {
 
       expect(
         within(card()).getByText(
-          'Runs a small open model inside Typelite on this Mac. No other software needed.',
+          'Runs a small open model inside Typelite on this computer. No other software needed.',
         ),
       ).toBeInTheDocument()
       const models = within(card()).getByRole('radiogroup', { name: 'Model' })
@@ -97,7 +97,9 @@ describe('LlmSetupStep', () => {
       expect(within(models).getByRole('radio', { name: /Faster/ })).toHaveTextContent(
         'Qwen3 1.7B · 1.1 GB',
       )
-      expect(within(card()).getByText('This Mac: Apple M1 Pro, 32 GB memory.')).toBeInTheDocument()
+      expect(
+        within(card()).getByText('This computer: Apple M1 Pro, 32 GB memory.'),
+      ).toBeInTheDocument()
       expect(cardButtons()).toEqual(['Set up'])
 
       fireEvent.click(within(models).getByRole('radio', { name: /Faster/ }))
@@ -122,7 +124,7 @@ describe('LlmSetupStep', () => {
       )
       expect(
         within(card()).getByText(
-          'This Mac: Apple M1 Pro, 8 GB memory. The larger model needs 16 GB of memory.',
+          'This computer: Apple M1 Pro, 8 GB memory. The larger model needs 16 GB of memory.',
         ),
       ).toBeInTheDocument()
     })
@@ -140,7 +142,7 @@ describe('LlmSetupStep', () => {
 
       expect(
         within(card()).getByText(
-          'This Mac can’t run a built-in AI model well. Use your own server or API key instead.',
+          'This computer can’t run a built-in AI model well. Use your own server or API key instead.',
         ),
       ).toBeInTheDocument()
       expect(within(card()).queryByRole('radiogroup')).not.toBeInTheDocument()
@@ -201,7 +203,7 @@ describe('LlmSetupStep', () => {
       expect(within(card()).getByText('Ready')).toHaveClass('badge')
       expect(within(card()).getByText('Best quality')).toBeInTheDocument()
       expect(
-        within(card()).getByText('Qwen3 4B Instruct · 2.5 GB · tested on this Mac in 600 ms'),
+        within(card()).getByText('Qwen3 4B Instruct · 2.5 GB · tested on this computer in 600 ms'),
       ).toBeInTheDocument()
       expect(cardButtons()).toEqual(['Change model'])
     })

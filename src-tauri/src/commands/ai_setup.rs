@@ -1,4 +1,4 @@
-//! Plan `ai-polish-setup`: Built-in AI setup. Downloads a model, points the "Built-in (this Mac)"
+//! Plan `ai-polish-setup`: Built-in AI setup. Downloads a model, points the "Built-in (on-device)"
 //! AI preset at it, starts `llama-server`, sends one test request, and marks the preset ready. The
 //! download, progress and cancel work as for speech (`model_setup`).
 

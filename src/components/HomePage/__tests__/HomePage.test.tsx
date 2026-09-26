@@ -275,7 +275,7 @@ describe('HomePage', () => {
 
     const card = screen.getByRole('region', { name: 'Your setup' })
     expect(within(card).getByTestId('config-row-microphone')).toHaveTextContent('USB Mic')
-    expect(within(card).getByTestId('config-row-speech')).toHaveTextContent('Built-in (this Mac)')
+    expect(within(card).getByTestId('config-row-speech')).toHaveTextContent('Built-in (on-device)')
     expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('qwen3-4b')
     expect(within(card).getByTestId('config-row-polish')).toHaveTextContent('Disabled')
     expect(within(card).getByTestId('config-row-output')).toHaveTextContent('Paste from clipboard')

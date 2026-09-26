@@ -280,7 +280,7 @@
       "microphone": "Voice input",
       "microphoneSub": "Choose your microphone",
       "speechRecognition": "Speech recognition",
-      "speechRecognitionSub": "Turns your voice into text. It runs on this Mac.",
+      "speechRecognitionSub": "Turns your voice into text. It runs on this computer.",
       "aiPolish": "AI polish",
       "aiPolishSub": "Cleans up what you said: fillers out, corrections applied, punctuation in.",
       "dictate": "Dictate",
@@ -420,7 +420,7 @@
     "test": "Test",
     "connectionSuccess": "Connection successful",
     "connectionFailed": "Connection failed",
-    "storedLocally": "Stored in the macOS Keychain on this Mac.",
+    "storedLocally": "Stored in the macOS Keychain on this computer.",
     "credentialSaveFailed": "Could not save API key to OS vault. {{details}}",
     "model": "Model",
     "baseUrl": "Base URL",
@@ -792,7 +792,7 @@
       "sourceEdited": "Based on {{name}} · edited",
       "sourceBuiltinEdited": "Built-in instructions · edited",
       "sourceBuiltin": "Built-in instructions",
-      "sourceMissing": "{{name}} preset · v{{version}} · not on this Mac, using the built-in instructions",
+      "sourceMissing": "{{name}} preset · v{{version}} · not on this computer, using the built-in instructions",
       "switchLabel": "Use instructions for {{language}}",
       "edit": "Edit",
       "editLabel": "Edit {{language}}",
@@ -813,7 +813,7 @@
       "browse": "Browse presets",
       "change": "Change",
       "downloadAgain": "Download again",
-      "missingNote": "The preset's file is not on this Mac, so the built-in instructions are used.",
+      "missingNote": "The preset's file is not on this computer, so the built-in instructions are used.",
       "count": "{{count}} / {{max}}",
       "autoUpdate": "Update this preset automatically",
       "autoUpdateHelp": "Checks GitHub once a day and uses the newest version.",
@@ -872,7 +872,7 @@
     "export": "Export…",
     "fileType": "Typelite presets",
     "exportTitle": "Export presets",
-    "exportHelp": "Choose the saved presets to put in the file. Built-in presets stay on this Mac.",
+    "exportHelp": "Choose the saved presets to put in the file. Built-in presets stay on this computer.",
     "exportListLabel": "Presets to export",
     "exportNone": "There are no saved presets to export. Built-in presets and addresses that still hold a placeholder are never exported.",
     "exportConfirm": "Export…",
@@ -967,7 +967,7 @@
     },
     "builtinTitle": "Built-in",
     "recommended": "Recommended",
-    "builtinBody": "Runs Whisper inside Typelite on this Mac. No other software needed.",
+    "builtinBody": "Runs Whisper inside Typelite on this computer. No other software needed.",
     "changeModel": "Change model",
     "download": "Download",
     "use": "Use",
@@ -977,9 +977,9 @@
       "small": "Faster"
     },
     "modelDetail": "Whisper {{id}} · {{size}}",
-    "checkingMac": "Checking this Mac…",
+    "checkingMac": "Checking this computer…",
     "nothingInstalled": "Nothing was installed",
-    "testedOnThisMac": "tested on this Mac in {{time}}",
+    "testedOnThisMac": "tested on this computer in {{time}}",
     "testedIn": "tested in {{time}}",
     "badges": {
       "downloading": "Downloading {{percent}}%",
@@ -993,7 +993,7 @@
       "testFailed": "Test failed"
     },
     "hardware": {
-      "long": "This Mac: {{chip}}, {{memory}} GB memory.",
+      "long": "This computer: {{chip}}, {{memory}} GB memory.",
       "short": "{{chip}} · {{memory}} GB",
       "unknownChip": "Unknown chip",
       "noSpace": "Not enough free space for a model: {{needed}} GB needed, {{available}} GB free.",
@@ -1035,7 +1035,7 @@
     "engines": {
       "builtin": {
         "title": "Built-in",
-        "detail": "Runs Whisper inside Typelite on this Mac"
+        "detail": "Runs Whisper inside Typelite on this computer"
       },
       "server": {
         "title": "Your server or API key",
@@ -1045,14 +1045,14 @@
     "languageGroup": "Language",
     "spokenLanguage": "Spoken language",
     "spokenLanguageHelp": "Auto-detect handles mixed languages",
-    "notAvailable": "Not available on this Mac"
+    "notAvailable": "Not available on this computer"
   },
   "ai": {
     "engineLabel": "AI polish uses",
     "engines": {
       "builtin": {
         "title": "Built-in",
-        "detail": "Runs a small open model on this Mac"
+        "detail": "Runs a small open model on this computer"
       },
       "server": {
         "title": "Your server or API key",
@@ -1065,7 +1065,7 @@
     "skipHint": "Dictation still works; you get the raw transcript"
   },
   "aiSetup": {
-    "builtinBody": "Runs a small open model inside Typelite on this Mac. No other software needed.",
+    "builtinBody": "Runs a small open model inside Typelite on this computer. No other software needed.",
     "progressLabel": "AI model download",
     "testing": "Starting the model and running a test…",
     "models": {
@@ -1081,7 +1081,7 @@
       "serverMissing": "This copy of Typelite was built without the built-in AI server. Use your own server or API key instead."
     },
     "hardware": {
-      "none": "This Mac can’t run a built-in AI model well. Use your own server or API key instead.",
+      "none": "This computer can’t run a built-in AI model well. Use your own server or API key instead.",
       "serverMissing": "This copy of Typelite was built without the built-in AI server. Use your own server or API key instead.",
       "leftOut": {
         "needs_apple_silicon": "Built-in AI needs an Apple Silicon Mac.",

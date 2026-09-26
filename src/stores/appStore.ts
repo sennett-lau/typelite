@@ -75,7 +75,7 @@ export interface AiPreset {
 }
 
 /**
- * Id of the "Built-in (this Mac)" preset (plan `quick-speech-setup`). Every config has it (plan
+ * Id of the "Built-in (on-device)" preset (plan `quick-speech-setup`). Every config has it (plan
  * `two-tab-speech`).
  */
 export const BUILTIN_WHISPER_PRESET_ID = 'builtin-speech-this-mac'
@@ -85,7 +85,7 @@ export function isBuiltinSpeech(preset: Pick<SpeechPreset, 'kind'>): boolean {
   return preset.kind === 'builtin'
 }
 
-/** Id of the "Built-in (this Mac)" AI preset (plan `ai-polish-setup`). Every config has it. */
+/** Id of the "Built-in (on-device)" AI preset (plan `ai-polish-setup`). Every config has it. */
 export const BUILTIN_AI_PRESET_ID = 'builtin-ai-this-mac'
 
 /** True when Typelite's own llama-server runs this AI preset. */
@@ -100,7 +100,7 @@ export function isBuiltinAi(preset: Pick<AiPreset, 'kind'>): boolean {
 export const BUILTIN_SPEECH_PRESETS: readonly SpeechPreset[] = [
   {
     id: BUILTIN_WHISPER_PRESET_ID,
-    name: 'Built-in (this Mac)',
+    name: 'Built-in (on-device)',
     kind: 'builtin',
     base_url: '',
     model: 'large-v3-turbo',
@@ -118,7 +118,7 @@ export const BUILTIN_SPEECH_PRESETS: readonly SpeechPreset[] = [
 export const BUILTIN_AI_PRESETS: readonly AiPreset[] = [
   {
     id: BUILTIN_AI_PRESET_ID,
-    name: 'Built-in (this Mac)',
+    name: 'Built-in (on-device)',
     kind: 'builtin',
     base_url: '',
     model: 'qwen3-4b',

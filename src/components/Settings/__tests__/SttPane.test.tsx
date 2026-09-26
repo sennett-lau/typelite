@@ -123,7 +123,7 @@ describe('SttPane', () => {
       render(<SttPane />)
 
       await waitFor(() => expect(engine(/^Built-in/)).toBeDisabled())
-      expect(engine(/^Built-in/)).toHaveTextContent('Not available on this Mac')
+      expect(engine(/^Built-in/)).toHaveTextContent('Not available on this computer')
       expect(engine(/Your server or API key/)).toHaveAttribute('aria-checked', 'true')
       expect(screen.queryByTestId('builtin-settings')).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument()
@@ -149,7 +149,7 @@ describe('SttPane', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Learn more' }))
       expect(openUrl).toHaveBeenCalledWith(
-        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech-services.md',
+        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/speech/README.md',
       )
     })
 
