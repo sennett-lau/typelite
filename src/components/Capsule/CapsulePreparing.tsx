@@ -21,7 +21,7 @@ export function CapsulePreparing() {
   }
 
   return (
-    <motion.div className="relative z-10 flex items-center gap-2 h-full px-3">
+    <motion.div className="relative z-10 flex items-center gap-2 h-full pl-3.5 pr-3">
       <motion.span
         className="w-2 h-2 rounded-full bg-white/75 flex-shrink-0"
         animate={reduced ? undefined : { opacity: [0.45, 1, 0.45], scale: [0.92, 1, 0.92] }}
