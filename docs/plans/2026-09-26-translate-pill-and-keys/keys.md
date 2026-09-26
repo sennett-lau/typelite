@@ -35,5 +35,8 @@ and does not switch.
   released (Ctrl + C during a recording) drops it.
 - A stop key that is a modifier is not swallowed, so the focused app and any shortcut that
   uses the modifier still see it; End and other standalone keys are swallowed as always.
+- During onboarding (plan `onboarding-shortcut-gate`) a stop key is allowed whenever
+  Translate is, so the Translate step stops with the first key even though Dictate (often the
+  same key) is gated there.
 - The handler stops only a Translate recording; a late event after the recording ended does
   nothing (stopping is idempotent anyway).
