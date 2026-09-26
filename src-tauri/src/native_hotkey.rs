@@ -119,6 +119,10 @@ pub type SwitchGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 /// listener.
 pub type CancelGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 
+/// Tells the matcher whether a role may run right now (plan `onboarding-shortcut-gate`). Same
+/// rules as [`SwitchGate`]: quick, and never waits on the listener.
+pub type RoleGate = Arc<dyn Fn(crate::hotkey::HotkeyRole) -> bool + Send + Sync + 'static>;
+
 /// Matches held keys against the configured chords.
 ///
 /// Rules:
@@ -139,19 +143,17 @@ pub type CancelGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 /// - The cancel key (Escape, see [`ChordMatcher::with_cancel_key`]) counts only while the
 ///   [`CancelGate`] says a run is active. Then its press fires a `Cancel` event and is
 ///   swallowed together with its repeats and its release. At other times it is not touched.
+/// - Bindings whose role the [`RoleGate`] refuses (onboarding, plan `onboarding-shortcut-gate`)
+///   are treated as not bound: they fire nothing and their keys reach the focused app. The
+///   cancel key is not a binding, so the role gate never blocks it.
 pub struct ChordMatcher {
     bindings: Vec<NativeHotkeyBinding>,
-    /// Per binding: another binding has a larger chord that contains it, with the Switch
-    /// language bindings left out (`idle`) or included (`armed`).
-    has_superset_idle: Vec<bool>,
-    has_superset_armed: Vec<bool>,
-    bound_keys_idle: BTreeSet<u16>,
-    bound_keys_armed: BTreeSet<u16>,
     held: BTreeSet<u16>,
     active: Vec<usize>,
     deferred: Vec<usize>,
     swallowed: BTreeSet<u16>,
     switch_gate: Option<SwitchGate>,
+    role_gate: Option<RoleGate>,
     cancel_key: Option<(u16, CancelGate)>,
     /// The cancel key's press was swallowed, so its repeats and release are swallowed too.
     cancel_key_down: bool,
@@ -163,38 +165,25 @@ fn is_switch_role(binding: &NativeHotkeyBinding) -> bool {
 
 impl ChordMatcher {
     pub fn new(bindings: Vec<NativeHotkeyBinding>) -> Self {
-        let has_superset = |include_switch: bool| -> Vec<bool> {
-            bindings
-                .iter()
-                .map(|binding| {
-                    bindings.iter().any(|other| {
-                        (include_switch || !is_switch_role(other))
-                            && binding.chord.is_strict_subset_of(&other.chord)
-                    })
-                })
-                .collect()
-        };
-        let bound_keys = |include_switch: bool| -> BTreeSet<u16> {
-            bindings
-                .iter()
-                .filter(|binding| include_switch || !is_switch_role(binding))
-                .flat_map(|binding| binding.chord.keys.iter().copied())
-                .collect()
-        };
         Self {
-            has_superset_idle: has_superset(false),
-            has_superset_armed: has_superset(true),
-            bound_keys_idle: bound_keys(false),
-            bound_keys_armed: bound_keys(true),
             bindings,
             held: BTreeSet::new(),
             active: Vec::new(),
             deferred: Vec::new(),
             swallowed: BTreeSet::new(),
             switch_gate: None,
+            role_gate: None,
             cancel_key: None,
             cancel_key_down: false,
         }
+    }
+
+    /// Use `gate` to decide which roles are live (plan `onboarding-shortcut-gate`). A binding
+    /// whose role the gate refuses is treated as not bound: it fires nothing and its keys pass
+    /// through to the focused app. Without a gate every role is live.
+    pub fn with_role_gate(mut self, gate: RoleGate) -> Self {
+        self.role_gate = Some(gate);
+        self
     }
 
     /// Use `gate` to decide when the Switch language bindings are live. Without a gate they
@@ -246,6 +235,62 @@ impl ChordMatcher {
             && self.switch_gate.as_ref().is_some_and(|gate| gate())
     }
 
+    /// Per binding: whether it takes part right now. Switch language bindings only while a
+    /// Translate recording runs; any binding only while the role gate allows its role.
+    fn live_bindings(&self) -> Vec<bool> {
+        let armed = self.switch_armed();
+        self.bindings
+            .iter()
+            .map(|binding| {
+                (armed || !is_switch_role(binding))
+                    && self
+                        .role_gate
+                        .as_ref()
+                        .is_none_or(|gate| gate(binding.role))
+            })
+            .collect()
+    }
+
+    /// Keys of the live bindings.
+    fn bound_keys(&self, live: &[bool]) -> BTreeSet<u16> {
+        self.bindings
+            .iter()
+            .zip(live)
+            .filter(|(_, live)| **live)
+            .flat_map(|(binding, _)| binding.chord.keys.iter().copied())
+            .collect()
+    }
+
+    /// True when another live binding has a larger chord that contains binding `index`.
+    fn has_live_superset(&self, index: usize, live: &[bool]) -> bool {
+        let chord = &self.bindings[index].chord;
+        self.bindings
+            .iter()
+            .zip(live)
+            .any(|(other, live)| *live && chord.is_strict_subset_of(&other.chord))
+    }
+
+    /// Plan `onboarding-shortcut-gate`: log (debug, role only) when this press completes a
+    /// binding that the role gate holds back.
+    fn log_gated_press(&self, code: u16, live: &[bool]) {
+        let Some(gate) = self.role_gate.as_ref() else {
+            return;
+        };
+        let gated = self.bindings.iter().zip(live).find(|(binding, live)| {
+            !**live
+                && !is_switch_role(binding)
+                && !gate(binding.role)
+                && binding.chord.contains(code)
+                && binding.chord.is_satisfied_by(&self.held)
+        });
+        if let Some((binding, _)) = gated {
+            tracing::debug!(
+                role = binding.role.as_str(),
+                "shortcut gated during onboarding"
+            );
+        }
+    }
+
     /// Keys currently believed to be held.
     pub fn held_codes(&self) -> Vec<u16> {
         self.held.iter().copied().collect()
@@ -287,19 +332,18 @@ impl ChordMatcher {
 
     fn press(&mut self, input: KeyInput, events: &mut Vec<NativeHotkeyEvent>) -> bool {
         let code = input.code;
-        let armed = self.switch_armed();
-        let bound_keys = if armed {
-            &self.bound_keys_armed
-        } else {
-            &self.bound_keys_idle
-        };
-        let always_swallow = input.class == KeyClass::Standalone && bound_keys.contains(&code);
+        let live = self.live_bindings();
+        let always_swallow =
+            input.class == KeyClass::Standalone && self.bound_keys(&live).contains(&code);
         if input.autorepeat || self.held.contains(&code) {
             return always_swallow || self.swallowed.contains(&code);
         }
         self.held.insert(code);
 
-        let winner = self.newly_satisfied_largest(code, armed);
+        let winner = self.newly_satisfied_largest(code, &live);
+        if winner.is_none() {
+            self.log_gated_press(code, &live);
+        }
         let switch_won = winner.is_some_and(|index| is_switch_role(&self.bindings[index]));
         let swallow = match input.class {
             KeyClass::Modifier => switch_won,
@@ -317,12 +361,7 @@ impl ChordMatcher {
         let bindings = &self.bindings;
         self.deferred
             .retain(|deferred| !bindings[*deferred].chord.is_strict_subset_of(&chord));
-        let has_superset = if armed {
-            self.has_superset_armed[index]
-        } else {
-            self.has_superset_idle[index]
-        };
-        if has_superset {
+        if self.has_live_superset(index, &live) {
             if !self.deferred.contains(&index) {
                 self.deferred.push(index);
             }
@@ -364,11 +403,11 @@ impl ChordMatcher {
 
     /// The largest binding that contains `code` and is satisfied now. Such a binding cannot
     /// have been satisfied before `code` went down. Ties keep the first configured binding.
-    /// Switch language bindings take part only when `armed`.
-    fn newly_satisfied_largest(&self, code: u16, armed: bool) -> Option<usize> {
+    /// Only live bindings take part (see `live_bindings`).
+    fn newly_satisfied_largest(&self, code: u16, live: &[bool]) -> Option<usize> {
         let mut best: Option<usize> = None;
         for (index, binding) in self.bindings.iter().enumerate() {
-            if (!armed && is_switch_role(binding))
+            if !live[index]
                 || !binding.chord.contains(code)
                 || !binding.chord.is_satisfied_by(&self.held)
             {
@@ -653,11 +692,13 @@ impl NativeHotkeyRuntime {
     /// Replace the running listener with one that matches `bindings`. `switch_gate` says when
     /// the Switch language bindings are live. `cancel_gate` says when Escape cancels the
     /// current run (macOS only; with a gate the listener runs even without native bindings).
+    /// `role_gate` says which roles may run now (plan `onboarding-shortcut-gate`).
     pub fn install(
         &self,
         bindings: Vec<NativeHotkeyBinding>,
         switch_gate: SwitchGate,
         cancel_gate: Option<CancelGate>,
+        role_gate: Option<RoleGate>,
         handler: NativeHotkeyHandler,
     ) -> Result<(), String> {
         let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
@@ -670,6 +711,9 @@ impl NativeHotkeyRuntime {
         }
 
         let mut matcher = ChordMatcher::new(bindings).with_switch_gate(switch_gate);
+        if let Some(gate) = role_gate {
+            matcher = matcher.with_role_gate(gate);
+        }
         if let Some(gate) = cancel_gate {
             matcher = matcher.with_cancel_key(native_keys::ESCAPE_KEYCODE, gate);
         }
@@ -1510,7 +1554,7 @@ mod tests {
         let handler: NativeHotkeyHandler = Arc::new(|_| {});
 
         assert!(runtime
-            .install(Vec::new(), Arc::new(|| false), None, handler)
+            .install(Vec::new(), Arc::new(|| false), None, None, handler)
             .is_ok());
     }
 
