@@ -56,6 +56,30 @@ pub trait SttProvider: Send + Sync {
     /// Plan `speed-board`: gives the provider a slot to note when its upload starts and ends, for
     /// the Speed board. Providers that do not upload a file can ignore it.
     fn set_upload_probe(&mut self, _probe: crate::timing::UploadProbe) {}
+    /// Plan `language-prompt-library`: the language code the last `disconnect` recognised
+    /// (`en`, `zh`, `yue`), for the polish router. `None` when the provider does not say.
+    fn detected_language(&self) -> Option<String> {
+        None
+    }
+}
+
+/// A language as a speech service reports it, as a lower-case code: `en`, `zh`, `yue`.
+/// Whisper's full names (`english`, `cantonese`, as OpenAI's `verbose_json` returns them) are
+/// turned into their codes with whisper.cpp's own table. Anything else gives `None`.
+pub fn normalize_detected_language(raw: &str) -> Option<String> {
+    let value = raw.replace('\0', "").trim().to_ascii_lowercase();
+    let primary = value.split(['-', '_']).next().unwrap_or_default();
+    if (2..=3).contains(&primary.len()) && primary.chars().all(|c| c.is_ascii_lowercase()) {
+        return Some(primary.to_string());
+    }
+    if value.is_empty()
+        || value.len() > 40
+        || !value.chars().all(|c| c.is_ascii_lowercase() || c == ' ')
+    {
+        return None;
+    }
+    let id = whisper_rs::get_lang_id(&value)?;
+    whisper_rs::get_lang_str(id).map(str::to_string)
 }
 
 /// Creates the provider for a speech preset: whisper.cpp in the app for built-in presets
@@ -96,6 +120,29 @@ pub fn create_provider(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detected_languages_become_codes() {
+        assert_eq!(normalize_detected_language("en").as_deref(), Some("en"));
+        assert_eq!(normalize_detected_language(" ZH ").as_deref(), Some("zh"));
+        assert_eq!(normalize_detected_language("yue").as_deref(), Some("yue"));
+        assert_eq!(normalize_detected_language("zh-HK").as_deref(), Some("zh"));
+        assert_eq!(
+            normalize_detected_language("english").as_deref(),
+            Some("en")
+        );
+        assert_eq!(
+            normalize_detected_language("Cantonese").as_deref(),
+            Some("yue")
+        );
+        assert_eq!(
+            normalize_detected_language("chinese").as_deref(),
+            Some("zh")
+        );
+        assert_eq!(normalize_detected_language(""), None);
+        assert_eq!(normalize_detected_language("klingonese"), None);
+        assert_eq!(normalize_detected_language("x<script>"), None);
+    }
 
     #[test]
     fn creates_provider_named_after_the_preset() {

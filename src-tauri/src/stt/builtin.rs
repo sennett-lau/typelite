@@ -55,6 +55,8 @@ pub struct Transcription {
     pub transcribe_ms: u64,
     /// Segments dropped as probably not speech (see [`is_probably_not_speech`]).
     pub dropped_segments: usize,
+    /// The language whisper decoded (`en`, `zh`, `yue`), or the fixed one it was given.
+    pub language: Option<String>,
 }
 
 /// The shared engine.
@@ -233,6 +235,9 @@ impl LocalWhisper {
             }
         }
         let transcribe_ms = started.elapsed().as_millis() as u64;
+        // Plan `language-prompt-library`: the language whisper decoded, for the polish router.
+        let detected =
+            whisper_rs::get_lang_str(loaded.state.full_lang_id_from_state()).map(str::to_string);
         loaded.last_used = Instant::now();
         let text = super::transcript::normalize_transcript(&text);
         tracing::info!(
@@ -248,6 +253,7 @@ impl LocalWhisper {
             load_ms: load.map(|d| d.as_millis() as u64),
             transcribe_ms,
             dropped_segments,
+            language: detected,
         })
     }
 
@@ -359,6 +365,7 @@ pub struct BuiltinProvider {
     audio_buffer: Vec<u8>,
     upload_probe: Option<crate::timing::UploadProbe>,
     preload: Option<tokio::task::JoinHandle<Result<Option<Duration>, String>>>,
+    detected_language: Option<String>,
 }
 
 impl BuiltinProvider {
@@ -369,6 +376,7 @@ impl BuiltinProvider {
             audio_buffer: Vec::new(),
             upload_probe: None,
             preload: None,
+            detected_language: None,
         }
     }
 }
@@ -404,6 +412,7 @@ impl SttProvider for BuiltinProvider {
     }
 
     async fn disconnect(&mut self) -> Result<Option<String>, AppError> {
+        self.detected_language = None;
         let Some(config) = self.stt_config.clone() else {
             return Ok(None);
         };
@@ -461,6 +470,13 @@ impl SttProvider for BuiltinProvider {
             probe.mark_finished();
         }
         let transcription = result.map_err(AppError::Config)?;
+        self.detected_language = transcription.language.clone();
+        if let Some(language) = &transcription.language {
+            tracing::info!(
+                "{}: detected language {language}",
+                self.config.provider_name
+            );
+        }
         if transcription.text.is_empty() && transcription.dropped_segments > 0 {
             log_decision(
                 &self.config.provider_name,
@@ -482,6 +498,10 @@ impl SttProvider for BuiltinProvider {
 
     fn set_upload_probe(&mut self, probe: crate::timing::UploadProbe) {
         self.upload_probe = Some(probe);
+    }
+
+    fn detected_language(&self) -> Option<String> {
+        self.detected_language.clone()
     }
 }
 

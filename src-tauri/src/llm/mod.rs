@@ -2,6 +2,7 @@ pub mod builtin;
 pub mod context_policy;
 // Plan `language-prompt-library`: language presets from the repository, downloaded on demand.
 pub mod language_library;
+pub mod language_router;
 pub mod live_question;
 pub mod models;
 pub mod openai;

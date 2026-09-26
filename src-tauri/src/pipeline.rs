@@ -742,6 +742,8 @@ pub struct PipelineHandle {
     audio_handle: Arc<Mutex<Option<AudioCaptureHandle>>>,
     audio_volume: Arc<Mutex<f32>>,
     accumulated_text: Arc<Mutex<String>>,
+    /// Plan `language-prompt-library`: the language the speech step recognised in this run.
+    detected_language: Arc<Mutex<Option<String>>>,
     stt_session: Arc<Mutex<Option<SttTaskControl>>>,
     stt_error: Arc<Mutex<Option<(u64, crate::error::UserError)>>>,
     active_stt_session_id: Arc<AtomicU64>,
@@ -784,6 +786,8 @@ struct PolishTextInput<'a> {
     /// pill when no
     /// text field has focus. `None` for Ask.
     copy_pill: Option<crate::copy_pill::CopyPillRun>,
+    /// Plan `language-prompt-library`: the language code the speech step recognised, if any.
+    detected_language: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -991,6 +995,7 @@ impl PipelineHandle {
             audio_handle: Arc::new(Mutex::new(None)),
             audio_volume: Arc::new(Mutex::new(0.0)),
             accumulated_text: Arc::new(Mutex::new(String::new())),
+            detected_language: Arc::new(Mutex::new(None)),
             stt_session: Arc::new(Mutex::new(None)),
             stt_error: Arc::new(Mutex::new(None)),
             active_stt_session_id: Arc::new(AtomicU64::new(0)),
@@ -1145,6 +1150,10 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clear();
+        *self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = None;
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // Force state to Idle — emits pipeline:state event to sync frontend
@@ -1229,6 +1238,10 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clear();
+        *self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = None;
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // P0-2: Load config BEFORE starting audio capture — fail fast on missing API key
@@ -1562,6 +1575,7 @@ impl PipelineHandle {
         // STT streaming task — provider is already connected
         let app_handle = self.app_handle.clone();
         let accumulated = self.accumulated_text.clone();
+        let detected_language = self.detected_language.clone();
         let stt_control = SttTaskControl {
             id: session_id,
             done: Arc::new(Notify::new()),
@@ -1631,6 +1645,8 @@ impl PipelineHandle {
                                             acc.push_str(&text);
                                             let current = acc.clone();
                                             drop(acc);
+                                            *detected_language.lock().unwrap_or_else(|e| e.into_inner()) =
+                                                provider.detected_language();
                                             let _ = app_handle.emit("stt:final", &current);
                                         }
                                     }
@@ -1973,6 +1989,11 @@ impl PipelineHandle {
         }
 
         // ── Phase 2: LLM polish + output ───────────────────────────────
+        let detected_language = self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
         let polish_outcome = self
             .polish_text(PolishTextInput {
                 raw_text: &raw_text,
@@ -1986,6 +2007,7 @@ impl PipelineHandle {
                 popup_fallback_enabled: true,
                 copy_pill: (voice_mode != crate::voice_intent::VoiceMode::Ask)
                     .then(crate::copy_pill::CopyPillRun::default),
+                detected_language,
             })
             .await;
         let final_text = polish_outcome.final_text;
@@ -2167,6 +2189,7 @@ impl PipelineHandle {
             voice_intent,
             popup_fallback_enabled,
             copy_pill,
+            detected_language: _detected_language,
         } = input;
         let provider_plan =
             crate::voice_intent::plan_voice_provider_work(voice_mode, raw_text, &voice_intent);
@@ -2741,6 +2764,7 @@ impl PipelineHandle {
                 voice_intent,
                 popup_fallback_enabled: false,
                 copy_pill: None,
+                detected_language: None,
             })
             .await;
         self.set_state(PipelineState::Idle);
