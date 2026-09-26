@@ -17,6 +17,15 @@ app's own design tokens, pill sizes and timings (`src/styles.css`, `src/componen
 They play only while on screen, have a pause button, and show a still frame with reduced motion.
 The language cards read `../presets/languages/index.json`, so they follow the preset library.
 
+"How it works" (`src/sections/Story.tsx`) is driven by scrolling: the section is tall, its
+content sticks to the screen, and scroll progress picks the step and scrubs it. The rest of the
+motion is plain CSS or small `requestAnimationFrame` loops that animate only transform, opacity
+and filter: the hero's drifting aurora and headline entrance (CSS, so the pre-rendered page
+animates too), the pointer glow and magnetic primary buttons (desktop pointers only), the top
+bar's reading progress, and scroll reveals. No animation library. With
+`prefers-reduced-motion: reduce` everything is still and readable: no drifting, no reveals, the
+story is a plain list and each demo shows one frame.
+
 ## Build
 
 ```sh
