@@ -207,3 +207,35 @@ export function useActiveSection(ids: readonly string[]): string | null {
   }, [key])
   return active
 }
+
+/**
+ * Primary buttons follow the pointer a little ("magnetic", at most a few pixels) and light up
+ * where it is. One delegated listener for the whole page; desktop pointers only, and nothing
+ * with reduced motion. The styles read `--mx`/`--my` (light) and `--tx`/`--ty` (shift).
+ */
+export function useMagneticButtons() {
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let current: HTMLElement | null = null
+    const reset = (el: HTMLElement) => {
+      el.style.removeProperty('--tx')
+      el.style.removeProperty('--ty')
+    }
+    const onMove = (e: PointerEvent) => {
+      const el = (e.target as Element | null)?.closest?.<HTMLElement>('.btn-primary') ?? null
+      if (current && current !== el) reset(current)
+      current = el
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      el.style.setProperty('--mx', `${x.toFixed(0)}px`)
+      el.style.setProperty('--my', `${y.toFixed(0)}px`)
+      el.style.setProperty('--tx', `${(((x / r.width) - 0.5) * 6).toFixed(2)}px`)
+      el.style.setProperty('--ty', `${(((y / r.height) - 0.5) * 4).toFixed(2)}px`)
+    }
+    document.addEventListener('pointermove', onMove, { passive: true })
+    return () => document.removeEventListener('pointermove', onMove)
+  }, [])
+}

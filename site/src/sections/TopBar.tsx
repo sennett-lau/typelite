@@ -47,7 +47,7 @@ export function TopBar({ stats }: { stats: RepoStats | null }) {
         </nav>
         <div className="topbar-actions">
           <a rel="noopener"
-            className="btn btn-glass btn-sm"
+            className="btn btn-glass btn-sm btn-star"
             href={links.repo}
             aria-label={
               stats ? `Star Typelite on GitHub, ${stats.stars} stars` : 'Star Typelite on GitHub'

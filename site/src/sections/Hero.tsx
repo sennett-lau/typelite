@@ -35,7 +35,7 @@ export function Hero({ stats }: { stats: RepoStats | null }) {
             <IconDownload size={18} />
             Download for macOS
           </a>
-          <a rel="noopener" className="btn btn-glass" href={links.repo}>
+          <a rel="noopener" className="btn btn-glass btn-star" href={links.repo}>
             <IconStar size={17} />
             Star on GitHub
             {stats && stats.stars > 0 && <span className="count">{formatCount(stats.stars)}</span>}
