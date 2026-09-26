@@ -6,7 +6,7 @@ name is clicked. Every pill is a little taller. During a Translate recording the
 the Translate shortcut's first key stops, the Switch language key switches. The visual reference
 is the pill preview on the "Translate · shortcut" page of [mock.html](mock.html).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 Changes decisions in earlier plans:
 - [aurora-pill](../2026-09-25-aurora-pill/index.md): the pill is 40 pt high (was 36) with more
