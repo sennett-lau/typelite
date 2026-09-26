@@ -5,8 +5,8 @@ import {
   type TranslationLanguageSettings,
 } from '../../stores/appStore'
 
-// Plan `translation-language-presets`: loading the built-in instructions and saving one
-// language's settings, for `TranslationLanguageSheet`.
+// Plans `translation-language-presets` and `language-prompt-library`: loading the built-in
+// instructions and saving one language's settings, for the language rows and sheet.
 
 let defaultsRequest: Promise<Record<string, string>> | null = null
 
