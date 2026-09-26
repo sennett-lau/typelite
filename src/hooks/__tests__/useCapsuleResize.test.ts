@@ -96,16 +96,16 @@ describe('getSizeForState', () => {
     expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(160))
   })
 
-  it('sizes Translate recording by the number of chosen languages', () => {
-    // Three chips, or one language name.
+  it('sizes Translate recording for its language name', () => {
     expect(getSizeForState('recording', false, false, false, 'translate', false, 3)).toEqual(
       size(240),
     )
     expect(getSizeForState('recording', false, false, false, 'translate', false, 1)).toEqual(
       size(240),
     )
-    expect(getSizeForState('recording', false, false, false, 'translate', false, 2)).toEqual(
-      size(216),
+    // No language chosen: no name, so the Dictate size.
+    expect(getSizeForState('recording', false, false, false, 'translate', false, 0)).toEqual(
+      size(160),
     )
   })
 

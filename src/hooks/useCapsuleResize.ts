@@ -16,10 +16,8 @@ export const PILL_HEIGHT = 40
 export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
 /** Ask recording: Ask icon, waveform and cancel button. */
 export const ASK_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
-/** Translate recording with three language chips, or with one language name. */
+/** Translate recording: dot, waveform, the active language's name and dots, cancel. */
 export const TRANSLATE_RECORDING_SIZE: CapsuleSize = { width: 240, height: PILL_HEIGHT }
-/** Translate recording with two language chips. */
-export const TRANSLATE_TWO_TARGETS_SIZE: CapsuleSize = { width: 216, height: PILL_HEIGHT }
 /**
  * Working states (preparing, transcribing, polishing, pasting, Ask thinking) and the done
  * flash: a short label over the aurora sweep.
@@ -88,7 +86,8 @@ export function getPillSize(
       return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
     case 'recording':
       if (activeVoiceMode !== 'translate') return DICTATION_RECORDING_SIZE
-      return translateTargetCount === 2 ? TRANSLATE_TWO_TARGETS_SIZE : TRANSLATE_RECORDING_SIZE
+      // Without a language the Translate pill has no name to show.
+      return translateTargetCount === 0 ? DICTATION_RECORDING_SIZE : TRANSLATE_RECORDING_SIZE
     case 'ask_recording':
       return ASK_RECORDING_SIZE
     case 'preparing':
