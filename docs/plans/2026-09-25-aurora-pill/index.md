@@ -5,6 +5,8 @@ app's colours, so it feels alive while listening and working without extra text.
 
 Status: agreed — 2026-09-25
 
+Pill height and the Translate chips superseded by `translate-pill-and-keys`.
+
 ## Goals
 
 - Less to read while talking: no elapsed-time counter while recording or transcribing.
