@@ -1036,6 +1036,26 @@ body,
     /* A new name (after a language switch) fades in while the pill animates to its width. */
     animation: pill-lang-in 0.22s cubic-bezier(0.2, 0, 0, 1) 0.08s both;
   }
+  /* With two or three languages the name is a button that switches language. Its padding sits
+     outside the name's width (negative margin), so the pill's width maths stay the same. */
+  .pill-lang-switch {
+    box-sizing: content-box;
+    margin: 0 -4px;
+    padding: 2px 4px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .pill-lang-switch:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .pill-lang-switch:active {
+    background: rgba(255, 255, 255, 0.2);
+  }
   /* The invisible copy that measures a name's natural width (src/lib/textWidth.ts). */
   .pill-lang-name.pill-lang-name-probe {
     position: absolute;
