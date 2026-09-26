@@ -111,6 +111,14 @@ GPL projects.
 - Multi-monitor with mixed scale (Retina 2x plus 1x externals): do window maths in logical
   points and convert each monitor with its own scale factor. Never read a window position back,
   change it and write it again, or it drifts.
+- Floating windows over full-screen apps (plan `pill-over-full-screen`): Tauri's
+  `visibleOnAllWorkspaces` sets only CanJoinAllSpaces, so the pill never appeared on a
+  full-screen app's Space. A window also needs the collection behavior FullScreenAuxiliary, and
+  since macOS 10.14 a plain `NSWindow` of a Dock-icon (`Regular`) app is still refused there;
+  only `Accessory` apps and non-activating `NSPanel`s may float over full screen. Its level must
+  beat the Dock (20) and menu bar (24) that slide in over it: `NSStatusWindowLevel` (25).
+  `overlay_window.rs` does all three for the pill and Ask windows. Position overlays from the
+  monitor's `workArea` (`visibleFrame`), not a fixed Dock-sized offset.
 - Qwen3.5 in Ollama thinks by default. Through the OpenAI API without a thinking-off flag it
   thinks for about 27 s and returns empty `content`. Use a non-thinking instruct model, or send
   `reasoning_effort: "none"`.

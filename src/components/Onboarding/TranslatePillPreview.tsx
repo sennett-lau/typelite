@@ -6,7 +6,7 @@ import { measurePillNameWidth } from '../../lib/textWidth'
 import { NAME_MAX_WIDTH, marqueeDurationSeconds, nameDisplay } from '../Capsule/translatePill'
 
 /** Waveform bar heights of the static preview, in points. */
-const BARS = [6, 11, 7, 14, 9, 12, 5, 10, 13, 7]
+const BARS = [5, 9, 6, 11, 7, 10, 4, 8, 10, 6]
 
 interface Props {
   /** Display names of the chosen languages, in slot order. */
@@ -20,7 +20,7 @@ interface Props {
 /**
  * Plan `tutorial-one-page`: a static copy of the Translate recording pill of plan
  * `translate-pill-and-keys`, for the onboarding setup page. Dark glass with the aurora inside,
- * 40 pt tall: red dot, waveform, the active language name and one dot per language. The name
+ * 32 pt tall: red dot, waveform, the active language name and one dot per language. The name
  * uses the real pill's classes and rules: it grows the pill up to 180 pt, then scrolls as a
  * marquee (an ellipsis with Reduce Motion). The preview's width animates when the content
  * changes. Nothing here touches the real pill or a recording.

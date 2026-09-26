@@ -43,7 +43,7 @@ export function CapsuleRecording() {
         title={t('capsule.cancelHint')}
         className="flex-shrink-0 p-1 rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors bg-transparent border-none cursor-pointer"
       >
-        <X size={12} />
+        <X size={10} />
       </button>
     </motion.div>
   )

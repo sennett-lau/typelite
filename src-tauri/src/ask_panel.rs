@@ -29,11 +29,11 @@ pub const SCREEN_MARGIN: f64 = 8.0;
 pub const DEFAULT_PANEL_HEIGHT: f64 = 160.0;
 /// The capsule window pads the pill by this much on each side (`useCapsuleResize`).
 pub const CAPSULE_WINDOW_PADDING: f64 = 12.0;
-/// Without a visible pill: its usual centre sits this far above the screen's bottom edge
-/// (`CAPSULE_BOTTOM_MARGIN` in `useCapsuleResize`).
-const CAPSULE_BOTTOM_MARGIN: f64 = 80.0;
-/// Without a pill ever seen: its usual height.
-const DEFAULT_PILL_HEIGHT: f64 = 40.0;
+/// Without a visible pill: its usual bottom edge sits this far above the bottom of the screen's
+/// work area, the part the Dock does not cover (`PILL_BOTTOM_GAP` in `useCapsuleResize`).
+pub const PILL_BOTTOM_GAP: f64 = 16.0;
+/// Without a pill ever seen: its usual height (`PILL_HEIGHT` in `useCapsuleResize`).
+const DEFAULT_PILL_HEIGHT: f64 = 32.0;
 
 /// A rectangle in global logical points (y grows downwards, as Tauri reports it).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -121,12 +121,13 @@ pub fn anchor_above_pill(pill: LogicalRect, screens: &[LogicalRect]) -> Option<P
     })
 }
 
-/// The anchor when no pill is up: the pill's usual place on `screen` (bottom centre).
+/// The anchor when no pill is up: the pill's usual place on `screen` (a work area): centred,
+/// its bottom `PILL_BOTTOM_GAP` above the work area's bottom.
 pub fn anchor_on_screen(screen: LogicalRect, pill_height: f64) -> PanelAnchor {
     let (centre_x, _) = screen.centre();
     PanelAnchor {
         centre_x,
-        pill_top: screen.bottom() - CAPSULE_BOTTOM_MARGIN - pill_height / 2.0,
+        pill_top: screen.bottom() - PILL_BOTTOM_GAP - pill_height,
         screen,
     }
 }
@@ -239,20 +240,21 @@ impl AskPanelState {
     }
 }
 
-/// Every screen's logical rectangle, each converted with its own scale factor.
+/// Every screen's work area (the part not covered by the menu bar or the Dock, macOS
+/// `visibleFrame`) as a logical rectangle, each converted with its own scale factor. In a
+/// full-screen Space, or with an auto-hidden Dock, it is (nearly) the whole screen.
 fn screen_rects(window: &tauri::WebviewWindow) -> Vec<LogicalRect> {
     window
         .available_monitors()
         .unwrap_or_default()
         .iter()
         .map(|monitor| {
-            let position = monitor.position();
-            let size = monitor.size();
+            let area = monitor.work_area();
             logical_rect(
-                position.x,
-                position.y,
-                size.width,
-                size.height,
+                area.position.x,
+                area.position.y,
+                area.size.width,
+                area.size.height,
                 monitor.scale_factor(),
             )
         })
@@ -319,6 +321,8 @@ pub fn show(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWindow> {
     let state = app.state::<AskPanelState>();
     // The window can never become key, so clicks reach its buttons while the app keeps focus.
     let _ = window.set_focusable(false);
+    // Allowed over full-screen apps (idempotent; see `overlay_window`).
+    crate::overlay_window::make_overlay(&window);
     if let Some(frame) = state.open(current_anchor(app, &window, &state)) {
         apply_frame(&window, frame);
     }
@@ -528,9 +532,28 @@ mod tests {
     #[test]
     fn without_a_pill_the_panel_uses_the_pills_usual_place() {
         let screen = rect(0.0, 0.0, 1512.0, 982.0);
-        let anchor = anchor_on_screen(screen, 36.0);
+        let anchor = anchor_on_screen(screen, 32.0);
         assert_eq!(anchor.centre_x, 756.0);
-        assert_eq!(anchor.pill_top, 982.0 - 80.0 - 18.0);
+        // The pill's bottom sits `PILL_BOTTOM_GAP` above the work area's bottom.
+        assert_eq!(anchor.pill_top, 982.0 - PILL_BOTTOM_GAP - 32.0);
+    }
+
+    #[test]
+    fn without_a_pill_the_panel_sits_above_the_dock_or_near_the_bottom_edge() {
+        // Work areas in points: a Retina screen with the menu bar and a 70 pt Dock at the
+        // bottom, and a 1x external screen with only its menu bar (no Dock, or full screen).
+        let with_dock = logical_rect(0, 50, 3024, 1774, 2.0);
+        let without_dock = logical_rect(1512, 25, 1920, 1055, 1.0);
+        assert_eq!(with_dock, rect(0.0, 25.0, 1512.0, 887.0));
+
+        let above_dock = anchor_on_screen(with_dock, 32.0);
+        assert_eq!(above_dock.pill_top + 32.0, 912.0 - PILL_BOTTOM_GAP);
+        let panel = panel_of(panel_window_frame(&above_dock, 150.0));
+        assert_eq!(panel.bottom(), above_dock.pill_top - GAP_ABOVE_PILL);
+
+        let near_edge = anchor_on_screen(without_dock, 32.0);
+        assert_eq!(near_edge.pill_top + 32.0, 1080.0 - PILL_BOTTOM_GAP);
+        assert_eq!(near_edge.centre_x, 1512.0 + 960.0);
     }
 
     #[test]

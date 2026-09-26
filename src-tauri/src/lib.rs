@@ -13,6 +13,7 @@ pub mod llm;
 pub mod native_hotkey;
 pub mod native_keys;
 pub mod output;
+pub mod overlay_window;
 pub mod pipeline;
 pub mod platform;
 pub mod readiness;
@@ -136,6 +137,9 @@ pub(crate) fn apply_dock_visibility(app: &tauri::AppHandle, show_in_dock: bool) 
             tracing::warn!("Failed to set macOS activation policy: {error}");
             return;
         }
+        // The switch must not undo the pill's full-screen setup (plan `pill-over-full-screen`),
+        // so it is applied again.
+        apply_overlay_windows(app);
         if main_was_visible {
             let handle = app.clone();
             let _ = app.run_on_main_thread(move || {
@@ -148,6 +152,18 @@ pub(crate) fn apply_dock_visibility(app: &tauri::AppHandle, show_in_dock: bool) 
     }
     #[cfg(not(target_os = "macos"))]
     let _ = (app, show_in_dock);
+}
+
+/// Labels of the windows that float over other apps: the pill and the Ask panel.
+const OVERLAY_WINDOW_LABELS: [&str; 2] = ["capsule", ask_panel::ASK_WINDOW_LABEL];
+
+/// Lets the pill and the Ask panel show over full-screen apps (see `overlay_window`).
+pub(crate) fn apply_overlay_windows(app: &tauri::AppHandle) {
+    for label in OVERLAY_WINDOW_LABELS {
+        if let Some(window) = app.get_webview_window(label) {
+            overlay_window::make_overlay(&window);
+        }
+    }
 }
 
 fn sync_auto_start_preference(
@@ -256,6 +272,7 @@ pub fn ensure_ask_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::Webv
     match build_ask_window(handle) {
         Ok(window) => {
             attach_ask_window_close_handler(handle, &window);
+            overlay_window::make_overlay(&window);
             Ok(window)
         }
         Err(error) => {
@@ -402,6 +419,32 @@ mod tests {
             ask.get("minHeight").is_none(),
             "the window fits the panel's height"
         );
+    }
+
+    #[test]
+    fn overlay_windows_are_the_non_focusable_pill_and_ask_windows() {
+        // Plan `pill-over-full-screen`: these windows get the full-screen collection behavior
+        // and level, and must stay non-activating.
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let tauri_config: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(manifest_dir.join("tauri.conf.json")).unwrap(),
+        )
+        .unwrap();
+        let windows = tauri_config["app"]["windows"].as_array().unwrap();
+        for label in OVERLAY_WINDOW_LABELS {
+            let window = windows
+                .iter()
+                .find(|window| window["label"].as_str() == Some(label))
+                .unwrap_or_else(|| panic!("{label} is configured"));
+            assert_eq!(window["focusable"].as_bool(), Some(false), "{label}");
+            assert_eq!(window["focus"].as_bool(), Some(false), "{label}");
+            assert_eq!(window["alwaysOnTop"].as_bool(), Some(true), "{label}");
+            assert_eq!(
+                window["visibleOnAllWorkspaces"].as_bool(),
+                Some(true),
+                "{label}"
+            );
+        }
     }
 
     #[test]
@@ -1077,7 +1120,8 @@ pub fn run() {
             if !onboarding_completed {
                 tracing::info!("Shortcut gate: none (onboarding not finished)");
             }
-            // Windows start hidden, so the Dock choice applies before any window shows.
+            // Windows start hidden, so the Dock choice applies before any window shows. It
+            // also sets up the pill and the Ask panel for full-screen Spaces.
             apply_dock_visibility(&app_handle, initial_config.show_in_dock);
             app.manage(config_manager);
             app.manage(dictionary_store);

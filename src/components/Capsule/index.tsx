@@ -355,9 +355,14 @@ export function Capsule() {
         </AnimatePresence>
       </div>
 
-      {/* Context menu appears to the right of capsule */}
+      {/* Context menu appears to the right of capsule. Its bottom lines up with the pill's
+          bottom and it grows upwards: the pill sits just above the screen's bottom edge, so a
+          menu centred on it would run off the screen. */}
       {contextMenuOpen && contextMenuReady && (
-        <div className="ml-2">
+        <div
+          className="absolute left-2"
+          style={{ bottom: `calc(50% - ${capsuleShellSize.height / 2}px)` }}
+        >
           <CapsuleContextMenu onClose={handleCloseMenu} />
         </div>
       )}

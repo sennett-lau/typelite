@@ -48,14 +48,14 @@ export function CapsuleNudge({ active }: { active: boolean }) {
 
   return (
     <div
-      className="relative z-10 flex h-full min-w-0 items-center gap-2 pl-3.5 pr-[7px]"
+      className="relative z-10 flex h-full min-w-0 items-center gap-2 pl-3.5 pr-[6px]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       role="status"
       data-testid="capsule-nudge"
     >
-      <Mic size={14} className="flex-none text-white/85" aria-hidden="true" />
-      <p className="min-w-0 flex-1 truncate text-[12px] font-medium leading-4 text-white/95">
+      <Mic size={12} className="flex-none text-white/85" aria-hidden="true" />
+      <p className="min-w-0 flex-1 truncate text-[11px] font-medium leading-[14px] text-white/95">
         {before}
         <KeyCaps keys={dictateKeys} className="pill-nudge-key" joiner="plus" />
         {after}
@@ -83,7 +83,7 @@ export function CapsuleNudge({ active }: { active: boolean }) {
           close(false)
         }}
       >
-        <X size={12} aria-hidden="true" />
+        <X size={10} aria-hidden="true" />
       </button>
     </div>
   )
