@@ -26,6 +26,8 @@ pub struct IndexMeta {
     pub etag: Option<String>,
     /// Unix seconds of the last successful fetch (200 or 304).
     pub fetched_at: Option<i64>,
+    /// Unix seconds of the last daily auto-update check.
+    pub auto_checked_at: Option<i64>,
 }
 
 /// One automatic update of a language (plan: "Updated automatically to vN").
@@ -93,10 +95,17 @@ impl LibraryStore {
     /// Saves a freshly fetched index with its ETag.
     pub fn save_index(&self, bytes: &[u8], etag: Option<&str>, now: i64) -> std::io::Result<()> {
         write_atomic(&self.index_path(), bytes)?;
-        self.save_meta(&IndexMeta {
-            etag: etag.map(str::to_string),
-            fetched_at: Some(now),
-        })
+        let mut meta = self.index_meta();
+        meta.etag = etag.map(str::to_string);
+        meta.fetched_at = Some(now);
+        self.save_meta(&meta)
+    }
+
+    /// Notes that the daily auto-update check ran.
+    pub fn mark_auto_checked(&self, now: i64) -> std::io::Result<()> {
+        let mut meta = self.index_meta();
+        meta.auto_checked_at = Some(now);
+        self.save_meta(&meta)
     }
 
     /// Notes that the server said the cached index is still current (HTTP 304).
