@@ -21,6 +21,7 @@ import { CapsuleAskRecording } from './CapsuleAskRecording'
 import { CapsuleAskThinking } from './CapsuleAskThinking'
 import { CapsuleAurora, type AuroraMode } from './CapsuleAurora'
 import { CapsuleCopy } from './CapsuleCopy'
+import { CapsuleNudge } from './CapsuleNudge'
 import { useTranslatePill } from './translatePill'
 
 const DRAG_THRESHOLD = 5
@@ -131,6 +132,8 @@ export function Capsule() {
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
   const copyOffer = useAppStore((s) => s.copyOffer)
   const setCopyOffer = useAppStore((s) => s.setCopyOffer)
+  const typingNudge = useAppStore((s) => s.typingNudge)
+  const setTypingNudge = useAppStore((s) => s.setTypingNudge)
   const askSelectionPreview = useAppStore((s) => s.askSelectionPreview)
   const lastInsertStatus = useAppStore((s) => s.lastInsertResult?.status ?? null)
   const { stopRecording, isRecording } = useRecording()
@@ -145,7 +148,13 @@ export function Capsule() {
   const doneFlash = useDoneFlash(pipelineState, hasError)
   useCapsuleResize(doneFlash, rootRef)
 
-  const liveState = getCapsuleState(pipelineState, hasError, doneFlash, copyOffer !== null)
+  const liveState = getCapsuleState(
+    pipelineState,
+    hasError,
+    doneFlash,
+    copyOffer !== null,
+    typingNudge,
+  )
   const liveSize = getPillSize(
     liveState,
     activeVoiceMode,
@@ -163,6 +172,7 @@ export function Capsule() {
     pipelineState,
     doneFlash,
     copyPill: copyOffer !== null,
+    typingNudge,
   })
 
   // While visible the pill shows the live state. While it hides it keeps what it last showed,
@@ -200,6 +210,12 @@ export function Capsule() {
     setCopyOffer(null)
     dismissCopyOffer().catch(() => {})
   }, [pipelineState, setCopyOffer])
+
+  // Plan `typing-speed-and-nudge`: a new run closes the typing nudge too.
+  useEffect(() => {
+    if (pipelineState === 'idle' || !useAppStore.getState().typingNudge) return
+    setTypingNudge(false)
+  }, [pipelineState, setTypingNudge])
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return
@@ -269,7 +285,7 @@ export function Capsule() {
       <div
         className={`pill absolute left-3 rounded-full pointer-events-auto shrink-0 ${
           capsuleState === 'error' ? 'pill-error' : ''
-        } ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
+        } ${capsuleState === 'nudge' ? 'pill-nudge' : ''} ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
         style={{ ...capsuleShellSize, borderRadius: capsuleShellSize.height / 2 }}
         data-testid="capsule-shell"
         data-visible={visible}
@@ -327,6 +343,7 @@ export function Capsule() {
                 hasAction={shown.current.errorHasAction}
               />
             )}
+            {capsuleState === 'nudge' && <CapsuleNudge active={visible} />}
             {capsuleState === 'copy' && shown.current.copyOffer && (
               <CapsuleCopy
                 key={offerKey(shown.current.copyOffer)}
