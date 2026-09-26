@@ -248,6 +248,10 @@ pub enum HotkeyRole {
     /// Moves a running Translate recording to its next language. Only active while a
     /// Translate recording runs (see `native_hotkey::ChordMatcher`).
     SwitchLanguage,
+    /// Stops a running Translate recording: the Translate shortcut's first key on its own
+    /// (plan `translate-pill-and-keys`). Only active while a Translate recording runs, like
+    /// Switch language; registered from the Translate bindings, not configured by itself.
+    StopTranslate,
     /// Escape while a run is active: cancels it like the pill's cancel button. Not a
     /// configurable shortcut; the native key listener fires it (see
     /// `native_hotkey::ChordMatcher::with_cancel_key`).
@@ -264,6 +268,7 @@ impl HotkeyRole {
             Self::SwitchScene => "switchScene",
             Self::OpenApp => "openApp",
             Self::SwitchLanguage => "switchLanguage",
+            Self::StopTranslate => "stopTranslate",
             Self::Cancel => "cancel",
         }
     }
@@ -278,6 +283,7 @@ impl HotkeyRole {
             Self::SwitchScene,
             Self::OpenApp,
             Self::SwitchLanguage,
+            Self::StopTranslate,
             Self::Cancel,
         ]
         .into_iter()
@@ -307,6 +313,10 @@ pub struct RegisteredNativeHotkey {
 pub struct HotkeyRegistrationPlan {
     pub global: Vec<RegisteredGlobalHotkey>,
     pub native: Vec<RegisteredNativeHotkey>,
+    /// Keys that stop a running Translate recording (plan `translate-pill-and-keys`), for the
+    /// native key listener only. Kept apart from `native` because they may share keys with
+    /// other shortcuts (End is also Dictate) and never count as a conflict.
+    pub translate_stop: Vec<RegisteredNativeHotkey>,
 }
 
 fn push_optional_registered_hotkey(
@@ -576,8 +586,56 @@ pub(crate) fn hotkey_registration_plan_from_config_for_platform(
     if let Some(binding) = config.switch_language.as_ref() {
         push_switch_language_hotkey(&mut plan, binding, platform)?;
     }
+    push_translate_stop_keys(&mut plan, translate_bindings, platform);
 
     Ok(plan)
+}
+
+/// Plan `translate-pill-and-keys`: the keys that stop a running Translate recording. For each
+/// Translate binding that is its first key on its own ("End" of `End+RightShift`, "Ctrl" of
+/// `Ctrl+Option+T`; generic modifiers on either side). When the binding itself goes through
+/// the global-shortcut plugin, the whole binding is added too, so the first key waits for its
+/// release while the rest of the shortcut may still follow (as it does for a native binding).
+/// Only macOS has the native listener. A stop key with the same keys as a Switch language key
+/// is left out: that key switches, and the whole Translate shortcut still stops.
+fn push_translate_stop_keys(
+    plan: &mut HotkeyRegistrationPlan,
+    translate_bindings: &[storage::ShortcutBinding],
+    platform: &str,
+) {
+    if platform != "macos" {
+        return;
+    }
+    for (index, binding) in translate_bindings.iter().enumerate() {
+        let Some(names) = binding_key_names(binding) else {
+            continue;
+        };
+        let mut chords = names
+            .first()
+            .and_then(|first| either_side_chords(std::slice::from_ref(first)))
+            .unwrap_or_default();
+        if native_chord_from_binding(binding, platform).is_none() {
+            chords.extend(either_side_chords(&names).unwrap_or_default());
+        }
+        for chord in chords {
+            let switches = plan.native.iter().any(|registered| {
+                registered.role == HotkeyRole::SwitchLanguage && registered.chord == chord
+            });
+            let known = plan
+                .translate_stop
+                .iter()
+                .any(|registered| registered.chord == chord);
+            if switches || known {
+                continue;
+            }
+            plan.translate_stop.push(RegisteredNativeHotkey {
+                role: HotkeyRole::StopTranslate,
+                index,
+                chord,
+                display: binding_display(binding),
+            });
+        }
+    }
 }
 
 /// Adds the Switch language shortcut. It always goes through the native listener, because
@@ -1197,6 +1255,18 @@ pub fn handle_hotkey_role_event(
                 tauri::async_runtime::spawn(
                     commands::translation::cycle_translation_target_from_shortcut(handle.clone()),
                 );
+            }
+        }
+        HotkeyRole::StopTranslate => {
+            // The Translate shortcut's first key stops a running Translate recording (plan
+            // `translate-pill-and-keys`); a late event after the recording ended does nothing.
+            let pipeline = handle.state::<pipeline::PipelineHandle>();
+            if commands::translation::stop_key_press_stops_recording(
+                event_state,
+                pipeline.current_state(),
+                pipeline.is_translate_run(),
+            ) {
+                handle_recording_shortcut(handle.clone(), RecordingShortcutAction::Stop);
             }
         }
         HotkeyRole::Cancel => {
@@ -2080,6 +2150,122 @@ mod tests {
                 conflict_index: 0,
             }
         );
+    }
+
+    /// Dictate, Translate and Switch language bindings as the user would type them.
+    fn translate_keys_config(
+        dictation: &str,
+        translate: &str,
+        switch_language: Option<&str>,
+    ) -> storage::HotkeyConfig {
+        let binding = |value: &str| storage::ShortcutBinding::from_hotkey(value).unwrap();
+        storage::HotkeyConfig {
+            dictation: binding(dictation),
+            ask: None,
+            translate: Some(binding(translate)),
+            dictation_bindings: vec![binding(dictation)],
+            ask_bindings: Vec::new(),
+            translate_bindings: vec![binding(translate)],
+            edit_selection: None,
+            switch_scene: None,
+            open_app: None,
+            dictation_mode: "toggle".to_string(),
+            switch_language: switch_language.map(binding),
+        }
+    }
+
+    fn translate_stop_chords(config: &storage::HotkeyConfig, platform: &str) -> Vec<NativeChord> {
+        let plan = hotkey_registration_plan_from_config_for_platform(config, platform).unwrap();
+        assert!(plan
+            .translate_stop
+            .iter()
+            .all(|entry| entry.role == HotkeyRole::StopTranslate && entry.index == 0));
+        plan.translate_stop
+            .into_iter()
+            .map(|entry| entry.chord)
+            .collect()
+    }
+
+    #[test]
+    fn translate_stop_key_is_the_first_key_of_a_native_translate_shortcut() {
+        // The user's bindings: End stops; End + Right Shift is already a native binding.
+        let mut config = users_stored_config();
+        config.switch_language = storage::default_switch_language_binding();
+        assert_eq!(
+            translate_stop_chords(&config, "macos"),
+            vec![mac_chord(&["End"])]
+        );
+        // The defaults: Fn of Fn + Left Shift.
+        let config = translate_keys_config("Fn", "Fn+LeftShift", Some("Shift"));
+        assert_eq!(
+            translate_stop_chords(&config, "macos"),
+            vec![mac_chord(&["Fn"])]
+        );
+    }
+
+    #[test]
+    fn translate_stop_keys_share_keys_without_conflicts_or_changing_other_shortcuts() {
+        // End stops a Translate recording and is also Dictate; neither is a conflict, and the
+        // configured shortcuts are registered exactly as before.
+        let mut config = users_stored_config();
+        config.switch_language = storage::default_switch_language_binding();
+        let plan = hotkey_registration_plan_from_config_for_platform(&config, "macos").unwrap();
+        assert!(plan
+            .native
+            .iter()
+            .all(|entry| entry.role != HotkeyRole::StopTranslate));
+        assert_eq!(
+            plan.native
+                .iter()
+                .filter(|entry| entry.role == HotkeyRole::Dictation)
+                .map(|entry| entry.chord.clone())
+                .collect::<Vec<_>>(),
+            vec![mac_chord(&["End"])]
+        );
+    }
+
+    #[test]
+    fn translate_stop_keys_cover_a_global_translate_shortcut_on_either_side() {
+        // Ctrl + Option + T goes through the global-shortcut plugin; its first key (Ctrl, either
+        // side) stops, and the whole shortcut is watched too so Ctrl waits for its release.
+        let config = translate_keys_config("Fn", "Ctrl+Option+T", Some("Shift"));
+        let plan = hotkey_registration_plan_from_config_for_platform(&config, "macos").unwrap();
+        assert!(plan
+            .global
+            .iter()
+            .any(|entry| entry.role == HotkeyRole::TranslateSelection));
+        assert_eq!(
+            translate_stop_chords(&config, "macos"),
+            vec![
+                mac_chord(&["LeftControl"]),
+                mac_chord(&["RightControl"]),
+                mac_chord(&["LeftControl", "LeftOption", "T"]),
+                mac_chord(&["LeftControl", "RightOption", "T"]),
+                mac_chord(&["RightControl", "LeftOption", "T"]),
+                mac_chord(&["RightControl", "RightOption", "T"]),
+            ]
+        );
+    }
+
+    #[test]
+    fn translate_first_key_that_is_the_switch_key_keeps_switching() {
+        // Shift + K: Shift comes first but is the Switch language key, so only the whole
+        // shortcut stops.
+        let config = translate_keys_config("Fn", "Shift+K", Some("Shift"));
+        assert_eq!(
+            translate_stop_chords(&config, "macos"),
+            vec![
+                mac_chord(&["LeftShift", "K"]),
+                mac_chord(&["RightShift", "K"]),
+            ]
+        );
+    }
+
+    #[test]
+    fn translate_stop_keys_exist_only_where_the_native_listener_runs() {
+        let config = translate_keys_config("Ctrl+/", "Ctrl+Shift+/", None);
+        assert!(translate_stop_chords(&config, "windows").is_empty());
+        assert!(translate_stop_chords(&config, "linux").is_empty());
     }
 
     #[test]

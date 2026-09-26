@@ -196,9 +196,11 @@ fn register_configured_shortcuts_guarded(
     }
 
     if let Some(native_runtime) = app.try_state::<NativeHotkeyRuntime>() {
+        // The Translate stop keys (plan `translate-pill-and-keys`) go to the same listener.
         let native_bindings: Vec<NativeHotkeyBinding> = plan
             .native
             .iter()
+            .chain(plan.translate_stop.iter())
             .map(|registered| NativeHotkeyBinding {
                 role: registered.role,
                 index: registered.index,
@@ -217,7 +219,8 @@ fn register_configured_shortcuts_guarded(
             .all(|registered| registered.role == crate::hotkey::HotkeyRole::SwitchLanguage);
         let installed = native_runtime.install(
             native_bindings,
-            // The Switch language shortcut only listens while a Translate recording runs.
+            // Switch language and the Translate stop keys only listen while a Translate
+            // recording runs.
             Arc::new(move || {
                 gate_handle
                     .try_state::<crate::pipeline::PipelineHandle>()
@@ -241,6 +244,12 @@ fn register_configured_shortcuts_guarded(
                         registered.display,
                         registered.role.as_str(),
                         registered.index
+                    );
+                }
+                if !plan.translate_stop.is_empty() {
+                    tracing::info!(
+                        "registered {} Translate stop key chord(s)",
+                        plan.translate_stop.len()
                     );
                 }
             }

@@ -31,6 +31,8 @@ and does not switch.
 - Stop keys may share keys with other shortcuts (End is also Dictate). When a stop key and
   another shortcut have the same keys, the stop key wins while the gate is open. A stop key
   equal to a Switch language key is left out.
+- A stop key counts only when it is pressed alone: another key going down before it is
+  released (Ctrl + C during a recording) drops it.
 - A stop key that is a modifier is not swallowed, so the focused app and any shortcut that
   uses the modifier still see it; End and other standalone keys are swallowed as always.
 - The handler stops only a Translate recording; a late event after the recording ended does

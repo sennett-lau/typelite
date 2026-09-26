@@ -39,11 +39,17 @@ impl ShortcutGate {
         }
     }
 
-    /// True when a press of `role` may do something now.
+    /// True when a press of `role` may do something now. The Translate stop key (plan
+    /// `translate-pill-and-keys`) is part of the Translate shortcut, so it follows Translate.
     pub fn allows(&self, role: HotkeyRole) -> bool {
         match self {
             Self::All => true,
-            Self::Only(roles) => role == HotkeyRole::Cancel || roles.contains(&role),
+            Self::Only(roles) => {
+                role == HotkeyRole::Cancel
+                    || roles.contains(&role)
+                    || (role == HotkeyRole::StopTranslate
+                        && roles.contains(&HotkeyRole::TranslateSelection))
+            }
         }
     }
 
@@ -191,6 +197,10 @@ mod tests {
             ShortcutGate::from_request(roles(&["translate", "switchLanguage"])).unwrap();
         assert!(translate.allows(HotkeyRole::TranslateSelection));
         assert!(translate.allows(HotkeyRole::SwitchLanguage));
+        // Plan `translate-pill-and-keys`: the Translate stop key works on the Translate step,
+        // even though Dictate (often the same key) is gated there.
+        assert!(translate.allows(HotkeyRole::StopTranslate));
+        assert!(!dictate.allows(HotkeyRole::StopTranslate));
         assert!(!translate.allows(HotkeyRole::Dictation));
         assert!(!translate.allows(HotkeyRole::Ask));
 
