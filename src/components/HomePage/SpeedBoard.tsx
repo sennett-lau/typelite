@@ -7,17 +7,14 @@ import { useAppStore } from '../../stores/appStore'
 import { getRunTimings } from '../../lib/tauri'
 import {
   addRun,
-  currentPresets,
+  averageTimes,
   formatMs,
-  isOk,
+  INSIGHT_STEPS,
   RUN_TIMING_EVENT,
   SPEECH_GUIDE_URL,
   speedTip,
   STEP_COLOR,
-  STEP_IDS,
-  stepMs,
-  typicalTimes,
-  type RunMode,
+  type AverageTimes,
   type RunTiming,
   type StepId,
 } from '../../lib/speed'
@@ -66,16 +63,6 @@ function useRunTimings(): RunTiming[] {
   return runs
 }
 
-/** The label of a step; the AI step is named after what the AI did in that mode. */
-function useStepLabel() {
-  const { t } = useTranslation()
-  return (step: StepId, mode?: RunMode) => {
-    if (step === 'ai' && mode === 'translate') return t('home.speed.steps.aiTranslate')
-    if (step === 'ai' && mode === 'ask') return t('home.speed.steps.aiAnswer')
-    return t(`home.speed.steps.${step}`)
-  }
-}
-
 function StepDot({ step }: { step: StepId }) {
   return (
     <span
@@ -86,37 +73,36 @@ function StepDot({ step }: { step: StepId }) {
   )
 }
 
-function LastRun({ run }: { run: RunTiming }) {
+/**
+ * Plan `home-refresh`: the average run across all presets as one stacked bar (speech
+ * recognition, AI polish, paste), the total and how many runs it is based on.
+ */
+function AverageRun({ average }: { average: AverageTimes }) {
   const { t } = useTranslation()
-  const stepLabel = useStepLabel()
-  const modeName = t(`home.shortcuts.${run.mode}`)
-  const steps = STEP_IDS.map((step) => ({ step, ms: stepMs(run, step) }))
-  const shown = steps.filter((entry): entry is { step: StepId; ms: number } => entry.ms !== null)
-  // Segments are drawn against the sum of the steps (which is the total for a pasted run), so
-  // the bar is always full width.
-  const barTotal = shown.reduce((sum, entry) => sum + entry.ms, 0) || 1
-  const totalText = t(run.mode === 'ask' ? 'home.speed.totalAnswer' : 'home.speed.totalText', {
-    time: formatMs(run.totalMs),
-  })
+  const shown = INSIGHT_STEPS.map((step) => ({ step, ms: average.steps[step] })).filter(
+    (entry): entry is { step: StepId; ms: number } => entry.ms !== null,
+  )
+  // Segments are drawn against the sum of the shown steps, which is also the total.
+  const barTotal = average.totalMs || 1
 
   return (
-    <div className="px-3.5 py-3" data-testid="speed-last-run">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="text-[12px] font-semibold text-text-secondary">
-          {t('home.speed.lastRun')} · {modeName}
+    <div className="px-3.5 py-3" data-testid="speed-average">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]">
+        <span className="font-semibold text-text-secondary">{t('home.speed.average')}</span>
+        <span className="text-text-secondary" data-testid="speed-run-count">
+          {average.runCount === 1
+            ? t('home.speed.runsOne')
+            : t('home.speed.runsMany', { count: average.runCount })}
         </span>
-        <span className="ml-auto text-[13px] font-semibold text-text-primary">{totalText}</span>
-        {run.recordingSecs > 0 && (
-          <span className="text-[12px] text-text-secondary">
-            {t('home.speed.forSpeech', { time: `${run.recordingSecs.toFixed(1)} s` })}
-          </span>
-        )}
+        <span className="ml-auto text-[13px] font-semibold text-text-primary">
+          {t('home.speed.totalText', { time: formatMs(average.totalMs) })}
+        </span>
       </div>
 
       <div
         role="img"
         aria-label={shown
-          .map((entry) => `${stepLabel(entry.step, run.mode)} ${formatMs(entry.ms)}`)
+          .map((entry) => `${t(`home.speed.steps.${entry.step}`)} ${formatMs(entry.ms)}`)
           .join(', ')}
         className="mt-2 flex h-2.5 w-full gap-[2px] overflow-hidden rounded-full"
       >
@@ -134,9 +120,8 @@ function LastRun({ run }: { run: RunTiming }) {
       </div>
 
       <ul className="m-0 mt-2 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-[12px]">
-        {steps.map(({ step, ms }) => {
-          // Paste simply does not exist for an Ask answer; leave it out instead of "skipped".
-          if (ms === null && step === 'paste') return null
+        {INSIGHT_STEPS.map((step) => {
+          const ms = average.steps[step]
           return (
             <li
               key={step}
@@ -144,111 +129,24 @@ function LastRun({ run }: { run: RunTiming }) {
               className="flex items-center gap-1.5 text-text-secondary"
             >
               <StepDot step={step} />
-              <span>{stepLabel(step, run.mode)}</span>
+              <span>{t(`home.speed.steps.${step}`)}</span>
               <span className="font-mono text-text-primary">
-                {ms === null ? t('home.speed.skipped') : formatMs(ms)}
+                {ms === null ? '—' : formatMs(ms)}
               </span>
             </li>
           )
         })}
       </ul>
-
-      {!isOk(run) && (
-        <p className="m-0 mt-2 text-[12px] text-error">
-          {t('home.speed.failed', { code: run.outcome })}
-        </p>
-      )}
     </div>
   )
 }
 
-function TypicalRows({ runs }: { runs: RunTiming[] }) {
+/** One tip for the slowest step of the average run. */
+function Tip({ average }: { average: AverageTimes }) {
   const { t } = useTranslation()
-  const stepLabel = useStepLabel()
-  const config = useAppStore((s) => s.config)
-  const typical = typicalTimes(runs, currentPresets(config))
-
-  return (
-    <div className="border-t border-hairline px-3.5 py-3" data-testid="speed-typical">
-      <div className="flex flex-wrap items-baseline gap-x-2">
-        <span className="text-[12px] font-semibold text-text-secondary">
-          {t('home.speed.typical')}
-        </span>
-        {typical && (
-          <span className="ml-auto text-[11.5px] text-text-tertiary">
-            {typical.runCount === 1
-              ? t('home.speed.basedOnOne')
-              : t('home.speed.basedOnMany', { count: typical.runCount })}
-          </span>
-        )}
-      </div>
-      {typical ? (
-        <TypicalBars steps={typical.steps} stepLabel={stepLabel} />
-      ) : (
-        <p className="m-0 mt-1.5 text-[12px] text-text-secondary">{t('home.speed.noTypical')}</p>
-      )}
-    </div>
-  )
-}
-
-function TypicalBars({
-  steps,
-  stepLabel,
-}: {
-  steps: Record<StepId, number | null>
-  stepLabel: (step: StepId) => string
-}) {
-  const { t } = useTranslation()
-  const largest = Math.max(1, ...STEP_IDS.map((step) => steps[step] ?? 0))
-  return (
-    <ul className="m-0 mt-2 list-none space-y-1.5 p-0">
-      {STEP_IDS.map((step) => {
-        const ms = steps[step]
-        return (
-          <li
-            key={step}
-            data-testid={`speed-typical-${step}`}
-            className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_4.5rem] items-center gap-2 text-[12px]"
-          >
-            <span className="flex min-w-0 items-center gap-1.5 text-text-secondary">
-              <StepDot step={step} />
-              <span className="truncate">{stepLabel(step)}</span>
-            </span>
-            <span className="h-1.5 overflow-hidden rounded-full bg-bg-secondary">
-              {ms !== null && (
-                <span
-                  className="block h-full min-w-[3px] rounded-full"
-                  style={{ width: `${(ms / largest) * 100}%`, background: STEP_COLOR[step] }}
-                />
-              )}
-            </span>
-            <span className="text-right font-mono text-text-primary">
-              {ms === null ? t('home.speed.skipped') : formatMs(ms)}
-            </span>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-function Tip({ runs }: { runs: RunTiming[] }) {
-  const { t } = useTranslation()
-  const config = useAppStore((s) => s.config)
-  const typical = typicalTimes(runs, currentPresets(config))
-  const last = runs[runs.length - 1]
-
-  // Prefer the typical values; fall back to the last run when it finished normally.
-  let tip = null
-  if (typical) {
-    tip = speedTip(typical.steps, typical.totalMs, config.output_mode)
-  } else if (last && isOk(last)) {
-    const steps = Object.fromEntries(STEP_IDS.map((step) => [step, stepMs(last, step)])) as Record<
-      StepId,
-      number | null
-    >
-    tip = speedTip(steps, last.totalMs, config.output_mode)
-  }
+  const outputMode = useAppStore((s) => s.config.output_mode)
+  // Finish recording is not part of the Insights total, so it takes no part in the tip either.
+  const tip = speedTip({ ...average.steps, recording: null }, average.totalMs, outputMode)
   if (!tip) return null
 
   return (
@@ -281,25 +179,24 @@ function Tip({ runs }: { runs: RunTiming[] }) {
 }
 
 /**
- * Plan `speed-board`: where the wait goes between "I stopped talking" and "the text is in my app".
- * Shows the last run as a stacked bar, typical medians for the current presets and one tip.
+ * Home's Insights (plans `speed-board` and `home-refresh`): where the wait goes between "I
+ * stopped talking" and "the text is in my app", averaged over every finished run, plus one tip.
  */
 export function SpeedBoard() {
   const { t } = useTranslation()
   const runs = useRunTimings()
-  const last = runs[runs.length - 1]
+  const average = averageTimes(runs)
 
   return (
     <Group label={t('home.speed.title')}>
-      {last ? (
+      {average ? (
         <>
-          <LastRun run={last} />
-          <TypicalRows runs={runs} />
-          <Tip runs={runs} />
+          <AverageRun average={average} />
+          <Tip average={average} />
         </>
       ) : (
         <p className="m-0 px-3.5 py-3 text-[12.5px] text-text-secondary" data-testid="speed-empty">
-          {t('home.speed.empty')}
+          {t(runs.length === 0 ? 'home.speed.empty' : 'home.speed.noFinished')}
         </p>
       )}
     </Group>

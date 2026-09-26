@@ -282,9 +282,9 @@ describe('HomePage', () => {
     expect(card.querySelectorAll('kbd')).toHaveLength(0)
   })
 
-  it('shows the Speed board, empty until the first run', () => {
+  it('shows Insights, empty until the first run', () => {
     render(<HomePage />)
-    const board = screen.getByRole('region', { name: 'Speed' })
+    const board = screen.getByRole('region', { name: 'Insights' })
     expect(board).toHaveTextContent('Dictate once to see where the time goes.')
   })
 
