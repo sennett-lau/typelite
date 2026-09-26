@@ -35,12 +35,12 @@ last), from `bindingKeyNames`.
 All through `KeyCap` / `KeyCaps` (`src/components/ui/KeyCap.tsx`):
 
 - Home: the shortcut tiles and the extra shortcut rows.
-- Settings → General: each shortcut field when idle, the Switch language field, the fixed
-  Escape row.
+- Settings → General: each shortcut field (idle and while recording), the Switch language
+  field, the fixed Escape row.
 - Onboarding: the large caps on each shortcut's setup page, the inline caps in hints and
   exercise instructions, the Translate legend and the Translate pill preview caption.
 - The pill's typing nudge ("Press End to say it instead").
 - The Ask panel's "esc to close" hint.
 
-While a shortcut is being recorded, the field shows the held keys as compact text
-(`displayHotkey`).
+While a shortcut is being recorded, the field shows the held keys as caps too, and reads them by
+full name (`describeHotkey`).
