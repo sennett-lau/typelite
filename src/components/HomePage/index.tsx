@@ -83,7 +83,9 @@ function ShortcutTiles() {
     {
       id: 'translate',
       name: t('home.shortcuts.translate'),
-      description: t('home.shortcuts.translateDesc', { language: targetName }),
+      description: activeTarget
+        ? t('home.shortcuts.translateDesc', { language: targetName })
+        : t('home.shortcuts.translateDescNoLanguage'),
       binding: hotkeys.translateBindings?.[0] ?? hotkeys.translate ?? null,
       hint: switchHint,
     },

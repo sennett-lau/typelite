@@ -180,7 +180,11 @@ export function GeneralPane() {
         <ShortcutBindingList
           role="translate"
           label={t('home.shortcuts.translate')}
-          description={t('home.shortcuts.translateDesc', { language: targetName })}
+          description={
+            targetName
+              ? t('home.shortcuts.translateDesc', { language: targetName })
+              : t('home.shortcuts.translateDescNoLanguage')
+          }
           showKeycaps
           bindings={translateBindings}
           otherBindings={otherBindingsFor('translate')}
