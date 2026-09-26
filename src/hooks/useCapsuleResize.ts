@@ -6,33 +6,37 @@ export interface CapsuleSize {
   height: number
 }
 
-// Pill sizes from plan `aurora-pill` (pill.md). The window adds 12 pt of padding on each side.
+// Pill sizes from plan `translate-pill-and-keys` (pill.md): every state is 40 pt high. The window
+// adds 12 pt of padding on each side.
+
+/** Height of every pill state. */
+export const PILL_HEIGHT = 40
 
 /** Dictate recording: red dot, 18-bar waveform and cancel button. */
-export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
+export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
 /** Ask recording: Ask icon, waveform and cancel button. */
-export const ASK_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
+export const ASK_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
 /** Translate recording with three language chips, or with one language name. */
-export const TRANSLATE_RECORDING_SIZE: CapsuleSize = { width: 232, height: 36 }
+export const TRANSLATE_RECORDING_SIZE: CapsuleSize = { width: 240, height: PILL_HEIGHT }
 /** Translate recording with two language chips. */
-export const TRANSLATE_TWO_TARGETS_SIZE: CapsuleSize = { width: 208, height: 36 }
+export const TRANSLATE_TWO_TARGETS_SIZE: CapsuleSize = { width: 216, height: PILL_HEIGHT }
 /**
  * Working states (preparing, transcribing, polishing, pasting, Ask thinking) and the done
  * flash: a short label over the aurora sweep.
  */
-export const WORKING_PILL_SIZE: CapsuleSize = { width: 132, height: 36 }
+export const WORKING_PILL_SIZE: CapsuleSize = { width: 140, height: PILL_HEIGHT }
 /** An error message (icon and one line). */
-export const ERROR_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
+export const ERROR_PILL_SIZE: CapsuleSize = { width: 224, height: PILL_HEIGHT }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
-export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
+export const SETUP_ERROR_SIZE: CapsuleSize = { width: 320, height: PILL_HEIGHT }
 /**
  * Plan `copy-when-no-field`: the Copy pill (language tag, one-line preview, Copy button) for a
  * short result.
  */
-export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 300, height: 36 }
+export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 308, height: PILL_HEIGHT }
 /** The Copy pill for a longer result; its preview ends with an ellipsis. */
-export const COPY_PILL_SIZE: CapsuleSize = { width: 360, height: 36 }
-const IDLE_SIZE: CapsuleSize = { width: 36, height: 36 }
+export const COPY_PILL_SIZE: CapsuleSize = { width: 368, height: PILL_HEIGHT }
+const IDLE_SIZE: CapsuleSize = { width: PILL_HEIGHT, height: PILL_HEIGHT }
 
 /** Up to this visual length (CJK characters count double) a result fits the short Copy pill. */
 const COPY_PILL_SHORT_TEXT = 34

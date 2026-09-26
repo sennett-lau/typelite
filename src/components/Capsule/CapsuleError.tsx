@@ -58,7 +58,7 @@ export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
 
   return (
     <motion.div
-      className="relative z-10 flex items-center gap-2 h-full px-3"
+      className="relative z-10 flex items-center gap-2 h-full pl-3.5 pr-3"
       initial={{ opacity: 0, x: -4 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}

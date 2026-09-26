@@ -88,24 +88,24 @@ describe('getCapsuleVisibility', () => {
 })
 
 describe('getSizeForState', () => {
-  const size = (width: number) => ({ width, height: 36 })
+  const size = (width: number) => ({ width, height: 40 })
 
-  it('uses the narrow plan `aurora-pill` sizes while recording', () => {
-    expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(150))
-    expect(getSizeForState('recording', false, false, false)).toEqual(size(150))
-    expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(150))
+  it('uses the plan `translate-pill-and-keys` sizes while recording', () => {
+    expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(160))
+    expect(getSizeForState('recording', false, false, false)).toEqual(size(160))
+    expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(160))
   })
 
   it('sizes Translate recording by the number of chosen languages', () => {
     // Three chips, or one language name.
     expect(getSizeForState('recording', false, false, false, 'translate', false, 3)).toEqual(
-      size(232),
+      size(240),
     )
     expect(getSizeForState('recording', false, false, false, 'translate', false, 1)).toEqual(
-      size(232),
+      size(240),
     )
     expect(getSizeForState('recording', false, false, false, 'translate', false, 2)).toEqual(
-      size(208),
+      size(216),
     )
   })
 
@@ -117,10 +117,10 @@ describe('getSizeForState', () => {
       'outputting',
       'ask_thinking',
     ] as const) {
-      expect(getSizeForState(state, false, false, false, 'translate')).toEqual(size(132))
+      expect(getSizeForState(state, false, false, false, 'translate')).toEqual(size(140))
     }
-    expect(getSizeForState('idle', false, false, false, null, false, 1, true)).toEqual(size(132))
-    expect(getSizeForState('idle', false, false, false)).toEqual(size(36))
+    expect(getSizeForState('idle', false, false, false, null, false, 1, true)).toEqual(size(140))
+    expect(getSizeForState('idle', false, false, false)).toEqual(size(40))
   })
 
   it('keeps the context menu and error sizes ahead of the voice mode', () => {
@@ -128,7 +128,7 @@ describe('getSizeForState', () => {
       width: 220,
       height: 220,
     })
-    expect(getSizeForState('recording', false, true, false, 'translate')).toEqual(size(216))
+    expect(getSizeForState('recording', false, true, false, 'translate')).toEqual(size(224))
   })
 
   it('keeps the pill visible during the done flash', () => {
@@ -151,20 +151,20 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
   }
   const short = { text: 'See you at 4.', targetLang: null }
 
-  it('is one line, 36 pt high and 300 or 360 pt wide by the length of the result', () => {
-    expect(copyPillSize(short)).toEqual({ width: 300, height: 36 })
-    expect(copyPillSize(long)).toEqual({ width: 360, height: 36 })
+  it('is one line, 40 pt high and 308 or 368 pt wide by the length of the result', () => {
+    expect(copyPillSize(short)).toEqual({ width: 308, height: 40 })
+    expect(copyPillSize(long)).toEqual({ width: 368, height: 40 })
     // CJK characters are wide, and a language tag takes room too.
     expect(
       copyPillSize({ text: '我哋聽日下晝四點喺二樓會議室開會啦。', targetLang: null }).width,
-    ).toBe(360)
+    ).toBe(368)
     expect(copyPillSize({ text: 'Thirty-two characters, near end.', targetLang: null }).width).toBe(
-      300,
+      308,
     )
     expect(copyPillSize({ text: 'Thirty-two characters, near end.', targetLang: 'ja' }).width).toBe(
-      360,
+      368,
     )
-    expect(getPillSize('copy', null, false, 3, short)).toEqual({ width: 300, height: 36 })
+    expect(getPillSize('copy', null, false, 3, short)).toEqual({ width: 308, height: 40 })
   })
 
   it('shows once the pipeline is idle, behind errors and the done flash', () => {
@@ -186,8 +186,8 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
       }),
     ).toBe(true)
     expect(getSizeForState('idle', false, false, false, null, false, 3, false, long)).toEqual({
-      width: 360,
-      height: 36,
+      width: 368,
+      height: 40,
     })
     // The context menu and an error still win.
     expect(getSizeForState('idle', false, false, true, null, false, 3, false, long)).toEqual({
@@ -195,8 +195,8 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
       height: 220,
     })
     expect(getSizeForState('idle', false, true, false, null, false, 3, false, long)).toEqual({
-      width: 216,
-      height: 36,
+      width: 224,
+      height: 40,
     })
   })
 })
