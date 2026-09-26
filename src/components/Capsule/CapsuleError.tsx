@@ -65,7 +65,7 @@ export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
     >
       {/* White dot */}
       <motion.div className="w-2 h-2 rounded-full bg-white/80 flex-shrink-0" />
-      <p className="text-[11px] leading-4 text-white truncate flex-1">
+      <p className="text-[10.5px] leading-[14px] text-white truncate flex-1">
         {shownMessage || t('capsule.errors.unknown')}
       </p>
       {showAction && (
@@ -73,7 +73,7 @@ export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
           type="button"
           onPointerUp={(event) => event.stopPropagation()}
           onClick={handleSetUp}
-          className="flex-none cursor-pointer rounded-full border-none bg-[var(--color-pill-chip)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-pill-chip-text)]"
+          className="flex-none cursor-pointer rounded-full border-none bg-[var(--color-pill-chip)] px-2.5 py-0.5 text-[10.5px] font-medium text-[var(--color-pill-chip-text)]"
         >
           {t('capsule.setUp')}
         </button>
