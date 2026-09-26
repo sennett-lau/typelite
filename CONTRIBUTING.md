@@ -10,6 +10,7 @@ TypeScript:
 | Make Typelite write your language better | [Language presets](#language-presets) |
 | Support a service that needs its own protocol | [New connections](#new-connections) |
 | Report a problem | [Reporting bugs](#reporting-bugs) |
+| Cut a release (maintainers) | [Maintainers](#maintainers) |
 
 ## Code
 
@@ -183,6 +184,12 @@ Open an issue on GitHub with:
   addresses);
 - the log file `~/Library/Logs/Typelite/typelite.log`. It holds timings, sizes and errors, never
   the text you dictated. Look it over before you attach it.
+
+## Maintainers
+
+Releases are built by GitHub Actions when a `vX.Y.Z` tag is pushed, and land as a draft to review
+and publish. The steps, checksums and the unsigned-app caveat are in [Releasing](docs/releasing.md).
+The [CI workflow](.github/workflows/ci.yml) runs the offline gate on pull requests.
 
 ## Code of conduct
 
