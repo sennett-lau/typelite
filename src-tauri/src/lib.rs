@@ -1337,6 +1337,8 @@ pub fn run() {
             commands::ask::answer_ask_anyway,
             ask_panel::close_ask_panel,
             ask_panel::resize_ask_panel,
+            ask_panel::copy_ask_text,
+            ask_panel::insert_ask_text,
             commands::audio::list_input_devices,
             commands::audio::start_mic_level_monitor,
             commands::audio::stop_mic_level_monitor,

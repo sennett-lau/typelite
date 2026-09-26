@@ -41,6 +41,21 @@
     "outOfDateNote": "May be out of date — no web search was used",
     "send": "Ask"
   },
+  "askPanel": {
+    "label": "Ask answer",
+    "aboutHighlight": "About the highlight",
+    "close": "Close (Esc)",
+    "escToClose": "to close",
+    "copy": "Copy",
+    "copied": "Copied",
+    "insert": "Insert",
+    "insertAtCursor": "Insert at the cursor",
+    "replaceHighlight": "Replace the highlight",
+    "insertFailed": "Couldn't insert here. Use Copy instead.",
+    "couldNotReplace": "This app didn't allow the replacement. The result is on your clipboard.",
+    "tryReplacingAgain": "Try replacing again",
+    "errorTitle": "Something went wrong"
+  },
   "errors": {
     "stt_timeout": "The speech server did not answer within {{details}}. Check that it is running, or try a faster server.",
     "stt_invalid_key": "Speech endpoint rejected the API key. Check the key in Settings.",

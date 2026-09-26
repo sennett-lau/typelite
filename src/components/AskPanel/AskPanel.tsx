@@ -1,17 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Copy, Loader2, Mic, Square, X } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Check, Copy, Loader2, Mic, Square } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
   ASK_CANCELLED_ERROR,
+  ASK_PANEL_CLOSED_EVENT,
   abortAskDictation,
   answerAskAnyway,
+  closeAskPanel,
+  resizeAskPanel,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
 } from '../../lib/tauri'
 import type { AskDictationResult, AskDictationStartResult } from '../../lib/tauri'
 import { NeedsLiveInfo } from './NeedsLiveInfo'
+import { AskAnswerPanel, type AskPanelContent } from './AskAnswerPanel'
 
 interface AskPanelProps {
   embedded?: boolean
@@ -20,14 +23,6 @@ interface AskPanelProps {
 }
 
 type AskResultPayload = AskDictationResult
-
-function currentNativeWindow() {
-  try {
-    return getCurrentWindow()
-  } catch {
-    return null
-  }
-}
 
 function safeUnlisten(unlisten: () => void) {
   try {
@@ -157,19 +152,9 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
     }
   }, [applyError, applyResult, setAskDictationState, setBusy])
 
-  const hideStandaloneWindow = useCallback(async () => {
-    if (embedded) return
-    const window = currentNativeWindow()
-    if (!window) return
-    try {
-      await window.hide()
-    } catch {
-      // Tests and browser preview do not always provide a native Tauri window.
-    }
-  }, [embedded])
-
-  const dismissStandalone = useCallback(
-    (ignorePendingResult = true) => {
+  /** Drops what the standalone panel shows (it was closed, here or by the app). */
+  const clearStandalone = useCallback(
+    (ignorePendingResult: boolean) => {
       if (embedded) return
       if (
         ignorePendingResult &&
@@ -187,9 +172,19 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
       setRecordingContext(null)
       setBusy(false)
       setAskDictationState('idle')
-      void hideStandaloneWindow()
     },
-    [embedded, hideStandaloneWindow, setAskDictationState, setBusy],
+    [embedded, setAskDictationState, setBusy],
+  )
+
+  // Plan `ask-panel-above-pill`: ✕ closes the panel through the app, which hides the window and
+  // keeps Escape's state right.
+  const dismissStandalone = useCallback(
+    (ignorePendingResult = true) => {
+      if (embedded) return
+      clearStandalone(ignorePendingResult)
+      void Promise.resolve(closeAskPanel()).catch(() => {})
+    },
+    [clearStandalone, embedded],
   )
 
   useEffect(() => {
@@ -222,6 +217,12 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
               void takePendingAskMessage().catch(() => {})
             }
           }),
+          // Plan `ask-panel-above-pill`: the panel never takes focus, so Escape never reaches this
+          // page. The app closes the panel (Escape, a new run) and tells the page to drop its
+          // content.
+          listen(ASK_PANEL_CLOSED_EVENT, () => {
+            if (!cancelled) clearStandalone(true)
+          }),
         ]),
       )
       .then((listeners) => {
@@ -238,41 +239,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
       cancelled = true
       unlisteners.forEach(safeUnlisten)
     }
-  }, [applyError, applyResult, embedded])
-
-  useEffect(() => {
-    if (embedded) return
-
-    let cancelled = false
-    let unlistenFocus: (() => void) | null = null
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      dismissStandalone(true)
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    const nativeWindow = currentNativeWindow()
-    nativeWindow
-      ?.onFocusChanged((event) => {
-        if (cancelled || event.payload) return
-        dismissStandalone(true)
-      })
-      .then((unlisten) => {
-        if (cancelled) {
-          unlisten()
-        } else {
-          unlistenFocus = unlisten
-        }
-      })
-      .catch(() => {})
-
-    return () => {
-      cancelled = true
-      window.removeEventListener('keydown', onKeyDown)
-      if (unlistenFocus) safeUnlisten(unlistenFocus)
-    }
-  }, [dismissStandalone, embedded])
+  }, [applyError, applyResult, clearStandalone, embedded])
 
   useEffect(() => {
     return () => {
@@ -422,94 +389,56 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
       {dictationState === 'recording' && <Square size={13} />}
     </button>
   )
-  const standaloneCloseButton = (
-    <button
-      type="button"
-      aria-label={t('onboarding.layout.close')}
-      title={t('onboarding.layout.close')}
-      onClick={() => dismissStandalone(true)}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-bg-primary/80 text-text-tertiary transition-colors hover:border-border-focus hover:text-text-primary"
-    >
-      <X size={14} />
-    </button>
-  )
+  // Plan `ask-panel-above-pill`: the floating panel above the pill.
+  const panelContent: AskPanelContent | null = error
+    ? { kind: 'error', message: error }
+    : result
+      ? { kind: 'result', result }
+      : null
+  const panelRef = useRef<HTMLDivElement>(null)
+  // A new key each time the panel opens, so its open animation plays again.
+  const panelShown = panelContent !== null
+  const openCount = useRef(0)
+  const wasShown = useRef(false)
+  if (panelShown && !wasShown.current) openCount.current += 1
+  wasShown.current = panelShown
+  const panelKey = openCount.current
 
-  const startStandaloneDrag = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest('button')) return
-    const window = currentNativeWindow()
-    void window?.startDragging().catch(() => {})
-  }, [])
+  // Report the panel's height, so the window fits it and keeps its bottom edge above the pill.
+  useLayoutEffect(() => {
+    if (embedded || !panelShown) return
+    const element = panelRef.current
+    if (!element) return
+    let reported = 0
+    const report = () => {
+      const height = Math.ceil(element.getBoundingClientRect().height)
+      if (height <= 0 || height === reported) return
+      reported = height
+      void Promise.resolve(resizeAskPanel(height)).catch(() => {})
+    }
+    report()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(report)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [embedded, panelShown, panelKey])
 
   if (!embedded) {
     return (
       <div
         data-testid="ask-floating-note-backdrop"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) dismissStandalone(true)
-        }}
-        className="min-h-screen w-screen bg-transparent p-3 text-text-primary"
+        className="flex h-screen w-screen items-end justify-center bg-transparent p-4 text-white"
       >
-        <section
-          data-testid="ask-floating-note"
-          onMouseDown={startStandaloneDrag}
-          className="flex max-h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-[18px] border border-border/80 bg-bg-primary/95 shadow-[0_4px_14px_rgba(15,23,42,0.08)] backdrop-blur"
-        >
-          <div className="flex min-h-0 flex-col gap-2.5 p-3">
-            {!hasContent && (
-              <div className="flex items-center justify-between gap-2 px-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-text-tertiary/50" />
-                  <span className="truncate text-[12px] font-medium text-text-primary">
-                    {displayTitle}
-                  </span>
-                </div>
-                {standaloneCloseButton}
-              </div>
-            )}
-            {hasContent && (
-              <>
-                <div className="flex items-center justify-between gap-2 px-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        error ? 'bg-error' : 'bg-text-tertiary/50'
-                      }`}
-                    />
-                    <span className="truncate text-[12px] font-medium text-text-primary">
-                      {displayTitle}
-                    </span>
-                    {result && !needsLiveInfo && (
-                      <span className="truncate text-[11px] text-text-tertiary">
-                        {contextLabel}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {copyAction}
-                    {standaloneCloseButton}
-                  </div>
-                </div>
-                <div className="min-h-0 overflow-y-auto rounded-[12px] border border-border bg-bg-secondary/65 px-3 py-2">
-                  {result && !error && result.output !== 'openedSearch' && (
-                    <p className="mb-2 text-[12px] leading-5 text-text-secondary">
-                      {result.question}
-                    </p>
-                  )}
-                  {liveInfoPanel ?? (
-                    <p
-                      className={`whitespace-pre-wrap text-[13px] leading-5 ${
-                        error ? 'text-error' : 'text-text-primary'
-                      }`}
-                    >
-                      {resultText}
-                    </p>
-                  )}
-                  {outOfDateNote}
-                </div>
-              </>
-            )}
+        {panelContent && (
+          <div ref={panelRef} key={panelKey}>
+            <AskAnswerPanel
+              content={panelContent}
+              onClose={() => dismissStandalone(true)}
+              onAnswerAnyway={answerAnyway}
+              answering={answeringAnyway}
+            />
           </div>
-        </section>
+        )}
       </div>
     )
   }

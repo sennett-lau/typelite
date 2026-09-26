@@ -364,6 +364,49 @@ pub fn resize_ask_panel(app: tauri::AppHandle, height: f64) {
     }
 }
 
+/// The panel's Copy button. The page is never focused, so it cannot use the browser clipboard;
+/// the text goes on the clipboard here and stays there (the user asked for it).
+#[tauri::command]
+pub async fn copy_ask_text(text: String) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Err("Nothing to copy".to_string());
+    }
+    let copy_only = crate::output::clipboard::ClipboardOutput::with_options(
+        crate::output::clipboard::ClipboardOutputOptions {
+            restore_after_paste: false,
+            auto_paste: false,
+            ..crate::output::clipboard::ClipboardOutputOptions::default()
+        },
+    );
+    crate::output::TextOutput::type_text(&copy_only, &text)
+        .await
+        .map_err(|error| error.to_string())?;
+    tracing::info!("Ask panel: copied ({} chars)", text.chars().count());
+    Ok(())
+}
+
+/// The panel's Insert and "Try replacing again" buttons: pastes the text into the frontmost app
+/// (clipboard, ⌘V, then the old clipboard back). The panel never took focus, so the paste lands
+/// at the cursor, or replaces the highlight when one is still selected. Closes the panel when
+/// the paste went through.
+#[tauri::command]
+pub async fn insert_ask_text(app: tauri::AppHandle, text: String) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Err("Nothing to insert".to_string());
+    }
+    let paste = crate::output::clipboard::ClipboardOutput::new();
+    let result = crate::output::TextOutput::type_text(&paste, &text)
+        .await
+        .map_err(|error| error.to_string())?;
+    if result.status != crate::output::InsertStatus::Inserted {
+        tracing::warn!("Ask panel: insert did not go through ({:?})", result.status);
+        return Err("The text could not be inserted".to_string());
+    }
+    tracing::info!("Ask panel: inserted ({} chars)", text.chars().count());
+    close(&app);
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
