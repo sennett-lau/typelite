@@ -40,7 +40,8 @@ export function ShortcutStep({ role, done, onDone }: Props) {
   const current = bindings[0] ?? null
   const keyLabel = current ? displayBinding(current) : ''
 
-  // Shortcuts are registered at app start even during onboarding. Register them again when
+  // Shortcuts are registered at app start even during onboarding, but the shortcut gate (plan
+  // `onboarding-shortcut-gate`) lets only this step's role run. Register them again when
   // the step opens, so a shortcut paused by an earlier recording or a late Accessibility
   // grant works now.
   const makeLive = useCallback(() => {

@@ -4,6 +4,7 @@ use crate::hotkey::{HotkeySupervisor, HotkeySupervisorSnapshot, HotkeySupervisor
 use crate::native_hotkey::{NativeHotkeyBinding, NativeHotkeyRuntime};
 use crate::pipeline;
 use crate::platform;
+use crate::shortcut_gate::{ShortcutGate, ShortcutGateRequest, ShortcutGateState};
 use crate::storage;
 use crate::tray;
 use crate::AskHotkeyCache;
@@ -176,7 +177,13 @@ fn register_configured_shortcuts_guarded(
         .unregister_all()
         .map_err(|e| e.to_string())?;
 
-    for registered in &plan.global {
+    // Plan `onboarding-shortcut-gate`: a registered global shortcut is swallowed by the OS, so
+    // only the roles the gate allows are registered; the others reach the focused app.
+    for registered in plan
+        .global
+        .iter()
+        .filter(|registered| gate_allows_role(app, registered.role))
+    {
         app.global_shortcut()
             .register(registered.shortcut)
             .map_err(|error| {
@@ -201,6 +208,7 @@ fn register_configured_shortcuts_guarded(
         let handle = app.clone();
         let gate_handle = app.clone();
         let cancel_handle = app.clone();
+        let role_gate_handle = app.clone();
         // True when no configured shortcut needs the key listener (none, or only Switch
         // language); the listener then only serves Switch language and Escape to cancel.
         let only_switch_language = plan
@@ -217,6 +225,10 @@ fn register_configured_shortcuts_guarded(
             }),
             // Escape cancels only while a run is active; otherwise it is left alone.
             Some(Arc::new(move || crate::hotkey::escape_gate(&cancel_handle))),
+            // During onboarding only the page's roles are live; the rest pass through.
+            Some(Arc::new(move |role| {
+                gate_allows_role(&role_gate_handle, role)
+            })),
             Arc::new(move |event| {
                 crate::hotkey::handle_hotkey_role_event(handle.clone(), event.role, event.state);
             }),
@@ -248,6 +260,86 @@ fn register_configured_shortcuts_guarded(
         *role_cache.0.lock().unwrap_or_else(|e| e.into_inner()) = plan;
     }
 
+    Ok(())
+}
+
+/// The gate check without logging (registration asks for every binding, not for a press).
+fn gate_allows_role(app: &tauri::AppHandle, role: crate::hotkey::HotkeyRole) -> bool {
+    app.try_state::<ShortcutGateState>()
+        .is_none_or(|gate| gate.allows(role))
+}
+
+/// Registers the global shortcuts again so only the roles the gate allows are registered.
+/// Skipped while shortcuts are paused (recording a shortcut) or not installed: the next
+/// registration applies the gate anyway. Runs under the supervisor's generation guard, so it
+/// cannot race a pause.
+fn sync_global_shortcuts_with_gate(app: &tauri::AppHandle) {
+    let (Some(supervisor), Some(role_cache)) = (
+        app.try_state::<HotkeySupervisor>(),
+        app.try_state::<HotkeyRoleCache>(),
+    ) else {
+        return;
+    };
+    let snapshot = supervisor.snapshot();
+    if snapshot.state != HotkeySupervisorState::Installed {
+        return;
+    }
+    let plan = role_cache
+        .0
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone();
+    if plan.global.is_empty() {
+        return;
+    }
+    let _ = supervisor.run_if_current_generation(snapshot.generation, || {
+        if let Err(error) = app.global_shortcut().unregister_all() {
+            tracing::warn!("Shortcut gate: could not unregister global shortcuts: {error}");
+            return;
+        }
+        for registered in plan
+            .global
+            .iter()
+            .filter(|registered| gate_allows_role(app, registered.role))
+        {
+            if let Err(error) = app.global_shortcut().register(registered.shortcut) {
+                tracing::warn!(
+                    "Shortcut gate: {} hotkey at index {} failed to register: {error}",
+                    registered.role.as_str(),
+                    registered.index
+                );
+            }
+        }
+    });
+}
+
+/// Plan `onboarding-shortcut-gate`: the onboarding page says which shortcut roles may run
+/// (`"all"` once onboarding is finished, or a list such as `["translate", "switchLanguage"]`).
+/// A run whose role the new gate refuses is cancelled like Escape cancels it.
+#[tauri::command]
+pub fn set_shortcut_gate(
+    app: tauri::AppHandle,
+    gate_state: tauri::State<'_, ShortcutGateState>,
+    allowed: ShortcutGateRequest,
+) -> Result<(), String> {
+    let gate = ShortcutGate::from_request(allowed)?;
+    let previous = gate_state.set(gate.clone());
+    if previous == gate {
+        return Ok(());
+    }
+    tracing::info!("Shortcut gate: {}", gate.describe());
+    if let Some(role) =
+        crate::shortcut_gate::run_to_cancel(&gate, crate::hotkey::active_run_role(&app))
+    {
+        tracing::info!(
+            "Shortcut gate: cancelling the active {} run (its page was left)",
+            role.as_str()
+        );
+        // Stopping audio capture may take a moment, so not on the calling thread.
+        let handle = app.clone();
+        tauri::async_runtime::spawn_blocking(move || crate::hotkey::cancel_run(&handle, role));
+    }
+    sync_global_shortcuts_with_gate(&app);
     Ok(())
 }
 

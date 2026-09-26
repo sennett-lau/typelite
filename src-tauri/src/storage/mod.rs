@@ -2320,6 +2320,17 @@ impl ConfigManager {
         Ok(config)
     }
 
+    /// The separate `onboarding_completed` store flag (the frontend writes it when onboarding
+    /// finishes). Plan `onboarding-shortcut-gate` derives the startup shortcut gate from it.
+    pub fn onboarding_completed(&self) -> bool {
+        self.app_handle
+            .store("settings.json")
+            .ok()
+            .and_then(|store| store.get("onboarding_completed"))
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false)
+    }
+
     pub async fn save(&self, config: &AppConfig) -> Result<()> {
         let mut config = config.clone();
         config.normalize_values();
