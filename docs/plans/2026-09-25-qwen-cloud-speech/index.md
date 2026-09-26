@@ -6,7 +6,7 @@ own speech provider kind, `qwen_cloud`, next to the OpenAI-compatible uploader a
 whisper.cpp. In the setup screens it is not a separate choice: the user enters it in the
 "Your server or API key" form like any other service, and the address decides the kind.
 
-Status: building — 2026-09-25
+Status: done — 2026-09-26
 
 Supersedes in part plan [v1-scope](../2026-09-24-v1-scope/index.md) for this one opt-in
 service: its "Hosted providers with their own APIs are not built in"
