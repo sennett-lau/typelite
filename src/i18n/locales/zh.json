@@ -39,6 +39,8 @@
     "answerAnyway": "仍然回答",
     "close": "关闭",
     "outOfDateNote": "可能已过时——未使用网络搜索",
+    "aboutSelection": "关于“{{text}}”",
+    "aboutSelectionHint": "正在就选中文本提问",
     "send": "提问"
   },
   "askPanel": {
@@ -292,6 +294,7 @@
     "cancelProcessing": "取消处理",
     "cancelPolishing": "取消润色",
     "done": "完成",
+    "replaced": "已替换",
     "copy": "复制",
     "copied": "已复制",
     "copyResult": "复制结果",
