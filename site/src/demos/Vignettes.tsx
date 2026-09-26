@@ -81,13 +81,13 @@ export function DictateVignette() {
 /* ─── Translate: switch language mid-recording ─── */
 
 const LANGS = [
-  { name: 'Français', short: 'FR', text: 'À demain matin à la gare.', width: 56, lang: 'fr' },
-  { name: '日本語', short: '日', text: '明日の朝、駅で会いましょう。', width: 38, lang: 'ja' },
+  { name: 'Français', short: 'FR', text: 'À demain matin à la gare.', width: 51, lang: 'fr' },
+  { name: '日本語', short: '日', text: '明日の朝、駅で会いましょう。', width: 35, lang: 'ja' },
   {
     name: 'Español',
     short: 'ES',
     text: 'Nos vemos mañana por la mañana en la estación.',
-    width: 52,
+    width: 48,
     lang: 'es',
   },
 ]
@@ -100,7 +100,7 @@ const TR_DONE = 6.9
 /** Width of the Translate recording pill (useCapsuleResize.ts `translateRecordingSize`). */
 function translateWidth(nameWidth: number, dots: number) {
   const fixed = 14 + 8 + 8 + (18 * 4 - 2) + 8 + 20 + 12 + 8
-  return Math.max(RECORDING_WIDTH, fixed + nameWidth + 8 + (dots * 6 + (dots - 1) * 4) + 8)
+  return Math.max(RECORDING_WIDTH, fixed + nameWidth + 8 + (dots * 5 + (dots - 1) * 4) + 8)
 }
 
 export function TranslateVignette() {
@@ -226,7 +226,7 @@ export function AskVignette() {
         const panel = t >= ASK_ANSWER && t < ASK_END
         const p = easeOut(progress(t, ASK_ANSWER, ASK_ANSWER + 0.26))
         const out = 1 - progress(t, ASK_END - 0.3, ASK_END)
-        let width = 300
+        let width = 320
         let content
         if (t < ASK_THINK) {
           content = (
