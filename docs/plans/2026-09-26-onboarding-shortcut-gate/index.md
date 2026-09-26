@@ -7,7 +7,7 @@ frontend tells the backend which roles the current onboarding page allows; the b
 it where shortcuts are dispatched, and starts closed when onboarding is not finished, so nothing
 slips through before the window has loaded.
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 Refines [onboarding-tutorial](../2026-09-24-onboarding-tutorial/index.md) and
 [guided-tutorial](../2026-09-25-guided-tutorial/index.md). Keeps Escape from
@@ -22,8 +22,9 @@ Refines [onboarding-tutorial](../2026-09-24-onboarding-tutorial/index.md) and
 - On a tutorial shortcut page only that page's roles work: Dictate allows Dictation; Translate
   allows Translate and the Switch language key; Ask allows Ask.
 - A gated key behaves as if Typelite were not running: it is not swallowed and reaches the
-  focused app (End moves the cursor again). The shortcut recorder still captures the key being
-  recorded, as today.
+  focused app (End moves the cursor again). A key that is also part of the allowed shortcut
+  (End in the user's Ask `End + Right Control`) stays swallowed, as for any live chord. The
+  shortcut recorder still captures the key being recorded, as today.
 - Escape still cancels a run that is active.
 - The design survives the planned tutorial redesign (one page per exercise, separate setup and
   exercise pages): pages say which roles they allow; nothing in the backend knows about steps.
