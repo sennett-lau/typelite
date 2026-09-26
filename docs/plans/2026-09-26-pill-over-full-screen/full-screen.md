@@ -25,8 +25,10 @@ For the `capsule` and `ask` windows, on the main thread:
 1. The window's class is swapped for a small subclass of `NSPanel` that keeps Tauri's
    `focusable` variable and its "can become key / main window" answers (false for both
    windows), then the `NonactivatingPanel` style is added and `hidesOnDeactivate` is turned off.
-   The swap is skipped (with a log line) unless the window's class is Tauri's own and the two
-   classes have the same size and the `focusable` variable at the same place.
+   The swap is skipped (with a log line) unless the window's class is Tauri's own (in practice
+   the key-value-observing class `NSKVONotifying_TaoWindow` on top of it) and the two classes
+   have the same size and the `focusable` variable at the same place. How observing survives
+   the swap is in [kvo.md](kvo.md).
 2. The collection behavior becomes CanJoinAllSpaces + FullScreenAuxiliary + Stationary +
    IgnoresCycle; conflicting bits (Managed, Transient, MoveToActiveSpace, ParticipatesInCycle,
    FullScreenPrimary, FullScreenNone) are cleared, other bits kept.
@@ -47,8 +49,9 @@ non-activating panel, a click on either window no longer activates Typelite at a
 | On (default) | `Regular` | Only as a non-activating panel, so the panel swap is what makes it work. |
 | Off | `Accessory` | Works with the collection behavior alone; the panel swap does no harm. |
 
-If the log shows "kept as a window" for either window, the swap was skipped and full-screen
-support depends on "Show in Dock" being off.
+The log shows "Overlay window capsule: now a non-activating panel" (and the same for `ask`)
+when the swap worked. If it shows "kept as a window" for either window, the swap was skipped
+and full-screen support depends on "Show in Dock" being off; [kvo.md](kvo.md) lists the lines.
 
 ## Screens and follow
 
@@ -59,7 +62,11 @@ the menu bar, so the work area is the whole screen and the pill sits near the bo
 
 ## Manual test
 
-The Space behaviour needs a person; unit tests cover only the flag, level and placement maths.
+The Space behaviour needs a person; unit tests cover only the flag, level, class and placement
+logic.
+
+First start the app with "Show in Dock" on and check `~/Library/Logs/Typelite/typelite.log`
+for "Overlay window capsule: now a non-activating panel" and the same line for `ask`.
 
 1. Built-in screen only: open Safari or Notes, enter full screen (green button or ⌃⌘F), press
    the Dictate shortcut. The pill appears at the bottom centre over the full-screen app, 16 pt
