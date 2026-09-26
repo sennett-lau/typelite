@@ -139,13 +139,13 @@ export function Languages() {
                   <h3>Your languages</h3>
                   <PresetRow
                     name="English"
-                    meta="Preset “English” v2 · Official"
+                    meta={presetMeta('english')}
                     sum="Clear, natural English that keeps your tone, with spelling per region."
                     state={!decided ? 'idle' : r.target === 'english' ? 'chosen' : 'dim'}
                   />
                   <PresetRow
                     name="Chinese (Traditional, Hong Kong)"
-                    meta="Preset “Cantonese (Hong Kong) 廣東話” v2 · Official · needs a hint"
+                    meta={`${presetMeta('cantonese-hong-kong')} · needs a hint`}
                     sum="Colloquial written Cantonese, with Hong Kong code-mixing kept."
                     state={!decided ? 'idle' : r.target === 'cantonese' ? 'chosen' : 'dim'}
                   />
@@ -181,13 +181,14 @@ export function Languages() {
         <div className="lib-grid">
           {presets.map((p) => (
             <article className="card lib-card" key={p.id} data-reveal>
-              <div className="preset-top">
-                <h4>{p.name}</h4>
-                <span className="tier">{p.tier === 'official' ? 'Official' : 'Community'}</span>
-              </div>
+              <h4>{p.name}</h4>
+              <span className="lib-tier">
+                {p.tier === 'official' ? 'Official' : 'Community'} · {usedFor(p.applies_to)} · v
+                {p.version}
+              </span>
               <p>{p.summary}</p>
               <span className="preset-meta">
-                {[...p.languages, ...p.variants].slice(0, 4).join(' · ')} · v{p.version}
+                {[...p.languages, ...p.variants].slice(0, 4).join(' · ')}
               </span>
             </article>
           ))}
@@ -206,6 +207,18 @@ export function Languages() {
       </div>
     </section>
   )
+}
+
+/** "Preset “English” v2 · Official", from the library index. */
+function presetMeta(id: string): string {
+  const p = library.presets.find((x) => x.id === id)
+  if (!p) return ''
+  return `Preset “${p.name}” v${p.version} · ${p.tier === 'official' ? 'Official' : 'Community'}`
+}
+
+/** "polish + translate": what a preset is used for. */
+function usedFor(appliesTo: string[]): string {
+  return appliesTo.join(' + ')
 }
 
 function PresetRow({
