@@ -425,6 +425,53 @@ kbd {
   color: var(--text);
   background: var(--surface-2);
 }
+.topnav a {
+  position: relative;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+/* The section you are reading: a short aurora line under its name. */
+.topnav a::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  right: 11px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--aurora-a), var(--aurora-b));
+  transform: scaleX(0);
+  transition: transform 0.35s var(--ease);
+}
+.topnav a.is-active {
+  color: var(--text);
+}
+.topnav a.is-active::after {
+  transform: scaleX(1);
+}
+/* Reading progress along the bottom edge of the top bar. */
+.scroll-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.topbar.is-scrolled .scroll-progress {
+  opacity: 1;
+}
+.scroll-progress i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--aurora-a), var(--aurora-b));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
 .topbar-actions {
   display: flex;
   align-items: center;

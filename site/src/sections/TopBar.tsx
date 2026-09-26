@@ -1,5 +1,13 @@
+import { useRef } from 'react'
 import { IconMoon, IconStar, IconSun } from '../components/Icons'
-import { formatCount, useScrolled, useTheme, type RepoStats } from '../lib/hooks'
+import {
+  formatCount,
+  useActiveSection,
+  useScrollProgress,
+  useScrolled,
+  useTheme,
+  type RepoStats,
+} from '../lib/hooks'
 import { links } from '../links'
 
 const NAV = [
@@ -10,10 +18,14 @@ const NAV = [
   ['Compare', '#compare'],
   ['Open source', '#open-source'],
 ] as const
+const NAV_IDS = NAV.map(([, href]) => href.slice(1))
 
 export function TopBar({ stats }: { stats: RepoStats | null }) {
   const scrolled = useScrolled()
   const [theme, toggleTheme] = useTheme()
+  const bar = useRef<HTMLElement>(null)
+  useScrollProgress(bar)
+  const active = useActiveSection(NAV_IDS)
   return (
     <header className={`topbar ${scrolled ? 'is-scrolled' : ''}`}>
       <div className="container topbar-inner">
@@ -23,7 +35,12 @@ export function TopBar({ stats }: { stats: RepoStats | null }) {
         </a>
         <nav className="topnav" aria-label="Sections">
           {NAV.map(([label, href]) => (
-            <a key={href} href={href}>
+            <a
+              key={href}
+              href={href}
+              className={active === href.slice(1) ? 'is-active' : undefined}
+              aria-current={active === href.slice(1) ? 'location' : undefined}
+            >
               {label}
             </a>
           ))}
@@ -52,6 +69,9 @@ export function TopBar({ stats }: { stats: RepoStats | null }) {
             {theme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
           </button>
         </div>
+      </div>
+      <div className="scroll-progress" aria-hidden="true">
+        <i ref={bar} />
       </div>
     </header>
   )
