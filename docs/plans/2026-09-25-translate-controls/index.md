@@ -6,6 +6,7 @@ the user added: English by default, up to three.
 Status: agreed — 2026-09-25
 
 The Hong Kong variant's translation wording is superseded by `translation-language-presets`.
+The pill's language chips and the stop keys are superseded by `translate-pill-and-keys`.
 
 Changes decisions in [v1-scope translation-languages.md](../2026-09-24-v1-scope/translation-languages.md)
 (three fixed default languages; cycling by pressing the Translate shortcut again).
