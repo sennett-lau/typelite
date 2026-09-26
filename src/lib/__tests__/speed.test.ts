@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { useAppStore } from '../../stores/appStore'
 import {
   addRun,
+  averageTimes,
   currentPresets,
   formatMs,
+  mean,
   median,
   speedTip,
-  typicalTimes,
   type StepId,
 } from '../speed'
-import { makeRun, TEST_PRESETS as PRESETS } from '../../test-utils/runTiming'
+import { makeRun } from '../../test-utils/runTiming'
 
 function steps(values: Partial<Record<StepId, number | null>>): Record<StepId, number | null> {
   return { recording: null, speech: null, ai: null, paste: null, ...values }
@@ -28,43 +29,55 @@ describe('median', () => {
   })
 })
 
-describe('typicalTimes', () => {
-  it('uses only successful runs made with the current presets', () => {
+describe('mean', () => {
+  it('averages the values and is null for none', () => {
+    expect(mean([])).toBeNull()
+    expect(mean([5])).toBe(5)
+    expect(mean([1, 2, 6])).toBe(3)
+  })
+})
+
+describe('averageTimes', () => {
+  it('averages every finished run whatever preset it used, leaving out failed runs', () => {
     const runs = [
       makeRun({ id: 1, speechMs: 1000 }),
-      makeRun({ id: 2, speechMs: 1400 }),
-      makeRun({ id: 3, speechMs: 1200 }),
+      makeRun({ id: 2, speechMs: 1400, speechModel: 'small' }),
+      makeRun({ id: 3, speechMs: 1200, aiPresetId: 'ai-2', language: 'en' }),
       makeRun({ id: 4, speechMs: 9000, outcome: 'stt_unreachable' }),
-      makeRun({ id: 5, speechMs: 9000, speechModel: 'small' }),
-      makeRun({ id: 6, speechMs: 9000, aiPresetId: 'ai-2' }),
-      makeRun({ id: 7, speechMs: 9000, language: 'en' }),
     ]
 
-    const typical = typicalTimes(runs, PRESETS)
-    expect(typical?.runCount).toBe(3)
-    expect(typical?.steps.speech).toBe(1200)
-    expect(typical?.totalMs).toBe(1900)
+    const average = averageTimes(runs)
+    expect(average?.runCount).toBe(3)
+    expect(average?.steps.speech).toBe(1200)
+    expect(average?.steps.ai).toBe(400)
+    expect(average?.steps.paste).toBe(200)
   })
 
   it('takes each step only from the runs that had it', () => {
     const runs = [
       makeRun({ id: 1, aiMs: null, pasteMs: 300 }),
-      makeRun({ id: 2, aiMs: 600 }),
-      makeRun({ id: 3, mode: 'ask', aiMs: 800, pasteMs: null }),
+      makeRun({ id: 2, aiMs: 600, pasteMs: 100 }),
+      makeRun({ id: 3, mode: 'ask', aiMs: 900, pasteMs: null }),
     ]
-    const typical = typicalTimes(runs, PRESETS)
-    expect(typical?.steps.ai).toBe(700)
-    expect(typical?.steps.paste).toBe(250)
+    const average = averageTimes(runs)
+    expect(average?.steps.ai).toBe(750)
+    expect(average?.steps.paste).toBe(200)
   })
 
-  it('shows AI as skipped when no matching run used it', () => {
-    const typical = typicalTimes([makeRun({ aiMs: null })], PRESETS)
-    expect(typical?.steps.ai).toBeNull()
+  it('totals speech, AI and paste only, without finish recording', () => {
+    const average = averageTimes([makeRun({ finishRecordingMs: 500 })])
+    expect(average?.totalMs).toBe(1200 + 400 + 200)
   })
 
-  it('is null when no run matches', () => {
-    expect(typicalTimes([], PRESETS)).toBeNull()
-    expect(typicalTimes([makeRun({ outcome: 'llm_failed' })], PRESETS)).toBeNull()
+  it('has no AI average when no finished run used AI', () => {
+    const average = averageTimes([makeRun({ aiMs: null })])
+    expect(average?.steps.ai).toBeNull()
+    expect(average?.totalMs).toBe(1400)
+  })
+
+  it('is null when no run finished', () => {
+    expect(averageTimes([])).toBeNull()
+    expect(averageTimes([makeRun({ outcome: 'llm_failed' })])).toBeNull()
   })
 })
 

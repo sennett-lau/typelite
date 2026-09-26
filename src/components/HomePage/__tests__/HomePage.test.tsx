@@ -172,10 +172,15 @@ describe('HomePage', () => {
     })
   })
 
-  it('starts with the welcome header and no usage counters', () => {
+  it('starts with the headline and no usage counters', () => {
     render(<HomePage />)
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Welcome to Typelite')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Just say it.')
+    expect(
+      screen.getByText(
+        "Press a shortcut anywhere, speak, and clean text lands where you're typing.",
+      ),
+    ).toBeInTheDocument()
     expect(screen.queryByText('Total Recordings')).not.toBeInTheDocument()
     expect(screen.queryByText('Today')).not.toBeInTheDocument()
   })
@@ -201,13 +206,12 @@ describe('HomePage', () => {
 
     const dictate = screen.getByTestId('shortcut-row-dictate')
     expect(dictate).toHaveTextContent('Dictate')
-    expect(dictate).toHaveTextContent('Speak and paste polished text')
     expect(Array.from(dictate.querySelectorAll('kbd')).map((kbd) => kbd.textContent)).toEqual([
       'End',
     ])
 
     const translateRow = screen.getByTestId('shortcut-row-translate')
-    expect(translateRow).toHaveTextContent('Speak and paste it in 日本語')
+    expect(translateRow).toHaveTextContent('Translate')
     expect(Array.from(translateRow.querySelectorAll('kbd')).map((kbd) => kbd.textContent)).toEqual([
       'End',
       'Right Shift',
@@ -221,18 +225,8 @@ describe('HomePage', () => {
     expect(screen.queryByTestId('shortcut-row-editSelection')).not.toBeInTheDocument()
   })
 
-  it('shows the Switch language key under Translate when there is a language to switch to', () => {
+  it('shows only the icon, the name and the keys on a tile, never a description or hint', () => {
     const config = useAppStore.getState().config
-    useAppStore.setState({
-      config: {
-        ...config,
-        translation: { targets: ['en'], active_target: 'en' },
-      },
-    })
-    const { unmount } = render(<HomePage />)
-    expect(screen.getByTestId('shortcut-row-translate')).not.toHaveTextContent('switch language')
-    unmount()
-
     useAppStore.setState({
       config: {
         ...config,
@@ -240,9 +234,13 @@ describe('HomePage', () => {
       },
     })
     render(<HomePage />)
+
+    const dictate = screen.getByTestId('shortcut-row-dictate')
+    expect(dictate).not.toHaveTextContent('Speak and paste polished text')
     const translateRow = screen.getByTestId('shortcut-row-translate')
-    expect(translateRow).toHaveTextContent('Speak and paste it in Chinese (Traditional, Taiwan)')
-    expect(translateRow).toHaveTextContent('Shift (either side) to switch language')
+    expect(translateRow).not.toHaveTextContent('Speak and paste it in')
+    expect(translateRow).not.toHaveTextContent('switch language')
+    expect(screen.getByTestId('shortcut-row-ask')).not.toHaveTextContent('short answer')
   })
 
   it('adds a row for an extra feature only when it has a shortcut', () => {
@@ -284,9 +282,9 @@ describe('HomePage', () => {
     expect(card.querySelectorAll('kbd')).toHaveLength(0)
   })
 
-  it('shows the Speed board, empty until the first run', () => {
+  it('shows Insights, empty until the first run', () => {
     render(<HomePage />)
-    const board = screen.getByRole('region', { name: 'Speed' })
+    const board = screen.getByRole('region', { name: 'Insights' })
     expect(board).toHaveTextContent('Dictate once to see where the time goes.')
   })
 

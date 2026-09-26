@@ -7,8 +7,6 @@ import {
   type ShortcutBinding,
 } from '../../stores/appStore'
 import { settingsPaneHash } from '../../lib/router'
-import { targetLanguageLabel } from '../../lib/constants'
-import { switchLanguageLabel } from '../../lib/switchLanguage'
 import { WHATS_NEW } from '../../lib/whatsNew'
 import { PageFrame } from '../PageFrame'
 import { Group } from '../ui/Group'
@@ -40,13 +38,14 @@ function KeyCaps({ binding }: { binding: ShortcutBinding | null }) {
   )
 }
 
-interface ShortcutItem {
+interface ShortcutTile {
   id: string
   name: string
-  description: string
   binding: ShortcutBinding | null
-  /** An extra line under the description (Translate: how to switch language). */
-  hint?: string
+}
+
+interface ShortcutItem extends ShortcutTile {
+  description: string
 }
 
 /** Tile icon and its per-feature colour token (icon only; the tile itself stays neutral). */
@@ -59,40 +58,23 @@ const TILE_LOOK: Record<string, { icon: LucideIcon; color: string }> = {
 function ShortcutTiles() {
   const { t } = useTranslation()
   const hotkeys = useAppStore((s) => s.config.hotkeys)
-  const activeTarget = useAppStore(
-    (s) => s.config.translation?.active_target ?? s.config.target_lang,
-  )
-  const targetName = targetLanguageLabel(activeTarget, t)
-  const targetCount = useAppStore((s) => s.config.translation?.targets.length ?? 1)
-  // Plan `translate-controls`: the Switch language key, shown when there is more than one language
-  // to switch to.
-  const switchHint =
-    hotkeys.switchLanguage && targetCount > 1
-      ? t('home.shortcuts.translateSwitchHint', {
-          key: switchLanguageLabel(hotkeys.switchLanguage, t),
-        })
-      : undefined
 
-  const tiles: ShortcutItem[] = [
+  // Plan `home-refresh`: a tile is only the icon, the name and the keys; what each shortcut does
+  // is explained in Settings → General.
+  const tiles: ShortcutTile[] = [
     {
       id: 'dictate',
       name: t('home.shortcuts.dictate'),
-      description: t('home.shortcuts.dictateDesc'),
       binding: hotkeys.dictationBindings?.[0] ?? hotkeys.dictation ?? null,
     },
     {
       id: 'translate',
       name: t('home.shortcuts.translate'),
-      description: activeTarget
-        ? t('home.shortcuts.translateDesc', { language: targetName })
-        : t('home.shortcuts.translateDescNoLanguage'),
       binding: hotkeys.translateBindings?.[0] ?? hotkeys.translate ?? null,
-      hint: switchHint,
     },
     {
       id: 'ask',
       name: t('home.shortcuts.ask'),
-      description: t('home.shortcuts.askDesc'),
       binding: hotkeys.askBindings?.[0] ?? hotkeys.ask ?? null,
     },
   ]
@@ -139,19 +121,13 @@ function ShortcutTiles() {
               className="tile"
               style={{ '--tile-color': look.color } as React.CSSProperties}
             >
-              <span className="tile-icon" aria-hidden="true">
-                <Icon size={15} strokeWidth={2} />
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="tile-icon flex-none" aria-hidden="true">
+                  <Icon size={15} strokeWidth={2} />
+                </span>
+                <span className="truncate text-[13.5px] font-semibold">{tile.name}</span>
               </span>
-              <span className="text-[13.5px] font-semibold">{tile.name}</span>
-              <span className="text-[12px] leading-snug text-text-secondary">
-                {tile.description}
-              </span>
-              {tile.hint && (
-                <span className="text-[11.5px] leading-snug text-text-tertiary">{tile.hint}</span>
-              )}
-              <span className="mt-auto pt-0.5">
-                <KeyCaps binding={tile.binding} />
-              </span>
+              <KeyCaps binding={tile.binding} />
             </button>
           )
         })}
@@ -281,7 +257,10 @@ export function HomePage() {
   const { t } = useTranslation()
 
   return (
-    <PageFrame title={t('home.welcome')} subtitle={t('home.subtitle')}>
+    <PageFrame
+      title={<h1 className="page-title text-[26px] text-balance">{t('home.headline')}</h1>}
+      subtitle={t('home.subtitle')}
+    >
       <FinishSetup />
       <ShortcutTiles />
       <TourLink />
