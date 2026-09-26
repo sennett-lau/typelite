@@ -30,7 +30,6 @@ vi.mock('../OnboardingLayout', () => ({
     nextLabel,
     title,
     onClose,
-    centerContent,
   }: {
     children: React.ReactNode
     onBack: () => void
@@ -41,13 +40,11 @@ vi.mock('../OnboardingLayout', () => ({
     nextLabel: string
     title: string
     onClose?: () => void
-    centerContent?: boolean
   }) => (
     <div
       data-testid="layout"
       data-total-steps={totalSteps}
       data-can-next={String(canNext)}
-      data-centered={String(Boolean(centerContent))}
     >
       <h1>{title}</h1>
       {onClose && (
@@ -206,13 +203,6 @@ describe('Onboarding flow', () => {
     useAppStore.setState({ onboardingStep: 1 })
     render(<Onboarding />)
     expect(layout()).toHaveAttribute('data-can-next', 'true')
-  })
-
-  it('centres only the welcome step', () => {
-    render(<Onboarding />)
-    expect(layout()).toHaveAttribute('data-centered', 'true')
-    goToStep(1)
-    expect(layout()).toHaveAttribute('data-centered', 'false')
   })
 
   it('unlocks Next on the service steps once the active preset passed a test', () => {
