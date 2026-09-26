@@ -32,7 +32,7 @@ Status: done — 2026-09-26
 | Only key-downs that type text count: letters, digits, punctuation, Space; not modifiers, arrows, function keys, key repeats, shortcuts with ⌘ or ⌃, keys Typelite swallowed, or keys Typelite itself sent | Counts what the user types, not navigation, shortcuts or Typelite's own paste. |
 | Typing is grouped into bursts: a gap over 2 s ends a burst, bursts under 5 s are ignored; typing WPM = (keystrokes / 5) / active minutes | The standard "five keystrokes = one word"; pauses and single shortcuts do not drag the number down. |
 | Totals live in a small `speed-stats.json` in the app data folder, written by a background thread | Survives restarts; the key listener thread never touches the disk. |
-| "Measure typing speed" (Settings → General, default on) and "Reset speed stats" | The user decides; when off nothing is counted and there is no nudge. |
+| "Measure typing speed" (default on) and "Reset speed stats" sit in Settings → System → Insights, next to "Clear insights data" of plan `speed-by-preset` | The user decides, and every Insights data control is in one place; when off nothing is counted and there is no nudge. |
 | The row shows "—" for a side with too little data (under 10 s of speech, or under 1 min of active typing) and hides the badge | A number from a few seconds would be misleading. |
 | The nudge is a pill state in the capsule window, so it appears where the pill does and never takes focus | Reuses the non-activating panel and its screen placement. |
 | Nudge after about 60 s of mostly continuous typing (pauses under 5 s) in another app, at most once per local day, never during a run, before onboarding is finished, or while Typelite's own window has focus | Helpful at the right moment, never in the way. |
