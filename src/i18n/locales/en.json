@@ -75,7 +75,7 @@
     "stt_unreachable": "Could not reach the speech server ({{details}}). Check the address in Settings → Speech and that the server is running."
   },
   "home": {
-    "welcome": "Welcome to Typelite",
+    "headline": "Just say it.",
     "currentConfig": "Your setup",
     "sttProvider": "Speech preset",
     "llmProvider": "AI preset",
@@ -101,10 +101,9 @@
       "switchScene": "Switch prompt preset",
       "switchSceneDesc": "Move to the next prompt preset",
       "openApp": "Open Typelite",
-      "openAppDesc": "Bring up the main window",
-      "translateSwitchHint": "{{key}} to switch language"
+      "openAppDesc": "Bring up the main window"
     },
-    "subtitle": "Press a shortcut anywhere, speak, and polished text is typed for you.",
+    "subtitle": "Press a shortcut anywhere, speak, and clean text lands where you're typing.",
     "takeTour": "Take the shortcut tour",
     "setup": {
       "title": "Finish setup",
