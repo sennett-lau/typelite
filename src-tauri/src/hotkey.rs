@@ -237,7 +237,7 @@ impl HotkeyPairError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum HotkeyRole {
     Dictation,
     Ask,
@@ -266,6 +266,22 @@ impl HotkeyRole {
             Self::SwitchLanguage => "switchLanguage",
             Self::Cancel => "cancel",
         }
+    }
+
+    /// The role named `name` as [`HotkeyRole::as_str`] writes it.
+    pub fn from_name(name: &str) -> Option<Self> {
+        [
+            Self::Dictation,
+            Self::Ask,
+            Self::TranslateSelection,
+            Self::EditSelection,
+            Self::SwitchScene,
+            Self::OpenApp,
+            Self::SwitchLanguage,
+            Self::Cancel,
+        ]
+        .into_iter()
+        .find(|role| role.as_str() == name)
     }
 }
 
@@ -1066,11 +1082,44 @@ fn cancel_active_run(handle: tauri::AppHandle) {
     });
 }
 
+/// The role of the run that is active now (Ask, Translate or dictation), if any. Used to
+/// cancel a run when the onboarding shortcut gate stops allowing it.
+pub fn active_run_role(handle: &tauri::AppHandle) -> Option<HotkeyRole> {
+    if handle
+        .try_state::<commands::ask::AskDictationState>()
+        .is_some_and(|ask| ask.is_busy())
+    {
+        return Some(HotkeyRole::Ask);
+    }
+    let pipeline = handle.try_state::<pipeline::PipelineHandle>()?;
+    if pipeline.current_state() == pipeline::PipelineState::Idle {
+        None
+    } else if pipeline.is_translate_run() {
+        Some(HotkeyRole::TranslateSelection)
+    } else {
+        Some(HotkeyRole::Dictation)
+    }
+}
+
+/// Plan `onboarding-shortcut-gate`: cancel a run exactly like Escape does (Ask cancel, or
+/// abort for dictation and Translate): nothing is pasted and the pill hides.
+pub fn cancel_run(handle: &tauri::AppHandle, role: HotkeyRole) {
+    if role == HotkeyRole::Ask {
+        commands::ask::cancel_ask_run(handle);
+    } else if let Some(pipeline) = handle.try_state::<pipeline::PipelineHandle>() {
+        pipeline.abort();
+    }
+}
+
 pub fn handle_hotkey_role_event(
     handle: tauri::AppHandle,
     role: HotkeyRole,
     event_state: ShortcutState,
 ) {
+    // Plan `onboarding-shortcut-gate`: during onboarding only the page's roles run.
+    if !crate::shortcut_gate::allows(&handle, role) {
+        return;
+    }
     match role {
         HotkeyRole::Ask => {
             let ask_state = handle.state::<commands::ask::AskDictationState>();
