@@ -116,6 +116,13 @@
       "setUp": "Set up",
       "otherOptions": "Other options"
     },
+    "speedCompare": {
+      "speaking": "Speaking",
+      "typing": "Typing",
+      "wpm": "WPM",
+      "times": "{{value}}×",
+      "fasterThanTyping": "faster than typing"
+    },
     "speed": {
       "title": "Insights",
       "empty": "Dictate once to see where the time goes.",
@@ -305,6 +312,11 @@
     "copied": "Copied",
     "copyResult": "Copy the result",
     "copyHint": "No text field to paste into. Copy the result (Esc closes)",
+    "nudge": {
+      "text": "Typing a lot? Press {{key}} to say it instead.",
+      "dontShowAgain": "Don't show again",
+      "close": "Close"
+    },
     "errorOccurred": "An error occurred",
     "accessibilityRequired": "Accessibility needed — open Settings",
     "errors": {
@@ -341,6 +353,13 @@
     "title": "Settings",
     "general": "General",
     "generalPane": {
+      "insights": "Insights",
+      "measureTypingSpeed": "Measure typing speed",
+      "measureTypingSpeedDesc": "Counts keystrokes and typing time to show your typing speed. Which keys you press is never stored.",
+      "resetSpeedStats": "Reset speed stats",
+      "resetSpeedStatsDesc": "Clears the speaking and typing speed shown in Insights",
+      "reset": "Reset",
+      "resetDone": "Speed stats reset",
       "shortcutsHint": "Click a shortcut, then press the keys",
       "askDesc": "Ask a question, or edit selected text",
       "switchLanguageDesc": "While translating, moves to the next language",
