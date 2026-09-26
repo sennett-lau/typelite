@@ -50,6 +50,14 @@ export async function setActiveTranslationTarget(code: string): Promise<Translat
 }
 
 /**
+ * Moves a running Translate recording to its next language, like the Switch language key (plan
+ * `translate-pill-and-keys`: clicking the language name on the pill).
+ */
+export async function cycleTranslationTarget(): Promise<TranslationConfig> {
+  return invoke('cycle_translation_target')
+}
+
+/**
  * Plan `translation-language-presets`: the built-in translation instructions of every language,
  * by code.
  */

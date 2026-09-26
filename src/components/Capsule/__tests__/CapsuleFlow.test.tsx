@@ -1,9 +1,9 @@
 import React from 'react'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../../../stores/appStore'
-import { stopAskFlow } from '../../../lib/tauri'
+import { cycleTranslationTarget, stopAskFlow } from '../../../lib/tauri'
 import { Capsule } from '../index'
 
 vi.mock('framer-motion', () => ({
@@ -34,9 +34,9 @@ vi.mock('../../../hooks/useCapsuleResize', async (importOriginal) => ({
 vi.mock('../../../lib/tauri', () => ({
   abortAskDictation: vi.fn().mockResolvedValue(undefined),
   abortRecording: vi.fn().mockResolvedValue(undefined),
-  setActiveTranslationTarget: vi.fn().mockResolvedValue({
-    targets: ['en', 'zh-Hans', 'ja'],
-    active_target: 'ja',
+  cycleTranslationTarget: vi.fn().mockResolvedValue({
+    targets: ['en', 'zh-Hant-HK', 'ja'],
+    active_target: 'zh-Hant-HK',
   }),
   stopAskFlow: vi.fn().mockResolvedValue(undefined),
 }))
@@ -248,6 +248,57 @@ describe('Capsule flow states', () => {
 
     expect(languageName()).toHaveTextContent('日本語')
     expect(screen.queryByTestId('translate-pill-dots')).toBeNull()
+  })
+
+  it('switches to the next language when the name is clicked, without stopping', async () => {
+    useAppStore.setState({
+      pipelineState: 'recording',
+      activeVoiceMode: 'translate',
+      config: translateWith(['en', 'zh-Hant-HK', 'ja'], 'en'),
+    })
+    render(<Capsule />)
+
+    const name = screen.getByRole('button', {
+      name: 'translate.pillLanguage. translate.pillSwitchHint',
+    })
+    const pointerUp = new Event('pointerup', { bubbles: true })
+    Object.defineProperty(pointerUp, 'button', { value: 0 })
+    fireEvent.pointerDown(name)
+    fireEvent(name, pointerUp)
+    // Pressing the name does not move focus into the pill.
+    expect(fireEvent.mouseDown(name)).toBe(false)
+    fireEvent.click(name)
+
+    await waitFor(() => expect(cycleTranslationTarget).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(useAppStore.getState().config.translation.active_target).toBe('zh-Hant-HK'),
+    )
+    expect(invoke).not.toHaveBeenCalledWith('stop_recording')
+    expect(invoke).not.toHaveBeenCalledWith('start_recording')
+    expect(languageName()).toHaveTextContent('translate.languages.zhHantHK')
+    expect(dots().map((dot) => dot.classList.contains('pill-lang-dot-on'))).toEqual([
+      false,
+      true,
+      false,
+    ])
+
+    // A click elsewhere on the pill still stops the recording.
+    const elsewhere = new Event('pointerup', { bubbles: true })
+    Object.defineProperty(elsewhere, 'button', { value: 0 })
+    fireEvent(screen.getByTestId('waveform'), elsewhere)
+    expect(invoke).toHaveBeenCalledWith('stop_recording')
+  })
+
+  it('does not make a single language name clickable', () => {
+    useAppStore.setState({
+      pipelineState: 'recording',
+      activeVoiceMode: 'translate',
+      config: translateWith(['ja'], 'ja'),
+    })
+    render(<Capsule />)
+
+    expect(languageName()?.tagName).toBe('SPAN')
+    expect(screen.queryByRole('button', { name: /pillSwitchHint/ })).toBeNull()
   })
 
   it('shows no name when no language is chosen', () => {
