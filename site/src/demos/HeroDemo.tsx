@@ -44,11 +44,11 @@ const EXAMPLES: Example[] = [
   {
     words: W("sure I'll bring the ~the deck and ~uh the budget sheet too"),
     clean: "Sure, I'll bring the deck and the budget sheet too.",
-    reply: '好呀，聽日見！',
+    reply: 'Great. Room 2 or the café?',
   },
   {
-    words: W('~嗯 我會 帶埋 ~帶埋 個 laptop 過嚟'),
-    clean: '我會帶埋個laptop過嚟。',
+    words: W("~hmm let's do room 2 ~no ~wait the café it's quieter"),
+    clean: "Let's do the café, it's quieter.",
   },
 ]
 
@@ -203,7 +203,7 @@ export function HeroFrame({ t }: { t: number }) {
           <span className="caption-label">
             <IconMic size={14} /> You say
           </span>
-          <p className="caption-text" lang={index === 2 ? 'yue' : 'en'}>
+          <p className="caption-text">
             {inHold || u < SPEAK_START
               ? ' '
               : ex.words.map((word, i) => (
@@ -221,7 +221,7 @@ export function HeroFrame({ t }: { t: number }) {
           <span className="caption-label">
             <IconSparkle size={14} /> Typelite types
           </span>
-          <p className="caption-text caption-clean" lang={index === 2 ? 'yue' : 'en'}>
+          <p className="caption-text caption-clean">
             {!inHold && u >= DONE ? ex.clean : ' '}
           </p>
         </div>
