@@ -123,6 +123,11 @@ pub type CancelGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 /// rules as [`SwitchGate`]: quick, and never waits on the listener.
 pub type RoleGate = Arc<dyn Fn(crate::hotkey::HotkeyRole) -> bool + Send + Sync + 'static>;
 
+/// Told "one text keystroke now" for each key-down that typed text (plan
+/// `typing-speed-and-nudge`). It never learns which key. Called on the key listener thread, so
+/// it must be quick and must not wait on anything that waits on the listener.
+pub type KeystrokeObserver = Arc<dyn Fn() + Send + Sync + 'static>;
+
 /// Matches held keys against the configured chords.
 ///
 /// Rules:
@@ -161,6 +166,8 @@ pub struct ChordMatcher {
     cancel_key: Option<(u16, CancelGate)>,
     /// The cancel key's press was swallowed, so its repeats and release are swallowed too.
     cancel_key_down: bool,
+    /// Plan `typing-speed-and-nudge`: counts typed keystrokes (macOS listener only).
+    keystroke_observer: Option<KeystrokeObserver>,
 }
 
 fn is_switch_role(binding: &NativeHotkeyBinding) -> bool {
@@ -188,7 +195,20 @@ impl ChordMatcher {
             role_gate: None,
             cancel_key: None,
             cancel_key_down: false,
+            keystroke_observer: None,
         }
+    }
+
+    /// Tell `observer` about every key-down that typed text and was not swallowed (plan
+    /// `typing-speed-and-nudge`). Only the macOS listener calls it.
+    pub fn with_keystroke_observer(mut self, observer: KeystrokeObserver) -> Self {
+        self.keystroke_observer = Some(observer);
+        self
+    }
+
+    /// The observer for typed keystrokes, if any.
+    pub fn keystroke_observer(&self) -> Option<KeystrokeObserver> {
+        self.keystroke_observer.clone()
     }
 
     /// Use `gate` to decide which roles are live (plan `onboarding-shortcut-gate`). A binding
@@ -639,6 +659,9 @@ pub struct TapOutput {
     pub swallow: bool,
     pub hotkey_events: Vec<NativeHotkeyEvent>,
     pub capture_events: Vec<ShortcutCaptureEvent>,
+    /// Plan `typing-speed-and-nudge`: the event typed one keystroke of text that reaches the
+    /// focused app (never set while capturing a shortcut).
+    pub typed: bool,
 }
 
 impl TapLogic {
@@ -691,6 +714,8 @@ impl TapLogic {
         } else if matches!(self, Self::Capture(_)) && event.kind != MacEventKind::FlagsChanged {
             output.swallow = true;
         }
+        output.typed = matches!(self, Self::Hotkeys(_))
+            && crate::speed_stats::counts_as_typing(&event, output.swallow);
         output
     }
 
@@ -723,12 +748,14 @@ impl NativeHotkeyRuntime {
     /// the Switch language bindings are live. `cancel_gate` says when Escape cancels the
     /// current run (macOS only; with a gate the listener runs even without native bindings).
     /// `role_gate` says which roles may run now (plan `onboarding-shortcut-gate`).
+    /// `keystrokes` counts typed keystrokes for typing speed (plan `typing-speed-and-nudge`).
     pub fn install(
         &self,
         bindings: Vec<NativeHotkeyBinding>,
         switch_gate: SwitchGate,
         cancel_gate: Option<CancelGate>,
         role_gate: Option<RoleGate>,
+        keystrokes: Option<KeystrokeObserver>,
         handler: NativeHotkeyHandler,
     ) -> Result<(), String> {
         let mut inner = self.inner.lock().unwrap_or_else(|e| e.into_inner());
@@ -746,6 +773,9 @@ impl NativeHotkeyRuntime {
         }
         if let Some(gate) = cancel_gate {
             matcher = matcher.with_cancel_key(native_keys::ESCAPE_KEYCODE, gate);
+        }
+        if let Some(observer) = keystrokes {
+            matcher = matcher.with_keystroke_observer(observer);
         }
         inner.monitor = Some(platform::PlatformNativeMonitor::start(matcher, handler)?);
         Ok(())
@@ -770,8 +800,8 @@ impl NativeHotkeyRuntime {
 #[cfg(target_os = "macos")]
 mod platform {
     use super::{
-        CaptureState, ChordMatcher, MacEventKind, MacKeyEvent, NativeHotkeyHandler,
-        ShortcutCaptureHandler, TapLogic, TapOutput,
+        CaptureState, ChordMatcher, KeystrokeObserver, MacEventKind, MacKeyEvent,
+        NativeHotkeyHandler, ShortcutCaptureHandler, TapLogic, TapOutput,
     };
     use std::ffi::c_void;
     use std::sync::atomic::{AtomicBool, Ordering};
@@ -824,6 +854,8 @@ mod platform {
 
     const KEYBOARD_EVENT_AUTOREPEAT: CgEventField = 8;
     const KEYBOARD_EVENT_KEYCODE: CgEventField = 9;
+    // kCGEventSourceUnixProcessID: the process that posted the event (0 for real hardware).
+    const EVENT_SOURCE_UNIX_PROCESS_ID: CgEventField = 41;
 
     type CgEventTapCallBack = extern "C" fn(
         proxy: *mut c_void,
@@ -925,23 +957,35 @@ mod platform {
 
     impl PlatformNativeMonitor {
         pub fn start(matcher: ChordMatcher, handler: NativeHotkeyHandler) -> Result<Self, String> {
-            Self::start_tap(TapLogic::Hotkeys(matcher), TapHandler::Hotkeys(handler))
+            let keystrokes = matcher.keystroke_observer();
+            Self::start_tap(
+                TapLogic::Hotkeys(matcher),
+                TapHandler::Hotkeys(handler),
+                keystrokes,
+            )
         }
 
         pub fn start_capture(handler: ShortcutCaptureHandler) -> Result<Self, String> {
             Self::start_tap(
                 TapLogic::Capture(CaptureState::default()),
                 TapHandler::Capture(handler),
+                None,
             )
         }
 
-        fn start_tap(logic: TapLogic, handler: TapHandler) -> Result<Self, String> {
+        fn start_tap(
+            logic: TapLogic,
+            handler: TapHandler,
+            keystrokes: Option<KeystrokeObserver>,
+        ) -> Result<Self, String> {
             let handles = Arc::new(MacShutdownHandles::new());
             let thread_handles = Arc::clone(&handles);
             let (status_tx, status_rx) = mpsc::channel();
             thread::Builder::new()
                 .name("typelite-native-hotkey-mac".to_string())
-                .spawn(move || run_event_tap_loop(logic, handler, thread_handles, status_tx))
+                .spawn(move || {
+                    run_event_tap_loop(logic, handler, keystrokes, thread_handles, status_tx)
+                })
                 .map_err(|error| {
                     format!("Failed to spawn macOS native hotkey monitor thread: {error}")
                 })?;
@@ -979,18 +1023,21 @@ mod platform {
     struct CallbackContext {
         logic: Mutex<TapLogic>,
         handler: TapHandler,
+        keystrokes: Option<KeystrokeObserver>,
         handles: Arc<MacShutdownHandles>,
     }
 
     fn run_event_tap_loop(
         logic: TapLogic,
         handler: TapHandler,
+        keystrokes: Option<KeystrokeObserver>,
         handles: Arc<MacShutdownHandles>,
         status_tx: mpsc::Sender<Result<(), String>>,
     ) {
         let context = Box::into_raw(Box::new(CallbackContext {
             logic: Mutex::new(logic),
             handler,
+            keystrokes,
             handles: Arc::clone(&handles),
         }));
         let mask: CgEventMask = (1u64 << FLAGS_CHANGED) | (1u64 << KEY_DOWN) | (1u64 << KEY_UP);
@@ -1118,6 +1165,17 @@ mod platform {
             .unwrap_or_else(|e| e.into_inner())
             .process_mac_event(mac_event);
         let swallow = output.swallow;
+        // Plan `typing-speed-and-nudge`: count the keystroke (never which key), unless Typelite
+        // posted the event itself (Type-directly output).
+        if output.typed {
+            if let Some(observer) = context.keystrokes.as_ref() {
+                let source_pid =
+                    unsafe { CGEventGetIntegerValueField(event, EVENT_SOURCE_UNIX_PROCESS_ID) };
+                if source_pid != i64::from(std::process::id()) {
+                    (observer.as_ref())();
+                }
+            }
+        }
         context.handler.dispatch(output);
 
         if swallow {
@@ -1584,7 +1642,7 @@ mod tests {
         let handler: NativeHotkeyHandler = Arc::new(|_| {});
 
         assert!(runtime
-            .install(Vec::new(), Arc::new(|| false), None, None, handler)
+            .install(Vec::new(), Arc::new(|| false), None, None, None, handler)
             .is_ok());
     }
 
@@ -2181,6 +2239,37 @@ mod tests {
         );
         // CapsLock (57) is ignored.
         assert_eq!(mac_key_input(mac(MacEventKind::FlagsChanged, 57, 0)), None);
+    }
+
+    #[test]
+    fn typed_keystrokes_are_flagged_for_typing_speed() {
+        // Plan `typing-speed-and-nudge`: a letter reaching the app counts; the swallowed End
+        // (Dictate), a shortcut with Command, and anything while capturing do not.
+        let mut logic = TapLogic::Hotkeys(user_matcher());
+        assert!(
+            logic
+                .process_mac_event(mac(MacEventKind::KeyDown, 0, 0))
+                .typed
+        );
+        assert!(
+            !logic
+                .process_mac_event(mac(MacEventKind::KeyUp, 0, 0))
+                .typed
+        );
+        assert!(
+            !logic
+                .process_mac_event(mac(MacEventKind::KeyDown, 9, 0x0010_0000))
+                .typed
+        );
+        let end = logic.process_mac_event(mac(MacEventKind::KeyDown, END, 0));
+        assert!(end.swallow && !end.typed);
+
+        let mut capture = TapLogic::Capture(CaptureState::default());
+        assert!(
+            !capture
+                .process_mac_event(mac(MacEventKind::KeyDown, 0, 0))
+                .typed
+        );
     }
 
     #[test]
