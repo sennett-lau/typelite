@@ -1,6 +1,6 @@
-import { easeInOut, progress } from '../lib/clock'
+import { easeInOut, easeOut, progress } from '../lib/clock'
 import { Stage } from '../components/Stage'
-import { IconArrowRight, IconCheck, IconDownload } from '../components/Icons'
+import { IconArrowRight, IconDownload } from '../components/Icons'
 import { links } from '../links'
 
 const MODELS = [
@@ -14,6 +14,37 @@ const MODELS = [
   { what: 'AI polish', name: 'Qwen3 4B Instruct 2507', bytes: 2_497_281_120, from: 1.1, to: 7.2 },
 ]
 const READY = 7.5
+
+/** A check mark that draws itself as `p` goes from 0 to 1. */
+function DrawnCheck({ p, size = 14, width = 2.6 }: { p: number; size?: number; width?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={width}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M4.5 12.5 9.5 17.5 19.5 6.5"
+        pathLength={1}
+        strokeDasharray="1"
+        strokeDashoffset={(1 - p).toFixed(4)}
+      />
+    </svg>
+  )
+}
+
+/** A damped spring from 0 to 1 over `x` seconds. */
+function spring(x: number): number {
+  if (x <= 0) return 0
+  return 1 - Math.exp(-x * 9) * Math.cos(x * 14)
+}
 
 function size(bytes: number) {
   return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(2)} GB` : `${Math.round(bytes / 1e6)} MB`
@@ -50,9 +81,16 @@ export function Setup() {
             </span>
             <h3>Everything on your computer.</h3>
             <p>
-              No servers to install. On Apple Silicon, <a rel="noopener" href={links.whisper}>whisper.cpp</a> runs
-              inside the app and <a rel="noopener" href={links.llama}>llama.cpp</a>’s server ships with it. Models
-              are picked for your hardware and checked against a SHA-256 before use.
+              No servers to install. On Apple Silicon,{' '}
+              <a rel="noopener" href={links.whisper}>
+                whisper.cpp
+              </a>{' '}
+              runs inside the app and{' '}
+              <a rel="noopener" href={links.llama}>
+                llama.cpp
+              </a>
+              ’s server ships with it. Models are picked for your hardware and checked against a
+              SHA-256 before use.
             </p>
             <Stage
               duration={10.5}
@@ -75,7 +113,8 @@ export function Setup() {
                             </b>
                             <span>
                               {p >= 1 ? (
-                                <span style={{ color: 'var(--success)', fontWeight: 600 }}>
+                                <span className="dl-ready">
+                                  <DrawnCheck p={easeOut(progress(t, m.to, m.to + 0.4))} />
                                   Ready
                                 </span>
                               ) : t < m.from ? (
@@ -85,8 +124,17 @@ export function Setup() {
                               )}
                             </span>
                           </div>
-                          <div className="track">
-                            <i style={{ width: `${p * 100}%` }} />
+                          <div className={`track ${p >= 1 ? 'track-done' : ''}`}>
+                            <i style={{ transform: `scaleX(${p.toFixed(4)})` }}>
+                              {p > 0 && p < 1 && (
+                                <b
+                                  aria-hidden="true"
+                                  style={{
+                                    transform: `translateX(${(((t * 0.8) % 1) * 400 - 100).toFixed(1)}%)`,
+                                  }}
+                                />
+                              )}
+                            </i>
                           </div>
                         </div>
                       )
@@ -94,8 +142,15 @@ export function Setup() {
                     <div className="dl-foot">
                       {ready ? (
                         <span className="ready">
-                          <span className="ready-dot">
-                            <IconCheck size={12} strokeWidth={3} />
+                          <span
+                            className="ready-dot"
+                            style={{ transform: `scale(${spring(t - READY).toFixed(3)})` }}
+                          >
+                            <DrawnCheck
+                              p={easeOut(progress(t, READY + 0.12, READY + 0.5))}
+                              size={12}
+                              width={3}
+                            />
                           </span>
                           Ready. Press Fn and speak.
                         </span>

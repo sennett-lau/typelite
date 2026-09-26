@@ -25,6 +25,39 @@ const PASSAGE =
   'again for all the help this week, it made a real difference to the whole team.'
 const WORDS = PASSAGE.split(' ')
 
+/** A damped spring from 0 to 1 over `x` seconds. */
+function spring(x: number): number {
+  if (x <= 0) return 0
+  return 1 - Math.exp(-x * 8) * Math.cos(x * 13)
+}
+
+/** The finishing burst: small aurora sparks flying out from the speaking count. */
+const SPARKS = Array.from({ length: 14 }, (_, i) => {
+  const angle = (i / 14) * Math.PI * 2 + (i % 2 ? 0.2 : -0.1)
+  return { angle, dist: 34 + ((i * 37) % 5) * 7, size: 4 + (i % 3) }
+})
+
+function Sparks({ since }: { since: number }) {
+  if (since < 0 || since > 0.9) return null
+  const k = easeOut(since / 0.9)
+  return (
+    <span className="sparks" aria-hidden="true">
+      {SPARKS.map((sp, i) => (
+        <i
+          key={i}
+          style={{
+            width: sp.size,
+            height: sp.size,
+            opacity: 1 - k,
+            transform: `translate(${(Math.cos(sp.angle) * sp.dist * k).toFixed(1)}px, ${(Math.sin(sp.angle) * sp.dist * k).toFixed(1)}px) scale(${(1 - 0.6 * k).toFixed(3)})`,
+            background: i % 2 ? 'var(--aurora-b)' : 'var(--aurora-a)',
+          }}
+        />
+      ))}
+    </span>
+  )
+}
+
 function Lane({
   label,
   icon,
@@ -32,6 +65,8 @@ function Lane({
   words,
   color,
   caret,
+  lead,
+  finished = -1,
 }: {
   label: string
   icon: React.ReactNode
@@ -39,21 +74,49 @@ function Lane({
   words: number
   color: string
   caret: boolean
+  /** Words ahead of typing (the speaking lane only). */
+  lead?: number
+  /** Seconds since the minute ended, or -1 before. */
+  finished?: number
 }) {
   const shown = WORDS.slice(0, Math.floor(words)).join(' ')
+  const pop =
+    finished >= 0
+      ? 1 + 0.18 * Math.max(0, 1 - finished / 0.5) * Math.sin(Math.min(1, finished / 0.5) * Math.PI)
+      : 1
   return (
-    <div className="lane" style={{ '--lane': color } as React.CSSProperties}>
+    <div
+      className={`lane ${finished >= 0 ? 'lane-done' : ''}`}
+      style={{ '--lane': color } as React.CSSProperties}
+    >
+      {finished >= 0 && finished < 1.2 && (
+        <span className="lane-sheen-clip" aria-hidden="true">
+          <span
+            className="lane-sheen"
+            style={{
+              transform: `translateX(${(-100 + 300 * easeOut(finished / 1.2)).toFixed(1)}%)`,
+            }}
+          />
+        </span>
+      )}
       <div className="lane-head">
         <span className="lane-label">
           {icon}
           {label}
         </span>
         <span className="lane-count">
-          <b>{Math.floor(words)}</b> words
+          {lead !== undefined && lead > 0 && <span className="lane-lead">+{lead} ahead</span>}
+          <span className="lane-num">
+            <b style={pop !== 1 ? { transform: `scale(${pop.toFixed(3)})` } : undefined}>
+              {Math.floor(words)}
+            </b>
+            <Sparks since={finished} />
+          </span>{' '}
+          words
         </span>
       </div>
       <div className="lane-bar" aria-hidden="true">
-        <i style={{ width: `${(words / SPEAKING_WPM) * 100}%` }} />
+        <i style={{ transform: `scaleX(${(words / SPEAKING_WPM).toFixed(4)})` }} />
       </div>
       <div className="lane-text" aria-hidden="true">
         <p>
@@ -83,20 +146,29 @@ export function Speed() {
         </div>
         <Stage
           duration={DURATION}
-          restAt={RUN + 1}
+          restAt={RUN + 2}
           className="card race hero-stage"
           label={`Animation: one minute of writing, sped up. Typing reaches about ${TYPING_WPM} words; speaking reaches about ${SPEAKING_WPM}.`}
         >
           {({ t }) => {
             const p = progress(t, 0.3, RUN)
             const done = t >= RUN
-            const badge = easeOut(progress(t, RUN, RUN + 0.5))
+            const badge = easeOut(progress(t, RUN, RUN + 0.3))
+            const badgeScale = 0.6 + 0.4 * spring(t - RUN - 0.15)
+            const finished = done ? t - RUN : -1
+            const seconds = Math.min(60, Math.floor(p * 60))
+            const tick = done ? Math.max(0, 1 - (t - RUN) / 0.4) : 0
             return (
               <>
                 <div className="race-top">
                   <span className="caption-label">One minute of writing, sped up</span>
-                  <span className="race-clock">
-                    0:{String(Math.min(60, Math.floor(p * 60))).padStart(2, '0')}
+                  <span
+                    className={`race-clock ${done ? 'is-done' : ''}`}
+                    style={
+                      tick ? { transform: `scale(${(1 + 0.15 * tick).toFixed(3)})` } : undefined
+                    }
+                  >
+                    {seconds === 60 ? '1:00' : `0:${String(seconds).padStart(2, '0')}`}
                   </span>
                 </div>
                 <div className="lanes">
@@ -115,13 +187,20 @@ export function Speed() {
                     words={SPEAKING_WPM * p}
                     color="var(--accent)"
                     caret={false}
+                    lead={Math.floor(SPEAKING_WPM * p) - Math.floor(TYPING_WPM * p)}
+                    finished={finished}
                   />
                 </div>
                 <div
                   className="race-result"
                   style={{ opacity: badge, transform: `translateY(${(1 - badge) * 6}px)` }}
                 >
-                  <span className="race-x">about 3×</span>
+                  <span
+                    className="race-x"
+                    style={{ transform: `scale(${done ? badgeScale.toFixed(3) : 0.6})` }}
+                  >
+                    about 3×
+                  </span>
                   as many words in the same minute
                 </div>
               </>
@@ -134,16 +213,24 @@ export function Speed() {
         <p className="footnote" data-reveal>
           Rates are rounded down and vary from person to person. Typing: an average of 52 words per
           minute across 168,000 volunteers (
-          <a rel="noopener" href="https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf">
+          <a
+            rel="noopener"
+            href="https://userinterfaces.aalto.fi/136Mkeystrokes/resources/chi-18-analysis.pdf"
+          >
             Dhakal et al., CHI 2018
           </a>
           ). Speaking: about 196 words per minute measured in telephone conversations (
-          <a rel="noopener" href="https://www.isca-archive.org/interspeech_2006/yuan06_interspeech.html">
+          <a
+            rel="noopener"
+            href="https://www.isca-archive.org/interspeech_2006/yuan06_interspeech.html"
+          >
             Yuan, Liberman and Cieri, Interspeech 2006
           </a>
           ) and 153 for English speech input on a phone (
-          <a rel="noopener" href="https://arxiv.org/abs/1608.07323">Ruan et al., 2016</a>); we use a conservative
-          150.
+          <a rel="noopener" href="https://arxiv.org/abs/1608.07323">
+            Ruan et al., 2016
+          </a>
+          ); we use a conservative 150.
         </p>
       </div>
     </section>
