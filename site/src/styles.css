@@ -1627,6 +1627,285 @@ section {
   position: relative;
 }
 
+/* ─── How it works (scroll story, sections/Story.tsx) ─── */
+.story-track {
+  position: relative;
+  height: 320vh;
+}
+.story-sticky {
+  position: sticky;
+  top: 64px;
+  display: flex;
+  align-items: center;
+  height: calc(100vh - 64px);
+  height: calc(100svh - 64px);
+  min-height: 560px;
+  overflow: hidden;
+}
+.story-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 56px;
+}
+.story-title {
+  font-size: clamp(30px, 4vw, 46px);
+}
+.story-meter {
+  display: none;
+}
+.story-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.story-steps li {
+  display: flex;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  opacity: 0.45;
+  transition:
+    opacity 0.4s ease,
+    background-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+.story-steps li.done {
+  opacity: 0.7;
+}
+.story-steps li.on {
+  opacity: 1;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-card);
+}
+.story-steps h3 {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  letter-spacing: -0.015em;
+}
+.story-steps p {
+  margin-top: 3px;
+  color: var(--text-2);
+  font-size: 14.5px;
+}
+.story-num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+.story-steps li.on .story-num,
+.story-steps li.done .story-num {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.story-stage {
+  position: relative;
+}
+.story-screen {
+  height: min(460px, calc(100svh - 190px));
+  min-height: 360px;
+}
+.story-key {
+  top: 16px;
+  right: 16px;
+  padding: 6px 7px 6px 11px;
+}
+.story-win {
+  left: 50%;
+  top: 60px;
+  width: min(440px, calc(100% - 32px));
+  transform: translateX(-50%);
+}
+.story-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 18px 18px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.story-doc b {
+  font-size: 16px;
+}
+.story-doc p {
+  color: var(--text-2);
+}
+.story-doc p::before,
+.story-line::before {
+  content: '• ';
+  color: var(--text-3);
+}
+.story-doc .story-line {
+  min-height: 2.9em;
+  color: var(--text);
+  font-weight: 500;
+}
+.story-line .typed {
+  display: inline;
+  border-radius: 4px;
+  transition: background-color 0.6s ease;
+}
+.story-line .typed.flash {
+  background: var(--accent-soft);
+}
+.story-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(400px, calc(100% - 32px));
+  transform: translateX(-50%);
+}
+.story-card {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 10px 14px 12px;
+  text-align: left;
+}
+.story-card p {
+  margin-top: 4px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+.story-sweep {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--aurora-a) 22%, transparent),
+    color-mix(in srgb, var(--aurora-b) 22%, transparent),
+    transparent
+  );
+}
+@media (max-width: 900px) {
+  .story-track {
+    height: 300vh;
+  }
+  .story-sticky {
+    align-items: flex-start;
+    min-height: 0;
+    padding-top: 16px;
+  }
+  .story-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .story-copy .eyebrow {
+    margin-bottom: 6px;
+  }
+  .story-title {
+    font-size: clamp(24px, 6.4vw, 34px);
+  }
+  /* On a phone only the current step's text shows (all four stay in the page for screen
+     readers): the steps overlap in one grid cell, with a four-part meter above them. */
+  .story-meter {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .story-meter i {
+    height: 3px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--hairline);
+  }
+  .story-meter b {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--aurora-a), var(--aurora-b));
+    transform-origin: 0 50%;
+  }
+  .story-steps {
+    display: grid;
+    margin-top: 8px;
+  }
+  .story-steps li {
+    grid-area: 1 / 1;
+    padding: 8px 0;
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.2s ease,
+      transform 0.3s var(--ease);
+    background: none !important;
+    box-shadow: none !important;
+  }
+  .story-steps li.done {
+    opacity: 0;
+  }
+  .story-steps li.on {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.12s;
+  }
+  .story-steps p {
+    font-size: 14px;
+  }
+  .story-screen {
+    height: min(520px, calc(100vh - 300px));
+    height: min(520px, calc(100svh - 300px));
+    min-height: 360px;
+  }
+  .story-win {
+    top: 52px;
+  }
+}
+/* Reduced motion: a plain section, every step readable, the stage at its last frame. */
+.story-static .story-track {
+  height: auto;
+}
+.story-static .story-sticky {
+  position: static;
+  height: auto;
+  min-height: 0;
+  padding-block: 96px;
+}
+.story-static .story-steps {
+  display: flex;
+}
+.story-static .story-steps li,
+.story-static .story-steps li.done {
+  grid-area: auto;
+  opacity: 1;
+}
+.story-static .story-meter {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-track {
+    height: auto;
+  }
+  .story-sticky {
+    position: static;
+    height: auto;
+    min-height: 0;
+    padding-block: 96px;
+  }
+}
+
 /* ─── Features ─── */
 .feature-list {
   display: flex;
