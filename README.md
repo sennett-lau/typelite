@@ -11,7 +11,7 @@
 </p>
 
 <!--
-  Hero image or GIF. Uncomment when the file exists (see docs/media/README.md for the shot list).
+  Hero image or GIF. Uncomment when the file exists (see docs/media/README.md).
 
 <p align="center">
   <img src="docs/media/pill-dictate.gif" width="800" alt="Typelite's pill dictating into a text field">
@@ -27,8 +27,8 @@ text you have highlighted.
 
 ### Download
 
-Get `Typelite.dmg` from [Releases](https://github.com/sennett-lau/typelite/releases). The first
-release is coming soon. Until then, build it from source.
+Get the DMG for Apple Silicon from [Releases](https://github.com/sennett-lau/typelite/releases).
+The first release is coming soon. Until then, build it from source.
 
 ### Build from source
 
@@ -47,8 +47,10 @@ More detail is in the [Contributing guide](CONTRIBUTING.md#setup).
 
 ### First launch
 
-1. The app is not signed by Apple yet. Right-click Typelite.app and choose **Open**, or run
-   `xattr -dr com.apple.quarantine /Applications/Typelite.app` once.
+1. Downloaded builds are not signed by Apple yet, so macOS blocks the first launch. Right-click
+   Typelite.app and choose **Open** (on macOS 15 and later: **System Settings → Privacy &
+   Security → Open Anyway**), or run `xattr -dr com.apple.quarantine /Applications/Typelite.app`
+   once.
 2. Allow **Microphone** and **Accessibility** when macOS asks. Accessibility lets Typelite paste.
 3. Follow the guided setup: microphone, speech, AI, then a short hands-on tutorial.
 
