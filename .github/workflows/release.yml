@@ -1,0 +1,104 @@
+# Builds Typelite for macOS (Apple Silicon) and creates a DRAFT GitHub release.
+# See docs/releasing.md.
+#
+# - Push a tag `vX.Y.Z`: builds the DMG and ZIP, writes SHA256SUMS.txt and creates a draft
+#   release named after the tag. A maintainer reviews the draft and publishes it by hand.
+# - Run it by hand (Actions → Release → Run workflow): a dry run. Same build, but the files are
+#   uploaded as a workflow artifact and no release is created.
+#
+# No Apple signing or notarisation yet: the app is signed ad hoc only.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the draft release
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-14 # Apple Silicon
+    timeout-minutes: 90
+    env:
+      # Ad-hoc signing ("-") seals the bundle without an Apple certificate.
+      APPLE_SIGNING_IDENTITY: '-'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the version in src-tauri/tauri.conf.json ($VERSION)."
+            exit 1
+          fi
+
+      - name: Rust toolchain (from rust-toolchain.toml)
+        run: |
+          rustup toolchain install || rustup show
+          rustc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build llama-server (Built-in AI)
+        run: npm run build:llama-server
+
+      # Same as `npm run build:app`, plus a DMG.
+      - name: Build the app and DMG
+        run: npx tauri build --bundles app,dmg --config src-tauri/tauri.bundle.conf.json
+
+      - name: Package and checksum
+        id: package
+        run: |
+          VERSION='${{ steps.version.outputs.version }}'
+          BUNDLE=src-tauri/target/release/bundle
+          mkdir -p dist-release
+          cp "$BUNDLE"/dmg/*.dmg "dist-release/Typelite_${VERSION}_aarch64.dmg"
+          # ditto keeps the bundle's symlinks and signature intact.
+          ditto -c -k --keepParent "$BUNDLE/macos/Typelite.app" "dist-release/Typelite_${VERSION}_aarch64.zip"
+          codesign --verify --deep --strict --verbose=2 "$BUNDLE/macos/Typelite.app"
+          cd dist-release
+          shasum -a 256 *.dmg *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Release notes
+        run: node scripts/release-notes.mjs '${{ steps.version.outputs.version }}' > dist-release/notes.md
+
+      - name: Upload (dry run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: typelite-${{ steps.version.outputs.version }}-dry-run
+          path: dist-release/
+          retention-days: 7
+
+      - name: Create draft release
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist-release
+          gh release create "$GITHUB_REF_NAME" \
+            --draft \
+            --verify-tag \
+            --title "Typelite ${{ steps.version.outputs.version }}" \
+            --notes-file notes.md \
+            ./*.dmg ./*.zip SHA256SUMS.txt
