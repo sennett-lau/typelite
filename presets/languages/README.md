@@ -156,7 +156,7 @@ Reviewers check that:
   (answer questions, add notes, change the output language or format);
 - the examples are correct, natural, short and your own;
 - a native or fluent speaker has approved the text;
-- there is nothing offensive, political or promotional, no links and no personal data;
+- there is nothing hateful, political or promotional, no links and no personal data (naming slang or swear words so the AI keeps them as spoken is fine);
 - `version` went up if the text or `languages` changed.
 
 A `NOTES.md` next to the preset with a few test sentences, the model you used and what came out

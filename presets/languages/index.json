@@ -20,10 +20,10 @@
       "authors": [
         "sennett-lau"
       ],
-      "model_hint": "4B models slip into formal written Chinese now and then; 7B or larger follows it better.",
+      "model_hint": "4B models slip into formal written Chinese at times; 7B or larger does better. Some models refuse to repeat swear words.",
       "path": "cantonese-hong-kong/preset.md",
-      "bytes": 2139,
-      "sha256": "01128c05b0ae5751e736ef5e94cc90e2fb7d59364415e02e58603d5fd35acf20"
+      "bytes": 2676,
+      "sha256": "7aeae35f9850eea902035cc3aea213eca02e9209b61f1735e21ed63702cd2c54"
     },
     {
       "id": "english",
