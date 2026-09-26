@@ -29,6 +29,8 @@ const TAG_PATTERN = /^([a-z]{2,3})(-[A-Z][a-z]{3})?(-(?:[A-Z]{2}|[0-9]{3}))?$/
 const TIERS = ['official', 'community']
 const OPERATIONS = ['polish', 'translate']
 const LICENSE = 'CC0-1.0'
+/** A preset folder holds the preset and, optionally, notes for reviewers. Nothing else. */
+const ALLOWED_FILES = ['preset.md', 'NOTES.md']
 const REQUIRED_KEYS = [
   'id',
   'name',
@@ -282,6 +284,9 @@ export function buildIndex() {
     if (!existsSync(file)) {
       problems.push(`${folder}: missing preset.md`)
       continue
+    }
+    for (const name of readdirSync(join(ROOT, folder))) {
+      if (!ALLOWED_FILES.includes(name)) problems.push(`${folder}: unexpected file ${name}`)
     }
     const { entry, errors } = validatePreset(folder, readFileSync(file), codes.languages)
     for (const error of errors) problems.push(`${folder}/preset.md: ${error}`)

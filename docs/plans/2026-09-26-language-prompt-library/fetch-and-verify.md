@@ -33,7 +33,7 @@ https://raw.githubusercontent.com/sennett-lau/typelite/main/presets/languages/<p
       "format": 1,
       "tier": "official",
       "languages": ["en"],
-      "variants": ["en-AU", "en-GB", "en-US"],
+      "variants": ["en-AU", "en-CA", "en-GB", "en-US"],
       "applies_to": ["polish", "translate"],
       "summary": "Clear, natural English that keeps the speaker's tone, with spelling per region.",
       "authors": ["sennett-lau"],
