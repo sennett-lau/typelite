@@ -530,12 +530,13 @@ describe('LlmPane', () => {
       expect(screen.queryByText('Gmail')).not.toBeInTheDocument()
     })
 
-    it('shows the translation language slots next to translation when enabled', () => {
+    it('shows one row per translation language next to translation when enabled', () => {
       mockAppStore.config.translate_enabled = true
       mockAppStore.config.translation = { targets: ['en'], active_target: 'en' }
 
       render(<LlmPane />)
-      expect(screen.getByRole('radiogroup', { name: 'Translation languages' })).toBeInTheDocument()
+      const list = screen.getByRole('list', { name: 'Translation languages' })
+      expect(within(list).getAllByRole('listitem')).toHaveLength(1)
       // A single language stays single: no padding with other languages.
       expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
     })
@@ -544,7 +545,13 @@ describe('LlmPane', () => {
       mockAppStore.config.translate_enabled = false
 
       render(<LlmPane />)
-      expect(screen.getByRole('radiogroup', { name: 'Translation languages' })).toBeInTheDocument()
+      expect(screen.getByRole('list', { name: 'Translation languages' })).toBeInTheDocument()
+    })
+
+    it('links the Translation group to the language presets guide', () => {
+      render(<LlmPane />)
+      fireEvent.click(screen.getByRole('button', { name: 'About language presets' }))
+      expect(openUrl).toHaveBeenCalledWith(`${GUIDE}#language-presets`)
     })
   })
 })

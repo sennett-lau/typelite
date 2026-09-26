@@ -101,6 +101,8 @@ function emitTauriEvent(name: string, payload: unknown) {
 
 vi.mock('../../../lib/tauri', () => ({
   getConfig: vi.fn().mockResolvedValue(null),
+  getLanguageLibraryStatus: vi.fn().mockResolvedValue({ latest: {}, updates: {} }),
+  loadLanguagePreset: vi.fn().mockResolvedValue(null),
   getSttRecordingCapability: vi.fn().mockResolvedValue({
     capability: {
       registryVersion: 1,

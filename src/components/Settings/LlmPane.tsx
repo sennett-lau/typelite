@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { isDefaultLanguageSettings, languageSettings, useAppStore } from '../../stores/appStore'
+import { useAppStore } from '../../stores/appStore'
 import type { PolishStyle } from '../../stores/appStore'
 import { getLatestMappingCandidate, listCustomAppMappings } from '../../lib/tauri'
 import type { CustomAppMappingView, MappingCandidateView } from '../../lib/tauri'
@@ -11,7 +11,9 @@ import { EngineChoice } from '../Speech/SpeechEngineChoice'
 import { AI_SERVICE } from '../Speech/services'
 import { AppLogo } from '../AppLogo'
 import { ContextAdaptationApps } from './ContextAdaptationApps'
-import { TranslationTargets } from './TranslationTargets'
+import { openUrl } from '@tauri-apps/plugin-opener'
+import { LanguageRows } from './languages/LanguageRows'
+import { LANGUAGE_PRESETS_GUIDE_URL, useLibraryStatus } from './languages/languageLibrary'
 import { TranslationLanguageSheet } from './TranslationLanguageSheet'
 import { AppStyleMappingDialog } from './AppStyleMappingDialog'
 import { ManageAppMappingsDialog } from './ManageAppMappingsDialog'
@@ -27,9 +29,9 @@ const STYLE_KEY: Record<PolishStyle, string> = {
 /**
  * Settings → AI (plan `ai-polish-setup`): "AI polish uses" (Built-in or your server or API key,
  * with their details), then Polish (clean-up switch, style cards, match the app, the last app and
- * browser access), Translation (language chips with their model and instructions sheet, plan
- * `translation-language-presets`; always translate) and a collapsed Advanced
- * (selected text, custom instructions).
+ * browser access), Translation (one row per language with its instructions sheet, plan
+ * `language-prompt-library`; always translate) and a collapsed Advanced (selected text, custom
+ * instructions).
  */
 export function LlmPane() {
   const config = useAppStore((s) => s.config)
@@ -48,6 +50,7 @@ export function LlmPane() {
   const [manageMappingsOpen, setManageMappingsOpen] = useState(false)
   const [editingMapping, setEditingMapping] = useState<CustomAppMappingView | null>(null)
   const [editingLanguage, setEditingLanguage] = useState<string | null>(null)
+  const libraryStatus = useLibraryStatus()
   const appStyleMenuButtonRef = useRef<HTMLButtonElement>(null)
   const showBrowserAccessHint = Boolean(
     config.polish_enabled &&
@@ -243,17 +246,30 @@ export function LlmPane() {
         )}
       </Group>
 
-      <Group label={t('settings.groupTranslation')}>
+      <Group
+        label={t('settings.groupTranslation')}
+        actions={
+          <button
+            type="button"
+            onClick={() =>
+              openUrl(LANGUAGE_PRESETS_GUIDE_URL).catch((error) =>
+                console.error('[settings] failed to open the guide', error),
+              )
+            }
+            className="link-button normal-case tracking-normal"
+          >
+            {t('translate.language.aboutPresets')}
+          </button>
+        }
+      >
         {/* The languages are used by the Translate shortcut too, so they always show,
             not only when "Always translate output" is on. */}
-        <Row label={t('translate.targetsLabel')} help={t('translate.switchHint')} layout="stacked">
-          <TranslationTargets
-            value={config.translation}
-            onChange={(translation) => updateConfig({ translation })}
-            onEdit={setEditingLanguage}
-            isCustom={(code) => !isDefaultLanguageSettings(languageSettings(config, code))}
-          />
-        </Row>
+        <LanguageRows
+          config={config}
+          status={libraryStatus}
+          onChange={(translation) => updateConfig({ translation })}
+          onEdit={setEditingLanguage}
+        />
         <Row label={t('settings.translationMode')} help={t('settings.translationModeDesc')}>
           <Toggle
             checked={config.translate_enabled}
