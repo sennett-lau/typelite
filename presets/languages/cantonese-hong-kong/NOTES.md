@@ -11,6 +11,8 @@ For reviewers; not downloaded by the app.
   Cantonese mixed with English: keep code-mixing and swear words, do not make the text more
   formal, and the Cantonese hesitation sounds and self-correction words, with the two Cantonese
   examples.
+- This preset supersedes the maintainer's earlier local guide
+  `docs/guides/cantonese-polish-prompt.md`, which was never committed; use this preset instead.
 
 ## Earlier test (polish preference only)
 
