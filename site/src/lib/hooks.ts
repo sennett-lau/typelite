@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 import { REPO } from '../links'
 
 /* ─── Theme ─── */
@@ -148,4 +148,94 @@ export function useScrolled(threshold = 8): boolean {
     return () => window.removeEventListener('scroll', onScroll)
   }, [threshold])
   return scrolled
+}
+
+/**
+ * Reading progress for the top bar: writes `scaleX(progress)` straight onto the element (no
+ * React render per scroll event), at most once per animation frame.
+ */
+export function useScrollProgress(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
+      el.style.transform = `scaleX(${p.toFixed(4)})`
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [ref])
+}
+
+/** The id of the section in the middle of the viewport, among `ids` (null above them). */
+export function useActiveSection(ids: readonly string[]): string | null {
+  const [active, setActive] = useState<string | null>(null)
+  const key = ids.join(',')
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return
+    const els = key
+      .split(',')
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null)
+    const visible = new Set<string>()
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id)
+          else visible.delete(e.target.id)
+        }
+        // The last listed section that crosses the middle band wins.
+        const ids = key.split(',')
+        setActive(ids.filter((id) => visible.has(id)).pop() ?? null)
+      },
+      { rootMargin: '-45% 0px -50% 0px' },
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [key])
+  return active
+}
+
+/**
+ * Primary buttons follow the pointer a little ("magnetic", at most a few pixels) and light up
+ * where it is. One delegated listener for the whole page; desktop pointers only, and nothing
+ * with reduced motion. The styles read `--mx`/`--my` (light) and `--tx`/`--ty` (shift).
+ */
+export function useMagneticButtons() {
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let current: HTMLElement | null = null
+    const reset = (el: HTMLElement) => {
+      el.style.removeProperty('--tx')
+      el.style.removeProperty('--ty')
+    }
+    const onMove = (e: PointerEvent) => {
+      const el = (e.target as Element | null)?.closest?.<HTMLElement>('.btn-primary') ?? null
+      if (current && current !== el) reset(current)
+      current = el
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const x = e.clientX - r.left
+      const y = e.clientY - r.top
+      el.style.setProperty('--mx', `${x.toFixed(0)}px`)
+      el.style.setProperty('--my', `${y.toFixed(0)}px`)
+      el.style.setProperty('--tx', `${((x / r.width - 0.5) * 6).toFixed(2)}px`)
+      el.style.setProperty('--ty', `${((y / r.height - 0.5) * 4).toFixed(2)}px`)
+    }
+    document.addEventListener('pointermove', onMove, { passive: true })
+    return () => document.removeEventListener('pointermove', onMove)
+  }, [])
 }

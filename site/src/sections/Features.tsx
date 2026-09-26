@@ -1,7 +1,8 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { KeyCap } from '../components/KeyCap'
 import { AskVignette, DictateVignette, TranslateVignette } from '../demos/Vignettes'
 import { IconCheck, IconGlobe, IconMic, IconSparkle } from '../components/Icons'
+import { createKeySignal, useKeySignal, type KeySignal } from '../lib/keySignal'
 
 function Feature({
   color,
@@ -12,6 +13,7 @@ function Feature({
   points,
   keys,
   demo,
+  signal,
   flip = false,
 }: {
   color: string
@@ -22,8 +24,10 @@ function Feature({
   points: string[]
   keys: string[]
   demo: ReactNode
+  signal: KeySignal
   flip?: boolean
 }) {
+  const down = useKeySignal(signal)
   return (
     <article
       className={`card feature ${flip ? 'flip' : ''}`}
@@ -49,7 +53,7 @@ function Feature({
           {keys.map((k, i) => (
             <span key={k} className="key-join">
               {i > 0 && <span aria-hidden="true">+</span>}
-              <KeyCap name={k} />
+              <KeyCap name={k} down={down} />
             </span>
           ))}
           <span className="keys-note">by default · any keys you like</span>
@@ -61,6 +65,7 @@ function Feature({
 }
 
 export function Features() {
+  const [signals] = useState(() => [createKeySignal(), createKeySignal(), createKeySignal()])
   return (
     <section className="section" id="features" aria-labelledby="features-title">
       <div className="container">
@@ -86,7 +91,8 @@ export function Features() {
               'Punctuation and capitals added',
             ]}
             keys={['Fn']}
-            demo={<DictateVignette />}
+            signal={signals[0]}
+            demo={<DictateVignette keys={signals[0]} />}
           >
             Talk the way you talk. Typelite writes it the way you would have typed it, and pastes it
             where your cursor is.
@@ -103,7 +109,8 @@ export function Features() {
               'Highlight text to translate it in place',
             ]}
             keys={['Fn', 'LeftShift']}
-            demo={<TranslateVignette />}
+            signal={signals[1]}
+            demo={<TranslateVignette keys={signals[1]} />}
           >
             Speak in your own language and the text arrives in the one you need. The recording keeps
             going while you switch.
@@ -119,7 +126,8 @@ export function Features() {
               'Copy or insert the answer with one click',
             ]}
             keys={['Fn', 'Space']}
-            demo={<AskVignette />}
+            signal={signals[2]}
+            demo={<AskVignette keys={signals[2]} />}
           >
             Highlight a paragraph and ask for a summary, a rewrite or an explanation, without
             leaving the app you’re in.
