@@ -7,7 +7,7 @@ The visual reference is [mock.html](mock.html) (it also shows the speaking/typin
 `typing-speed-and-nudge` and the preset comparison of plan `speed-by-preset`, which are built
 separately).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 Supersedes in part [speed-board](../2026-09-25-speed-board/index.md): the board no longer shows
 the last run or medians for the current presets, and the Finish recording step is no longer
