@@ -129,6 +129,18 @@
         "ai": "AI polish",
         "paste": "Paste"
       },
+      "compare": {
+        "title": "Compare presets",
+        "ai": "AI polish",
+        "speech": "Speech recognition",
+        "perSecond": "(per 1 s of audio)",
+        "runsOne": "1 run",
+        "runsMany": "{{count}} runs",
+        "fastest": "Fastest",
+        "deleted": "Deleted preset",
+        "empty": "No finished runs yet.",
+        "note": "Averages of runs that finished, over the last 200 runs. A preset needs 3 runs before it is ranked, and its slowest run in every ten is left out, so a model loading does not count. Speech time is per second of audio so long and short recordings compare fairly."
+      },
       "tips": {
         "speech": "Speech recognition is the slow part. A GPU server or a fixed language is faster.",
         "ai": "AI polish is the slow part. Try a smaller model or a server with a GPU.",

@@ -386,6 +386,40 @@ body,
     background: color-mix(in srgb, var(--tile-color) 18%, transparent);
   }
 
+  /* Plan `speed-by-preset`: a section that opens and closes with a smooth height change. The
+     grid row animates from 0fr (collapsed) to 1fr (its content's height). */
+  .collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s cubic-bezier(0.2, 0, 0, 1);
+  }
+  .collapsible[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+  .collapsible > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .collapsible {
+      transition: none;
+    }
+  }
+
+  /* "Fastest" tag in the preset comparison; a darker green on light backgrounds for contrast. */
+  .fastest-tag {
+    flex: none;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-success) 18%, transparent);
+    color: color-mix(in srgb, var(--color-success) 60%, black);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .dark .fastest-tag {
+    color: var(--color-success);
+  }
+
   /* Key cap */
   .kbd {
     min-width: 22px;
