@@ -15,6 +15,7 @@ import { MicrophoneStep } from './MicrophoneStep'
 import { SttSetupStep } from './SttSetupStep'
 import { LlmSetupStep } from './LlmSetupStep'
 import { ShortcutStep } from './ShortcutStep'
+import { applyShortcutGate, shortcutGateForRole } from './shortcutConfig'
 import type { ShortcutRole } from './shortcutConfig'
 import { usePermissions } from './usePermissions'
 import { slideRight } from '../../lib/animations'
@@ -68,6 +69,12 @@ export function Onboarding() {
   }, [setConfig])
 
   const shortcutRole = SHORTCUT_STEPS[step]
+
+  // Plan `onboarding-shortcut-gate`: until onboarding is finished only the shortcut this page
+  // teaches may run; other pages allow none. The backend starts closed, so this only opens it.
+  useEffect(() => {
+    void applyShortcutGate(shortcutGateForRole(shortcutRole))
+  }, [shortcutRole])
   const isLast = step === TOTAL_STEPS - 1
   // The tour starts at the Dictate step; the earlier steps are already done.
   const firstStep = tour ? SHORTCUT_TOUR_FIRST_STEP : 0
@@ -123,6 +130,7 @@ export function Onboarding() {
     try {
       await saveConfig(useAppStore.getState().config)
       await saveOnboardingCompleted()
+      await applyShortcutGate('all')
       if (tourDone) {
         applyPersistedConfigPatch({ shortcut_tour_completed: true })
         await setShortcutTourState({ completed: true }).catch((error) =>
@@ -167,6 +175,7 @@ export function Onboarding() {
 
   // Closing the tour goes back to Home; closing first-run onboarding quits (the default).
   const handleCloseTour = () => {
+    void applyShortcutGate('all')
     useAppStore.setState({ onboardingTour: false })
     setOnboardingCompleted(true)
   }
