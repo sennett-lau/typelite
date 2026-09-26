@@ -93,6 +93,7 @@
       "dictateDesc": "Speak and paste polished text",
       "translate": "Translate",
       "translateDesc": "Speak and paste it in {{language}}",
+      "translateDescNoLanguage": "Speak and paste it in another language",
       "ask": "Ask anything",
       "askDesc": "Ask a question and get a short answer",
       "editSelection": "Edit selection",
@@ -169,96 +170,96 @@
       "intro": "Pick the microphone Typelite should use. Speak and watch the meter move."
     },
     "shortcut": {
-      "label": "Shortcut",
-      "hint": "Click the field, then press the keys you want to use.",
-      "notSet": "Not set — click to record",
-      "notLive": "Shortcuts are not active: {{error}}",
-      "recordFirst": "Record a shortcut first."
+      "notLive": "Shortcuts are not active: {{error}}"
     },
-    "dictation": {
-      "intro": "Dictate turns speech into clean text in the app you are using.",
-      "practice": "Press {{key}}, say a sentence, then press {{key}} again. The text appears below.",
-      "practiceHold": "Hold {{key}}, say a sentence, then let go. The text appears below.",
-      "success": "Dictation works."
+    "setup": {
+      "notSet": "Not set — click to record",
+      "hint": {
+        "dictation": "Press to start, press again to stop.",
+        "translate": "Press to start. While recording, {{stop}} stops.",
+        "ask": "Press to start, press again to send."
+      },
+      "change": "Click the keys to choose different ones.",
+      "next": "Next: {{count}} short exercises to try it."
     },
     "translate": {
-      "intro": "Translate writes what you say in another language.",
-      "languageLabel": "Translate into",
-      "practice": "Press {{key}}, say a sentence, then press {{key}} again. The translation appears below.",
-      "practiceHold": "Hold {{key}}, say a sentence, then let go. The translation appears below.",
-      "success": "Translation works."
-    },
-    "ask": {
-      "intro": "Ask anything answers a spoken question.",
-      "practice": "Press {{key}}, ask a question out loud, then press {{key}} again.",
-      "answer": "Answer",
-      "success": "Ask anything works."
+      "languagesLabel": "Translate into",
+      "count": "{{count}} of {{max}}",
+      "add": "+ Add",
+      "addLabel": "Add a language",
+      "remove": "Remove {{language}}",
+      "preview": "Recording pill preview",
+      "previewWithLanguage": "Recording pill preview: {{language}}",
+      "switchTitle": "{{language}}. Click to switch language",
+      "captionNone": "Add a language, and the pill will show it while you record.",
+      "captionOne": "While recording, the pill shows the language.",
+      "captionSwitch": "While recording, press {{key}} or click the name to switch language.",
+      "captionSwitchOff": "Click the name on the pill to switch language."
     },
     "practice": {
-      "label": "Try it",
-      "placeholder": "Click here, then use your shortcut…",
-      "failed": "That did not work ({{error}}). Try again.",
-      "pasteFailed": "The text could not be pasted"
+      "pasteFailed": "The text could not be pasted",
+      "notPasted": "The text was not pasted into the box. Click the box, then try again"
     },
     "exercises": {
-      "list": "Exercises",
-      "progress": "Exercise {{n}} of {{total}}: {{title}}",
-      "scriptLanguage": "en",
-      "readThis": "Read this out loud",
+      "subtitle": "{{role}} · exercise {{n}} of {{total}}",
+      "readThis": "Read this",
       "sayThis": "Then say",
-      "speak": "Press {{key}}, read the line below, then press {{key}} again.",
-      "speakHold": "Hold {{key}}, read the line below, then let go.",
-      "youSaid": "You said",
-      "typeliteWrote": "Typelite wrote",
-      "nothingSaid": "Nothing (no speech this time)",
-      "waiting": "Waiting for the result…",
-      "miss": "That doesn't look like the expected result yet. Try again, or skip this exercise.",
+      "sayAnything": "Say this in your own language, or anything you like",
+      "whatHappens": "What happens",
+      "speak": "Press {{key}}, read the line, press {{key}} again.",
+      "speakHold": "Hold {{key}}, read the line, then let go.",
+      "legend": {
+        "start": "Start",
+        "switch": "Switch language",
+        "stop": "Stop",
+        "switchNeedsTwo": "Add a second language to switch",
+        "switchOff": "Set a Switch language key in Settings"
+      },
+      "highlighted": "The text above is highlighted for you.",
+      "listening": "Listening… press {{key}} again when you finish.",
+      "listeningHold": "Listening… let go of {{key}} when you finish.",
+      "listeningStop": "Listening… press {{stop}} to stop.",
+      "listeningTranslate": "Listening… press {{stop}} to stop, {{switch}} to switch language.",
+      "writing": "Typelite is writing…",
+      "thinking": "Thinking…",
+      "miss": "Not quite what we expected.",
+      "noSpeech": "Didn't catch that.",
+      "failed": "That did not work ({{error}}).",
       "tryAgain": "Try again",
-      "skip": "Skip this exercise",
-      "next": "Next exercise",
-      "finish": "Finish exercises",
-      "allDone": "All exercises finished",
-      "practiceAgain": "Practise again",
-      "statusDone": "Done",
-      "statusSkipped": "Skipped",
-      "sameLanguage": "You are translating into {{language}}, the language of this line. Read it in another language you speak, or pick another language above, to see a real translation.",
-      "switchHint": "You chose {{count}} languages. While recording, press {{key}} to switch to the next one; the pill shows which one is active.",
+      "boxLabel": "Your text appears here",
+      "blockLabel": "Text to select",
       "correction": {
-        "title": "Change of mind",
+        "title": "Change your mind",
         "script": "Let's have lunch at 1… oh no, let's do it at 2.",
-        "caption": "Typelite kept only your correction."
+        "success": "Only your correction was kept."
       },
       "fillers": {
-        "title": "Fillers",
+        "title": "Fillers disappear",
         "script": "Um, so, I think we should, like, ship it on Friday.",
-        "caption": "Fillers like um and like are removed."
+        "success": "Fillers removed."
       },
       "speakTranslate": {
         "title": "Speak and translate",
-        "script": "Good morning, can we meet tomorrow afternoon?",
-        "caption": "Typelite wrote it in {{language}}."
+        "success": "Translated into {{language}}."
       },
       "selectionTranslate": {
-        "title": "Highlight and translate",
-        "instruction": "Keep the text in the box selected (select it again if you clicked away). Press {{key}}, then press {{key}} again without speaking.",
-        "instructionHold": "Keep the text in the box selected (select it again if you clicked away). Hold {{key}} for a moment without speaking, then let go.",
-        "caption": "The selection was replaced by its {{language}} translation."
+        "title": "Translate a selection",
+        "script": "The highlighted text below is replaced by its {{language}} translation.",
+        "instruction": "Keep the text highlighted, press {{key}}, then press {{key}} again without speaking.",
+        "instructionHold": "Keep the text highlighted, then hold {{key}} for a moment without speaking.",
+        "success": "Selection translated into {{language}}."
       },
       "question": {
         "title": "Ask a question",
-        "instruction": "Press {{key}}, ask the question below out loud, then press {{key}} again. The answer opens in the Ask panel.",
-        "instructionHold": "Press {{key}}, ask the question below out loud, then press {{key}} again. The answer opens in the Ask panel.",
         "script": "What is fifteen percent of two hundred forty?",
-        "caption": "Typelite answered your question (the exact answer is 36).",
-        "captionRight": "Typelite answered: 15% of 240 is 36."
+        "success": "Answered in the Ask window."
       },
       "edit": {
-        "title": "Edit a selection",
-        "instruction": "Keep the text in the box selected (select it again if you clicked away). Press {{key}}, say the line below, then press {{key}} again.",
-        "instructionHold": "Keep the text in the box selected (select it again if you clicked away). Press {{key}}, say the line below, then press {{key}} again.",
+        "title": "Edit by voice",
         "script": "Make this shorter.",
         "prefill": "Hey, just checking whether you had a chance to look at the draft I sent over last week, no rush at all.",
-        "caption": "Typelite wrote a shorter version of your selection."
+        "instruction": "Keep the text highlighted, press {{key}}, say the line, then press {{key}} again.",
+        "success": "Rewritten shorter."
       }
     },
     "saveFailed": "Could not save: {{error}}",
@@ -273,17 +274,19 @@
       "aiPolish": "AI polish",
       "aiPolishSub": "Cleans up what you said: fillers out, corrections applied, punctuation in.",
       "dictate": "Dictate",
-      "dictateSub": "Set your shortcut and try it once",
+      "dictateSub": "Speak, and get clean text in any app.",
       "translate": "Translate",
-      "translateSub": "Set your shortcut, pick a language, try it once",
+      "translateSub": "Speak, and get it written in another language.",
       "ask": "Ask Anything",
-      "askSub": "Set your shortcut and ask one question"
+      "askSub": "Ask a question, or change selected text by voice."
     },
     "layout": {
       "back": "Back",
       "next": "Next",
       "finish": "Finish",
-      "close": "Close"
+      "close": "Close",
+      "tryIt": "Try it",
+      "skip": "Skip"
     }
   },
   "capsule": {
