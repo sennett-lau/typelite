@@ -5,6 +5,9 @@ import { AskPanel } from '../AskPanel'
 import {
   abortAskDictation,
   answerAskAnyway,
+  closeAskPanel,
+  copyAskText,
+  resizeAskPanel,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
@@ -35,28 +38,12 @@ const tauriEventMock = vi.hoisted(() => {
   }
 })
 
-const tauriWindowMock = vi.hoisted(() => {
-  type FocusListener = (event: { payload: boolean }) => void
-  const focusListeners: FocusListener[] = []
-  return {
-    focusListeners,
-    hide: vi.fn().mockResolvedValue(undefined),
-    onFocusChanged: vi.fn((callback: FocusListener) => {
-      focusListeners.push(callback)
-      return Promise.resolve(() => {
-        const index = focusListeners.indexOf(callback)
-        if (index >= 0) focusListeners.splice(index, 1)
-      })
-    }),
-    emitFocus(focused: boolean) {
-      for (const listener of [...focusListeners]) {
-        listener({ payload: focused })
-      }
-    },
-  }
-})
-
 vi.mock('../../../lib/tauri', () => ({
+  ASK_PANEL_CLOSED_EVENT: 'ask:panel_closed',
+  closeAskPanel: vi.fn(),
+  resizeAskPanel: vi.fn(),
+  copyAskText: vi.fn(),
+  insertAskText: vi.fn(),
   answerAskAnyway: vi.fn(),
   startAskDictation: vi.fn(),
   stopAskDictation: vi.fn(),
@@ -66,13 +53,6 @@ vi.mock('../../../lib/tauri', () => ({
 
 vi.mock('@tauri-apps/api/event', () => ({
   listen: tauriEventMock.listen,
-}))
-
-vi.mock('@tauri-apps/api/window', () => ({
-  getCurrentWindow: () => ({
-    hide: tauriWindowMock.hide,
-    onFocusChanged: tauriWindowMock.onFocusChanged,
-  }),
 }))
 
 async function flushAsyncEffects() {
@@ -112,7 +92,6 @@ afterEach(() => {
   cleanup()
   vi.clearAllMocks()
   tauriEventMock.listeners.clear()
-  tauriWindowMock.focusListeners.splice(0)
 })
 
 describe('AskPanel', () => {
@@ -122,14 +101,24 @@ describe('AskPanel', () => {
     vi.mocked(stopAskDictation).mockResolvedValue(askResult())
     vi.mocked(abortAskDictation).mockResolvedValue(undefined)
     vi.mocked(takePendingAskMessage).mockResolvedValue(null)
+    vi.mocked(closeAskPanel).mockResolvedValue(undefined)
+    vi.mocked(resizeAskPanel).mockResolvedValue(undefined)
+    vi.mocked(copyAskText).mockResolvedValue(undefined)
   })
 
-  it('renders standalone Ask as a compact floating note', async () => {
-    render(<AskPanel />)
+  async function emitWhenListening(event: string, payload: unknown) {
+    await waitFor(() => {
+      expect(tauriEventMock.listen).toHaveBeenCalledWith(event, expect.any(Function))
+    })
+    act(() => tauriEventMock.emit(event, payload))
+  }
 
-    expect(await screen.findByTestId('ask-floating-note')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Close' })).toBeDefined()
-    expect(screen.getByText('Ask')).toBeDefined()
+  it('renders nothing in the standalone window until a result arrives', async () => {
+    render(<AskPanel />)
+    await flushAsyncEffects()
+
+    expect(screen.getByTestId('ask-floating-note-backdrop')).toBeDefined()
+    expect(screen.queryByTestId('ask-floating-note')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Record question' })).toBeNull()
     expect(screen.queryByText('Ready to ask')).toBeNull()
     expect(screen.queryByRole('textbox')).toBeNull()
@@ -139,7 +128,6 @@ describe('AskPanel', () => {
     render(<AskPanel />)
 
     expect(screen.queryByRole('textbox')).toBeNull()
-    expect(screen.getByTestId('ask-floating-note')).toBeDefined()
 
     await waitFor(() => {
       expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
@@ -148,25 +136,24 @@ describe('AskPanel', () => {
       'ask:recording-started',
       expect.any(Function),
     )
-    tauriEventMock.emit('ask:result', askResult())
+    act(() => tauriEventMock.emit('ask:result', askResult()))
 
     await waitFor(() => {
       expect(screen.getByText('What is Typelite?')).toBeDefined()
       expect(screen.getByText('It turns speech into useful text.')).toBeDefined()
     })
+    expect(screen.getByTestId('ask-floating-note')).toBeDefined()
     expect(screen.queryByRole('textbox')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Copy answer' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Insert at the cursor' })).toBeDefined()
     expect(screen.queryByText('Answer')).toBeNull()
     expect(startAskDictation).not.toHaveBeenCalled()
   })
 
-  it('uses the existing compact context line for draft clipboard fallback', async () => {
+  it('says the result is on the clipboard when it could not be inserted', async () => {
     render(<AskPanel />)
 
-    await waitFor(() => {
-      expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
-    })
-    tauriEventMock.emit(
+    await emitWhenListening(
       'ask:result',
       askResult({
         question: 'draft a launch note',
@@ -179,8 +166,13 @@ describe('AskPanel', () => {
       }),
     )
 
-    expect(await screen.findByText('Target changed; result copied')).toBeDefined()
+    expect(
+      await screen.findByText(
+        "This app didn't allow the replacement. The result is on your clipboard.",
+      ),
+    ).toBeDefined()
     expect(screen.getByText('Launch note')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Try replacing again' })).toBeDefined()
     expect(screen.queryByText(/confidence/i)).toBeNull()
     expect(screen.queryByText(/grammar/i)).toBeNull()
   })
@@ -188,10 +180,7 @@ describe('AskPanel', () => {
   it('shows provider-only search status and never renders query URL or debug metadata', async () => {
     render(<AskPanel />)
 
-    await waitFor(() => {
-      expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
-    })
-    tauriEventMock.emit('ask:result', {
+    await emitWhenListening('ask:result', {
       ...askResult({
         question: 'search private launch plan on Google',
         answer: 'Opened Google search.',
@@ -208,64 +197,44 @@ describe('AskPanel', () => {
       grammarLocale: 'en',
     })
 
-    expect(await screen.findByText('Opened Google search')).toBeDefined()
+    expect(await screen.findByText('Opened Google search.')).toBeDefined()
     expect(screen.queryByText(/private launch plan/i)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
     expect(screen.queryByText(/google\.com/i)).toBeNull()
     expect(screen.queryByText(/^en$/i)).toBeNull()
   })
 
-  it('uses restrained fallback copy for a disabled route', async () => {
+  it('prefixes the question when the highlight was used', async () => {
     render(<AskPanel />)
 
-    await waitFor(() => {
-      expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
-    })
-    tauriEventMock.emit(
-      'ask:result',
-      askResult({
-        fallbackReason: 'feature_disabled',
-        requestedPlacement: 'popup_answer',
-        actualPlacement: 'popup_answer',
-      }),
-    )
+    await emitWhenListening('ask:result', askResult({ usedSelectedText: true }))
 
-    expect(await screen.findByText('This route is disabled')).toBeDefined()
+    const question = await screen.findByTestId('ask-panel-question')
+    expect(question.textContent).toBe('About the highlight · What is Typelite?')
+    expect(screen.getByRole('button', { name: 'Replace the highlight' })).toBeDefined()
   })
 
-  it('hides the standalone floating note from its close button', async () => {
+  it('closes the panel through the app from its close button', async () => {
     render(<AskPanel />)
+    await emitWhenListening('ask:result', askResult())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Close (Esc)' }))
 
-    await waitFor(() => {
-      expect(tauriWindowMock.hide).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  it('hides the standalone floating note when the empty area outside the note is clicked', async () => {
-    render(<AskPanel />)
-
-    fireEvent.mouseDown(screen.getByTestId('ask-floating-note-backdrop'))
-
-    await waitFor(() => {
-      expect(tauriWindowMock.hide).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  it('hides the standalone floating note on focus loss without owning recording', async () => {
-    render(<AskPanel />)
-
-    await waitFor(() => expect(tauriWindowMock.onFocusChanged).toHaveBeenCalledTimes(1))
-
-    await act(async () => {
-      tauriWindowMock.emitFocus(false)
-    })
-
-    await waitFor(() => {
-      expect(tauriWindowMock.hide).toHaveBeenCalledTimes(1)
-    })
-    expect(startAskDictation).not.toHaveBeenCalled()
+    await waitFor(() => expect(closeAskPanel).toHaveBeenCalledTimes(1))
+    expect(screen.queryByTestId('ask-floating-note')).toBeNull()
     expect(abortAskDictation).not.toHaveBeenCalled()
+  })
+
+  it('drops its content when the app closes the panel (Escape or a new run)', async () => {
+    render(<AskPanel />)
+    await emitWhenListening('ask:result', askResult())
+    expect(await screen.findByTestId('ask-floating-note')).toBeDefined()
+
+    await emitWhenListening('ask:panel_closed', null)
+
+    await waitFor(() => expect(screen.queryByTestId('ask-floating-note')).toBeNull())
+    // The app already closed it; the page does not ask again.
+    expect(closeAskPanel).not.toHaveBeenCalled()
   })
 
   it('ignores stale global Ask recording metadata in the standalone note', async () => {
@@ -282,23 +251,14 @@ describe('AskPanel', () => {
     expect(startAskDictation).not.toHaveBeenCalled()
   })
 
-  it('copies the hotkey answer from the popup', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(window.navigator, 'clipboard', {
-      value: { writeText },
-      configurable: true,
-    })
-
+  it('copies the hotkey answer through the app', async () => {
     render(<AskPanel />)
 
-    await waitFor(() => {
-      expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
-    })
-    tauriEventMock.emit('ask:result', askResult())
+    await emitWhenListening('ask:result', askResult())
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Copy answer' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy' }))
 
-    expect(writeText).toHaveBeenCalledWith('It turns speech into useful text.')
+    expect(copyAskText).toHaveBeenCalledWith('It turns speech into useful text.')
     await waitFor(() => {
       expect(screen.getByText('Copied')).toBeDefined()
     })
@@ -316,7 +276,7 @@ describe('AskPanel', () => {
       expect(screen.getByText('It turns speech into useful text.')).toBeDefined()
     })
     expect(screen.queryByRole('textbox')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Copy answer' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
     expect(startAskDictation).not.toHaveBeenCalled()
   })
 
@@ -365,16 +325,14 @@ describe('AskPanel', () => {
   it('renders backend errors as popup content only', async () => {
     render(<AskPanel />)
 
-    await waitFor(() => {
-      expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:error', expect.any(Function))
-    })
-    tauriEventMock.emit('ask:error', 'AI endpoint quota exceeded.')
+    await emitWhenListening('ask:error', 'AI endpoint quota exceeded.')
 
     await waitFor(() => {
       expect(screen.getByText('AI endpoint quota exceeded.')).toBeDefined()
     })
     expect(screen.queryByRole('textbox')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Close' })).toBeDefined()
+    expect(screen.getByText('Something went wrong')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Close (Esc)' })).toBeDefined()
     expect(screen.queryByText('Error')).toBeNull()
   })
 
@@ -451,7 +409,7 @@ describe('AskPanel', () => {
       return screen.findByTestId('ask-needs-live-info')
     }
 
-    it('shows the needs-live-information state with Answer anyway and Close', async () => {
+    it('shows the needs-live-information state with Answer anyway and ✕', async () => {
       await showLiveResult()
 
       expect(screen.getByText('Needs live information')).toBeDefined()
@@ -462,10 +420,11 @@ describe('AskPanel', () => {
       ).toBeDefined()
       expect(screen.getByText("What's the AI news today?")).toBeDefined()
       expect(screen.getByRole('button', { name: 'Answer anyway' })).toBeDefined()
-      expect(screen.getAllByRole('button', { name: 'Close' }).length).toBeGreaterThan(0)
-      // No web-search setup yet, and nothing to copy.
+      expect(screen.getByRole('button', { name: 'Close (Esc)' })).toBeDefined()
+      // No web-search setup yet, and nothing to copy or insert.
       expect(screen.queryByText(/set up web search/i)).toBeNull()
-      expect(screen.queryByRole('button', { name: 'Copy answer' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
+      expect(screen.queryByText('About the highlight', { exact: false })).toBeNull()
     })
 
     it('answers anyway with the out-of-date note', async () => {
@@ -496,18 +455,13 @@ describe('AskPanel', () => {
       expect(screen.queryByText('May be out of date — no web search was used')).toBeNull()
     })
 
-    it('Close hides the live-information panel', async () => {
+    it('✕ closes the live-information panel', async () => {
       await showLiveResult()
-      const panel = screen.getByTestId('ask-needs-live-info')
-      const close = Array.from(panel.querySelectorAll('button')).find(
-        (button) => button.textContent === 'Close',
-      )
-      expect(close).toBeDefined()
 
-      fireEvent.click(close!)
+      fireEvent.click(screen.getByRole('button', { name: 'Close (Esc)' }))
 
       await waitFor(() => expect(screen.queryByTestId('ask-needs-live-info')).toBeNull())
-      expect(tauriWindowMock.hide).toHaveBeenCalled()
+      expect(closeAskPanel).toHaveBeenCalled()
       expect(answerAskAnyway).not.toHaveBeenCalled()
     })
 

@@ -41,6 +41,21 @@
     "outOfDateNote": "可能已过时——未使用网络搜索",
     "send": "提问"
   },
+  "askPanel": {
+    "label": "问答回答",
+    "aboutHighlight": "关于选中文本",
+    "close": "关闭（Esc）",
+    "escToClose": "关闭",
+    "copy": "复制",
+    "copied": "已复制",
+    "insert": "插入",
+    "insertAtCursor": "插入到光标处",
+    "replaceHighlight": "替换选中文本",
+    "insertFailed": "无法在此插入，请改用复制。",
+    "couldNotReplace": "此应用不允许替换，结果已在剪贴板上。",
+    "tryReplacingAgain": "再次尝试替换",
+    "errorTitle": "出了点问题"
+  },
   "errors": {
     "stt_timeout": "语音服务在 {{details}} 内没有响应。请确认服务正在运行，或换用更快的服务。",
     "stt_invalid_key": "语音服务拒绝了 API Key，请在设置中检查。",
