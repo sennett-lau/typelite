@@ -109,8 +109,8 @@ pub struct KeyInput {
     pub class: KeyClass,
 }
 
-/// Tells the matcher whether the Switch language bindings are live right now (a Translate
-/// recording is running). Called on the key listener thread for each key press, so it must be
+/// Tells the matcher whether the recording-only bindings (Switch language and the Translate stop
+/// keys) are live right now (a Translate recording is running). Called on the key listener thread for each key press, so it must be
 /// quick and must not wait on anything that waits on the listener.
 pub type SwitchGate = Arc<dyn Fn() -> bool + Send + Sync + 'static>;
 
@@ -134,12 +134,16 @@ pub type RoleGate = Arc<dyn Fn(crate::hotkey::HotkeyRole) -> bool + Send + Sync 
 ///   first. Then the smaller one is dropped, and it cannot fire again until its keys are
 ///   pressed again.
 /// - Otherwise the winner fires `Pressed` at once, and `Released` when any of its keys goes up.
-/// - Switch language bindings count only while the [`SwitchGate`] says a Translate recording
+/// - Recording-only bindings (Switch language, and the Translate stop keys of plan
+///   `translate-pill-and-keys`) count only while the [`SwitchGate`] says a Translate recording
 ///   runs. At other times they are ignored completely, so a bare key like Shift types as
 ///   usual. Only a key *press* seen while the gate is open can trigger them, so a key that was
 ///   already held when the recording started (part of the Translate chord) never counts.
-///   While they are live, a key press they win is swallowed, even a modifier; its release is
-///   swallowed too, so the focused app never sees half of the key.
+///   While they are live they win a tie against another binding with the same keys (the stop
+///   key End beats Dictate's End). A key press that Switch language wins is swallowed, even a
+///   modifier; its release is swallowed too, so the focused app never sees half of the key. A
+///   stop key follows the usual rules instead (a modifier passes through), and counts only
+///   when pressed alone: another key going down before its release drops it.
 /// - The cancel key (Escape, see [`ChordMatcher::with_cancel_key`]) counts only while the
 ///   [`CancelGate`] says a run is active. Then its press fires a `Cancel` event and is
 ///   swallowed together with its repeats and its release. At other times it is not touched.
@@ -161,6 +165,15 @@ pub struct ChordMatcher {
 
 fn is_switch_role(binding: &NativeHotkeyBinding) -> bool {
     binding.role == crate::hotkey::HotkeyRole::SwitchLanguage
+}
+
+/// Bindings that only listen while a Translate recording runs: Switch language and the
+/// Translate stop keys.
+fn is_recording_only(binding: &NativeHotkeyBinding) -> bool {
+    matches!(
+        binding.role,
+        crate::hotkey::HotkeyRole::SwitchLanguage | crate::hotkey::HotkeyRole::StopTranslate
+    )
 }
 
 impl ChordMatcher {
@@ -186,8 +199,8 @@ impl ChordMatcher {
         self
     }
 
-    /// Use `gate` to decide when the Switch language bindings are live. Without a gate they
-    /// never are.
+    /// Use `gate` to decide when the recording-only bindings (Switch language, Translate stop
+    /// keys) are live. Without a gate they never are.
     pub fn with_switch_gate(mut self, gate: SwitchGate) -> Self {
         self.switch_gate = Some(gate);
         self
@@ -231,18 +244,19 @@ impl ChordMatcher {
     }
 
     fn switch_armed(&self) -> bool {
-        self.bindings.iter().any(is_switch_role)
+        self.bindings.iter().any(is_recording_only)
             && self.switch_gate.as_ref().is_some_and(|gate| gate())
     }
 
-    /// Per binding: whether it takes part right now. Switch language bindings only while a
-    /// Translate recording runs; any binding only while the role gate allows its role.
+    /// Per binding: whether it takes part right now. Recording-only bindings (Switch language,
+    /// Translate stop keys) only while a Translate recording runs; any binding only while the
+    /// role gate allows its role.
     fn live_bindings(&self) -> Vec<bool> {
         let armed = self.switch_armed();
         self.bindings
             .iter()
             .map(|binding| {
-                (armed || !is_switch_role(binding))
+                (armed || !is_recording_only(binding))
                     && self
                         .role_gate
                         .as_ref()
@@ -278,7 +292,7 @@ impl ChordMatcher {
         };
         let gated = self.bindings.iter().zip(live).find(|(binding, live)| {
             !**live
-                && !is_switch_role(binding)
+                && !is_recording_only(binding)
                 && !gate(binding.role)
                 && binding.chord.contains(code)
                 && binding.chord.is_satisfied_by(&self.held)
@@ -339,6 +353,13 @@ impl ChordMatcher {
             return always_swallow || self.swallowed.contains(&code);
         }
         self.held.insert(code);
+        // A stop key counts only when it is pressed alone: any other key going down while it
+        // waits for its release (Ctrl + C during a recording) drops it.
+        let bindings = &self.bindings;
+        self.deferred.retain(|deferred| {
+            let binding = &bindings[*deferred];
+            binding.role != crate::hotkey::HotkeyRole::StopTranslate || binding.chord.contains(code)
+        });
 
         let winner = self.newly_satisfied_largest(code, &live);
         if winner.is_none() {
@@ -402,8 +423,10 @@ impl ChordMatcher {
     }
 
     /// The largest binding that contains `code` and is satisfied now. Such a binding cannot
-    /// have been satisfied before `code` went down. Ties keep the first configured binding.
-    /// Only live bindings take part (see `live_bindings`).
+    /// have been satisfied before `code` went down. Only live bindings take part (see
+    /// `live_bindings`). A recording-only binding (live only during a Translate recording) wins
+    /// a tie against another binding with the same number of keys; other ties keep the first
+    /// configured binding.
     fn newly_satisfied_largest(&self, code: u16, live: &[bool]) -> Option<usize> {
         let mut best: Option<usize> = None;
         for (index, binding) in self.bindings.iter().enumerate() {
@@ -413,10 +436,17 @@ impl ChordMatcher {
             {
                 continue;
             }
-            let larger = best
-                .map(|current| binding.chord.keys.len() > self.bindings[current].chord.keys.len())
+            let better = best
+                .map(|current| {
+                    let current = &self.bindings[current];
+                    let (size, current_size) = (binding.chord.keys.len(), current.chord.keys.len());
+                    size > current_size
+                        || (size == current_size
+                            && is_recording_only(binding)
+                            && !is_recording_only(current))
+                })
                 .unwrap_or(true);
-            if larger {
+            if better {
                 best = Some(index);
             }
         }
@@ -1703,6 +1733,235 @@ mod tests {
         );
     }
 
+    const LEFT_CONTROL: u16 = 59;
+    const LEFT_OPTION: u16 = 58;
+    const T: u16 = 17;
+
+    /// A matcher built like the app builds it (plan `translate-pill-and-keys`): the configured
+    /// shortcuts plus the Translate stop keys from the registration plan, with a Translate
+    /// recording gate the test opens and closes.
+    fn plan_matcher(
+        dictation: &str,
+        ask: Option<&str>,
+        translate: &str,
+        switch_language: Option<&str>,
+    ) -> (ChordMatcher, Arc<std::sync::atomic::AtomicBool>) {
+        let binding = |value: &str| crate::storage::ShortcutBinding::from_hotkey(value).unwrap();
+        let config = crate::storage::HotkeyConfig {
+            dictation: binding(dictation),
+            ask: ask.map(binding),
+            translate: Some(binding(translate)),
+            dictation_bindings: vec![binding(dictation)],
+            ask_bindings: ask.map(binding).into_iter().collect(),
+            translate_bindings: vec![binding(translate)],
+            edit_selection: None,
+            switch_scene: None,
+            open_app: None,
+            dictation_mode: "toggle".to_string(),
+            switch_language: switch_language.map(binding),
+        };
+        let plan =
+            crate::hotkey::hotkey_registration_plan_from_config_for_platform(&config, "macos")
+                .unwrap();
+        let bindings = plan
+            .native
+            .iter()
+            .chain(plan.translate_stop.iter())
+            .map(|registered| NativeHotkeyBinding {
+                role: registered.role,
+                index: registered.index,
+                chord: registered.chord.clone(),
+            })
+            .collect();
+        let armed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let gate_flag = Arc::clone(&armed);
+        let matcher = ChordMatcher::new(bindings).with_switch_gate(Arc::new(move || {
+            gate_flag.load(std::sync::atomic::Ordering::SeqCst)
+        }));
+        (matcher, armed)
+    }
+
+    /// The user's bindings: Dictate `End`, Ask `End + Right Control`, Translate
+    /// `End + Right Shift`, Switch language `Shift`.
+    fn user_translate_matcher() -> (ChordMatcher, Arc<std::sync::atomic::AtomicBool>) {
+        plan_matcher(
+            "End",
+            Some("End+RightControl"),
+            "End+RightShift",
+            Some("Shift"),
+        )
+    }
+
+    const STOP: [(HotkeyRole, ShortcutState); 2] = [
+        (HotkeyRole::StopTranslate, Pressed),
+        (HotkeyRole::StopTranslate, Released),
+    ];
+    const SWITCH: [(HotkeyRole, ShortcutState); 2] = [
+        (HotkeyRole::SwitchLanguage, Pressed),
+        (HotkeyRole::SwitchLanguage, Released),
+    ];
+
+    #[test]
+    fn user_bindings_end_alone_stops_a_translate_recording() {
+        let (mut matcher, armed) = user_translate_matcher();
+        set(&armed, true);
+        // End is part of End + Right Shift, so it fires when it goes up alone; it stays
+        // swallowed, so the cursor does not move.
+        let (events, swallows) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(events, STOP.to_vec());
+        assert_eq!(swallows, vec![true, true]);
+    }
+
+    #[test]
+    fn user_bindings_either_shift_switches_during_a_translate_recording() {
+        let (mut matcher, armed) = user_translate_matcher();
+        set(&armed, true);
+        let (events, swallows) = run(&mut matcher, &[down(RIGHT_SHIFT), up(RIGHT_SHIFT)]);
+        assert_eq!(events, SWITCH.to_vec());
+        assert_eq!(swallows, vec![true, true]);
+        let (events, _) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert_eq!(events, SWITCH.to_vec());
+    }
+
+    #[test]
+    fn user_bindings_whole_translate_shortcut_again_stops_in_either_order() {
+        let (mut matcher, armed) = user_translate_matcher();
+        set(&armed, true);
+        let translate = vec![
+            (HotkeyRole::TranslateSelection, Pressed),
+            (HotkeyRole::TranslateSelection, Released),
+        ];
+        // End first: the waiting stop key gives way to the larger Translate chord.
+        let (events, _) = run(
+            &mut matcher,
+            &[down(END), down(RIGHT_SHIFT), up(RIGHT_SHIFT), up(END)],
+        );
+        assert_eq!(events, translate);
+        // Right Shift first: the waiting switch gives way too, so it does not switch.
+        let (events, _) = run(
+            &mut matcher,
+            &[down(RIGHT_SHIFT), down(END), up(END), up(RIGHT_SHIFT)],
+        );
+        assert_eq!(events, translate);
+    }
+
+    #[test]
+    fn user_bindings_keys_are_unchanged_outside_a_translate_recording() {
+        let (mut matcher, _armed) = user_translate_matcher();
+        let (events, _) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::Dictation, Pressed),
+                (HotkeyRole::Dictation, Released),
+            ]
+        );
+        let (events, swallows) = run(&mut matcher, &[down(RIGHT_SHIFT), up(RIGHT_SHIFT)]);
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![false, false]);
+    }
+
+    #[test]
+    fn stop_key_held_from_the_translate_chord_does_not_stop() {
+        let (mut matcher, armed) = user_translate_matcher();
+        let (events, _) = run(&mut matcher, &[down(END), down(RIGHT_SHIFT)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Pressed)]);
+        // The recording starts while the chord is still held; letting go does not stop it.
+        set(&armed, true);
+        let (events, _) = run(&mut matcher, &[up(RIGHT_SHIFT), up(END)]);
+        assert_eq!(events, vec![(HotkeyRole::TranslateSelection, Released)]);
+        // A fresh press of End stops.
+        let (events, _) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(events, STOP.to_vec());
+    }
+
+    #[test]
+    fn default_bindings_fn_alone_stops_and_left_shift_switches() {
+        let (mut matcher, armed) =
+            plan_matcher("Fn", Some("Fn+Space"), "Fn+LeftShift", Some("Shift"));
+        set(&armed, true);
+        let (events, swallows) = run(&mut matcher, &[down(FN), up(FN)]);
+        assert_eq!(events, STOP.to_vec());
+        // Fn is a modifier: the app still sees it.
+        assert_eq!(swallows, vec![false, false]);
+        let (events, _) = run(&mut matcher, &[down(LEFT_SHIFT), up(LEFT_SHIFT)]);
+        assert_eq!(events, SWITCH.to_vec());
+        let (events, _) = run(
+            &mut matcher,
+            &[down(LEFT_SHIFT), down(FN), up(FN), up(LEFT_SHIFT)],
+        );
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::TranslateSelection, Pressed),
+                (HotkeyRole::TranslateSelection, Released),
+            ]
+        );
+    }
+
+    #[test]
+    fn first_key_of_a_global_translate_shortcut_stops_even_though_it_is_no_shortcut() {
+        // Ctrl + Option + T is handled by the global-shortcut plugin; Ctrl is no shortcut.
+        let (mut matcher, armed) = plan_matcher("Fn", None, "Ctrl+Option+T", Some("Shift"));
+        let (events, swallows) = run(&mut matcher, &[down(LEFT_CONTROL), up(LEFT_CONTROL)]);
+        assert!(events.is_empty(), "Ctrl is left alone outside a recording");
+        assert_eq!(swallows, vec![false, false]);
+
+        set(&armed, true);
+        let (events, swallows) = run(&mut matcher, &[down(RIGHT_CONTROL), up(RIGHT_CONTROL)]);
+        assert_eq!(events, STOP.to_vec());
+        assert_eq!(
+            swallows,
+            vec![false, false],
+            "a modifier stop key is not swallowed"
+        );
+
+        // The whole shortcut again stops too (once), and Ctrl alone does not fire on the way.
+        let (events, swallows) = run(
+            &mut matcher,
+            &[
+                down(LEFT_CONTROL),
+                down(LEFT_OPTION),
+                down(T),
+                up(T),
+                up(LEFT_OPTION),
+                up(LEFT_CONTROL),
+            ],
+        );
+        assert_eq!(events, STOP.to_vec());
+        assert_eq!(swallows, vec![false, false, true, true, false, false]);
+    }
+
+    #[test]
+    fn stop_key_used_with_another_key_does_not_stop() {
+        const C: u16 = 8;
+        let (mut matcher, armed) = plan_matcher("Fn", None, "Ctrl+Option+T", Some("Shift"));
+        set(&armed, true);
+        // Ctrl + C (copy) during a recording: Ctrl was not pressed alone.
+        let (events, swallows) = run(
+            &mut matcher,
+            &[down(LEFT_CONTROL), down(C), up(C), up(LEFT_CONTROL)],
+        );
+        assert!(events.is_empty());
+        assert_eq!(swallows, vec![false, false, false, false]);
+
+        // The same for End with an unrelated key.
+        let (mut matcher, armed) = user_translate_matcher();
+        set(&armed, true);
+        let (events, _) = run(&mut matcher, &[down(END), down(K), up(K), up(END)]);
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn dictate_key_that_is_also_the_stop_key_stops_as_the_stop_key() {
+        // Dictate End and Translate End + Right Shift: while a Translate recording runs, End is
+        // the stop key (the explicit rule), not Dictate.
+        let (mut matcher, armed) = plan_matcher("End", None, "End+RightShift", None);
+        set(&armed, true);
+        let (events, _) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(events, STOP.to_vec());
+    }
+
     #[test]
     fn combo_suppresses_bare_base_when_combo_is_used() {
         let mut matcher = ChordMatcher::new(vec![
@@ -2242,6 +2501,35 @@ mod tests {
             Arc::new(move || cancel_flag.load(std::sync::atomic::Ordering::SeqCst)),
         );
         (matcher, gate, active)
+    }
+
+    #[test]
+    fn translate_tutorial_step_stops_with_the_first_key_although_dictate_is_gated() {
+        // Plan `translate-pill-and-keys` with plan `onboarding-shortcut-gate`: on the Translate
+        // step only Translate and Switch language run, yet End (also the Dictate key) stops.
+        let gate = crate::shortcut_gate::ShortcutGateState::new(gate_for(&[
+            "translate",
+            "switchLanguage",
+        ]));
+        let (matcher, armed) = user_translate_matcher();
+        let role_gate = gate.clone();
+        let mut matcher = matcher.with_role_gate(Arc::new(move |role| role_gate.allows(role)));
+        set(&armed, true);
+        let (events, swallows) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(events, STOP.to_vec());
+        assert_eq!(swallows, vec![true, true]);
+
+        // On the Dictate step the stop key is not live (no Translate recording, and gated).
+        gate.set(gate_for(&["dictation"]));
+        set(&armed, false);
+        let (events, _) = run(&mut matcher, &[down(END), up(END)]);
+        assert_eq!(
+            events,
+            vec![
+                (HotkeyRole::Dictation, Pressed),
+                (HotkeyRole::Dictation, Released),
+            ]
+        );
     }
 
     fn gate_for(names: &[&str]) -> crate::shortcut_gate::ShortcutGate {

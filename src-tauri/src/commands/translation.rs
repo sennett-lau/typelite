@@ -135,9 +135,23 @@ pub fn switch_language_press_cycles_target(
         && is_translate_run
 }
 
+/// Whether a Translate stop key event (the Translate shortcut's first key, plan
+/// `translate-pill-and-keys`) should stop the recording: only a press while a Translate
+/// recording is capturing audio. A stop key that is part of a longer chord fires on release, so
+/// its event can arrive after the recording has already ended; then it does nothing.
+pub fn stop_key_press_stops_recording(
+    event_state: tauri_plugin_global_shortcut::ShortcutState,
+    pipeline_state: crate::pipeline::PipelineState,
+    is_translate_run: bool,
+) -> bool {
+    event_state == tauri_plugin_global_shortcut::ShortcutState::Pressed
+        && pipeline_state == crate::pipeline::PipelineState::Recording
+        && is_translate_run
+}
+
 #[cfg(test)]
 mod tests {
-    use super::switch_language_press_cycles_target;
+    use super::{stop_key_press_stops_recording, switch_language_press_cycles_target};
     use crate::pipeline::PipelineState;
     use tauri_plugin_global_shortcut::ShortcutState;
 
@@ -168,6 +182,38 @@ mod tests {
         ));
         // Releases never switch.
         assert!(!switch_language_press_cycles_target(
+            ShortcutState::Released,
+            PipelineState::Recording,
+            true
+        ));
+    }
+
+    #[test]
+    fn stop_key_stops_only_a_translate_recording_on_press() {
+        let pressed = ShortcutState::Pressed;
+        assert!(stop_key_press_stops_recording(
+            pressed,
+            PipelineState::Recording,
+            true
+        ));
+        // Not a Translate recording: the key belongs to Dictate or to the app.
+        assert!(!stop_key_press_stops_recording(
+            pressed,
+            PipelineState::Recording,
+            false
+        ));
+        // Already stopped (a late event from a key that fired on release).
+        assert!(!stop_key_press_stops_recording(
+            pressed,
+            PipelineState::Transcribing,
+            true
+        ));
+        assert!(!stop_key_press_stops_recording(
+            pressed,
+            PipelineState::Idle,
+            false
+        ));
+        assert!(!stop_key_press_stops_recording(
             ShortcutState::Released,
             PipelineState::Recording,
             true

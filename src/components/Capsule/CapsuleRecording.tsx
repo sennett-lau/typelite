@@ -3,11 +3,13 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { abortRecording } from '../../lib/tauri'
 import { Waveform } from './Waveform'
-import { TranslateTargetChips } from './TranslateTargetChips'
+import { useAppStore } from '../../stores/appStore'
+import { TranslatePillLanguage } from './TranslatePillLanguage'
 
 export function CapsuleRecording() {
   const { t } = useTranslation()
   const reduced = useReducedMotion()
+  const translating = useAppStore((state) => state.activeVoiceMode === 'translate')
 
   const handleCancel = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -23,7 +25,7 @@ export function CapsuleRecording() {
   }
 
   return (
-    <motion.div className="relative z-10 flex items-center gap-2 h-full px-3">
+    <motion.div className="relative z-10 flex items-center gap-2 h-full pl-3.5 pr-3">
       {/* Recording dot — gentle opacity loop */}
       <motion.div
         className="w-2 h-2 rounded-full bg-recording flex-shrink-0"
@@ -31,7 +33,7 @@ export function CapsuleRecording() {
         transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
       />
       <Waveform />
-      <TranslateTargetChips />
+      {translating && <TranslatePillLanguage />}
       <div className="flex-1" />
       <button
         onPointerDown={stopPointerPropagation}

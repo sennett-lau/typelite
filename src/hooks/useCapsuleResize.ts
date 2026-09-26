@@ -1,38 +1,72 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { useAppStore, type CopyOffer, type PipelineState, type VoiceMode } from '../stores/appStore'
+import { NAME_MAX_WIDTH, useTranslatePill } from '../components/Capsule/translatePill'
+import { WAVEFORM_BARS } from '../lib/waveform'
 
 export interface CapsuleSize {
   width: number
   height: number
 }
 
-// Pill sizes from plan `aurora-pill` (pill.md). The window adds 12 pt of padding on each side.
+// Pill sizes from plan `translate-pill-and-keys` (pill.md): every state is 40 pt high. The window
+// adds 12 pt of padding on each side.
+
+/** Height of every pill state. */
+export const PILL_HEIGHT = 40
 
 /** Dictate recording: red dot, 18-bar waveform and cancel button. */
-export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
+export const DICTATION_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
 /** Ask recording: Ask icon, waveform and cancel button. */
-export const ASK_RECORDING_SIZE: CapsuleSize = { width: 150, height: 36 }
-/** Translate recording with three language chips, or with one language name. */
-export const TRANSLATE_RECORDING_SIZE: CapsuleSize = { width: 232, height: 36 }
-/** Translate recording with two language chips. */
-export const TRANSLATE_TWO_TARGETS_SIZE: CapsuleSize = { width: 208, height: 36 }
+export const ASK_RECORDING_SIZE: CapsuleSize = { width: 160, height: PILL_HEIGHT }
+
+/** Size of each language dot and the space between dots. */
+const LANGUAGE_DOT = 6
+const LANGUAGE_DOT_GAP = 4
+/**
+ * The fixed parts of a recording pill: 14 pt left padding, 8 pt dot, the waveform (2 pt bars
+ * 2 pt apart), 20 pt cancel button, 12 pt right padding and the 8 pt gaps between them.
+ */
+const RECORDING_FIXED_WIDTH = 14 + 8 + 8 + (WAVEFORM_BARS * 4 - 2) + 8 + 20 + 12
+/** A little air before the cancel button, as the Dictate pill has. */
+const TRANSLATE_SLACK = 8
+
+/** What the Translate recording pill's width depends on (plan `translate-pill-and-keys`). */
+export interface TranslatePillMetrics {
+  /** Natural width of the active language's name; null when no language is chosen. */
+  nameWidth: number | null
+  /** Number of language dots (0 with fewer than two languages). */
+  dots: number
+}
+
+export const NO_TRANSLATE_LANGUAGE: TranslatePillMetrics = { nameWidth: null, dots: 0 }
+
+/**
+ * The Translate recording pill: the fixed parts, plus the name (at most `NAME_MAX_WIDTH`) and
+ * the dots, each after an 8 pt gap. Never narrower than the Dictate pill.
+ */
+export function translateRecordingSize({ nameWidth, dots }: TranslatePillMetrics): CapsuleSize {
+  let width = RECORDING_FIXED_WIDTH + TRANSLATE_SLACK
+  if (nameWidth !== null) width += Math.min(Math.ceil(nameWidth), NAME_MAX_WIDTH) + 8
+  if (dots > 0) width += dots * LANGUAGE_DOT + (dots - 1) * LANGUAGE_DOT_GAP + 8
+  return { width: Math.max(DICTATION_RECORDING_SIZE.width, width), height: PILL_HEIGHT }
+}
 /**
  * Working states (preparing, transcribing, polishing, pasting, Ask thinking) and the done
  * flash: a short label over the aurora sweep.
  */
-export const WORKING_PILL_SIZE: CapsuleSize = { width: 132, height: 36 }
+export const WORKING_PILL_SIZE: CapsuleSize = { width: 140, height: PILL_HEIGHT }
 /** An error message (icon and one line). */
-export const ERROR_PILL_SIZE: CapsuleSize = { width: 216, height: 36 }
+export const ERROR_PILL_SIZE: CapsuleSize = { width: 224, height: PILL_HEIGHT }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
-export const SETUP_ERROR_SIZE: CapsuleSize = { width: 312, height: 36 }
+export const SETUP_ERROR_SIZE: CapsuleSize = { width: 320, height: PILL_HEIGHT }
 /**
  * Plan `copy-when-no-field`: the Copy pill (language tag, one-line preview, Copy button) for a
  * short result.
  */
-export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 300, height: 36 }
+export const COPY_PILL_SHORT_SIZE: CapsuleSize = { width: 308, height: PILL_HEIGHT }
 /** The Copy pill for a longer result; its preview ends with an ellipsis. */
-export const COPY_PILL_SIZE: CapsuleSize = { width: 360, height: 36 }
-const IDLE_SIZE: CapsuleSize = { width: 36, height: 36 }
+export const COPY_PILL_SIZE: CapsuleSize = { width: 368, height: PILL_HEIGHT }
+const IDLE_SIZE: CapsuleSize = { width: PILL_HEIGHT, height: PILL_HEIGHT }
 
 /** Up to this visual length (CJK characters count double) a result fits the short Copy pill. */
 const COPY_PILL_SHORT_TEXT = 34
@@ -74,7 +108,7 @@ export function getPillSize(
   capsuleState: string,
   activeVoiceMode: VoiceMode | null,
   errorHasAction: boolean,
-  translateTargetCount: number,
+  translate: TranslatePillMetrics,
   copyOffer: CopyOffer | null = null,
 ): CapsuleSize {
   switch (capsuleState) {
@@ -84,7 +118,7 @@ export function getPillSize(
       return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
     case 'recording':
       if (activeVoiceMode !== 'translate') return DICTATION_RECORDING_SIZE
-      return translateTargetCount === 2 ? TRANSLATE_TWO_TARGETS_SIZE : TRANSLATE_RECORDING_SIZE
+      return translateRecordingSize(translate)
     case 'ask_recording':
       return ASK_RECORDING_SIZE
     case 'preparing':
@@ -272,15 +306,15 @@ export function getSizeForState(
   contextMenuOpen: boolean,
   activeVoiceMode: VoiceMode | null = null,
   errorHasAction = false,
-  translateTargetCount = 3,
+  translate: TranslatePillMetrics = NO_TRANSLATE_LANGUAGE,
   doneFlash = false,
   copyOffer: CopyOffer | null = null,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
-  if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translateTargetCount)
+  if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translate)
   if (expanded) return { width: 220, height: 90 }
   const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null)
-  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translateTargetCount, copyOffer)
+  return getPillSize(capsuleState, activeVoiceMode, errorHasAction, translate, copyOffer)
 }
 
 /**
@@ -311,7 +345,11 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const contextMenuOpen = useAppStore((s) => s.contextMenuOpen)
   const activeVoiceMode = useAppStore((s) => s.activeVoiceMode)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
-  const translateTargetCount = useAppStore((s) => s.config.translation.targets.length)
+  // The Translate pill's width follows the active language's name (plan
+  // `translate-pill-and-keys`); switching language resizes the window like any state change.
+  const translatePill = useTranslatePill()
+  const translateNameWidth = translatePill.nameWidth
+  const translateDots = translatePill.dots
   const copyOffer = useAppStore((s) => s.copyOffer)
   const anchor = useRef<CapsuleAnchor | null>(null)
   /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
@@ -345,7 +383,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       contextMenuOpen,
       activeVoiceMode,
       errorHasAction,
-      translateTargetCount,
+      { nameWidth: translateNameWidth, dots: translateDots },
       doneFlash,
       copyOffer,
     )
@@ -445,7 +483,8 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     contextMenuOpen,
     activeVoiceMode,
     errorHasAction,
-    translateTargetCount,
+    translateNameWidth,
+    translateDots,
     doneFlash,
     copyOffer,
     shouldShow,
@@ -514,7 +553,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     contextMenuOpen,
     activeVoiceMode,
     errorHasAction,
-    translateTargetCount,
+    { nameWidth: translateNameWidth, dots: translateDots },
     doneFlash,
     copyOffer,
   )

@@ -10,9 +10,11 @@ import {
   getPillSize,
   getSizeForState,
   growFirstSize,
+  NO_TRANSLATE_LANGUAGE,
   monitorKey,
   pickFollowTarget,
   pickMonitorForPoint,
+  translateRecordingSize,
 } from '../useCapsuleResize'
 
 describe('getCapsuleVisibility', () => {
@@ -88,25 +90,36 @@ describe('getCapsuleVisibility', () => {
 })
 
 describe('getSizeForState', () => {
-  const size = (width: number) => ({ width, height: 36 })
+  const size = (width: number) => ({ width, height: 40 })
 
-  it('uses the narrow plan `aurora-pill` sizes while recording', () => {
-    expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(150))
-    expect(getSizeForState('recording', false, false, false)).toEqual(size(150))
-    expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(150))
+  it('uses the plan `translate-pill-and-keys` sizes while recording', () => {
+    expect(getSizeForState('recording', false, false, false, 'dictate')).toEqual(size(160))
+    expect(getSizeForState('recording', false, false, false)).toEqual(size(160))
+    expect(getSizeForState('ask_recording', false, false, false, 'ask')).toEqual(size(160))
   })
 
-  it('sizes Translate recording by the number of chosen languages', () => {
-    // Three chips, or one language name.
-    expect(getSizeForState('recording', false, false, false, 'translate', false, 3)).toEqual(
-      size(232),
-    )
-    expect(getSizeForState('recording', false, false, false, 'translate', false, 1)).toEqual(
-      size(232),
-    )
-    expect(getSizeForState('recording', false, false, false, 'translate', false, 2)).toEqual(
-      size(208),
-    )
+  it('sizes Translate recording for its language name and dots', () => {
+    const translate = (nameWidth: number | null, dots: number) =>
+      getSizeForState('recording', false, false, false, 'translate', false, { nameWidth, dots })
+    // Fixed parts 140 + slack 8, the name after an 8 pt gap, the dots (6 pt, 4 apart) likewise.
+    expect(translate(48, 0)).toEqual(size(204))
+    expect(translate(48, 2)).toEqual(size(228))
+    expect(translate(48, 3)).toEqual(size(238))
+    // Fractional widths round up, so the text is never cut by a pixel.
+    expect(translate(47.2, 0)).toEqual(size(204))
+    // A long name is capped at 180 pt (it scrolls inside that).
+    expect(translate(300, 3)).toEqual(size(370))
+    expect(translate(180, 0)).toEqual(size(336))
+    // No language chosen: no name, the Dictate size.
+    expect(translate(null, 0)).toEqual(size(160))
+    expect(translateRecordingSize(NO_TRANSLATE_LANGUAGE)).toEqual(size(160))
+    // Dictate ignores the Translate metrics.
+    expect(
+      getSizeForState('recording', false, false, false, 'dictate', false, {
+        nameWidth: 300,
+        dots: 3,
+      }),
+    ).toEqual(size(160))
   })
 
   it('uses one short working size for every working state and the done flash', () => {
@@ -117,10 +130,12 @@ describe('getSizeForState', () => {
       'outputting',
       'ask_thinking',
     ] as const) {
-      expect(getSizeForState(state, false, false, false, 'translate')).toEqual(size(132))
+      expect(getSizeForState(state, false, false, false, 'translate')).toEqual(size(140))
     }
-    expect(getSizeForState('idle', false, false, false, null, false, 1, true)).toEqual(size(132))
-    expect(getSizeForState('idle', false, false, false)).toEqual(size(36))
+    expect(
+      getSizeForState('idle', false, false, false, null, false, NO_TRANSLATE_LANGUAGE, true),
+    ).toEqual(size(140))
+    expect(getSizeForState('idle', false, false, false)).toEqual(size(40))
   })
 
   it('keeps the context menu and error sizes ahead of the voice mode', () => {
@@ -128,7 +143,7 @@ describe('getSizeForState', () => {
       width: 220,
       height: 220,
     })
-    expect(getSizeForState('recording', false, true, false, 'translate')).toEqual(size(216))
+    expect(getSizeForState('recording', false, true, false, 'translate')).toEqual(size(224))
   })
 
   it('keeps the pill visible during the done flash', () => {
@@ -151,20 +166,23 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
   }
   const short = { text: 'See you at 4.', targetLang: null }
 
-  it('is one line, 36 pt high and 300 or 360 pt wide by the length of the result', () => {
-    expect(copyPillSize(short)).toEqual({ width: 300, height: 36 })
-    expect(copyPillSize(long)).toEqual({ width: 360, height: 36 })
+  it('is one line, 40 pt high and 308 or 368 pt wide by the length of the result', () => {
+    expect(copyPillSize(short)).toEqual({ width: 308, height: 40 })
+    expect(copyPillSize(long)).toEqual({ width: 368, height: 40 })
     // CJK characters are wide, and a language tag takes room too.
     expect(
       copyPillSize({ text: '我哋聽日下晝四點喺二樓會議室開會啦。', targetLang: null }).width,
-    ).toBe(360)
+    ).toBe(368)
     expect(copyPillSize({ text: 'Thirty-two characters, near end.', targetLang: null }).width).toBe(
-      300,
+      308,
     )
     expect(copyPillSize({ text: 'Thirty-two characters, near end.', targetLang: 'ja' }).width).toBe(
-      360,
+      368,
     )
-    expect(getPillSize('copy', null, false, 3, short)).toEqual({ width: 300, height: 36 })
+    expect(getPillSize('copy', null, false, NO_TRANSLATE_LANGUAGE, short)).toEqual({
+      width: 308,
+      height: 40,
+    })
   })
 
   it('shows once the pipeline is idle, behind errors and the done flash', () => {
@@ -185,23 +203,43 @@ describe('Copy pill (plan `copy-when-no-field`)', () => {
         copyPill: true,
       }),
     ).toBe(true)
-    expect(getSizeForState('idle', false, false, false, null, false, 3, false, long)).toEqual({
-      width: 360,
-      height: 36,
+    expect(
+      getSizeForState('idle', false, false, false, null, false, NO_TRANSLATE_LANGUAGE, false, long),
+    ).toEqual({
+      width: 368,
+      height: 40,
     })
     // The context menu and an error still win.
-    expect(getSizeForState('idle', false, false, true, null, false, 3, false, long)).toEqual({
+    expect(
+      getSizeForState('idle', false, false, true, null, false, NO_TRANSLATE_LANGUAGE, false, long),
+    ).toEqual({
       width: 220,
       height: 220,
     })
-    expect(getSizeForState('idle', false, true, false, null, false, 3, false, long)).toEqual({
-      width: 216,
-      height: 36,
+    expect(
+      getSizeForState('idle', false, true, false, null, false, NO_TRANSLATE_LANGUAGE, false, long),
+    ).toEqual({
+      width: 224,
+      height: 40,
     })
   })
 })
 
 describe('window resize order (plan `copy-when-no-field`)', () => {
+  it('switching to a shorter language name shrinks the window only after the pill', () => {
+    const windowFor = (nameWidth: number) => {
+      const pill = getSizeForState('recording', false, false, false, 'translate', false, {
+        nameWidth,
+        dots: 2,
+      })
+      return { width: pill.width + 24, height: pill.height + 24 }
+    }
+    // Longer name: the window grows at once, before the pill animates wider.
+    expect(growFirstSize(windowFor(44), windowFor(210))).toBeNull()
+    // Shorter name: the window keeps its width until the pill animated narrower.
+    expect(growFirstSize(windowFor(210), windowFor(44))).toEqual(windowFor(210))
+  })
+
   it('grows at once when nothing shrinks', () => {
     expect(growFirstSize({ width: 156, height: 60 }, { width: 384, height: 60 })).toBeNull()
     expect(growFirstSize({ width: 156, height: 60 }, { width: 156, height: 60 })).toBeNull()
