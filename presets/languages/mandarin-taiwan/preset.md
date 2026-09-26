@@ -1,6 +1,6 @@
 ---
 id: mandarin-taiwan
-name: Mandarin (Taiwan) 繁體中文（台灣）
+name: Mandarin (Taiwan) 國語
 version: 3
 format: 1
 tier: official
