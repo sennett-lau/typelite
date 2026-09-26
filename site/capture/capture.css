@@ -1,0 +1,97 @@
+/* Fixed-size frames for the media capture. */
+body.capture {
+  margin: 0;
+  overflow: hidden;
+}
+body.capture::before {
+  display: none;
+}
+#frame {
+  display: inline-block;
+  padding: 20px;
+  background: var(--bg);
+}
+.cap-hero {
+  width: var(--cap-width, 960px);
+}
+.cap-hero .hero-frame {
+  max-width: none;
+}
+.cap-vignette {
+  width: var(--cap-width, 560px);
+}
+.cap-vignette .vignette {
+  margin: 0;
+}
+
+/* Open Graph card, 1200 × 630 */
+.og {
+  position: relative;
+  box-sizing: border-box;
+  width: 1200px;
+  height: 630px;
+  margin: -20px;
+  padding: 64px 80px;
+  overflow: hidden;
+  color: #f1f6ff;
+  background:
+    radial-gradient(60% 70% at 0% 0%, rgba(63, 216, 194, 0.32), transparent 70%),
+    radial-gradient(55% 70% at 100% 100%, rgba(175, 82, 222, 0.34), transparent 70%), #07090e;
+}
+.og-brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.og h1 {
+  margin-top: 48px;
+  font-size: 128px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+.og .gradient-text {
+  background: linear-gradient(95deg, #3fd8c2, #af52de);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.og p {
+  max-width: 700px;
+  margin-top: 26px;
+  color: #a6b3c8;
+  font-size: 30px;
+  line-height: 1.35;
+}
+.og-pill {
+  position: absolute;
+  right: 90px;
+  top: 250px;
+  transform: scale(2.2);
+  transform-origin: right center;
+  --aurora-a: #3fd8c2;
+}
+.og-foot {
+  position: absolute;
+  left: 80px;
+  bottom: 56px;
+  color: #7d8ba3;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+/* scene=site: the normal page, no frame. */
+body.capture-site {
+  overflow: visible;
+}
+body.capture-site #frame {
+  display: block;
+  padding: 0;
+}
+/* Scroll reveal off, so frozen frames show content at full opacity. */
+body.capture-site .reveal-armed {
+  opacity: 1;
+  transform: none;
+}
