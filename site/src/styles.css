@@ -1992,6 +1992,11 @@ section {
   gap: 6px;
   padding: 18px;
 }
+.lib-tier {
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-weight: 600;
+}
 .lib-card h4 {
   font-family: var(--font-sans);
   font-size: 16px;
