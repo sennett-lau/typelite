@@ -398,7 +398,8 @@ kbd {
   transition:
     transform 0.08s ease,
     border-bottom-width 0.08s ease,
-    background-color 0.12s ease;
+    background-color 0.12s ease,
+    box-shadow 0.3s ease;
 }
 .kbd-lg {
   min-width: 34px;
@@ -426,6 +427,7 @@ kbd {
   border-bottom-width: 1px;
   background: var(--accent-soft);
   border-color: color-mix(in srgb, var(--accent) 60%, var(--key-line));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* ─── Top bar ─── */
@@ -1365,9 +1367,32 @@ section {
   }
 }
 .pill-lang-dots {
+  position: relative;
   display: inline-flex;
   flex: none;
   gap: 4px;
+}
+/* The active language's dot, sliding between places with a little overshoot. */
+.pill-lang-dots b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #fff;
+  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* A new language name slides up into place as the switch happens. */
+.pill-lang-swap {
+  animation: pill-lang-swap 0.34s var(--ease) both;
+}
+@keyframes pill-lang-swap {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translateY(7px);
+  }
 }
 .pill-lang-dots i {
   width: 5px;
@@ -1375,9 +1400,6 @@ section {
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.3);
   transition: background-color 0.2s ease;
-}
-.pill-lang-dots i.on {
-  background: #fff;
 }
 .pill-copy-content {
   padding-right: 5px;
