@@ -185,7 +185,7 @@ export function Languages() {
               <p>{p.summary}</p>
             </article>
           ))}
-          <a className="card lib-card contribute" href={links.contributePresets} data-reveal>
+          <a rel="noopener" className="card lib-card contribute" href={links.contributePresets} data-reveal>
             <h4>Your language?</h4>
             <p>If you speak a language well, you can make Typelite write it better.</p>
             <span className="inline-link">
@@ -194,8 +194,8 @@ export function Languages() {
           </a>
         </div>
         <p className="setup-note" style={{ marginTop: 16 }} data-reveal>
-          Browse the <a href={links.presetCatalogue}>preset catalogue</a> or read how{' '}
-          <a href={links.languages}>languages work</a>.
+          Browse the <a rel="noopener" href={links.presetCatalogue}>preset catalogue</a> or read how{' '}
+          <a rel="noopener" href={links.languages}>languages work</a>.
         </p>
       </div>
     </section>

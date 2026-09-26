@@ -77,7 +77,7 @@ export function Compare() {
           </table>
         </div>
         <p className="compare-note" data-reveal>
-          Based on public information about <a href={links.typeless}>Typeless</a>; it may change.
+          Based on public information about <a rel="noopener" href={links.typeless}>Typeless</a>; it may change.
           Typelite is an independent project and not affiliated with Typeless.
         </p>
       </div>
@@ -150,15 +150,15 @@ export function OpenSource({ stats }: { stats: RepoStats | null }) {
         <div className="oss">
           <div className="card oss-main" data-reveal>
             <div className="oss-stats">
-              <a className="stat-pill" href={links.repo}>
+              <a rel="noopener" className="stat-pill" href={links.repo}>
                 <IconStar size={16} /> Star
                 {stats && stats.stars > 0 && <span>{formatCount(stats.stars)}</span>}
               </a>
-              <a className="stat-pill" href={links.forks}>
+              <a rel="noopener" className="stat-pill" href={links.forks}>
                 <IconFork size={16} /> Fork
                 {stats && stats.forks > 0 && <span>{formatCount(stats.forks)}</span>}
               </a>
-              <a className="stat-pill" href={links.license}>
+              <a rel="noopener" className="stat-pill" href={links.license}>
                 MIT <span>licence</span>
               </a>
             </div>
@@ -167,7 +167,7 @@ export function OpenSource({ stats }: { stats: RepoStats | null }) {
             </h3>
             <p className="setup-note" style={{ marginTop: -8 }}>
               There is no signed release yet. You’ll need Rust, Node.js 20+, the Xcode Command Line
-              Tools and CMake; details in <a href={links.setup}>CONTRIBUTING.md</a>.
+              Tools and CMake; details in <a rel="noopener" href={links.setup}>CONTRIBUTING.md</a>.
             </p>
             <div className="code">
               <div className="code-head">
@@ -195,13 +195,13 @@ export function OpenSource({ stats }: { stats: RepoStats | null }) {
                 </code>
               </pre>
             </div>
-            <a className="inline-link" href={links.releases}>
+            <a rel="noopener" className="inline-link" href={links.releases}>
               <IconDownload size={15} /> Releases
             </a>
           </div>
           <div className="contrib-grid">
             {CONTRIB.map((c) => (
-              <a className="card contrib" href={c.href} key={c.title} data-reveal>
+              <a rel="noopener" className="card contrib" href={c.href} key={c.title} data-reveal>
                 <h3>
                   <span className="feature-icon">{c.icon}</span>
                   {c.title}
@@ -283,10 +283,10 @@ export function Footer() {
             </h2>
             <p>Free forever, open source, and it runs on your own computer.</p>
             <div className="hero-ctas">
-              <a className="btn btn-primary" href={links.releases}>
+              <a rel="noopener" className="btn btn-primary" href={links.releases}>
                 <IconDownload size={18} /> Download for macOS
               </a>
-              <a className="btn btn-glass" href={links.repo}>
+              <a rel="noopener" className="btn btn-glass" href={links.repo}>
                 <IconStar size={17} /> Star on GitHub
               </a>
             </div>
@@ -327,7 +327,7 @@ export function Footer() {
                   <a href="#setup">Setup</a>
                 </li>
                 <li>
-                  <a href={links.releases}>Releases</a>
+                  <a rel="noopener" href={links.releases}>Releases</a>
                 </li>
               </ul>
             </nav>
@@ -335,16 +335,16 @@ export function Footer() {
               <h3 id="f-docs">Docs</h3>
               <ul>
                 <li>
-                  <a href={links.docs}>Guides</a>
+                  <a rel="noopener" href={links.docs}>Guides</a>
                 </li>
                 <li>
-                  <a href={links.models}>Choosing a model</a>
+                  <a rel="noopener" href={links.models}>Choosing a model</a>
                 </li>
                 <li>
-                  <a href={links.languages}>Languages</a>
+                  <a rel="noopener" href={links.languages}>Languages</a>
                 </li>
                 <li>
-                  <a href={links.presetCatalogue}>Preset catalogue</a>
+                  <a rel="noopener" href={links.presetCatalogue}>Preset catalogue</a>
                 </li>
               </ul>
             </nav>
@@ -352,23 +352,23 @@ export function Footer() {
               <h3 id="f-project">Project</h3>
               <ul>
                 <li>
-                  <a href={links.repo}>GitHub</a>
+                  <a rel="me noopener" href={links.repo}>GitHub</a>
                 </li>
                 <li>
-                  <a href={links.contributing}>Contributing</a>
+                  <a rel="noopener" href={links.contributing}>Contributing</a>
                 </li>
                 <li>
-                  <a href={links.issues}>Report a bug</a>
+                  <a rel="noopener" href={links.issues}>Report a bug</a>
                 </li>
                 <li>
-                  <a href={links.license}>MIT licence</a>
+                  <a rel="noopener" href={links.license}>MIT licence</a>
                 </li>
               </ul>
             </nav>
           </div>
           <p className="footer-legal">
-            © Typelite contributors. Released under the <a href={links.license}>MIT licence</a>;
-            third-party components are listed in <a href={links.notices}>THIRD_PARTY_NOTICES</a>.
+            © Typelite contributors. Released under the <a rel="noopener" href={links.license}>MIT licence</a>;
+            third-party components are listed in <a rel="noopener" href={links.notices}>THIRD_PARTY_NOTICES</a>.
             Not affiliated with Typeless. This site uses no cookies, analytics or tracking.
           </p>
         </div>

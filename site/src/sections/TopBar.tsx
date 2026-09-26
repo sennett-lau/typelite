@@ -29,7 +29,7 @@ export function TopBar({ stats }: { stats: RepoStats | null }) {
           ))}
         </nav>
         <div className="topbar-actions">
-          <a
+          <a rel="noopener"
             className="btn btn-glass btn-sm"
             href={links.repo}
             aria-label={
