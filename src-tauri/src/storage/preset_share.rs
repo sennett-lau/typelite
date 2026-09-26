@@ -775,7 +775,7 @@ mod tests {
         assert_eq!(
             speech.len(),
             1,
-            "the Built-in (this Mac) preset is never offered"
+            "the Built-in (on-device) preset is never offered"
         );
         assert_eq!(speech[0].id, "speech-groq");
         assert_eq!(speech[0].host, "api.groq.com");
@@ -784,7 +784,7 @@ mod tests {
             .into_iter()
             .map(|candidate| candidate.id)
             .collect();
-        // The Built-in (this Mac) AI preset is never offered either.
+        // The Built-in (on-device) AI preset is never offered either.
         assert_eq!(ai, vec!["ai-office", "builtin-ai-ollama-lan"]);
     }
 

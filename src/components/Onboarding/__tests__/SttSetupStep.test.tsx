@@ -82,7 +82,7 @@ describe('SttSetupStep', () => {
       expect(within(card()).getAllByText('Recommended').length).toBeGreaterThan(0)
       expect(
         within(card()).getByText(
-          'Runs Whisper inside Typelite on this Mac. No other software needed.',
+          'Runs Whisper inside Typelite on this computer. No other software needed.',
         ),
       ).toBeInTheDocument()
       const models = within(card()).getByRole('radiogroup', { name: 'Model' })
@@ -94,7 +94,9 @@ describe('SttSetupStep', () => {
         'aria-checked',
         'false',
       )
-      expect(within(card()).getByText('This Mac: Apple M1 Pro, 32 GB memory.')).toBeInTheDocument()
+      expect(
+        within(card()).getByText('This computer: Apple M1 Pro, 32 GB memory.'),
+      ).toBeInTheDocument()
       expect(cardButtons()).toEqual(['Set up'])
       // No checkmark and no server fields on the step itself.
       expect(screen.queryByLabelText('Address')).not.toBeInTheDocument()
@@ -126,7 +128,7 @@ describe('SttSetupStep', () => {
       expect(radios[0]).toHaveAttribute('aria-checked', 'true')
       expect(
         within(card()).getByText(
-          'This Mac: Apple M1 Pro, 4 GB memory. The larger model needs 8 GB of memory.',
+          'This computer: Apple M1 Pro, 4 GB memory. The larger model needs 8 GB of memory.',
         ),
       ).toBeInTheDocument()
       fireEvent.click(within(card()).getByRole('button', { name: 'Set up' }))
@@ -215,7 +217,9 @@ describe('SttSetupStep', () => {
       expect(within(card()).getByText('Ready')).toHaveClass('badge')
       expect(within(card()).getByText('Best accuracy')).toBeInTheDocument()
       expect(
-        within(card()).getByText('Whisper large-v3-turbo · 574 MB · tested on this Mac in 1.9 s'),
+        within(card()).getByText(
+          'Whisper large-v3-turbo · 574 MB · tested on this computer in 1.9 s',
+        ),
       ).toBeInTheDocument()
       expect(cardButtons()).toEqual(['Change model'])
       expect(activePreset()?.verified_at).toBe(42)

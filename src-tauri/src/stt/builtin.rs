@@ -1,4 +1,4 @@
-//! Plan `quick-speech-setup`: the "Built-in (this Mac)" speech provider. Runs whisper.cpp inside
+//! Plan `quick-speech-setup`: the "Built-in (on-device)" speech provider. Runs whisper.cpp inside
 //! the app through the `whisper-rs` binding (GPU through Metal on macOS), so no speech server or
 //! Homebrew install is needed.
 //!
@@ -577,7 +577,7 @@ mod tests {
     #[tokio::test]
     async fn connect_fails_clearly_without_the_model_file() {
         let mut provider = BuiltinProvider::new(BuiltinConfig {
-            provider_name: "Built-in (this Mac)".into(),
+            provider_name: "Built-in (on-device)".into(),
             model_file: "ggml-not-installed.bin".into(),
         });
         let error = provider.connect(&SttConfig::default()).await.unwrap_err();
@@ -590,7 +590,7 @@ mod tests {
     #[tokio::test]
     async fn silence_is_skipped_without_running_the_model() {
         let mut provider = BuiltinProvider::new(BuiltinConfig {
-            provider_name: "Built-in (this Mac)".into(),
+            provider_name: "Built-in (on-device)".into(),
             model_file: "ggml-not-installed.bin".into(),
         });
         // Skip connect (no model file); give the provider its settings directly.
