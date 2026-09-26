@@ -1194,6 +1194,68 @@ body,
   .pill-copy-ring .pill-copy-ring-track {
     stroke: rgba(255, 255, 255, 0.12);
   }
+  /* Plan `typing-speed-and-nudge`: the typing nudge, the pill's glass with a soft aurora tint. */
+  .pill-nudge {
+    background:
+      radial-gradient(
+        60% 140% at 12% 50%,
+        color-mix(in srgb, var(--color-aurora-a) 38%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        55% 140% at 90% 50%,
+        color-mix(in srgb, var(--color-aurora-b) 32%, transparent),
+        transparent 70%
+      ),
+      var(--color-pill-bg);
+  }
+  .pill-nudge-key {
+    display: inline-block;
+    margin: 0 3px;
+    padding: 0 5px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .pill-nudge-link {
+    flex: none;
+    border: none;
+    background: transparent;
+    padding: 0 4px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+  .pill-nudge-link:hover {
+    color: #fff;
+    text-decoration: underline;
+  }
+  .pill-nudge-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+  }
+  .pill-nudge-close:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+  }
+  .pill-nudge-link:focus-visible,
+  .pill-nudge-close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
   /* The capsule's right-click menu: the same dark glass as the pill. */
   .pill-menu {
     border: 1px solid var(--color-pill-line);

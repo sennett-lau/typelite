@@ -23,6 +23,7 @@ import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/con
 import { useSpeechSetupStore } from '../stores/speechSetupStore'
 import { useAiSetupStore } from '../stores/aiSetupStore'
 import { ASK_SELECTION_PREVIEW_EVENT, type SpeechSetupStatus } from '../lib/tauri'
+import { TYPING_NUDGE_EVENT } from '../lib/speedStats'
 
 type Unlisten = () => void | Promise<void>
 
@@ -154,6 +155,8 @@ export function useTauriEvents() {
     // Plan `copy-when-no-field`: the Copy pill opens with a result, or closes (null, for example on
     // Escape).
     addListener<CopyOffer | null>('pipeline:copy_offer', setCopyOffer)
+    // Plan `typing-speed-and-nudge`: show the typing nudge in the pill.
+    addListener<void>(TYPING_NUDGE_EVENT, () => useAppStore.getState().setTypingNudge(true))
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
       const capsuleErrorKey = capsuleErrorKeyFromPayload(payload)
       setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), setupPaneForError(capsuleErrorKey))
