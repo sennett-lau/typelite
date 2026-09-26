@@ -182,14 +182,7 @@ export function Languages() {
           {presets.map((p) => (
             <article className="card lib-card" key={p.id} data-reveal>
               <h4>{p.name}</h4>
-              <span className="lib-tier">
-                {p.tier === 'official' ? 'Official' : 'Community'} · {usedFor(p.applies_to)} · v
-                {p.version}
-              </span>
               <p>{p.summary}</p>
-              <span className="preset-meta">
-                {[...p.languages, ...p.variants].slice(0, 4).join(' · ')}
-              </span>
             </article>
           ))}
           <a className="card lib-card contribute" href={links.contributePresets} data-reveal>
@@ -214,11 +207,6 @@ function presetMeta(id: string): string {
   const p = library.presets.find((x) => x.id === id)
   if (!p) return ''
   return `Preset “${p.name}” v${p.version} · ${p.tier === 'official' ? 'Official' : 'Community'}`
-}
-
-/** "polish + translate": what a preset is used for. */
-function usedFor(appliesTo: string[]): string {
-  return appliesTo.join(' + ')
 }
 
 function PresetRow({
