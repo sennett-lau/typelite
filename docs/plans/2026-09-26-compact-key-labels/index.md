@@ -6,7 +6,7 @@ Right Control" becomes two caps, `End` and `⌃R`, and fits a Home tile. Every c
 name as its tooltip and for screen readers. The visual reference is option B of
 [mock.html](mock.html).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 ## Goals
 
@@ -31,10 +31,12 @@ Status: building — 2026-09-26
 | A generic modifier (either side) is the bare symbol: Shift (either side) is `⇧` | No letter already means "no particular side"; the old "(either side)" label goes. |
 | Return ↩, Delete ⌫, Forward Delete ⌦, Tab ⇥, Escape `esc`, arrows ← → ↑ ↓ | The symbols macOS menus use. |
 | Fn, End, Home, Page Up/Down, Space, F-keys, letters, digits and punctuation are unchanged | They are already short words or single characters. |
-| The side letter is 9 px, bold, in the muted text colour, inside the same cap | Reads as a mark on the key, not as a second key. |
-| Each cap has `title` = full name, and the full name as visually hidden text (the visible symbol is `aria-hidden`) | Hover shows "Right Control"; screen readers read "Right Control", not a symbol and a letter. A cap whose label already is the full name ("End") needs neither. |
-| `displayBinding` / `displayHotkey` return compact text with the side as a plain letter ("End + ⇧R") | Short plain text for places that show text instead of caps (the held keys while recording). |
-| `describeBinding` / `describeHotkey` return full names ("End + Right Shift") | For accessible names and tooltips; the recorder button's accessible name uses it. |
+| The side letter is 9 px in a normal cap (0.78 em, so it scales with large caps), bold, at 60% of the cap's text colour, inside the same cap | Reads as a mark on the key, not as a second key; the opacity works on light, dark and the glass pill. |
+| Each cap has `title` = full name, and the full name as visually hidden text (the visible symbol is `aria-hidden`) | Hover shows "Right Control"; screen readers read "Right Control", not a symbol and a letter. A cap whose label already is the full name ("End") needs no hidden text. |
+| `displayBinding` / `displayHotkey` return compact text with the side as a plain letter ("End + ⇧R") | Short plain text that matches the caps, for any place that needs text rather than caps. No screen uses it today. |
+| `describeBinding` / `describeHotkey` return full names ("End + Right Shift") | For accessible names: a shortcut field reads by full names, idle and while recording. |
+| The shortcut field draws caps both when idle and for the keys held while recording | One look; the field's accessible name stays the full names. |
+| The "Shift (either side)" label and the "Esc" label strings go from the translations | Caps draw every key now; the "Use Shift (either side)" reset button text stays, as it is a sentence. |
 | Callers pass key names (`RightShift`), never split display strings | One mapping (`keyParts` in `src/lib/keyLabels.ts`) decides symbol, side and full name; the shared `KeyCap` / `KeyCaps` components draw them. |
 | Alt (the non-macOS name) also shows ⌥; Right Alt shows `⌥R` | Same physical key. |
 
