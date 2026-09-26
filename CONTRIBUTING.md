@@ -149,7 +149,8 @@ naming rules, how recognition hints work and how to validate a preset are in
 
 - Presets are released under **CC0-1.0**, so they can be copied into people's settings and edited
   there. Only submit text you wrote yourself.
-- Run `node scripts/language-presets.mjs` and commit the regenerated `index.json` and catalogue.
+- Run `node scripts/language-presets.mjs` (regenerates `index.json`) and `npm run docs:cards`
+  (regenerates the catalogue in `presets/languages/README.md`), and commit both.
 - Raise `version` whenever you change the text, the languages or the recognition fields.
 
 Reviewers check that:
