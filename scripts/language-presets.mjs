@@ -24,6 +24,10 @@ const MAX_VARIANT_CHARS = 400
 const MAX_NAME_CHARS = 60
 const MAX_SUMMARY_CHARS = 140
 const MAX_HINT_CHARS = 140
+const MAX_DETECT_CODES = 8
+const MAX_HINTS = 60
+const MAX_HINT_WORD_CHARS = 24
+const DETECT_CODE_PATTERN = /^[a-z]{2,3}$/
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const TAG_PATTERN = /^([a-z]{2,3})(-[A-Z][a-z]{3})?(-(?:[A-Z]{2}|[0-9]{3}))?$/
 const TIERS = ['official', 'community']
@@ -43,13 +47,15 @@ const REQUIRED_KEYS = [
   'authors',
   'license',
 ]
-const OPTIONAL_KEYS = ['model_hint', 'deprecated']
+const OPTIONAL_KEYS = ['model_hint', 'deprecated', 'detect_codes', 'hints', 'require_hint']
 
 /** Number of Unicode scalar values, the way the app (Rust `chars()`) counts. */
 const charCount = (text) => [...text].length
 
-/** Parses one front matter value: "quoted", [a, b], an integer, or plain text. */
+/** Parses one front matter value: "quoted", [a, b], an integer, true/false, or plain text. */
 function parseValue(raw) {
+  if (raw === 'true') return true
+  if (raw === 'false') return false
   if (raw.startsWith('[')) {
     if (!raw.endsWith(']')) throw new Error(`unclosed list: ${raw}`)
     const inner = raw.slice(1, -1).trim()
@@ -141,6 +147,43 @@ function checkList(fields, key, errors) {
   return value
 }
 
+/**
+ * The recognition fields for the polish router: `detect_codes` (speech codes such as `yue`),
+ * `hints` (characters or words only this language uses) and `require_hint`. All optional.
+ */
+function checkRecognition(fields, errors) {
+  const optionalList = (key) => {
+    const value = fields[key]
+    if (value === undefined) return []
+    if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || item === '')) {
+      errors.push(`${key} must be a list of text items`)
+      return []
+    }
+    if (new Set(value).size !== value.length) errors.push(`${key} has duplicates`)
+    return value
+  }
+  const detectCodes = optionalList('detect_codes')
+  if (detectCodes.length > MAX_DETECT_CODES) {
+    errors.push(`detect_codes has more than ${MAX_DETECT_CODES} codes`)
+  }
+  for (const code of detectCodes) {
+    if (!DETECT_CODE_PATTERN.test(code)) {
+      errors.push(`detect_codes value is not 2 or 3 lower-case letters: ${code}`)
+    }
+  }
+  const hints = optionalList('hints')
+  if (hints.length > MAX_HINTS) errors.push(`hints has more than ${MAX_HINTS} entries`)
+  for (const hint of hints) {
+    if (charCount(hint) > MAX_HINT_WORD_CHARS || /["\[\],]/.test(hint) || hint.trim() !== hint) {
+      errors.push(`hint is not 1 to ${MAX_HINT_WORD_CHARS} plain characters: ${hint}`)
+    }
+  }
+  const requireHint = fields.require_hint ?? false
+  if (typeof requireHint !== 'boolean') errors.push('require_hint must be true or false')
+  else if (requireHint && hints.length === 0) errors.push('require_hint needs hints')
+  return { detectCodes, hints, requireHint: requireHint === true }
+}
+
 /** Validates one preset folder; returns { entry, errors }. */
 export function validatePreset(folder, bytes, knownLanguages) {
   const errors = []
@@ -203,6 +246,7 @@ export function validatePreset(folder, bytes, knownLanguages) {
     if (!OPERATIONS.includes(operation)) errors.push(`unknown applies_to value: ${operation}`)
   }
   checkList(fields, 'authors', errors)
+  checkRecognition(fields, errors)
 
   // Body sections: Instructions, then Variant notes, then Examples.
   let instructions = null

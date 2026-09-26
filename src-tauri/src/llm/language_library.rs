@@ -24,6 +24,9 @@ const MAX_VARIANT_CHARS: usize = 400;
 const MAX_NAME_CHARS: usize = 60;
 const MAX_SUMMARY_CHARS: usize = 140;
 const MAX_HINT_CHARS: usize = 140;
+const MAX_DETECT_CODES: usize = 8;
+const MAX_HINTS: usize = 60;
+const MAX_HINT_WORD_CHARS: usize = 24;
 const REQUIRED_KEYS: &[&str] = &[
     "id",
     "name",
@@ -36,7 +39,13 @@ const REQUIRED_KEYS: &[&str] = &[
     "authors",
     "license",
 ];
-const OPTIONAL_KEYS: &[&str] = &["model_hint", "deprecated"];
+const OPTIONAL_KEYS: &[&str] = &[
+    "model_hint",
+    "deprecated",
+    "detect_codes",
+    "hints",
+    "require_hint",
+];
 const TIERS: &[&str] = &["official", "community"];
 const OPERATIONS: &[&str] = &["polish", "translate"];
 const LICENSE: &str = "CC0-1.0";
@@ -53,6 +62,7 @@ fn library_dir() -> PathBuf {
 enum Value {
     Text(String),
     Int(i64),
+    Bool(bool),
     List(Vec<String>),
 }
 
@@ -67,6 +77,11 @@ fn parse_scalar(raw: &str) -> Result<String, String> {
 }
 
 fn parse_value(raw: &str) -> Result<Value, String> {
+    match raw {
+        "true" => return Ok(Value::Bool(true)),
+        "false" => return Ok(Value::Bool(false)),
+        _ => {}
+    }
     if let Some(rest) = raw.strip_prefix('[') {
         let inner = rest
             .strip_suffix(']')
@@ -104,6 +119,12 @@ struct Preset {
     authors: Vec<String>,
     model_hint: Option<String>,
     deprecated: Option<String>,
+    /// Speech-recognition codes that mean this language for the polish router (`yue`, `zh`).
+    detect_codes: Vec<String>,
+    /// Characters or words only this language uses.
+    hints: Vec<String>,
+    /// A detected code alone is not enough; a hint must match.
+    require_hint: bool,
     instructions: String,
     /// Variant tag → note.
     variants: BTreeMap<String, String>,
@@ -245,6 +266,74 @@ fn list_field(
     }
 }
 
+/// An optional list of text items; missing is empty.
+fn optional_list(
+    fields: &BTreeMap<String, Value>,
+    key: &str,
+    errors: &mut Vec<String>,
+) -> Vec<String> {
+    match fields.get(key) {
+        None => Vec::new(),
+        Some(Value::List(items)) if items.iter().all(|item| !item.is_empty()) => {
+            if items.iter().collect::<BTreeSet<_>>().len() != items.len() {
+                errors.push(format!("{key} has duplicates"));
+            }
+            items.clone()
+        }
+        Some(_) => {
+            errors.push(format!("{key} must be a list of text items"));
+            Vec::new()
+        }
+    }
+}
+
+/// `detect_codes`, `hints` and `require_hint`: what the polish router uses to recognise the
+/// preset's language. All optional.
+fn recognition_fields(
+    fields: &BTreeMap<String, Value>,
+    errors: &mut Vec<String>,
+) -> (Vec<String>, Vec<String>, bool) {
+    let detect_codes = optional_list(fields, "detect_codes", errors);
+    if detect_codes.len() > MAX_DETECT_CODES {
+        errors.push(format!(
+            "detect_codes has more than {MAX_DETECT_CODES} codes"
+        ));
+    }
+    for code in &detect_codes {
+        if !(2..=3).contains(&code.len()) || !code.chars().all(|c| c.is_ascii_lowercase()) {
+            errors.push(format!(
+                "detect_codes value is not 2 or 3 lower-case letters: {code}"
+            ));
+        }
+    }
+    let hints = optional_list(fields, "hints", errors);
+    if hints.len() > MAX_HINTS {
+        errors.push(format!("hints has more than {MAX_HINTS} entries"));
+    }
+    for hint in &hints {
+        if hint.chars().count() > MAX_HINT_WORD_CHARS
+            || hint.contains(['"', '[', ']', ','])
+            || hint.trim() != hint
+        {
+            errors.push(format!(
+                "hint is not 1 to {MAX_HINT_WORD_CHARS} plain characters: {hint}"
+            ));
+        }
+    }
+    let require_hint = match fields.get("require_hint") {
+        None => false,
+        Some(Value::Bool(value)) => *value,
+        Some(_) => {
+            errors.push("require_hint must be true or false".into());
+            false
+        }
+    };
+    if require_hint && hints.is_empty() {
+        errors.push("require_hint needs hints".into());
+    }
+    (detect_codes, hints, require_hint)
+}
+
 /// Parses and validates one `preset.md`; `folder` is its folder name.
 fn validate_preset(
     folder: &str,
@@ -339,6 +428,7 @@ fn validate_preset(
         }
     }
     let authors = list_field(&fields, "authors", &mut errors);
+    let (detect_codes, hints, require_hint) = recognition_fields(&fields, &mut errors);
 
     // Sections: Instructions, then Variant notes, then Examples.
     let mut instructions = None;
@@ -406,6 +496,9 @@ fn validate_preset(
         authors,
         model_hint,
         deprecated,
+        detect_codes,
+        hints,
+        require_hint,
         instructions: instructions.unwrap_or_default(),
         variants,
         examples,
@@ -774,6 +867,72 @@ mod tests {
         )
         .unwrap_err();
         assert!(wrong_folder[0].contains("differs from its folder"));
+    }
+
+    #[test]
+    fn recognition_fields_are_parsed_and_checked() {
+        let front = format!(
+            "{GOOD_FRONT}\ndetect_codes: [yue, zh]\nhints: [嘅, 咗, 聽日]\nrequire_hint: true"
+        );
+        let preset = validate_preset(
+            "sample",
+            preset_text(&front, "## Instructions\nx").as_bytes(),
+            &known(),
+        )
+        .unwrap();
+        assert_eq!(preset.detect_codes, ["yue", "zh"]);
+        assert_eq!(preset.hints, ["嘅", "咗", "聽日"]);
+        assert!(preset.require_hint);
+
+        // All three are optional.
+        let plain = validate_preset(
+            "sample",
+            preset_text(GOOD_FRONT, "## Instructions\nx").as_bytes(),
+            &known(),
+        )
+        .unwrap();
+        assert!(plain.detect_codes.is_empty() && plain.hints.is_empty() && !plain.require_hint);
+
+        let bad = format!(
+            "{GOOD_FRONT}\ndetect_codes: [EN, zh, zh]\nhints: [{}]\nrequire_hint: yes",
+            "x".repeat(MAX_HINT_WORD_CHARS + 1)
+        );
+        let errors = errors_for(&bad, "## Instructions\nx");
+        for expected in [
+            "detect_codes value is not 2 or 3 lower-case letters: EN",
+            "detect_codes has duplicates",
+            "require_hint must be true or false",
+        ] {
+            assert!(
+                errors.iter().any(|e| e == expected),
+                "missing {expected:?} in {errors:?}"
+            );
+        }
+        assert!(errors.iter().any(|e| e.starts_with("hint is not 1 to 24")));
+        let no_hints = format!("{GOOD_FRONT}\nrequire_hint: true");
+        assert_eq!(
+            errors_for(&no_hints, "## Instructions\nx"),
+            vec!["require_hint needs hints"]
+        );
+    }
+
+    #[test]
+    fn seed_presets_carry_their_recognition_data() {
+        let codes = load_language_codes();
+        let presets = load_library(&codes);
+        let by_id = |id: &str| presets.iter().find(|p| p.id == id).unwrap();
+        let hk = by_id("cantonese-hong-kong");
+        assert_eq!(hk.detect_codes, ["yue", "zh"]);
+        assert!(hk.require_hint);
+        for hint in ["嘅", "咗", "喺", "聽日", "得閒"] {
+            assert!(hk.hints.iter().any(|h| h == hint), "{hint}");
+        }
+        let english = by_id("english");
+        assert_eq!(english.detect_codes, ["en"]);
+        assert!(english.hints.is_empty() && !english.require_hint);
+        let taiwan = by_id("mandarin-taiwan");
+        assert_eq!(taiwan.detect_codes, ["zh"]);
+        assert!(taiwan.require_hint && !taiwan.hints.is_empty());
     }
 
     #[test]

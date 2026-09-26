@@ -1,7 +1,7 @@
 ---
 id: english
 name: English
-version: 1
+version: 2
 format: 1
 tier: official
 languages: [en]
@@ -10,6 +10,7 @@ summary: Clear, natural English that keeps the speaker's tone, with spelling and
 authors: [sennett-lau]
 license: CC0-1.0
 model_hint: Works with small 4B instruct models.
+detect_codes: [en]
 ---
 
 ## Instructions

@@ -1,7 +1,7 @@
 ---
 id: cantonese-hong-kong
 name: Cantonese (Hong Kong) 廣東話
-version: 1
+version: 2
 format: 1
 tier: official
 languages: [zh-Hant-HK, yue-Hant-HK]
@@ -10,6 +10,9 @@ summary: Colloquial written Cantonese as Hong Kong people type it, with Hong Kon
 authors: [sennett-lau]
 license: CC0-1.0
 model_hint: 4B models slip into formal written Chinese at times; 7B or larger does better. Some models refuse to repeat swear words.
+detect_codes: [yue, zh]
+hints: [嘅, 咗, 喺, 啲, 冇, 唔, 佢, 嚟, 哋, 嘢, 咁, 嗰, 咩, 乜嘢, 係咪, 聽日, 琴日, 點解, 邊度, 而家, 得閒, 啱啱, 仲未, 屋企]
+require_hint: true
 ---
 
 ## Instructions
