@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   findActivePreset,
-  isCustomTranslationLanguage,
-  translationLanguagePreset,
+  isDefaultLanguageSettings,
+  languageSettings,
   useAppStore,
-  withoutTranslationPreset,
 } from '../appStore'
 import type { DictionaryEntry, CorrectionRule, HotkeyConfig } from '../appStore'
 
@@ -358,7 +357,7 @@ describe('appStore', () => {
     })
 
     it('keeps per-language translation settings when the language list changes', () => {
-      const languages = { 'zh-Hant-HK': { ai_preset_id: 'pc', instructions: null } }
+      const languages = { 'zh-Hant-HK': { instructions: null, enabled: false } }
       getState().setConfig({
         ...getState().config,
         translation: { targets: ['en', 'zh-Hant-HK'], active_target: 'en', languages },
@@ -379,7 +378,7 @@ describe('appStore', () => {
         ...getState().config,
         translation: { targets: ['en'], active_target: 'en', languages: {} },
       })
-      const languages = { ja: { ai_preset_id: null, instructions: 'Use polite form.' } }
+      const languages = { ja: { instructions: 'Use polite form.' } }
       getState().applyPersistedTranslationLanguages(languages)
       expect(getState().config.translation).toEqual({
         targets: ['en', 'ja'],
@@ -390,36 +389,34 @@ describe('appStore', () => {
       expect(getState().savedConfig?.translation.languages).toEqual(languages)
     })
 
-    it('marks custom languages and ignores a deleted preset', () => {
+    it('fills in language defaults and knows default settings', () => {
+      const sha256 = 'a'.repeat(64)
       const config = {
         ...getState().config,
-        ai_presets: [
-          ...getState().config.ai_presets,
-          { ...getState().config.ai_presets[0], id: 'pc', kind: 'openai_compatible' as const },
-        ],
         translation: {
-          targets: ['en', 'zh-Hant-HK', 'ja'],
+          targets: ['en', 'zh-Hant-HK'],
           active_target: 'en',
           languages: {
-            'zh-Hant-HK': { ai_preset_id: 'pc', instructions: null },
-            ja: { ai_preset_id: 'deleted', instructions: null },
+            'zh-Hant-HK': {
+              instructions: null,
+              library_preset: { id: 'cantonese-hong-kong', version: 2, sha256 },
+              user_hints: ['得閒'],
+            },
           },
         },
       }
-      expect(isCustomTranslationLanguage(config, 'zh-Hant-HK')).toBe(true)
-      expect(translationLanguagePreset(config, 'zh-Hant-HK')?.id).toBe('pc')
-      expect(isCustomTranslationLanguage(config, 'ja')).toBe(false)
-      expect(translationLanguagePreset(config, 'ja')).toBeNull()
-      expect(isCustomTranslationLanguage(config, 'en')).toBe(false)
-      expect(
-        withoutTranslationPreset(
-          {
-            'zh-Hant-HK': { ai_preset_id: 'pc', instructions: null },
-            ja: { ai_preset_id: 'pc', instructions: 'Keep it.' },
-          },
-          'pc',
-        ),
-      ).toEqual({ ja: { ai_preset_id: null, instructions: 'Keep it.' } })
+      expect(languageSettings(config, 'en')).toEqual({
+        instructions: null,
+        library_preset: null,
+        enabled: true,
+        auto_update: false,
+        user_hints: [],
+      })
+      expect(languageSettings(config, 'zh-Hant-HK').user_hints).toEqual(['得閒'])
+      expect(isDefaultLanguageSettings(languageSettings(config, 'en'))).toBe(true)
+      expect(isDefaultLanguageSettings(languageSettings(config, 'zh-Hant-HK'))).toBe(false)
+      expect(isDefaultLanguageSettings({ instructions: null, enabled: false })).toBe(false)
+      expect(isDefaultLanguageSettings({ instructions: null, auto_update: true })).toBe(false)
     })
 
     it('fills in the default Switch language key for configs without one', () => {

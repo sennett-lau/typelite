@@ -1,0 +1,80 @@
+{
+  "format": 1,
+  "presets": [
+    {
+      "id": "cantonese-hong-kong",
+      "name": "Cantonese (Hong Kong) 廣東話",
+      "version": 2,
+      "format": 1,
+      "tier": "official",
+      "languages": [
+        "zh-Hant-HK",
+        "yue-Hant-HK"
+      ],
+      "variants": [],
+      "applies_to": [
+        "polish",
+        "translate"
+      ],
+      "summary": "Colloquial written Cantonese as Hong Kong people type it, with Hong Kong code-mixing.",
+      "authors": [
+        "sennett-lau"
+      ],
+      "model_hint": "4B models slip into formal written Chinese at times; 7B or larger does better. Some models refuse to repeat swear words.",
+      "path": "cantonese-hong-kong/preset.md",
+      "bytes": 2880,
+      "sha256": "6f12a84ccba2d569a40e3b8c67d780b08984755dcaf9bc63f2c6f4aa7915e765"
+    },
+    {
+      "id": "english",
+      "name": "English",
+      "version": 2,
+      "format": 1,
+      "tier": "official",
+      "languages": [
+        "en"
+      ],
+      "variants": [
+        "en-AU",
+        "en-CA",
+        "en-GB",
+        "en-US"
+      ],
+      "applies_to": [
+        "polish",
+        "translate"
+      ],
+      "summary": "Clear, natural English that keeps the speaker's tone, with spelling and words per region.",
+      "authors": [
+        "sennett-lau"
+      ],
+      "model_hint": "Works with small 4B instruct models.",
+      "path": "english/preset.md",
+      "bytes": 1960,
+      "sha256": "57faab5db08548f2192737660fdb7f3eee3a35e77f884d2de0ab3c3c658cb5e6"
+    },
+    {
+      "id": "mandarin-taiwan",
+      "name": "Mandarin (Taiwan) 臺灣華語",
+      "version": 2,
+      "format": 1,
+      "tier": "official",
+      "languages": [
+        "zh-Hant-TW",
+        "cmn-Hant-TW"
+      ],
+      "variants": [],
+      "applies_to": [
+        "polish",
+        "translate"
+      ],
+      "summary": "Natural Taiwan Mandarin in Traditional characters, with Taiwan vocabulary.",
+      "authors": [
+        "sennett-lau"
+      ],
+      "path": "mandarin-taiwan/preset.md",
+      "bytes": 1191,
+      "sha256": "af61baa36e1cafb7bbd55487fe250cb78aa7b436c9761be409ec7ce6129c5cb6"
+    }
+  ]
+}

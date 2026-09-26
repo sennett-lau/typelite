@@ -334,13 +334,27 @@ export interface VoiceRoutingFlags {
   search: boolean
 }
 
+/** The library preset a language's instructions are based on (plan `language-prompt-library`). */
+export interface LibraryPresetRef {
+  id: string
+  version: number
+  sha256: string
+}
+
 /**
- * Plan `translation-language-presets`: one translation language's own settings. `null` means the
- * default: the AI polish preset, and the built-in instructions for that language.
+ * One chosen language's own settings (plans `translation-language-presets` and
+ * `language-prompt-library`). Every field is optional in stored configs; missing = default.
  */
 export interface TranslationLanguageSettings {
-  ai_preset_id: string | null
+  /** The user's own text; null = the preset as rendered, or the built-in default. */
   instructions: string | null
+  library_preset?: LibraryPresetRef | null
+  /** Off: plain translation and no notes in polish. Default true. */
+  enabled?: boolean
+  /** New preset versions apply by themselves (never over edited text). Default false. */
+  auto_update?: boolean
+  /** The user's own hint characters or words for the polish router. */
+  user_hints?: string[]
 }
 
 export interface TranslationConfig {
@@ -353,35 +367,34 @@ export interface TranslationConfig {
 /** Longest custom translation instructions for one language (matches the backend). */
 export const TRANSLATION_INSTRUCTIONS_MAX_CHARS = 2000
 
-/**
- * The saved AI preset that translates into `code`, or null for "Same as AI polish" (also when
- * the stored preset was deleted).
- */
-export function translationLanguagePreset(config: AppConfig, code: string): AiPreset | null {
-  const id = config.translation.languages?.[code]?.ai_preset_id
-  if (!id) return null
-  return config.ai_presets.find((preset) => preset.id === id) ?? null
-}
+/** Most hints a user can add to one language, and the longest hint (match the backend). */
+export const LANGUAGE_USER_HINTS_MAX = 40
+export const LANGUAGE_USER_HINT_MAX_CHARS = 24
 
-/** True when a language's model or instructions differ from the defaults. */
-export function isCustomTranslationLanguage(config: AppConfig, code: string): boolean {
-  const settings = config.translation.languages?.[code]
-  if (!settings) return false
-  return settings.instructions !== null || translationLanguagePreset(config, code) !== null
-}
-
-/** `languages` without any use of the AI preset `presetId` (after that preset was deleted). */
-export function withoutTranslationPreset(
-  languages: Record<string, TranslationLanguageSettings>,
-  presetId: string,
-): Record<string, TranslationLanguageSettings> {
-  const next: Record<string, TranslationLanguageSettings> = {}
-  for (const [code, settings] of Object.entries(languages)) {
-    const cleaned =
-      settings.ai_preset_id === presetId ? { ...settings, ai_preset_id: null } : settings
-    if (cleaned.ai_preset_id !== null || cleaned.instructions !== null) next[code] = cleaned
+/** A language's settings with every default filled in. */
+export function languageSettings(
+  config: AppConfig,
+  code: string,
+): Required<TranslationLanguageSettings> {
+  const stored = config.translation.languages?.[code]
+  return {
+    instructions: stored?.instructions ?? null,
+    library_preset: stored?.library_preset ?? null,
+    enabled: stored?.enabled ?? true,
+    auto_update: stored?.auto_update ?? false,
+    user_hints: stored?.user_hints ?? [],
   }
-  return next
+}
+
+/** True when settings equal the defaults (such an entry is left out of the config). */
+export function isDefaultLanguageSettings(settings: TranslationLanguageSettings): boolean {
+  return (
+    settings.instructions === null &&
+    !settings.library_preset &&
+    (settings.enabled ?? true) &&
+    !(settings.auto_update ?? false) &&
+    (settings.user_hints ?? []).length === 0
+  )
 }
 
 export interface AppConfig {

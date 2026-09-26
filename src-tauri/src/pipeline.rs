@@ -340,22 +340,79 @@ fn request_translation(
     )
 }
 
-/// Plan `translation-language-presets`: the AI preset for this request (the translation
-/// language's own preset when it has one, else the AI polish preset). Logs the preset id and the
-/// language code, never text.
+/// The AI preset for this request: always the AI polish preset (plan `language-prompt-library`
+/// removed the per-language model). Logs the preset id and the translation language code, never
+/// text.
 fn request_ai_preset<'a>(
     config: &'a storage::AppConfig,
     translate_enabled: bool,
     target_lang: &str,
 ) -> &'a storage::AiPreset {
     let translation_target = translate_enabled.then_some(target_lang);
-    let preset = config.ai_preset_for_request(translation_target);
+    let preset = config.active_ai_preset();
     tracing::info!(
         "AI request: preset={} translation={}",
         preset.id,
         translation_target.unwrap_or("none")
     );
     preset
+}
+
+/// Plan `language-prompt-library`: the language parts of one AI request.
+#[derive(Debug, Clone, Default, PartialEq)]
+struct LanguageParts {
+    /// The language section of a translation: the target's effective instructions when it is
+    /// on, the plain translation text when it is off.
+    translation_instructions: String,
+    /// Polish: the notes of the language the router chose.
+    polish_notes: Option<llm::PolishLanguageNotes>,
+}
+
+/// Plan `language-prompt-library`: resolves the language parts for a request. A translation
+/// uses its target's instructions (plain text when the language is off). Plain dictation (no
+/// translation, no selected text) asks the router which language the transcript is in; a
+/// speech preset with a fixed language counts as having detected it. Logs codes only.
+fn language_parts(
+    config: &storage::AppConfig,
+    store: Option<&llm::language_library::store::LibraryStore>,
+    translate_enabled: bool,
+    target_lang: &str,
+    route_polish: bool,
+    transcript: &str,
+    detected_language: Option<&str>,
+) -> LanguageParts {
+    use llm::language_router::{language_profile, language_profiles, route};
+    if translate_enabled {
+        let profile = language_profile(config, store, target_lang);
+        if profile.enabled {
+            return LanguageParts {
+                translation_instructions: profile.instructions,
+                polish_notes: None,
+            };
+        }
+        tracing::info!("Translation language {target_lang}: instructions off, plain translation");
+        return LanguageParts {
+            translation_instructions: llm::prompt::plain_translation_instructions(target_lang),
+            polish_notes: None,
+        };
+    }
+    if !route_polish {
+        return LanguageParts::default();
+    }
+    let detected = config
+        .speech_language()
+        .and_then(crate::stt::normalize_detected_language)
+        .or_else(|| detected_language.map(str::to_string));
+    let profiles = language_profiles(config, store);
+    let decision = route(&profiles, transcript, detected.as_deref());
+    tracing::info!("Language route: {}", decision.describe(&profiles));
+    LanguageParts {
+        translation_instructions: String::new(),
+        polish_notes: decision.index().map(|index| llm::PolishLanguageNotes {
+            code: profiles[index].code.clone(),
+            text: profiles[index].instructions.clone(),
+        }),
+    }
 }
 
 /// The config the Speed board records for a run: the AI preset is the one the run's AI request
@@ -742,6 +799,8 @@ pub struct PipelineHandle {
     audio_handle: Arc<Mutex<Option<AudioCaptureHandle>>>,
     audio_volume: Arc<Mutex<f32>>,
     accumulated_text: Arc<Mutex<String>>,
+    /// Plan `language-prompt-library`: the language the speech step recognised in this run.
+    detected_language: Arc<Mutex<Option<String>>>,
     stt_session: Arc<Mutex<Option<SttTaskControl>>>,
     stt_error: Arc<Mutex<Option<(u64, crate::error::UserError)>>>,
     active_stt_session_id: Arc<AtomicU64>,
@@ -784,6 +843,8 @@ struct PolishTextInput<'a> {
     /// pill when no
     /// text field has focus. `None` for Ask.
     copy_pill: Option<crate::copy_pill::CopyPillRun>,
+    /// Plan `language-prompt-library`: the language code the speech step recognised, if any.
+    detected_language: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -991,6 +1052,7 @@ impl PipelineHandle {
             audio_handle: Arc::new(Mutex::new(None)),
             audio_volume: Arc::new(Mutex::new(0.0)),
             accumulated_text: Arc::new(Mutex::new(String::new())),
+            detected_language: Arc::new(Mutex::new(None)),
             stt_session: Arc::new(Mutex::new(None)),
             stt_error: Arc::new(Mutex::new(None)),
             active_stt_session_id: Arc::new(AtomicU64::new(0)),
@@ -1145,6 +1207,10 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clear();
+        *self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = None;
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // Force state to Idle — emits pipeline:state event to sync frontend
@@ -1229,6 +1295,10 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clear();
+        *self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = None;
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // P0-2: Load config BEFORE starting audio capture — fail fast on missing API key
@@ -1562,6 +1632,7 @@ impl PipelineHandle {
         // STT streaming task — provider is already connected
         let app_handle = self.app_handle.clone();
         let accumulated = self.accumulated_text.clone();
+        let detected_language = self.detected_language.clone();
         let stt_control = SttTaskControl {
             id: session_id,
             done: Arc::new(Notify::new()),
@@ -1631,6 +1702,8 @@ impl PipelineHandle {
                                             acc.push_str(&text);
                                             let current = acc.clone();
                                             drop(acc);
+                                            *detected_language.lock().unwrap_or_else(|e| e.into_inner()) =
+                                                provider.detected_language();
                                             let _ = app_handle.emit("stt:final", &current);
                                         }
                                     }
@@ -1973,6 +2046,11 @@ impl PipelineHandle {
         }
 
         // ── Phase 2: LLM polish + output ───────────────────────────────
+        let detected_language = self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
         let polish_outcome = self
             .polish_text(PolishTextInput {
                 raw_text: &raw_text,
@@ -1986,6 +2064,7 @@ impl PipelineHandle {
                 popup_fallback_enabled: true,
                 copy_pill: (voice_mode != crate::voice_intent::VoiceMode::Ask)
                     .then(crate::copy_pill::CopyPillRun::default),
+                detected_language,
             })
             .await;
         let final_text = polish_outcome.final_text;
@@ -2167,6 +2246,7 @@ impl PipelineHandle {
             voice_intent,
             popup_fallback_enabled,
             copy_pill,
+            detected_language,
         } = input;
         let provider_plan =
             crate::voice_intent::plan_voice_provider_work(voice_mode, raw_text, &voice_intent);
@@ -2315,6 +2395,17 @@ impl PipelineHandle {
             app_ctx.mapped_scene_id.as_deref(),
         )
         .unwrap_or_default();
+        let library_store = crate::commands::language_presets::library_store(&self.app_handle).ok();
+        let language = language_parts(
+            config,
+            library_store.as_ref(),
+            translate_enabled,
+            &target_lang,
+            voice_intent.kind == crate::voice_intent::VoiceIntentKind::DictateInsert
+                && !selected_text_has_content(selected_text.as_deref()),
+            provider_text,
+            detected_language.as_deref(),
+        );
         let req = PolishRequest {
             raw_text: provider_text.to_string(),
             context: app_ctx.summary(),
@@ -2330,11 +2421,8 @@ impl PipelineHandle {
             polish_custom_prompt: config.polish_custom_prompt.clone(),
             polish_chinese_script: config.polish_chinese_script.clone(),
             translate_enabled,
-            translation_instructions: config
-                .translation
-                .custom_instructions(&target_lang)
-                .unwrap_or_default()
-                .to_string(),
+            translation_instructions: language.translation_instructions,
+            polish_language_notes: language.polish_notes,
             target_lang,
             selected_text,
             voice_intent: voice_intent.clone(),
@@ -2741,6 +2829,7 @@ impl PipelineHandle {
                 voice_intent,
                 popup_fallback_enabled: false,
                 copy_pill: None,
+                detected_language: None,
             })
             .await;
         self.set_state(PipelineState::Idle);
@@ -3736,105 +3825,168 @@ mod tests {
         );
     }
 
-    /// `translate_run_config` with a second AI preset (`pc`) that Hong Kong Chinese uses.
-    fn config_with_hong_kong_preset(active: &str) -> storage::AppConfig {
-        let mut config = translate_run_config(active);
+    /// Plan `language-prompt-library`: every translation uses the AI polish preset, whatever
+    /// the language, including after switching language during a run.
+    #[test]
+    fn translation_requests_use_the_ai_polish_preset() {
+        let mut config = translate_run_config("zh-Hant-HK");
         config.ai_presets.push(storage::AiPreset::server(
             "pc",
             "PC",
             "http://192.0.2.10:11434/v1",
             "cantonese-model",
         ));
-        config.translation.languages.insert(
-            "zh-Hant-HK".to_string(),
-            storage::TranslationLanguageSettings {
-                ai_preset_id: Some("pc".to_string()),
-                instructions: None,
-            },
-        );
-        config
-    }
-
-    #[test]
-    fn translation_requests_use_the_target_language_preset() {
-        let config = config_with_hong_kong_preset("zh-Hant-HK");
         let polish = config.active_ai_preset().id.clone();
-        assert_eq!(request_ai_preset(&config, true, "zh-Hant-HK").id, "pc");
-        // Other languages, and polish without translation, keep the AI polish preset.
+        assert_eq!(request_ai_preset(&config, true, "zh-Hant-HK").id, polish);
         assert_eq!(request_ai_preset(&config, true, "ja").id, polish);
         assert_eq!(request_ai_preset(&config, false, "zh-Hant-HK").id, polish);
 
-        // Highlight-and-translate with no speech goes into the active language.
         let instruction = crate::voice_intent::language::SELECTION_TRANSLATE_INSTRUCTION;
         let intent = translate_selection_intent(instruction, &config);
         let (translate, target) = request_translation(&intent, instruction, &config);
-        assert_eq!(request_ai_preset(&config, translate, &target).id, "pc");
-        // A language named in speech picks that language's preset.
-        let intent = translate_selection_intent("translate this into Japanese", &config);
-        let (translate, target) =
-            request_translation(&intent, "translate this into Japanese", &config);
-        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
-    }
-
-    #[test]
-    fn switching_language_during_a_run_picks_the_new_target_preset() {
-        let mut config = config_with_hong_kong_preset("en");
-        let polish = config.active_ai_preset().id.clone();
-        let (translate, target) = request_translation(
-            &route_pipeline_voice_intent(
-                crate::voice_intent::VoiceMode::Translate,
-                "see you tomorrow",
-                None,
-                &config,
-            ),
-            "see you tomorrow",
-            &config,
-        );
-        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
-
-        let mut operation =
-            TranslationOperationState::new("en".to_string(), &config.translation.targets);
-        operation.cycle_target().unwrap();
-        // stop() copies the finalized target into the run's config.
-        config.translation.active_target = operation.finalize();
-        let (translate, target) = request_translation(
-            &route_pipeline_voice_intent(
-                crate::voice_intent::VoiceMode::Translate,
-                "see you tomorrow",
-                None,
-                &config,
-            ),
-            "see you tomorrow",
-            &config,
-        );
         assert_eq!(target, "zh-Hant-HK");
-        assert_eq!(request_ai_preset(&config, translate, &target).id, "pc");
-    }
-
-    #[test]
-    fn a_deleted_language_preset_falls_back_to_the_polish_preset() {
-        let mut config = config_with_hong_kong_preset("zh-Hant-HK");
-        config.ai_presets.retain(|preset| preset.id != "pc");
-        assert_eq!(
-            request_ai_preset(&config, true, "zh-Hant-HK").id,
-            config.active_ai_preset().id
-        );
+        assert_eq!(request_ai_preset(&config, translate, &target).id, polish);
     }
 
     #[test]
     fn run_timing_records_the_preset_the_request_used() {
-        let config = config_with_hong_kong_preset("zh-Hant-HK");
+        let config = translate_run_config("zh-Hant-HK");
         let polish = config.active_ai_preset().id.clone();
-        assert_eq!(
-            config_for_run_timing(&config, Some("pc".to_string()))
-                .active_ai_preset()
-                .id,
-            "pc"
-        );
         assert_eq!(
             config_for_run_timing(&config, None).active_ai_preset().id,
             polish
         );
+        assert_eq!(
+            config_for_run_timing(&config, Some(polish.clone()))
+                .active_ai_preset()
+                .id,
+            polish
+        );
+    }
+
+    /// Hong Kong Chinese (Cantonese preset, stored in a temp library) and English (built-in).
+    fn config_with_cantonese_preset() -> (
+        storage::AppConfig,
+        llm::language_library::store::LibraryStore,
+    ) {
+        let store = llm::language_library::store::tests::temp_store("pipeline");
+        let bytes = std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../presets/languages/cantonese-hong-kong/preset.md"),
+        )
+        .unwrap();
+        let sha256 = store.store_preset("cantonese-hong-kong", &bytes).unwrap();
+        let mut config = storage::AppConfig::default();
+        config.translation.targets = vec!["zh-Hant-HK".to_string(), "en".to_string()];
+        config.translation.languages.insert(
+            "zh-Hant-HK".to_string(),
+            storage::TranslationLanguageSettings {
+                library_preset: Some(storage::LibraryPresetRef {
+                    id: "cantonese-hong-kong".to_string(),
+                    version: 2,
+                    sha256,
+                }),
+                ..storage::TranslationLanguageSettings::default()
+            },
+        );
+        (config, store)
+    }
+
+    #[test]
+    fn translation_uses_the_target_language_instructions_only_when_it_is_on() {
+        let (mut config, store) = config_with_cantonese_preset();
+        let parts = language_parts(&config, Some(&store), true, "zh-Hant-HK", true, "x", None);
+        assert!(parts
+            .translation_instructions
+            .starts_with("Written Cantonese"));
+        assert_eq!(parts.polish_notes, None);
+        // English has no settings: its built-in text.
+        let english = language_parts(&config, Some(&store), true, "en", true, "x", None);
+        assert_eq!(
+            english.translation_instructions,
+            llm::prompt::default_translation_instructions("en")
+        );
+
+        config
+            .translation
+            .languages
+            .get_mut("zh-Hant-HK")
+            .unwrap()
+            .enabled = false;
+        let off = language_parts(&config, Some(&store), true, "zh-Hant-HK", true, "x", None);
+        assert_eq!(
+            off.translation_instructions,
+            llm::prompt::plain_translation_instructions("zh-Hant-HK")
+        );
+    }
+
+    #[test]
+    fn polish_gets_the_routed_language_notes() {
+        let (config, store) = config_with_cantonese_preset();
+        let parts = language_parts(
+            &config,
+            Some(&store),
+            false,
+            "en",
+            true,
+            "我聽日要present個proposal",
+            Some("zh"),
+        );
+        let notes = parts.polish_notes.unwrap();
+        assert_eq!(notes.code, "zh-Hant-HK");
+        assert!(notes.text.starts_with("Written Cantonese"));
+        // Mandarin without a hint: none. Not a plain dictation: none.
+        assert_eq!(
+            language_parts(
+                &config,
+                Some(&store),
+                false,
+                "en",
+                true,
+                "我今天很忙",
+                Some("zh")
+            )
+            .polish_notes,
+            None
+        );
+        assert_eq!(
+            language_parts(
+                &config,
+                Some(&store),
+                false,
+                "en",
+                false,
+                "聽日",
+                Some("zh")
+            )
+            .polish_notes,
+            None
+        );
+    }
+
+    #[test]
+    fn a_fixed_speech_language_counts_as_detected() {
+        let store = llm::language_library::store::tests::temp_store("pipeline-fixed");
+        let bytes = std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../presets/languages/english/preset.md"),
+        )
+        .unwrap();
+        let sha256 = store.store_preset("english", &bytes).unwrap();
+        let mut config = config_with_speech_language("en");
+        config.translation.languages.insert(
+            "en".to_string(),
+            storage::TranslationLanguageSettings {
+                library_preset: Some(storage::LibraryPresetRef {
+                    id: "english".to_string(),
+                    version: 2,
+                    sha256,
+                }),
+                ..storage::TranslationLanguageSettings::default()
+            },
+        );
+        let parts = language_parts(&config, Some(&store), false, "en", true, "hello", None);
+        assert_eq!(parts.polish_notes.unwrap().code, "en");
     }
 
     fn config_with_speech_language(language: &str) -> storage::AppConfig {
