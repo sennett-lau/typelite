@@ -5,6 +5,8 @@ the user added: English by default, up to three.
 
 Status: agreed — 2026-09-25
 
+The English default is superseded by [tutorial-one-page](../2026-09-26-tutorial-one-page/index.md): new installs start with no language.
+
 The Hong Kong variant's translation wording is superseded by `translation-language-presets`.
 The pill's language chips and the stop keys are superseded by `translate-pill-and-keys`.
 
