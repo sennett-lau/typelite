@@ -61,6 +61,12 @@ impl LlmProvider for OpenAiProvider {
             translate_enabled: req.translate_enabled,
             target_lang: &req.target_lang,
             translation_instructions: &req.translation_instructions,
+            polish_language_notes: req.polish_language_notes.as_ref().map(|notes| {
+                prompt::LanguageNotes {
+                    code: &notes.code,
+                    text: &notes.text,
+                }
+            }),
             has_selected_text,
             voice_intent: Some(&req.voice_intent),
         });

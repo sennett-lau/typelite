@@ -32,7 +32,9 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "presets:index": "node scripts/language-presets.mjs",
+    "presets:check": "node scripts/language-presets.mjs --check"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.0",

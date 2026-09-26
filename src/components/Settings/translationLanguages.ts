@@ -1,8 +1,12 @@
 import { getTranslationLanguageDefaults, updateConfig as saveConfig } from '../../lib/tauri'
-import { useAppStore, type TranslationLanguageSettings } from '../../stores/appStore'
+import {
+  isDefaultLanguageSettings,
+  useAppStore,
+  type TranslationLanguageSettings,
+} from '../../stores/appStore'
 
-// Plan `translation-language-presets`: loading the built-in instructions and saving one
-// language's settings, for `TranslationLanguageSheet`.
+// Plans `translation-language-presets` and `language-prompt-library`: loading the built-in
+// instructions and saving one language's settings, for the language rows and sheet.
 
 let defaultsRequest: Promise<Record<string, string>> | null = null
 
@@ -35,7 +39,7 @@ export async function saveTranslationLanguage(
   const { config, savedConfig, applyPersistedTranslationLanguages } = useAppStore.getState()
   const base = savedConfig ?? config
   const languages = { ...(base.translation.languages ?? {}) }
-  if (settings.ai_preset_id === null && settings.instructions === null) delete languages[code]
+  if (isDefaultLanguageSettings(settings)) delete languages[code]
   else languages[code] = settings
   await saveConfig({ ...base, translation: { ...base.translation, languages } })
   applyPersistedTranslationLanguages(languages)

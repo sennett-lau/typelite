@@ -1317,6 +1317,9 @@ pub fn run() {
 
             tracing::info!("Typelite started");
 
+            // Plan `language-prompt-library`: the daily check for languages with auto-update on.
+            commands::language_presets::start_auto_updates(app_handle.clone());
+
             // P1-2: Pre-warm HTTP connection pool in background
             let warm_handle = app_handle.clone();
             tauri::async_runtime::spawn(async move {
@@ -1354,6 +1357,10 @@ pub fn run() {
             commands::audio::stop_mic_level_monitor,
             commands::translation::set_active_translation_target,
             commands::translation::get_translation_language_defaults,
+            commands::language_presets::list_language_presets,
+            commands::language_presets::download_language_preset,
+            commands::language_presets::load_language_preset,
+            commands::language_presets::get_language_library_status,
             commands::translation::cycle_translation_target,
             commands::app_mappings::get_latest_mapping_candidate,
             commands::app_mappings::list_custom_app_mappings,

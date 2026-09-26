@@ -19,6 +19,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       'pressKeysShortcut',
       'liveWaveform',
       'translationLanguages',
+      'languagePresets',
       'setupTutorial',
       'nativeGlass',
       'noHistory',

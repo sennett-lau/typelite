@@ -1,0 +1,571 @@
+<title>Typelite Language Presets</title>
+<style>
+  :root {
+    --page-bg: #f2f3f6; --page-ink: #1b1d22; --page-muted: #5d6270; --page-line: #dcdfe6; --page-card: #fff;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  * { box-sizing: border-box; }
+  body { background: var(--page-bg); color: var(--page-ink); font-family: var(--ui); font-size: 15px; line-height: 1.5; padding-inline: 20px; padding-block: 32px 64px; }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); }
+  h1 { margin: 4px 0 6px; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.15; text-wrap: balance; }
+  .lead { margin: 0; color: var(--page-muted); max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--page-line); border-radius: 9px; overflow: hidden; background: var(--page-card); }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: transparent; color: var(--page-ink); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #0a84ff; color: #fff; }
+  .seg button:focus-visible { outline: 2px solid #0a84ff; outline-offset: -2px; }
+  .label { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: .06em; text-transform: uppercase; }
+  .notes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; padding: 14px 18px; font-size: 14px; color: var(--page-muted); }
+  .notes b { color: var(--page-ink); }
+  .notes ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .desk { border-radius: 16px; padding: 34px 24px; border: 1px solid var(--page-line); background: radial-gradient(90% 90% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%); }
+  .desk.dk { background: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%); }
+
+  /* App tokens: light Native Glass / dark Aurora */
+  .app {
+    --glass: rgba(246,246,248,.66); --content: rgba(255,255,255,.76); --card: #fff; --ink: #1d1d1f; --muted: #6e6e73; --faint: #8e8e93;
+    --line: rgba(0,0,0,.09); --hair: rgba(0,0,0,.06); --accent: #0a84ff; --accent-ink: #fff; --accent-soft: rgba(10,132,255,.12);
+    --ok: #30d158; --err: #ff453a; --field: rgba(0,0,0,.045); --key: #fff; --key-line: #d2d2d7; --tint-a: transparent; --tint-b: transparent;
+    color: var(--ink); font-family: var(--ui); font-size: 13px;
+  }
+  .app.dk {
+    color-scheme: dark;
+    --glass: rgba(18,24,34,.52); --content: rgba(14,20,30,.58); --card: rgba(36,44,60,.7); --ink: #f1f6ff; --muted: #a6b3c8; --faint: #6f7d94;
+    --line: rgba(255,255,255,.12); --hair: rgba(255,255,255,.08); --accent: #3fd8c2; --accent-ink: #04241f; --accent-soft: rgba(63,216,194,.18);
+    --field: rgba(255,255,255,.06); --key: #2c3646; --key-line: #445066; --tint-a: rgba(63,216,194,.24); --tint-b: rgba(175,82,222,.24);
+  }
+  .win { max-width: 760px; margin: 0 auto; border-radius: 12px; overflow: hidden; position: relative;
+    background: radial-gradient(60% 50% at 90% 0%, var(--tint-a), transparent 70%), radial-gradient(50% 45% at 10% 100%, var(--tint-b), transparent 70%), var(--content);
+    backdrop-filter: blur(30px) saturate(1.8); -webkit-backdrop-filter: blur(30px) saturate(1.8);
+    box-shadow: 0 30px 60px rgba(20,20,50,.28), 0 0 0 .5px rgba(0,0,0,.2); }
+  .lights { display: flex; gap: 8px; padding: 14px 16px 0; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+
+  /* Onboarding */
+  .ob { padding: 14px 40px 26px; min-height: 470px; display: flex; flex-direction: column; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 26px; }
+  .dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--hair); }
+  .dots span.done { background: var(--muted); opacity: .5; }
+  .dots span.now { width: 18px; background: var(--accent); }
+  .ob h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .ob .sub { margin: 4px 0 22px; color: var(--muted); }
+  .card { background: var(--card); border-radius: 12px; box-shadow: 0 0 0 .5px var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; align-items: flex-start; gap: 12px; }
+  .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .ic svg { width: 18px; height: 18px; }
+  .card h3 { margin: 0; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tag { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em; }
+  .card p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+  .card.fixed { height: 214px; justify-content: space-between; }
+  .card-body { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 0; padding-top: 2px; }
+  .status { display: flex; flex-direction: column; gap: 8px; }
+  .status-line { display: flex; align-items: center; gap: 8px; min-height: 22px; flex-wrap: wrap; }
+  .badge { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .badge.err { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
+  .badge.busy { background: var(--field); color: var(--ink); }
+  .status-detail { font-size: 12px; color: var(--muted); line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .models.one { grid-template-columns: minmax(0, 1fr); }
+  .model { all: unset; box-sizing: border-box; border-radius: 9px; padding: 9px 11px; box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .model b { font-size: 12.5px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .model span { font-size: 11.5px; color: var(--muted); }
+  .model[aria-checked="true"] { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .model:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .models.one .model { cursor: default; }
+  .hw { font-size: 11.5px; color: var(--muted); }
+  .card-foot { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 7px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  .btn.ghost { background: var(--field); color: var(--ink); }
+  .btn:focus-visible, .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .link { font: inherit; font-size: 12.5px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+  .link.muted { color: var(--muted); }
+  .progress { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .track { height: 6px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .25s linear; }
+  .progress-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .ready { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); }
+  .check { width: 18px; height: 18px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; flex: none; }
+  .check::after { content: ""; width: 7px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+  .errline { color: var(--err); font-size: 12.5px; }
+  .below { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 12px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .ob-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 26px; }
+
+  /* Sheet */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); display: flex; align-items: flex-start; justify-content: center; padding: 56px 20px 20px; }
+  .scrim[hidden] { display: none; }
+  .sheet { width: min(460px, 100%); background: var(--card); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 .5px var(--line); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .app.dk .sheet { background: #1f2735; }
+  .sheet h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .sheet .sub { margin: -8px 0 0; color: var(--muted); font-size: 12.5px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .fields { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .fields label { color: var(--muted); font-size: 12.5px; }
+  .fields input { font: inherit; font-size: 12.5px; padding: 6px 9px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields input:focus { outline: none; border-color: var(--accent); }
+  .fields input.mono { font-family: var(--mono); font-size: 12px; }
+  .sheet-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fields select { font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields select:focus { outline: none; border-color: var(--accent); }
+  .fields [hidden] { display: none !important; }
+  .hint { grid-column: 2; font-size: 11.5px; color: var(--muted); margin-top: -3px; line-height: 1.5; }
+  .hint button { all: unset; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: 11px; }
+  .hint button:focus-visible { outline: 2px solid var(--accent); }
+  .result { font-size: 12px; color: var(--muted); }
+  .result.ok { color: var(--ok); }
+  .saved { display: flex; flex-direction: column; border-radius: 9px; box-shadow: 0 0 0 .5px var(--line); overflow: hidden; }
+  .saved button { all: unset; display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 12.5px; }
+  .saved button + button { border-top: 1px solid var(--hair); }
+  .saved button[aria-pressed="true"] { background: var(--accent-soft); }
+  .saved button span:last-child { color: var(--muted); font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Settings */
+  .set { display: grid; grid-template-columns: 180px minmax(0, 1fr); min-height: 500px; }
+  .side { background: var(--glass); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--hair); }
+  .brand { font-weight: 600; font-size: 14px; padding: 10px 8px 12px; }
+  .nav { padding: 6px 9px; border-radius: 7px; font-size: 13px; color: var(--ink); }
+  .nav.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .main { padding: 30px 28px 28px; min-width: 0; }
+  .main h2 { margin: 0 0 12px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .toolbar { display: flex; gap: 4px; margin: -4px 0 18px; border-bottom: 1px solid var(--hair); padding-bottom: 10px; flex-wrap: wrap; }
+  .toolbar button { all: unset; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 8px; font-size: 11px; color: var(--muted); cursor: pointer; min-width: 56px; }
+  .toolbar button svg { width: 20px; height: 20px; }
+  .toolbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .toolbar button:focus-visible { outline: 2px solid var(--accent); }
+  .engine { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .subtabs { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 8px; background: var(--hair); gap: 2px; }
+  .subtabs button { all: unset; font-size: 12.5px; padding: 4px 12px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+  .subtabs button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 .5px var(--line); font-weight: 600; }
+  .subtabs button:focus-visible { outline: 2px solid var(--accent); }
+  .ghead { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin: 20px 4px 7px; flex-wrap: wrap; }
+  .glabel { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .picker { font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line); color: var(--ink); border: 0; }
+  .group { background: var(--card); border-radius: 10px; box-shadow: 0 0 0 .5px var(--line); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; min-height: 42px; flex-wrap: wrap; }
+  .row + .row { border-top: 1px solid var(--hair); }
+  .row .l { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+  .row .l small { color: var(--muted); font-size: 11.5px; }
+  .row .v { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .row input { font: inherit; font-family: var(--mono); font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: min(300px, 100%); }
+  .pop { font-size: 12.5px; padding: 4px 10px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line), 0 1px 2px rgba(0,0,0,.08); }
+  .pop::after { content: " ⌄"; color: var(--muted); }
+  .dim { color: var(--muted); font-size: 12px; }
+
+  [data-screen][hidden] { display: none !important; }
+  @media (max-width: 720px) {
+    .ob { padding: 10px 18px 20px; }
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .side { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--hair); }
+    .main { padding: 20px 16px; }
+    .fields { grid-template-columns: minmax(0, 1fr); }
+    .desk { padding: 16px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .track i { transition: none; } }
+</style>
+<style>
+  .win.lp { height: 660px; display: flex; }
+  .win.lp .set { flex: 1; min-height: 0; }
+  .win.lp .main { overflow: auto; }
+  .slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+  .slot { position: relative; height: 34px; border-radius: 9px; background: var(--field); display: flex; align-items: center; gap: 6px; padding: 0 4px 0 9px; min-width: 0; font-size: 12.5px; color: var(--ink); }
+  .slot .n { font-size: 10.5px; font-weight: 700; color: var(--faint); flex: none; }
+  .slot .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot .ib { all: unset; cursor: pointer; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); font-size: 11px; flex: none; }
+  .slot .ib:hover { background: var(--hair); }
+  .slot .upd { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .slot .tag2 { font-size: 10px; font-weight: 600; padding: 0 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .slot.add { all: unset; box-sizing: border-box; height: 34px; border-radius: 9px; border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); font-size: 12.5px; font-weight: 600; display: grid; place-items: center; cursor: pointer; }
+  .sheet.big { width: min(520px, 100%); max-height: calc(100% - 20px); overflow: auto; gap: 12px; }
+  .sh-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .sh-head h3 { margin: 0; font-size: 16px; }
+  .sec { display: flex; flex-direction: column; gap: 6px; }
+  .sec > .lab { font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+  .srcline { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+  .srcline b { color: var(--ink); font-weight: 600; }
+  .badge2 { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--field); color: var(--muted); }
+  .badge2.off { background: var(--accent-soft); color: var(--accent); }
+  .badge2.edit { background: color-mix(in srgb, #ff9f0a 18%, transparent); color: #c77700; }
+  .app.dk .badge2.edit { color: #ffb340; }
+  textarea.instr { font: inherit; font-family: var(--mono); font-size: 11.5px; line-height: 1.5; width: 100%; box-sizing: border-box; height: 150px; resize: none; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); }
+  .counter { font-size: 11px; color: var(--faint); text-align: right; }
+  .banner { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: var(--accent-soft); font-size: 12.5px; color: var(--ink); flex-wrap: wrap; }
+  .banner .grow { flex: 1; min-width: 160px; }
+  .banner.warn { background: color-mix(in srgb, #ff9f0a 14%, transparent); }
+  .btn.xs { padding: 4px 10px; font-size: 12px; }
+  .checks { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+  .checks label { display: flex; gap: 8px; align-items: flex-start; }
+  .checks small { display: block; color: var(--faint); font-size: 11.5px; }
+  .plist { display: flex; flex-direction: column; gap: 6px; }
+  .pitem { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--hair); background: var(--card); }
+  .pitem[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .pitem .t { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; flex-wrap: wrap; }
+  .pitem .d { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .pitem .m { font-size: 11px; color: var(--faint); }
+  .tier { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+  .tier.o { background: var(--accent-soft); color: var(--accent); }
+  .tier.c { background: var(--field); color: var(--muted); }
+  .related { font-size: 12px; color: var(--muted); }
+  .preview { font-family: var(--mono); font-size: 11.5px; line-height: 1.55; white-space: pre-wrap; background: var(--field); border-radius: 8px; padding: 10px 12px; max-height: 220px; overflow: auto; color: var(--ink); }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cmp .col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .cmp .col .lab { font-size: 11px; font-weight: 600; color: var(--faint); }
+  .cmp .preview { max-height: 260px; }
+  .cmp ins { background: color-mix(in srgb, #34c759 22%, transparent); text-decoration: none; }
+  .cmp del { background: color-mix(in srgb, #ff3b30 18%, transparent); text-decoration: line-through; }
+  .foot3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .foot3 .grow { flex: 1; }
+  select.pick { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--ink); max-width: 100%; }
+  @media (max-width: 640px) { .cmp { grid-template-columns: 1fr; } .slots { grid-template-columns: 1fr; } }
+
+  .lrow { display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-height: 52px; }
+  .lrow + .lrow, .lrow + .row, .row + .lrow { border-top: 1px solid var(--hair); }
+  .lrow .grip { color: var(--faint); cursor: grab; font-size: 13px; letter-spacing: -2px; flex: none; }
+  .lrow .num { width: 20px; height: 20px; border-radius: 50%; background: var(--field); color: var(--muted); font-size: 11px; font-weight: 700; display: grid; place-items: center; flex: none; }
+  .lrow .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .lrow .info b { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .lrow .info small { font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lrow .updtag { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .lrow .acts { display: flex; gap: 4px; align-items: center; flex: none; }
+  .iconbtn { all: unset; cursor: pointer; width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+  .iconbtn:hover { background: var(--hair); color: var(--ink); }
+  .addrow { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px; color: var(--accent); font-size: 13px; font-weight: 600; border-top: 1px solid var(--hair); }
+  .addrow:hover { background: var(--accent-soft); }
+
+  .autochk { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; cursor: pointer; margin-top: 2px; }
+  .autochk input { margin-top: 3px; }
+  .autochk small { display: block; color: var(--faint); font-size: 11.5px; }
+
+  .sw { all: unset; cursor: pointer; flex: none; width: 34px; height: 20px; border-radius: 10px; background: var(--accent); position: relative; transition: background .15s; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 16px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s; }
+  .sw[aria-checked="false"] { background: var(--line); }
+  .sw[aria-checked="false"]::after { left: 2px; }
+  .sw:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lrow.off .info b, .lrow.off .info small { opacity: .5; }
+  .sh-head .right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); margin-left: 24px; }
+  .sheet.big .sh-head { padding-bottom: 6px; }
+  .sheet .offnote { font-size: 12.5px; color: var(--muted); margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--field); }
+
+  .tabs2 { display: inline-flex; background: var(--field); border-radius: 8px; padding: 2px; align-self: flex-start; }
+  .tabs2 button { all: unset; cursor: pointer; font-size: 12.5px; padding: 5px 12px; border-radius: 6px; color: var(--muted); }
+  .tabs2 button[aria-selected="true"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .chips3 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .hc { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; padding: 3px 8px; border-radius: 999px; background: var(--field); color: var(--ink); }
+  .hc.mine { background: var(--accent-soft); color: var(--accent); }
+  .hc button { all: unset; cursor: pointer; font-size: 11px; color: inherit; opacity: .7; }
+  .hc.code { font-family: var(--mono); font-size: 11.5px; }
+  .hint-in { font: inherit; font-size: 12.5px; width: 110px; padding: 3px 8px; border-radius: 999px; border: 1px dashed var(--line); background: none; color: var(--ink); }
+  .tryrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tryrow select { flex: 1; min-width: 200px; }
+  .route { font-size: 12.5px; padding: 8px 12px; border-radius: 10px; background: var(--field); }
+  .route b { color: var(--accent); }
+  .lrow.other .num { background: none; color: var(--faint); }
+  .lrow.other .info b { color: var(--muted); font-weight: 500; }
+
+  .sheet.big > * { animation: shfade .22s ease both; }
+  @keyframes shfade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .sheet.big > * { animation: none; } }
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-mon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · design iteration</div>
+    <h1>Language presets from GitHub</h1>
+    <p class="lead">Each translation language can use a preset from the project's library on GitHub, the built-in default, or your own text. Presets are plain prompt text; you see every text before it is used, and updates apply by themselves only for a language whose auto-update you turned on (and never over text you edited).</p>
+  </header>
+  <div class="bar">
+    <span class="label">Screen</span>
+    <div class="seg" role="group" aria-label="Screen">
+      <button type="button" data-k="scr" data-v="settings" aria-pressed="true">Settings → AI</button>
+      <button type="button" data-k="scr" data-v="sheet" aria-pressed="false">Language sheet</button>
+      <button type="button" data-k="scr" data-v="browse" aria-pressed="false">Browse presets</button>
+      <button type="button" data-k="scr" data-v="preview" aria-pressed="false">Preview a preset</button>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="label">Language</span>
+    <div class="seg" role="group" aria-label="Language">
+      <button type="button" data-k="lang" data-v="hk" aria-pressed="true">繁體中文（香港）</button>
+      <button type="button" data-k="lang" data-v="gb" aria-pressed="false">English (UK)</button>
+    </div>
+    <span class="label">Text comes from</span>
+    <div class="seg" role="group" aria-label="Source">
+      <button type="button" data-k="src" data-v="builtin" aria-pressed="false">Built-in default</button>
+      <button type="button" data-k="src" data-v="preset" aria-pressed="true">Preset</button>
+      <button type="button" data-k="src" data-v="edited" aria-pressed="false">Preset, edited</button>
+    </div>
+    <span class="label">Update</span>
+    <div class="seg" role="group" aria-label="Update">
+      <button type="button" data-k="upd" data-v="none" aria-pressed="false">None</button>
+      <button type="button" data-k="upd" data-v="yes" aria-pressed="true">v4 available</button>
+    </div>
+    <span class="label">Auto-update (this language)</span>
+    <div class="seg" role="group" aria-label="Auto-update">
+      <button type="button" data-k="auto" data-v="on" aria-pressed="false">On</button>
+      <button type="button" data-k="auto" data-v="off" aria-pressed="true">Off</button>
+    </div>
+    <span class="label">Library</span>
+    <div class="seg" role="group" aria-label="Library">
+      <button type="button" data-k="net" data-v="on" aria-pressed="true">Online</button>
+      <button type="button" data-k="net" data-v="off" aria-pressed="false">Offline</button>
+    </div>
+    <span class="label">Theme</span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="true">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="app" id="app">
+      <div class="win lp">
+        <div class="set">
+          <nav class="side" aria-label="Typelite">
+            <div class="lights" style="padding:6px 6px 0"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+            <div class="brand">Typelite</div>
+            <div class="nav">Home</div><div class="nav on">Settings</div><div class="nav">Dictionary</div>
+          </nav>
+          <div class="main">
+            <nav class="toolbar" aria-label="Settings sections">
+              <button type="button"><svg><use href="#i-gear"/></svg>General</button>
+              <button type="button"><svg><use href="#i-mic"/></svg>Speech</button>
+              <button type="button" aria-current="page"><svg><use href="#i-spark"/></svg>AI</button>
+              <button type="button"><svg><use href="#i-text"/></svg>Prompts</button>
+              <button type="button"><svg><use href="#i-mon"/></svg>System</button>
+            </nav>
+            <div class="ghead" style="margin-top:0"><span class="glabel">AI polish uses</span><a class="link" href="https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md" target="_blank" rel="noopener">Learn more</a></div>
+            <div class="group"><div class="row"><div class="l">Your server or API key<small>Ollama on my PC · qwen3:4b-instruct</small></div></div></div>
+            <div class="ghead"><span class="glabel">Translation</span><a class="link" href="https://github.com/sennett-lau/typelite/blob/main/docs/guides/ai-polish.md#language-presets" target="_blank" rel="noopener">About language presets</a></div>
+            <div class="group"><div id="slots"></div></div>
+            <div class="ghead"><span class="glabel">Polish</span></div>
+            <div class="group"><div class="row"><div class="l">Clean up dictation</div></div></div>
+          </div>
+        </div>
+        <div class="scrim" id="scrim" hidden><div class="sheet big" role="dialog" aria-label="Language settings" id="sheet"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>How it works</b>
+    <ul>
+      <li><b>Where the text comes from</b>, in order: your own edited text, else a downloaded preset, else the built-in default (always available offline).</li>
+      <li><b>Adding a language</b> opens its sheet; "Browse presets" lists matching presets from GitHub: Official first, then Community, most specific language first. English (UK) shows the shared English preset with its en-GB notes.</li>
+      <li><b>Nothing is used before you see it:</b> choosing a preset shows its full text first; "Use this preset" applies it.</li>
+      <li><b>Editing</b> keeps a local copy ("Based on … · edited"); "Reset to preset" undoes your edits, "Reset to default" returns to the built-in text.</li>
+      <li><b>Updates:</b> with "Update presets automatically" on, Typelite checks GitHub once a day and applies new versions of presets you haven’t edited; edited text is never replaced (the sheet offers “Use v4 instead”). With it off, a dot on the language and a banner offer Preview / Update.</li>
+      <li>In Settings, languages are rows (number, name, where its instructions come from, model, Edit, remove, drag to reorder), with “+ Add language” as the last row until there are 3. The one-row slots stay in onboarding only.</li>
+      <li>The Translation section no longer explains itself inline; “About language presets” links to the guide, and each language sheet says what the instructions are for.</li>
+      <li><b>Recognition (polish only):</b> the router chooses one of your languages or Other. 1) A hint character/word matches → that language. 2) Else the language speech recognition reported matches one of your languages → that one (a preset can require a hint, e.g. Cantonese, so plain Chinese does not get Cantonese rules). 3) Else plain polish, no extra instructions. Hints and codes come from the preset; you can add your own. Nothing language-specific is built into the app.</li>
+      <li><b>One switch per language</b> (on the row and at the top of its sheet): on = its instructions are used for both translating into it and polishing speech in it; off = plain translation and no extra polish instructions. No per-language AI model (prompts only for now).</li>
+      <li>Downloads are plain GETs from GitHub with no identifiers; each file is checked against the hash in the library's index.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  var st = { tab: 'instr', mineHints: ['得閒'], reqHint: true, trial: 0, on: [true, true], scr: 'settings', lang: 'hk', src: 'preset', upd: 'yes', net: 'on', pick: 0, auto: 'off' };
+  var L = {
+    hk: { name: '繁體中文（香港）', code: 'zh-Hant-HK', preset: { name: 'Cantonese (Hong Kong)', id: 'cantonese-hong-kong', v: 3, tier: 'Official' },
+      builtin: 'Write colloquial written Cantonese, the way Hong Kong people type messages to each other, not formal written Chinese (書面語) and not Mandarin.\n- Use Cantonese words and grammar (嘅 咗 喺 啲 冇 唔 佢 嚟 哋 嘢 咁)…',
+      text: 'Write colloquial written Cantonese as Hongkongers type it — not 書面語, not Mandarin.\n- Cantonese words: 係 嘅 喺 冇 唔 佢 睇 俾 仲未 聽日 而家 多謝.\n- Keep Hong Kong code-mixing: check, proposal, deadline, email, meeting, update, report stay in English.\n- Keep swear words and slang as spoken; do not make the text more formal.\n- Remove fillers (即係, 咁, 呢) and apply self-corrections (唔係, 應該係).\n- Hong Kong Traditional characters and wording (軟件, 網絡, 巴士); full-width punctuation.\n\nExamples:\n"Can you check the deadline for the proposal?" → 你可唔可以幫我check下個proposal嘅deadline？\n"I haven’t read the email yet, I’ll reply after lunch." → 我仲未睇個email，食完lunch再覆你',
+      v4: '\n- Numbers and times as digits: 5pm → 下晝5點, 3:30 → 3點半.',
+      list: [
+        { name: 'Cantonese (Hong Kong)', tier: 'o', langs: 'zh-Hant-HK, yue', sum: 'Colloquial written Cantonese with Hong Kong code-mixing; keeps slang; polish and translate.', by: 'sennett-lau', v: 3, hint: 'Works best with 7B+ or Cantonese-tuned models' },
+        { name: 'Cantonese — formal (書面語)', tier: 'c', langs: 'zh-Hant-HK', sum: 'Standard written Chinese with Hong Kong wording, for work emails and documents.', by: 'contributor-a', v: 1, hint: '' },
+        { name: 'Cantonese — casual chat', tier: 'c', langs: 'yue', sum: 'Very casual Cantonese for WhatsApp/Signal, more particles and emoji-free.', by: 'contributor-b', v: 2, hint: '' }
+      ], related: 'Mandarin (Taiwan) · Chinese (Simplified)' },
+    gb: { name: 'English (UK)', code: 'en-GB', preset: { name: 'English (all regions)', id: 'english', v: 2, tier: 'Official' },
+      builtin: 'Translate into English. Natural, idiomatic, same tone and register as the original…',
+      text: 'Write natural, idiomatic English with the same tone and register as the speaker. Keep names and product terms as said.\n\nNotes for en-GB:\n- British spelling (colour, organise, travelled) and vocabulary (flat, lift, mobile).\n- Dates as 5 October; times as 3.30 pm or 15:30.\n\nExamples:\n"我哋聽日三點開會" → Our meeting is at 3 pm tomorrow.',
+      v4: '\n- Use single quotation marks for quotes.',
+      list: [
+        { name: 'English (all regions)', tier: 'o', langs: 'en · notes for en-GB', sum: 'Natural English for every region, with short notes per variant.', by: 'sennett-lau', v: 2, hint: '' },
+        { name: 'English — plain & concise', tier: 'c', langs: 'en', sum: 'Short sentences, no filler, good for chat and tickets.', by: 'contributor-c', v: 1, hint: '' }
+      ], related: '' }
+  };
+  var app = document.getElementById('app'), desk = document.getElementById('desk'), scrim = document.getElementById('scrim'), sheet = document.getElementById('sheet');
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function autoRow() {
+    var on = st.auto === 'on';
+    document.getElementById('autorow').innerHTML = '<label style="display:flex;gap:10px;align-items:flex-start;flex:1;cursor:pointer"><input type="checkbox" id="autobox"' + (on ? ' checked' : '') + ' style="margin-top:3px"><span class="l">Update presets automatically<small>' + (on ? 'Checks GitHub once a day. Presets you edited keep your text.' : 'Checks GitHub once a day and applies new versions of the presets you use.') + '</small></span></label>';
+    document.getElementById('autobox').onchange = function (e) { set('auto', e.target.checked ? 'on' : 'off'); render(); };
+  }
+  function slots() {
+    var x = L[st.lang];
+    var needs = st.upd === 'yes' && (st.src === 'edited' || (st.src === 'preset' && st.auto === 'off'));
+    var srcTxt = st.src === 'builtin' ? 'Built-in instructions' : (st.src === 'edited' ? 'Based on ' + x.preset.name + ' · edited' : x.preset.name + ' preset · v' + x.preset.v + (st.auto === 'on' ? ' · updates automatically' : ''));
+    var rows = [
+      { name: x.name, sub: srcTxt, upd: needs, open: true },
+      { name: st.lang === 'gb' ? '繁體中文（香港）' : 'English', sub: 'Built-in instructions', upd: false }
+    ];
+    var h = rows.map(function (r, i) {
+      var on = st.on[i];
+      return '<div class="lrow' + (on ? '' : ' off') + '"><span class="grip" title="Drag to change the order (the Switch key follows this order)" aria-hidden="true">⋮⋮</span><span class="num">' + (i + 1) + '</span>' +
+        '<div class="info"><b>' + r.name + (r.upd && on ? '<span class="updtag">Update</span>' : '') + '</b><small>' + (on ? r.sub : 'Instructions off · plain translation') + '</small></div>' +
+        '<div class="acts"><button class="sw" type="button" role="switch" aria-checked="' + on + '" data-sw="' + i + '" aria-label="Use instructions for ' + r.name + '" title="' + (on ? 'On: used for translation and polish' : 'Off') + '"></button><button class="btn ghost xs" type="button"' + (r.open ? ' data-open' : '') + '>Edit</button><button class="iconbtn" type="button" aria-label="Remove ' + r.name + '" title="Remove">✕</button></div></div>';
+    }).join('');
+    h += '<button class="addrow" type="button">＋ Add language<span class="dim" style="font-weight:400;margin-left:auto">up to 3</span></button>';
+    document.getElementById('slots').innerHTML = h;
+  }
+
+  function sourceLine(x) {
+    if (st.src === 'builtin') return '<div class="srcline">From: <b>Built-in default</b><span class="badge2">offline</span><span class="grow"></span><button class="link" type="button" data-go="browse">Browse presets</button></div>';
+    var p = x.preset;
+    return '<div class="srcline">' + (st.src === 'edited' ? 'Based on' : 'From') + ': <b>' + p.name + '</b> · v' + p.v + ' <span class="badge2 off">' + p.tier + '</span>' + (st.src === 'edited' ? '<span class="badge2 edit">Edited</span>' : '') + '<span class="grow"></span><button class="link" type="button" data-go="browse">Change</button></div>';
+  }
+  function updateBanner(x) {
+    if (st.upd !== 'yes' || st.src === 'builtin' || st.net === 'off') return '';
+    var nv = x.preset.v + 1;
+    if (st.src === 'preset' && st.auto === 'on') return '<div class="banner"><span class="grow">Updated automatically to <b>v' + nv + '</b> today.</span><button class="link" type="button" data-go="preview">See what it says</button></div>';
+    if (st.src === 'preset') return '<div class="banner"><span class="grow"><b>v' + nv + ' available</b> for ' + x.preset.name + '.</span><button class="btn ghost xs" type="button" data-go="preview">Preview</button><button class="btn xs" type="button">Update</button></div>';
+    return '<div class="banner"><span class="grow"><b>v' + nv + ' available.</b> You edited this text, so it wasn’t replaced.</span><button class="btn ghost xs" type="button">Keep mine</button><button class="btn xs" type="button" data-go="preview">Use v' + nv + ' instead</button></div>';
+  }
+  function effective(x) {
+    if (st.src === 'builtin') return x.builtin;
+    if (st.src === 'edited') return x.text.replace('Keep swear words and slang as spoken; do not make the text more formal.', 'Keep slang, but tone down swear words.');
+    return x.text;
+  }
+
+  var RECOG = {
+    hk: { codes: ['yue', 'zh'], hints: ['嘅', '咗', '喺', '啲', '冇', '唔', '佢', '嚟', '哋', '嘢', '咁', '係咪'], req: true, other: { name: 'English', codes: ['en'] } },
+    gb: { codes: ['en'], hints: [], req: false, other: { name: '繁體中文（香港）', codes: ['yue', 'zh'] } }
+  };
+  // Samples: text + what speech recognition reported.
+  var TRIALS = [
+    { t: '我今日好忙，唔得閒食飯', heard: 'zh' },
+    { t: '我今天很忙，没空吃饭', heard: 'zh' },
+    { t: 'Can you check the deadline for the proposal?', heard: 'en' },
+    { t: '我聽日要present個proposal', heard: 'zh' },
+    { t: '¿Podemos vernos mañana por la tarde?', heard: 'es' }
+  ];
+  function route(tr) {
+    // The user's languages (in list order) plus Other.
+    var hk = { name: '繁體中文（香港）', codes: RECOG.hk.codes, hints: RECOG.hk.hints.concat(st.mineHints), req: st.reqHint };
+    var en = { name: st.lang === 'gb' ? 'English (UK)' : 'English', codes: ['en'], hints: [], req: false };
+    var langs = st.lang === 'gb' ? [en, hk] : [hk, en];
+    var best = null, bestN = 0;
+    langs.forEach(function (l) {
+      var n = l.hints.filter(function (h) { return tr.t.indexOf(h) >= 0; });
+      if (n.length > bestN) { best = { l: l, found: n }; bestN = n.length; }
+    });
+    if (best) return { to: best.l.name, why: 'hint ' + best.found.slice(0, 3).join(' ') };
+    var byCode = langs.filter(function (l) { return l.codes.indexOf(tr.heard) >= 0; });
+    var usable = byCode.filter(function (l) { return !l.req; });
+    if (usable.length) return { to: usable[0].name, why: 'speech recognition heard “' + tr.heard + '”' };
+    if (byCode.length) return { to: 'Other', why: 'heard “' + tr.heard + '” but no hint matched, and ' + byCode[0].name + ' needs one' };
+    return { to: 'Other', why: '“' + tr.heard + '” is not one of your languages' };
+  }
+  function recognition(x) {
+    var r = RECOG[st.lang], mine = st.lang === 'hk' ? st.mineHints : [];
+    var h = '<p class="dim" style="margin:0;font-size:12px">Decides when polish uses these instructions. Translation always uses them, since you pick the target.</p>';
+    h += '<div class="sec"><span class="lab">Speech recognition hears</span><div class="chips3">' + r.codes.map(function (c) { return '<span class="hc code" title="Language code reported by speech recognition">' + c + '</span>'; }).join('') + '<span class="dim" style="font-size:11.5px">from the preset</span>' + (r.req ? '<span class="dim" style="font-size:11.5px"> · Chinese counts only with a hint</span>' : '') + '</div></div>';
+    h += '<div class="sec"><span class="lab">Hint characters and words</span><div class="chips3">' +
+      (r.hints.length ? r.hints.map(function (c) { return '<span class="hc" title="From the preset">' + c + '</span>'; }).join('') : '<span class="dim" style="font-size:12px">None needed: speech recognition tells English apart.</span>') +
+      mine.map(function (c, i) { return '<span class="hc mine" title="Added by you">' + c + '<button type="button" data-rmhint="' + i + '" aria-label="Remove ' + c + '">✕</button></span>'; }).join('') +
+      '<input class="hint-in" id="hintin" placeholder="+ Add hint" aria-label="Add a hint"></div></div>';
+    return h;
+  }
+  function sheetHtml() {
+    var x = L[st.lang];
+    if (st.scr === 'sheet') {
+      var t = effective(x);
+      var on0 = st.on[0];
+      var head = '<div class="sh-head"><h3>' + x.name + ' <span class="dim" style="font-weight:400;font-size:12px">' + x.code + '</span></h3><span class="right">' + (on0 ? 'On' : 'Off') + '<button class="sw" type="button" role="switch" aria-checked="' + on0 + '" data-sw="0" aria-label="Use these instructions"></button></span></div>';
+      if (!on0) return head + '<p class="offnote">Off: translating into ' + x.name + ' uses plain translation, and polish gets no extra instructions. Turn it on to use the instructions below for both.</p>' +
+        '<div class="foot3"><span class="grow"></span><button class="btn" type="button" data-close>Done</button></div>';
+      var tabs = '<div class="tabs2" role="tablist"><button type="button" role="tab" data-tab="instr" aria-selected="' + (st.tab === 'instr') + '">Instructions</button><button type="button" role="tab" data-tab="recog" aria-selected="' + (st.tab === 'recog') + '">Recognition</button></div>';
+      if (st.tab === 'recog') return head + tabs + recognition(x) +
+        '<div class="foot3"><span class="grow"></span><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn" type="button" data-close>Save</button></div>';
+      return head + tabs + updateBanner(x) +
+        '<div class="sec"><span class="lab">Instructions</span><p class="dim" style="margin:0;font-size:12px">Used when translating into ' + x.name + ' and when polishing speech in it.</p>' + sourceLine(x) +
+        '<textarea class="instr" aria-label="Instructions">' + esc(t) + '</textarea><div class="counter">' + t.length + ' / 2000</div>' +
+        (st.src === 'builtin' ? '' : '<label class="autochk"><input type="checkbox" id="autobox"' + (st.auto === 'on' ? ' checked' : '') + '> <span>Update this preset automatically<small>' + (st.src === 'edited' ? 'You edited the text, so new versions are offered here instead of replacing it.' : 'Checks GitHub once a day and uses the newest version.') + '</small></span></label>') +
+        '</div>' +
+        '<div class="foot3">' + (st.src === 'edited' ? '<button class="link" type="button">Reset to preset</button>' : '') + (st.src !== 'builtin' ? '<button class="link muted" type="button">Reset to default</button>' : '') + '<span class="grow"></span><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn" type="button" data-close>Save</button></div>';
+    }
+    if (st.scr === 'browse') {
+      var h = '<div class="sh-head"><h3>Presets for ' + x.name + '</h3><a class="link" href="https://github.com/sennett-lau/typelite/tree/main/presets/languages" target="_blank" rel="noopener">Library on GitHub</a></div>';
+      if (st.net === 'off') h += '<div class="banner warn"><span class="grow">Can’t reach the preset library. Showing downloaded presets and the built-in default.</span><button class="btn ghost xs" type="button">Try again</button></div>';
+      h += '<div class="plist" role="radiogroup" aria-label="Presets">';
+      h += '<button class="pitem" type="button" role="radio" aria-checked="' + (st.pick === -1) + '" data-pick="-1"><span class="t">Built-in default <span class="tier c">Built in</span></span><span class="d">Ships with Typelite; always available offline.</span></button>';
+      x.list.forEach(function (p, i) {
+        if (st.net === 'off' && i > 0) return;
+        h += '<button class="pitem" type="button" role="radio" aria-checked="' + (st.pick === i) + '" data-pick="' + i + '"><span class="t">' + esc(p.name) + ' <span class="tier ' + p.tier + '">' + (p.tier === 'o' ? 'Official' : 'Community') + '</span>' + (i === 0 && st.src !== 'builtin' ? '<span class="badge2">Downloaded</span>' : '') + '</span><span class="d">' + esc(p.sum) + '</span><span class="m">' + esc(p.langs) + ' · v' + p.v + ' · by ' + p.by + (p.hint ? ' · ' + esc(p.hint) : '') + '</span></button>';
+      });
+      h += '</div>';
+      if (x.related) h += '<p class="related">Related: ' + x.related + '</p>';
+      h += '<div class="foot3"><span class="dim">Nothing is used until you preview and confirm.</span><span class="grow"></span><button class="btn ghost" type="button" data-go="sheet">Back</button><button class="btn" type="button" data-go="preview">Preview</button></div>';
+      return h;
+    }
+    if (st.scr === 'preview') {
+      var p = st.pick >= 0 ? x.list[st.pick] : null;
+      var text = p ? (st.pick === 0 ? x.text : x.text.split('\n\n')[0]) : x.builtin;
+      return '<div class="sh-head"><h3>' + (p ? esc(p.name) : 'Built-in default') + '</h3>' + (p ? '<span class="tier ' + p.tier + '">' + (p.tier === 'o' ? 'Official' : 'Community') + '</span>' : '') + '</div>' +
+        (p ? '<p class="dim" style="margin:0">' + esc(p.sum) + ' · v' + p.v + ' · by ' + p.by + ' · CC0</p>' : '') +
+        '<div class="sec"><span class="lab">Full text sent to the AI' + (st.lang === 'gb' ? ' (rendered for en-GB)' : '') + '</span><div class="preview">' + esc(text) + '</div></div>' +
+        '<div class="foot3"><span class="dim">Checked against the library’s hash.</span><span class="grow"></span><button class="btn ghost" type="button" data-go="browse">Back</button><button class="btn" type="button" data-go="sheet">Use this preset</button></div>';
+    }
+    return '';
+  }
+
+  function render() {
+    slots();
+    if (st.scr === 'settings') { scrim.hidden = true; return; }
+    var wasOpen = !scrim.hidden, oldH = wasOpen ? sheet.offsetHeight : 0;
+    scrim.hidden = false; sheet.innerHTML = sheetHtml();
+    if (wasOpen && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      var newH = sheet.offsetHeight;
+      if (Math.abs(newH - oldH) > 2) {
+        sheet.style.height = oldH + 'px'; sheet.style.overflow = 'hidden';
+        sheet.getBoundingClientRect();
+        sheet.style.transition = 'height .28s cubic-bezier(.2,0,0,1)';
+        sheet.style.height = newH + 'px';
+        var clear = function () { sheet.style.height = ''; sheet.style.transition = ''; sheet.style.overflow = ''; };
+        sheet.addEventListener('transitionend', function done(e) { if (e.target !== sheet) return; clear(); sheet.removeEventListener('transitionend', done); });
+        setTimeout(clear, 400);
+      }
+    }
+    var ab = document.getElementById('autobox'); if (ab) ab.onchange = function (e) { set('auto', e.target.checked ? 'on' : 'off'); render(); };
+    var rb = document.getElementById('reqbox'); if (rb) rb.onchange = function (e) { st.reqHint = e.target.checked; render(); };
+    var ts = document.getElementById('trysel'); if (ts) ts.onchange = function (e) { st.trial = +e.target.value; render(); };
+    var hi = document.getElementById('hintin'); if (hi) hi.onkeydown = function (e) { if (e.key === 'Enter' && hi.value.trim()) { st.mineHints.push(hi.value.trim()); render(); var n = document.getElementById('hintin'); if (n) n.focus(); } };
+  }
+  function set(k, v) { st[k] = v; document.querySelectorAll('[data-k="' + k + '"]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === v)); }); }
+  document.querySelectorAll('[data-k]').forEach(function (b) { b.onclick = function () { set(b.getAttribute('data-k'), b.getAttribute('data-v')); render(); }; });
+  document.getElementById('desk').addEventListener('click', function (e) {
+    var t;
+    if ((t = e.target.closest('[data-tab]'))) { st.tab = t.getAttribute('data-tab'); render(); return; }
+    if ((t = e.target.closest('[data-rmhint]'))) { st.mineHints.splice(+t.getAttribute('data-rmhint'), 1); render(); return; }
+    if ((t = e.target.closest('[data-sw]'))) { var k = +t.getAttribute('data-sw'); st.on[k] = !st.on[k]; render(); return; }
+    if ((t = e.target.closest('[data-open]'))) { set('scr', 'sheet'); render(); return; }
+    if ((t = e.target.closest('[data-go]'))) { set('scr', t.getAttribute('data-go')); render(); return; }
+    if ((t = e.target.closest('[data-pick]'))) { st.pick = +t.getAttribute('data-pick'); render(); return; }
+    if (e.target.closest('[data-close]') || e.target === scrim) { set('scr', 'settings'); render(); }
+  });
+  function theme(d) { app.classList.toggle('dk', d); desk.classList.toggle('dk', d);
+    document.getElementById('t-light').setAttribute('aria-pressed', String(!d)); document.getElementById('t-dark').setAttribute('aria-pressed', String(d)); }
+  document.getElementById('t-light').onclick = function () { theme(false); };
+  document.getElementById('t-dark').onclick = function () { theme(true); };
+  try { if (matchMedia('(prefers-color-scheme: dark)').matches) theme(true); } catch (e) {}
+  render();
+})();
+</script>
