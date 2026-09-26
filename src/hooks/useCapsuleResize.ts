@@ -206,12 +206,30 @@ export function getCapsuleFocusable(): boolean {
   return false
 }
 
-const CAPSULE_BOTTOM_MARGIN = 80
+/**
+ * Plan `pill-over-full-screen`: space between the pill's bottom edge and the bottom of the
+ * screen's work area (the part the Dock does not cover). 16 pt, half the pill's height: the pill
+ * reads as resting just above the Dock, or just above the screen's edge where there is no Dock (an external screen, an
+ * auto-hidden Dock, a full-screen app), clear of the display's rounded corners, and its 6 pt
+ * slide-down when hiding stays on screen. `PILL_BOTTOM_GAP` in `ask_panel.rs` matches.
+ */
+export const PILL_BOTTOM_GAP = 16
+/** Transparent room the capsule window adds around the pill on each side. */
+export const CAPSULE_WINDOW_PADDING = 12
 
 interface MonitorGeometry {
   position: { x: number; y: number }
   size: { width: number; height: number }
   scaleFactor: number
+  /**
+   * The part of the screen not covered by the menu bar or the Dock (macOS `visibleFrame`), in
+   * physical pixels at this monitor's scale. It equals the whole screen with an auto-hidden
+   * Dock and in a full-screen Space. Missing: the whole screen is used.
+   */
+  workArea?: {
+    position: { x: number; y: number }
+    size: { width: number; height: number }
+  }
 }
 
 interface LogicalRect {
@@ -252,6 +270,19 @@ export function pickMonitorForPoint<T extends MonitorGeometry>(
       point.y < rect.y + rect.height
     )
   })
+}
+
+/** The monitor's work area in logical points, converted with the monitor's own scale factor. */
+export function monitorWorkAreaRect(monitor: MonitorGeometry): LogicalRect {
+  if (!monitor.workArea) return monitorLogicalRect(monitor)
+  const scale = monitor.scaleFactor || 1
+  const area = monitor.workArea
+  return {
+    x: area.position.x / scale,
+    y: area.position.y / scale,
+    width: area.size.width / scale,
+    height: area.size.height / scale,
+  }
 }
 
 /** Identifies a monitor by its logical rectangle (stable while the layout does not change). */
@@ -306,15 +337,20 @@ function fadeTo(element: HTMLElement, opacity: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, FOLLOW_FADE_MS))
 }
 
+/**
+ * Where the capsule window sits on `monitor`: centred on its work area, the pill's bottom edge
+ * `PILL_BOTTOM_GAP` above the work area's bottom (so above the Dock when the Dock is on this
+ * screen's bottom edge, else near the screen's bottom). The vertical centre is the pill's, so
+ * the window grows and shrinks around it.
+ */
 export function capsuleAnchorForMonitor(
   monitor: MonitorGeometry,
   windowWidth: number,
-  windowHeight: number,
 ): CapsuleAnchor {
-  const rect = monitorLogicalRect(monitor)
+  const area = monitorWorkAreaRect(monitor)
   return {
-    left: Math.round(rect.x + rect.width / 2 - windowWidth / 2),
-    centerY: Math.round(rect.y + rect.height - CAPSULE_BOTTOM_MARGIN - windowHeight / 2),
+    left: Math.round(area.x + area.width / 2 - windowWidth / 2),
+    centerY: Math.round(area.y + area.height - PILL_BOTTOM_GAP - PILL_HEIGHT / 2),
   }
 }
 
@@ -424,8 +460,8 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       askWithSelection,
       typingNudge,
     )
-    const windowWidth = size.width + 24
-    const windowHeight = size.height + 24
+    const windowWidth = size.width + 2 * CAPSULE_WINDOW_PADDING
+    const windowHeight = size.height + 2 * CAPSULE_WINDOW_PADDING
     const myGeneration = ++generation.current
     wake.current()
 
@@ -465,7 +501,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
           primary ||
           monitors[0]
         if (target) {
-          anchor.current = capsuleAnchorForMonitor(target, windowWidth, windowHeight)
+          anchor.current = capsuleAnchorForMonitor(target, windowWidth)
           anchorMonitor.current = monitorKey(target)
           anchorSize.current = { width: windowWidth, height: windowHeight }
         }
@@ -559,11 +595,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       const element = fadeTarget?.current ?? null
       const fade = element !== null && !prefersReducedMotion()
       if (fade) await fadeTo(element, 0)
-      anchor.current = capsuleAnchorForMonitor(
-        target,
-        anchorSize.current.width,
-        anchorSize.current.height,
-      )
+      anchor.current = capsuleAnchorForMonitor(target, anchorSize.current.width)
       anchorMonitor.current = monitorKey(target)
       const origin = capsuleOrigin(anchor.current, windowHeightNow.current)
       await getCurrentWindow()

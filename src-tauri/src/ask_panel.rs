@@ -29,10 +29,10 @@ pub const SCREEN_MARGIN: f64 = 8.0;
 pub const DEFAULT_PANEL_HEIGHT: f64 = 160.0;
 /// The capsule window pads the pill by this much on each side (`useCapsuleResize`).
 pub const CAPSULE_WINDOW_PADDING: f64 = 12.0;
-/// Without a visible pill: its usual centre sits this far above the screen's bottom edge
-/// (`CAPSULE_BOTTOM_MARGIN` in `useCapsuleResize`).
-const CAPSULE_BOTTOM_MARGIN: f64 = 80.0;
-/// Without a pill ever seen: its usual height.
+/// Without a visible pill: its usual bottom edge sits this far above the bottom of the screen's
+/// work area, the part the Dock does not cover (`PILL_BOTTOM_GAP` in `useCapsuleResize`).
+pub const PILL_BOTTOM_GAP: f64 = 16.0;
+/// Without a pill ever seen: its usual height (`PILL_HEIGHT` in `useCapsuleResize`).
 const DEFAULT_PILL_HEIGHT: f64 = 40.0;
 
 /// A rectangle in global logical points (y grows downwards, as Tauri reports it).
@@ -121,12 +121,13 @@ pub fn anchor_above_pill(pill: LogicalRect, screens: &[LogicalRect]) -> Option<P
     })
 }
 
-/// The anchor when no pill is up: the pill's usual place on `screen` (bottom centre).
+/// The anchor when no pill is up: the pill's usual place on `screen` (a work area): centred,
+/// its bottom `PILL_BOTTOM_GAP` above the work area's bottom.
 pub fn anchor_on_screen(screen: LogicalRect, pill_height: f64) -> PanelAnchor {
     let (centre_x, _) = screen.centre();
     PanelAnchor {
         centre_x,
-        pill_top: screen.bottom() - CAPSULE_BOTTOM_MARGIN - pill_height / 2.0,
+        pill_top: screen.bottom() - PILL_BOTTOM_GAP - pill_height,
         screen,
     }
 }
@@ -239,20 +240,21 @@ impl AskPanelState {
     }
 }
 
-/// Every screen's logical rectangle, each converted with its own scale factor.
+/// Every screen's work area (the part not covered by the menu bar or the Dock, macOS
+/// `visibleFrame`) as a logical rectangle, each converted with its own scale factor. In a
+/// full-screen Space, or with an auto-hidden Dock, it is (nearly) the whole screen.
 fn screen_rects(window: &tauri::WebviewWindow) -> Vec<LogicalRect> {
     window
         .available_monitors()
         .unwrap_or_default()
         .iter()
         .map(|monitor| {
-            let position = monitor.position();
-            let size = monitor.size();
+            let area = monitor.work_area();
             logical_rect(
-                position.x,
-                position.y,
-                size.width,
-                size.height,
+                area.position.x,
+                area.position.y,
+                area.size.width,
+                area.size.height,
                 monitor.scale_factor(),
             )
         })
