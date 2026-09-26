@@ -81,9 +81,16 @@ export function Setup() {
             </span>
             <h3>Everything on your computer.</h3>
             <p>
-              No servers to install. On Apple Silicon, <a rel="noopener" href={links.whisper}>whisper.cpp</a> runs
-              inside the app and <a rel="noopener" href={links.llama}>llama.cpp</a>’s server ships with it. Models
-              are picked for your hardware and checked against a SHA-256 before use.
+              No servers to install. On Apple Silicon,{' '}
+              <a rel="noopener" href={links.whisper}>
+                whisper.cpp
+              </a>{' '}
+              runs inside the app and{' '}
+              <a rel="noopener" href={links.llama}>
+                llama.cpp
+              </a>
+              ’s server ships with it. Models are picked for your hardware and checked against a
+              SHA-256 before use.
             </p>
             <Stage
               duration={10.5}
@@ -139,7 +146,11 @@ export function Setup() {
                             className="ready-dot"
                             style={{ transform: `scale(${spring(t - READY).toFixed(3)})` }}
                           >
-                            <DrawnCheck p={easeOut(progress(t, READY + 0.12, READY + 0.5))} size={12} width={3} />
+                            <DrawnCheck
+                              p={easeOut(progress(t, READY + 0.12, READY + 0.5))}
+                              size={12}
+                              width={3}
+                            />
                           </span>
                           Ready. Press Fn and speak.
                         </span>

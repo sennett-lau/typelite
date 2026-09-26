@@ -232,8 +232,8 @@ export function useMagneticButtons() {
       const y = e.clientY - r.top
       el.style.setProperty('--mx', `${x.toFixed(0)}px`)
       el.style.setProperty('--my', `${y.toFixed(0)}px`)
-      el.style.setProperty('--tx', `${(((x / r.width) - 0.5) * 6).toFixed(2)}px`)
-      el.style.setProperty('--ty', `${(((y / r.height) - 0.5) * 4).toFixed(2)}px`)
+      el.style.setProperty('--tx', `${((x / r.width - 0.5) * 6).toFixed(2)}px`)
+      el.style.setProperty('--ty', `${((y / r.height - 0.5) * 4).toFixed(2)}px`)
     }
     document.addEventListener('pointermove', onMove, { passive: true })
     return () => document.removeEventListener('pointermove', onMove)

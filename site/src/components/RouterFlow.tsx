@@ -13,7 +13,12 @@ interface Geometry {
  * and when the route changes; each frame just evaluates the curve. Two-column layout only
  * (hidden by CSS when the cards stack). Decorative.
  */
-export function RouterFlow({ route, target, u, end }: {
+export function RouterFlow({
+  route,
+  target,
+  u,
+  end,
+}: {
   /** Index of the current example (re-measure when it changes). */
   route: number
   /** 0, 1 or 2: English, Cantonese, or "no match". */

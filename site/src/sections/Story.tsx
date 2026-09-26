@@ -84,7 +84,11 @@ export function Story() {
   const sub = reduced ? 1 : Math.min(1, p * 4 - step)
 
   return (
-    <section className={`story ${reduced ? 'story-static' : ''}`} id="how" aria-labelledby="how-title">
+    <section
+      className={`story ${reduced ? 'story-static' : ''}`}
+      id="how"
+      aria-labelledby="how-title"
+    >
       <div className="story-track" ref={track}>
         <div className="story-sticky">
           <div className="container story-grid">
@@ -139,7 +143,8 @@ function StoryFrame({ t, step, sub }: { t: number; step: number; sub: number }) 
   // Step 1: words arrive as you scroll. Step 3: the cut words are struck through one by one.
   const heard = step === 0 ? Math.floor(sub * (n + 2)) - 1 : n
   const cutOrder = RAW.map((w, i) => (w.cut ? i : -1)).filter((i) => i >= 0)
-  const struck = step < 2 ? 0 : step === 2 ? Math.floor(sub * (cutOrder.length + 1)) : cutOrder.length
+  const struck =
+    step < 2 ? 0 : step === 2 ? Math.floor(sub * (cutOrder.length + 1)) : cutOrder.length
   const struckSet = new Set(cutOrder.slice(0, struck))
 
   const pasted = step === 3
@@ -151,7 +156,8 @@ function StoryFrame({ t, step, sub }: { t: number; step: number; sub: number }) 
   let width = RECORDING_WIDTH
   let pill
   if (step === 0) {
-    const speaking = (time: number) => (time < 0 ? 0 : Math.min(1, 0.35 + 0.65 * Math.min(1, sub * 3)))
+    const speaking = (time: number) =>
+      time < 0 ? 0 : Math.min(1, 0.35 + 0.65 * Math.min(1, sub * 3))
     pill = (
       <>
         <Aurora mode="listening" t={t} level={0.7} />
@@ -230,7 +236,12 @@ function StoryFrame({ t, step, sub }: { t: number; step: number; sub: number }) 
               </span>
             ))}
           </p>
-          {step === 1 && <span className="story-sweep" style={{ transform: `translateX(${((t % 1.4) / 1.4) * 260 - 100}%)` }} />}
+          {step === 1 && (
+            <span
+              className="story-sweep"
+              style={{ transform: `translateX(${((t % 1.4) / 1.4) * 260 - 100}%)` }}
+            />
+          )}
         </div>
         <Pill width={width} visible={pillVisible}>
           {pill}
