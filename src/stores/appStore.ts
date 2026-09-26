@@ -433,6 +433,11 @@ export interface AppConfig {
   shortcut_tour_completed: boolean
   /** The "try the three shortcuts now?" dialog was answered. */
   shortcut_tour_prompt_dismissed: boolean
+  /**
+   * Plan `typing-speed-and-nudge`: count keystrokes and typing time for typing speed and the
+   * typing nudge. Which keys are pressed is never stored.
+   */
+  measure_typing_speed: boolean
 }
 
 /** A Settings pane a setup message can open. */
@@ -498,6 +503,9 @@ interface AppState {
    */
   copyOffer: CopyOffer | null
   setCopyOffer: (offer: CopyOffer | null) => void
+  /** Plan `typing-speed-and-nudge`: the typing nudge shows in the pill. */
+  typingNudge: boolean
+  setTypingNudge: (shown: boolean) => void
 
   // Config
   config: AppConfig
@@ -1243,6 +1251,7 @@ const defaultConfig: AppConfig = {
   builtin_presets_version: 1,
   shortcut_tour_completed: false,
   shortcut_tour_prompt_dismissed: false,
+  measure_typing_speed: true,
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -1274,6 +1283,8 @@ export const useAppStore = create<AppState>((set) => ({
   setLastContext: (lastContext) => set({ lastContext }),
   copyOffer: null,
   setCopyOffer: (copyOffer) => set({ copyOffer }),
+  typingNudge: false,
+  setTypingNudge: (typingNudge) => set({ typingNudge }),
 
   config: defaultConfig,
   setConfig: (config) => set((s) => ({ config: syncHotkeyConfig(s.config, config) })),

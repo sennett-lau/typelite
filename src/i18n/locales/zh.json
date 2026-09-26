@@ -116,6 +116,13 @@
       "setUp": "去设置",
       "otherOptions": "其他方式"
     },
+    "speedCompare": {
+      "speaking": "说话",
+      "typing": "打字",
+      "wpm": "WPM",
+      "times": "{{value}}×",
+      "fasterThanTyping": "比打字快"
+    },
     "speed": {
       "title": "洞察",
       "empty": "听写一次，就能看到时间花在哪里。",
@@ -305,6 +312,11 @@
     "copied": "已复制",
     "copyResult": "复制结果",
     "copyHint": "没有可粘贴的输入框。复制结果（Esc 关闭）",
+    "nudge": {
+      "text": "打字很多？按 {{key}} 直接说出来。",
+      "dontShowAgain": "不再显示",
+      "close": "关闭"
+    },
     "errorOccurred": "发生错误",
     "accessibilityRequired": "需要辅助功能权限 — 请打开设置",
     "errors": {
@@ -517,6 +529,13 @@
     "clearInsightsButton": "清除",
     "insightsCleared": "已清除",
     "clearInsightsFailed": "无法清除数据。",
+    "measureTypingSpeed": "测量打字速度",
+    "measureTypingSpeedHint": "统计按键次数和打字时间以显示你的打字速度。绝不记录你按了哪些键。",
+    "resetSpeedStats": "重置速度统计",
+    "resetSpeedStatsHint": "清除“洞察”中显示的说话和打字速度。",
+    "resetSpeedStatsButton": "重置",
+    "speedStatsReset": "已重置",
+    "resetSpeedStatsFailed": "无法重置速度统计。",
     "groupPreset": "预设列表",
     "groupServer": "服务器",
     "groupRecording": "录音",

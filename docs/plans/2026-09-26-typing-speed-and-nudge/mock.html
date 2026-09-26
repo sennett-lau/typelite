@@ -1,0 +1,452 @@
+<title>Typelite Home</title>
+<style>
+  :root {
+    --page-bg: #f2f3f6; --page-ink: #1b1d22; --page-muted: #5d6270; --page-line: #dcdfe6; --page-card: #fff;
+    --ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  }
+  :root[data-theme="dark"] { color-scheme: dark; --page-bg: #111317; --page-ink: #e8eaef; --page-muted: #9aa0ad; --page-line: #2a2e36; --page-card: #181b21; }
+  * { box-sizing: border-box; }
+  body { background: var(--page-bg); color: var(--page-ink); font-family: var(--ui); font-size: 15px; line-height: 1.5; padding-inline: 20px; padding-block: 32px 64px; }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); }
+  h1 { margin: 4px 0 6px; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.15; text-wrap: balance; }
+  .lead { margin: 0; color: var(--page-muted); max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--page-line); border-radius: 9px; overflow: hidden; background: var(--page-card); }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: transparent; color: var(--page-ink); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: #0a84ff; color: #fff; }
+  .seg button:focus-visible { outline: 2px solid #0a84ff; outline-offset: -2px; }
+  .label { font-family: var(--mono); font-size: 11px; color: var(--page-muted); letter-spacing: .06em; text-transform: uppercase; }
+  .notes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 12px; padding: 14px 18px; font-size: 14px; color: var(--page-muted); }
+  .notes b { color: var(--page-ink); }
+  .notes ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .desk { border-radius: 16px; padding: 34px 24px; border: 1px solid var(--page-line); background: radial-gradient(90% 90% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%); }
+  .desk.dk { background: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%); }
+
+  /* App tokens: light Native Glass / dark Aurora */
+  .app {
+    --glass: rgba(246,246,248,.66); --content: rgba(255,255,255,.76); --card: #fff; --ink: #1d1d1f; --muted: #6e6e73; --faint: #8e8e93;
+    --line: rgba(0,0,0,.09); --hair: rgba(0,0,0,.06); --accent: #0a84ff; --accent-ink: #fff; --accent-soft: rgba(10,132,255,.12);
+    --ok: #30d158; --err: #ff453a; --field: rgba(0,0,0,.045); --key: #fff; --key-line: #d2d2d7; --tint-a: transparent; --tint-b: transparent;
+    color: var(--ink); font-family: var(--ui); font-size: 13px;
+  }
+  .app.dk {
+    color-scheme: dark;
+    --glass: rgba(18,24,34,.52); --content: rgba(14,20,30,.58); --card: rgba(36,44,60,.7); --ink: #f1f6ff; --muted: #a6b3c8; --faint: #6f7d94;
+    --line: rgba(255,255,255,.12); --hair: rgba(255,255,255,.08); --accent: #3fd8c2; --accent-ink: #04241f; --accent-soft: rgba(63,216,194,.18);
+    --field: rgba(255,255,255,.06); --key: #2c3646; --key-line: #445066; --tint-a: rgba(63,216,194,.24); --tint-b: rgba(175,82,222,.24);
+  }
+  .win { max-width: 760px; margin: 0 auto; border-radius: 12px; overflow: hidden; position: relative;
+    background: radial-gradient(60% 50% at 90% 0%, var(--tint-a), transparent 70%), radial-gradient(50% 45% at 10% 100%, var(--tint-b), transparent 70%), var(--content);
+    backdrop-filter: blur(30px) saturate(1.8); -webkit-backdrop-filter: blur(30px) saturate(1.8);
+    box-shadow: 0 30px 60px rgba(20,20,50,.28), 0 0 0 .5px rgba(0,0,0,.2); }
+  .lights { display: flex; gap: 8px; padding: 14px 16px 0; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+
+  /* Onboarding */
+  .ob { padding: 14px 40px 26px; min-height: 470px; display: flex; flex-direction: column; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 26px; }
+  .dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--hair); }
+  .dots span.done { background: var(--muted); opacity: .5; }
+  .dots span.now { width: 18px; background: var(--accent); }
+  .ob h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .ob .sub { margin: 4px 0 22px; color: var(--muted); }
+  .card { background: var(--card); border-radius: 12px; box-shadow: 0 0 0 .5px var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; align-items: flex-start; gap: 12px; }
+  .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); flex: none; }
+  .ic svg { width: 18px; height: 18px; }
+  .card h3 { margin: 0; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tag { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em; }
+  .card p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+  .card.fixed { height: 214px; justify-content: space-between; }
+  .card-body { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; min-height: 0; padding-top: 2px; }
+  .status { display: flex; flex-direction: column; gap: 8px; }
+  .status-line { display: flex; align-items: center; gap: 8px; min-height: 22px; flex-wrap: wrap; }
+  .badge { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .badge.err { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
+  .badge.busy { background: var(--field); color: var(--ink); }
+  .status-detail { font-size: 12px; color: var(--muted); line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .models.one { grid-template-columns: minmax(0, 1fr); }
+  .model { all: unset; box-sizing: border-box; border-radius: 9px; padding: 9px 11px; box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+  .model b { font-size: 12.5px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+  .model span { font-size: 11.5px; color: var(--muted); }
+  .model[aria-checked="true"] { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .model:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .models.one .model { cursor: default; }
+  .hw { font-size: 11.5px; color: var(--muted); }
+  .card-foot { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 14px; border-radius: 7px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  .btn.ghost { background: var(--field); color: var(--ink); }
+  .btn:focus-visible, .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .link { font: inherit; font-size: 12.5px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+  .link.muted { color: var(--muted); }
+  .progress { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .track { height: 6px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+  .track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width .25s linear; }
+  .progress-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .ready { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); }
+  .check { width: 18px; height: 18px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; flex: none; }
+  .check::after { content: ""; width: 7px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+  .errline { color: var(--err); font-size: 12.5px; }
+  .below { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 12px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .ob-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 26px; }
+
+  /* Sheet */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.28); display: flex; align-items: flex-start; justify-content: center; padding: 56px 20px 20px; }
+  .scrim[hidden] { display: none; }
+  .sheet { width: min(460px, 100%); background: var(--card); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.35), 0 0 0 .5px var(--line); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .app.dk .sheet { background: #1f2735; }
+  .sheet h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .sheet .sub { margin: -8px 0 0; color: var(--muted); font-size: 12.5px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .fields { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .fields label { color: var(--muted); font-size: 12.5px; }
+  .fields input { font: inherit; font-size: 12.5px; padding: 6px 9px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields input:focus { outline: none; border-color: var(--accent); }
+  .fields input.mono { font-family: var(--mono); font-size: 12px; }
+  .sheet-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fields select { font: inherit; font-size: 12.5px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: 100%; min-width: 0; }
+  .fields select:focus { outline: none; border-color: var(--accent); }
+  .fields [hidden] { display: none !important; }
+  .hint { grid-column: 2; font-size: 11.5px; color: var(--muted); margin-top: -3px; line-height: 1.5; }
+  .hint button { all: unset; cursor: pointer; color: var(--accent); font-family: var(--mono); font-size: 11px; }
+  .hint button:focus-visible { outline: 2px solid var(--accent); }
+  .result { font-size: 12px; color: var(--muted); }
+  .result.ok { color: var(--ok); }
+  .saved { display: flex; flex-direction: column; border-radius: 9px; box-shadow: 0 0 0 .5px var(--line); overflow: hidden; }
+  .saved button { all: unset; display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 12.5px; }
+  .saved button + button { border-top: 1px solid var(--hair); }
+  .saved button[aria-pressed="true"] { background: var(--accent-soft); }
+  .saved button span:last-child { color: var(--muted); font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* Settings */
+  .set { display: grid; grid-template-columns: 180px minmax(0, 1fr); min-height: 500px; }
+  .side { background: var(--glass); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--hair); }
+  .brand { font-weight: 600; font-size: 14px; padding: 10px 8px 12px; }
+  .nav { padding: 6px 9px; border-radius: 7px; font-size: 13px; color: var(--ink); }
+  .nav.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .main { padding: 30px 28px 28px; min-width: 0; }
+  .main h2 { margin: 0 0 12px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .toolbar { display: flex; gap: 4px; margin: -4px 0 18px; border-bottom: 1px solid var(--hair); padding-bottom: 10px; flex-wrap: wrap; }
+  .toolbar button { all: unset; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 8px; font-size: 11px; color: var(--muted); cursor: pointer; min-width: 56px; }
+  .toolbar button svg { width: 20px; height: 20px; }
+  .toolbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .toolbar button:focus-visible { outline: 2px solid var(--accent); }
+  .engine { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .subtabs { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 8px; background: var(--hair); gap: 2px; }
+  .subtabs button { all: unset; font-size: 12.5px; padding: 4px 12px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+  .subtabs button[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 .5px var(--line); font-weight: 600; }
+  .subtabs button:focus-visible { outline: 2px solid var(--accent); }
+  .ghead { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin: 20px 4px 7px; flex-wrap: wrap; }
+  .glabel { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .picker { font: inherit; font-size: 12px; padding: 3px 9px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line); color: var(--ink); border: 0; }
+  .group { background: var(--card); border-radius: 10px; box-shadow: 0 0 0 .5px var(--line); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 9px 14px; min-height: 42px; flex-wrap: wrap; }
+  .row + .row { border-top: 1px solid var(--hair); }
+  .row .l { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+  .row .l small { color: var(--muted); font-size: 11.5px; }
+  .row .v { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .row input { font: inherit; font-family: var(--mono); font-size: 12px; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: var(--field); color: var(--ink); width: min(300px, 100%); }
+  .pop { font-size: 12.5px; padding: 4px 10px; border-radius: 6px; background: var(--card); box-shadow: 0 0 0 .5px var(--line), 0 1px 2px rgba(0,0,0,.08); }
+  .pop::after { content: " ⌄"; color: var(--muted); }
+  .dim { color: var(--muted); font-size: 12px; }
+
+  [data-screen][hidden] { display: none !important; }
+  @media (max-width: 720px) {
+    .ob { padding: 10px 18px 20px; }
+    .set { grid-template-columns: minmax(0, 1fr); }
+    .side { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--hair); }
+    .main { padding: 20px 16px; }
+    .fields { grid-template-columns: minmax(0, 1fr); }
+    .desk { padding: 16px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .track i { transition: none; } }
+</style>
+<style>
+  .app { --f-dictate: #0a84ff; --f-translate: #30b0c7; --f-ask: #af52de; --warn: #c77700; }
+  .app.dk { --f-dictate: #3fd8c2; --f-translate: #7aa7ff; --f-ask: #d77bff; --warn: #ffb340; }
+  .win.home { height: 700px; display: flex; position: relative; }
+  .win.home .set { flex: 1; min-height: 0; }
+  .win.home .main { overflow: auto; }
+  .ptitle { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; text-wrap: balance; }
+  .psub { margin: 4px 0 18px; font-size: 13px; color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .tile { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; background: var(--card); box-shadow: 0 0 0 .5px var(--line); min-height: 0; gap: 6px; }
+  .tile:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tc) 50%, transparent); }
+  .tile .ti { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; color: var(--tc); background: color-mix(in srgb, var(--tc) 14%, transparent); margin-bottom: 4px; }
+  .tile .ti svg { width: 15px; height: 15px; }
+  .tile b { font-size: 13.5px; }
+  .tile .d { font-size: 12px; color: var(--muted); line-height: 1.35; }
+  .tile .h { font-size: 11.5px; color: var(--faint); }
+  .tile .kk { margin-top: 2px; padding-top: 0; display: flex; gap: 4px; flex-wrap: wrap; }
+  kbd.k { font-family: inherit; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 5px; background: var(--field); border: 1px solid var(--line); border-bottom-width: 2px; color: var(--ink); }
+  .tour { text-align: right; margin-top: 8px; }
+  .speed .lr { padding: 12px 14px; }
+  .speed .top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .speed .top .lab { font-weight: 600; color: var(--muted); }
+  .speed .top .tot { margin-left: auto; font-size: 13px; font-weight: 600; }
+  .bar2 { display: flex; height: 10px; gap: 2px; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+  .bar2 i { display: block; min-width: 3px; }
+  .legend2 { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted); }
+  .legend2 li { display: inline-flex; gap: 6px; align-items: center; }
+  .legend2 .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend2 .v { font-family: var(--mono); color: var(--ink); }
+  .tip { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--hair); font-size: 12px; color: var(--muted); }
+  .two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 22px; }
+  .cfg { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 13px; }
+  .cfg + .cfg { border-top: 1px solid var(--hair); }
+  .cfg .v { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+  .cfg .chev { color: var(--faint); font-size: 12px; }
+  .wn { padding: 10px 14px; }
+  .wn h4 { margin: 0; font-size: 12.5px; }
+  .wn ul { margin: 6px 0 0; padding-left: 16px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+  .setuprow { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; }
+  .setuprow + .setuprow { border-top: 1px solid var(--hair); }
+  .setuprow .l { flex: 1; min-width: 200px; }
+  .setuprow .l small { display: block; font-size: 11.5px; color: var(--faint); }
+  .setuprow .l small .w { color: var(--warn); } .setuprow .l small .e { color: var(--err); }
+  .sec2 { margin-top: 22px; }
+  @media (max-width: 720px) { .tiles, .two { grid-template-columns: 1fr; } }
+
+  .brand2 { display: flex; align-items: center; gap: 9px; padding: 12px 8px 16px; }
+  .brand2 img { width: 28px; height: 28px; border-radius: 7px; flex: none; }
+  .brand2 span { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+
+  .expand { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; width: 100%; box-sizing: border-box; padding: 10px 14px; border-top: 1px solid var(--hair); font-size: 12.5px; font-weight: 600; color: var(--accent); }
+  .expand .car { transition: transform .2s; display: inline-block; }
+  .expand[aria-expanded="true"] .car { transform: rotate(90deg); }
+  .cmpwrap { overflow: hidden; transition: height .28s cubic-bezier(.2,0,0,1); }
+  .cmpin { padding: 4px 14px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cmpin h5 { margin: 6px 0 8px; font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+  .prow { display: grid; grid-template-columns: minmax(0, 1fr) 90px 52px; gap: 8px; align-items: center; font-size: 12px; padding: 3px 0; }
+  .prow .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prow .nm small { color: var(--faint); margin-left: 4px; }
+  .prow .bb { height: 6px; border-radius: 3px; background: var(--field); overflow: hidden; }
+  .prow .bb i { display: block; height: 100%; border-radius: 3px; }
+  .prow .t { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  .fast { font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, #34c759 18%, transparent); color: #1f8a3b; margin-left: 4px; }
+  .app.dk .fast { color: #5fe07e; }
+  .cmpnote { grid-column: 1 / -1; margin: 0; font-size: 11.5px; color: var(--faint); }
+  @media (max-width: 720px) { .cmpin { grid-template-columns: 1fr; } }
+
+  .tile .thead { display: flex; align-items: center; gap: 8px; }
+  .tile .thead .ti { margin-bottom: 0; }
+  .tile { gap: 10px; }
+
+  .wpm { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--hair); }
+  .wpm .stat { display: flex; flex-direction: column; gap: 2px; }
+  .wpm .stat .lab { font-size: 11px; font-weight: 600; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+  .wpm .stat .num { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .wpm .stat .num small { font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+  .wpm .stat .sub { font-size: 11.5px; color: var(--faint); }
+  .wpm .x { font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); text-align: center; line-height: 1.2; }
+  .wpm .x small { display: block; font-size: 10.5px; font-weight: 600; opacity: .8; }
+  .scrim2 { position: absolute; inset: 0; background: rgba(0,0,0,.3); display: flex; align-items: flex-start; justify-content: center; padding: 60px 20px 20px; z-index: 5; }
+  .test { width: min(480px, 100%); background: var(--card); border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.35); padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .app.dk .test { background: #1f2735; }
+  .test h3 { margin: 0; font-size: 16px; }
+  .test .ref { font-size: 15px; line-height: 1.6; color: var(--muted); background: var(--field); border-radius: 10px; padding: 12px 14px; }
+  .test .ref .ok { color: var(--ink); } .test .ref .bad { color: var(--err); text-decoration: underline; } .test .ref .cur { border-left: 2px solid var(--accent); }
+  .test textarea { font: inherit; font-size: 14px; width: 100%; box-sizing: border-box; height: 64px; resize: none; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); }
+  .test .meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .test .meta b { color: var(--ink); }
+  .test .foot { display: flex; gap: 8px; align-items: center; }
+  .test .foot .grow { flex: 1; }
+
+  .wpm { grid-template-columns: auto auto 1fr; gap: 28px; }
+  .wpm .x { justify-self: end; }
+  .nudge { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; border-radius: 14px; color: #fff; font-size: 12.5px; white-space: nowrap; z-index: 6;
+    background: radial-gradient(60% 140% at 12% 50%, color-mix(in srgb, var(--f-dictate) 38%, transparent), transparent 70%), radial-gradient(55% 140% at 90% 50%, color-mix(in srgb, #af52de 32%, transparent), transparent 70%), rgba(28,28,30,.72);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,.18); box-shadow: 0 12px 30px rgba(10,10,30,.35); animation: ndin .3s cubic-bezier(.2,0,0,1) both; }
+  .nudge kbd.k { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.3); color: #fff; }
+  .nudge .link { color: rgba(255,255,255,.7); font-size: 11.5px; }
+  .nudge .nd-x { all: unset; cursor: pointer; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: rgba(255,255,255,.7); font-size: 11px; }
+  .nudge .nd-x:hover { background: rgba(255,255,255,.14); }
+  @keyframes ndin { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @media (max-width: 640px) { .nudge { white-space: normal; width: calc(100% - 40px); } }
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-mon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-mic2" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+</defs></svg>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Typelite · design iteration</div>
+    <h1>Home, as it is today</h1>
+    <p class="lead">The Home page in the app now: finish-setup rows, the three shortcut tiles, the tour link, the Speed board, your setup and What's New. Tell me what to change.</p>
+  </header>
+  <div class="bar">
+    <span class="label">Setup</span>
+    <div class="seg" role="group" aria-label="Setup state">
+      <button type="button" data-k="setup" data-v="done" aria-pressed="true">All set up</button>
+      <button type="button" data-k="setup" data-v="speech" aria-pressed="false">Speech not set up</button>
+      <button type="button" data-k="setup" data-v="aifail" aria-pressed="false">AI test failed</button>
+    </div>
+    <span class="label">Insights</span>
+    <div class="seg" role="group" aria-label="Speed data">
+      <button type="button" data-k="speed" data-v="empty" aria-pressed="false">No runs yet</button>
+      <button type="button" data-k="speed" data-v="runs" aria-pressed="true">With runs</button>
+    </div>
+    <span class="label">Typing nudge</span>
+    <div class="seg" role="group" aria-label="Typing nudge">
+      <button type="button" data-k="nudge" data-v="off" aria-pressed="true">Hidden</button>
+      <button type="button" data-k="nudge" data-v="on" aria-pressed="false">Show toast</button>
+    </div>
+    <span class="label">Tour link</span>
+    <div class="seg" role="group" aria-label="Tour link">
+      <button type="button" data-k="tour" data-v="on" aria-pressed="true">Shown</button>
+      <button type="button" data-k="tour" data-v="off" aria-pressed="false">Done</button>
+    </div>
+    <span class="label">Theme</span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="true">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <div class="desk" id="desk">
+    <div class="app" id="app">
+      <div class="win home">
+        <div class="set">
+          <nav class="side" aria-label="Typelite">
+            <div class="lights" style="padding:6px 6px 0"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+            <div class="brand2"><img src="data:image/png;base64,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" width="28" height="28" alt=""><span>Typelite</span></div>
+            <div class="nav on">Home</div><div class="nav">Settings</div><div class="nav">Dictionary</div>
+          </nav>
+          <div class="main" id="main"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <b>What's on it today</b>
+    <ul>
+      <li><b>Headline (agreed):</b> “Just say it.” with “Press a shortcut anywhere, speak, and clean text lands where you’re typing.”</li>
+      <li><b>Finish setup</b> rows appear only while speech or AI isn't ready.</li>
+      <li><b>Shortcut tiles</b>: icon, name and the shortcut's keys only (descriptions removed); clicking a tile opens Settings → General. Extra shortcuts (edit selection, switch prompt preset, open app) appear as rows only when bound.</li>
+      <li><b>Insights</b> (was Speed): speaking vs typing speed, both in WPM for every language, with an “N× faster” badge. Typing speed is measured from all your typing (key counts and timing only, never which keys; switch in Settings); the <b>average</b> across all runs and presets, split into speech recognition, AI polish and paste; <b>Compare presets</b> expands to rank AI and speech presets by average time (speech per second of audio), and a tip for the slowest step.</li>
+      <li><b>Your setup</b>: microphone, speech preset, AI preset, AI polish on/off, text output — each opens its Settings page.</li>
+      <li><b>What's New</b>: the release notes list.</li>
+      <li><b>Typing nudge</b>: after a long stretch of typing, a small glass toast where the pill appears suggests the Dictate shortcut; at most once a day, with “Don’t show again”.</li>
+    </ul>
+  </div>
+</div>
+<script>
+(function () {
+  var st = { head: '0', setup: 'done', speed: 'runs', tour: 'on', open: false, nudge: 'off' };
+  function tiles() {
+    var T = [
+      { c: '--f-dictate', i: 'i-mic2', n: 'Dictate', d: 'Speak and paste polished text', k: ['End'] },
+      { c: '--f-translate', i: 'i-globe', n: 'Translate', d: 'Speak and paste it in 繁體中文（香港）', h: 'Shift (either side) to switch language', k: ['End', 'Right ⇧'] },
+      { c: '--f-ask', i: 'i-msg', n: 'Ask anything', d: 'Ask a question and get a short answer', k: ['End', 'Right ⌃'] }
+    ];
+    return '<div class="tiles">' + T.map(function (t) {
+      return '<button class="tile" type="button" style="--tc:var(' + t.c + ')"><span class="thead"><span class="ti"><svg><use href="#' + t.i + '"/></svg></span><b>' + t.n + '</b></span><span class="kk">' + t.k.map(function (k) { return '<kbd class="k">' + k + '</kbd>'; }).join('') + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function setup() {
+    if (st.setup === 'done') return '';
+    var rows = st.setup === 'speech'
+      ? [['Speech recognition', '<span class="w">Not set up yet</span> · Dictate, Translate and Ask need it.', true]]
+      : [['AI polish service', '<span class="e">The last test failed</span> · Dictate pastes the raw transcript; Translate and Ask need it.', false]];
+    return '<div class="ghead" style="margin-top:0"><span class="glabel">Finish setup</span></div><div class="group" style="margin-bottom:22px">' + rows.map(function (r) {
+      return '<div class="setuprow"><div class="l">' + r[0] + '<small>' + r[1] + '</small></div>' + (r[2] ? '<button class="link" type="button">Other options</button>' : '') + '<button class="btn" type="button">Set up</button></div>';
+    }).join('') + '</div>';
+  }
+  function speed() {
+    var h = '<div class="ghead"><span class="glabel">Insights</span></div><div class="group speed">';
+    if (st.speed !== 'empty') {
+      h += '<div class="wpm"><div class="stat"><span class="lab">Speaking</span><span class="num">142<small>WPM</small></span></div>' +
+        '<div class="stat"><span class="lab">Typing</span><span class="num">48<small>WPM</small></span></div>' +
+        '<div class="x">3.0×<small>faster than typing</small></div></div>';
+    }
+    if (st.speed === 'empty') return h + '<p style="margin:0;padding:12px 14px;font-size:12.5px;color:var(--muted)">Dictate once to see where the time goes.</p></div>';
+    var steps = [['Speech recognition', 1.9, 'var(--f-dictate)'], ['AI polish', 0.6, 'var(--f-ask)'], ['Paste', 0.6, 'var(--f-translate)']];
+    var tot = steps.reduce(function (a, s) { return a + s[1]; }, 0);
+    h += '<div class="lr"><div class="top"><span class="lab">Average</span><span>38 runs across all presets</span><span class="tot">' + tot.toFixed(1) + ' s from stop to text</span></div>';
+    h += '<div class="bar2">' + steps.map(function (s) { return '<i style="flex:' + s[1] + ';background:' + s[2] + '"></i>'; }).join('') + '</div>';
+    h += '<ul class="legend2">' + steps.map(function (s) { return '<li><span class="dot" style="background:' + s[2] + '"></span>' + s[0] + ' <span class="v">' + (s[1] < 0.1 ? Math.round(s[1] * 1000) + ' ms' : s[1].toFixed(2) + ' s') + '</span></li>'; }).join('') + '</ul></div>';
+    h += '<button class="expand" type="button" id="cmpbtn" aria-expanded="' + st.open + '"><span class="car">›</span>Compare presets</button>';
+    function prows(list, color) {
+      var max = Math.max.apply(null, list.map(function (p) { return p[2]; })), min = Math.min.apply(null, list.map(function (p) { return p[2]; }));
+      return list.map(function (p) {
+        return '<div class="prow"><span class="nm" title="' + p[0] + '">' + p[0] + (p[2] === min && list.length > 1 ? '<span class="fast">Fastest</span>' : '') + '<small>' + p[1] + ' runs</small></span><span class="bb"><i style="width:' + Math.round(p[2] / max * 100) + '%;background:' + color + '"></i></span><span class="t">' + p[2].toFixed(2) + ' s</span></div>';
+      }).join('');
+    }
+    var ai = [['Ollama on my PC · qwen3:4b', 26, 0.42], ['Built-in (this Mac) · Qwen3 1.7B', 8, 0.61], ['Groq · llama-3.1-8b', 4, 0.88]];
+    var sp = [['Built-in · large-v3-turbo', 30, 0.27], ['whisper.cpp server', 8, 0.31]];
+    h += '<div class="cmpwrap" id="cmpwrap" style="height:' + (st.open ? 'auto' : '0') + '"><div class="cmpin">' +
+      '<div><h5>AI polish</h5>' + prows(ai, 'var(--f-ask)') + '</div>' +
+      '<div><h5>Speech recognition <span style="text-transform:none;letter-spacing:0;font-weight:400">(per 1 s of audio)</span></h5>' + prows(sp, 'var(--f-dictate)') + '</div>' +
+      '<p class="cmpnote">Averages of runs that finished, over the last 200 runs. A preset needs 3 runs before it is ranked. Speech time is per second of audio so long and short recordings compare fairly.</p>' +
+      '</div></div>';
+    h += '<div class="tip">💡 <span>Speech recognition is the slow part. A GPU server or a fixed language is faster. <button class="link" type="button">See the speech guide</button></span></div>';
+    return h + '</div>';
+  }
+  function config() {
+    var rows = [['Microphone', 'HyperX SoloCast'], ['Speech preset', 'Built-in (this Mac) · large-v3-turbo'], ['AI preset', 'Ollama on my PC · qwen3:4b-instruct'], ['AI Polish', 'Enabled'], ['Text output', 'Type directly']];
+    return '<div><div class="ghead" style="margin-top:0"><span class="glabel">Your setup</span></div><div class="group">' + rows.map(function (r) { return '<div class="cfg"><span>' + r[0] + '</span><span class="v">' + r[1] + '</span><span class="chev">›</span></div>'; }).join('') + '</div></div>';
+  }
+  function whatsnew() {
+    var items = ['Renamed to Typelite', 'Speech and AI presets', 'Microphone picker', 'Press keys to set a shortcut', 'Live waveform in the pill', 'Up to three translation languages', 'Guided setup tutorial', 'Native glass window', 'No history is kept'];
+    return '<div><div class="ghead" style="margin-top:0"><span class="glabel">What’s New</span></div><div class="group"><article class="wn"><h4>0.1.0</h4><ul>' + items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul></article></div></div>';
+  }
+  var HEADS = [
+    ['Just say it.', 'Press a shortcut anywhere, speak, and clean text lands where you’re typing.'],
+    ['Talk. It’s typed.', 'One shortcut, any app: speak naturally and get polished text.'],
+    ['Say it once. Send it clean.', 'Fillers out, corrections applied, punctuation in, wherever you’re typing.'],
+    ['Your voice, already written.', 'Press a shortcut, speak, and Typelite writes it up for you.'],
+    ['Welcome to Typelite', 'Press a shortcut anywhere, speak, and polished text is typed for you.']
+  ];
+  function headline() { var hd = HEADS[+st.head]; return '<h2 class="ptitle">' + hd[0] + '</h2><p class="psub">' + hd[1] + '</p>'; }
+  function render() {
+    var nd = document.getElementById('nudge'); if (nd) nd.remove();
+    if (st.nudge === 'on') { var t = document.createElement('div'); t.id = 'nudge'; t.className = 'nudge'; t.setAttribute('role', 'status'); t.innerHTML = '<span class="nd-i">🎙</span><span>Typing a lot? Press <kbd class="k">End</kbd> to say it instead.</span><button class="link" type="button" data-nd>Don\u2019t show again</button><button class="nd-x" type="button" aria-label="Close" data-nd>✕</button>'; document.getElementById('desk').appendChild(t); }
+    document.getElementById('main').innerHTML =
+      headline() +
+      setup() + tiles() + (st.tour === 'on' ? '<div class="tour"><button class="link" type="button">Take the shortcut tour</button></div>' : '') +
+      '<div class="sec2">' + speed() + '</div>' +
+      '<div class="two">' + config() + whatsnew() + '</div>';
+  }
+  document.getElementById('desk').addEventListener('click', function (e) {
+    if (e.target.closest('[data-nd]')) { st.nudge = 'off'; document.querySelectorAll('[data-k=nudge]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-v') === 'off')); }); render(); return; }
+  });
+  document.getElementById('main').addEventListener('click', function (e) {
+    if (!e.target.closest('#cmpbtn')) return;
+    var w = document.getElementById('cmpwrap'), btn = document.getElementById('cmpbtn');
+    st.open = !st.open; btn.setAttribute('aria-expanded', String(st.open));
+    var full = w.firstChild.offsetHeight;
+    if (st.open) { w.style.height = '0px'; w.getBoundingClientRect(); w.style.height = full + 'px'; setTimeout(function () { if (st.open) w.style.height = 'auto'; }, 300); }
+    else { w.style.height = full + 'px'; w.getBoundingClientRect(); w.style.height = '0px'; }
+  });
+  document.querySelectorAll('[data-k]').forEach(function (b) { b.onclick = function () {
+    b.parentNode.querySelectorAll('button').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    st[b.getAttribute('data-k')] = b.getAttribute('data-v'); render(); }; });
+  var app = document.getElementById('app'), desk = document.getElementById('desk');
+  function theme(d) { app.classList.toggle('dk', d); desk.classList.toggle('dk', d);
+    document.getElementById('t-light').setAttribute('aria-pressed', String(!d)); document.getElementById('t-dark').setAttribute('aria-pressed', String(d)); }
+  document.getElementById('t-light').onclick = function () { theme(false); };
+  document.getElementById('t-dark').onclick = function () { theme(true); };
+  try { if (matchMedia('(prefers-color-scheme: dark)').matches) theme(true); } catch (e) {}
+  render();
+})();
+</script>

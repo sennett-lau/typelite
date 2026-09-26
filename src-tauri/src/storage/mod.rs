@@ -1067,6 +1067,9 @@ pub struct AppConfig {
     pub shortcut_tour_completed: bool,
     /// The user answered "Later" (or "Start") to the "try the three shortcuts now?" dialog.
     pub shortcut_tour_prompt_dismissed: bool,
+    /// Plan `typing-speed-and-nudge`: count keystrokes and typing time for typing speed (and
+    /// the typing nudge). Which keys are pressed is never stored.
+    pub measure_typing_speed: bool,
 }
 
 impl Default for AppConfig {
@@ -1114,6 +1117,7 @@ impl Default for AppConfig {
             builtin_presets_version: BUILTIN_PRESETS_VERSION,
             shortcut_tour_completed: false,
             shortcut_tour_prompt_dismissed: false,
+            measure_typing_speed: true,
         }
     }
 }
