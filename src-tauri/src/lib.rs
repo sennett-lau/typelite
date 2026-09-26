@@ -1,4 +1,5 @@
 pub mod app_detector;
+pub mod ask_panel;
 pub mod audio;
 pub mod commands;
 pub mod copy_pill;
@@ -229,15 +230,19 @@ fn build_ask_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWi
         tauri::WebviewUrl::App("index.html#ask".into()),
     )
     .title("Typelite Ask")
-    .inner_size(400.0, 220.0)
-    .min_inner_size(360.0, 180.0)
+    .inner_size(452.0, 192.0)
     .resizable(false)
     .decorations(false)
     .transparent(true)
     .shadow(false)
     .always_on_top(true)
     .skip_taskbar(true)
-    .center()
+    // Plan `ask-panel-above-pill`: a non-activating panel like the capsule. It never becomes
+    // the key window, so the frontmost app keeps focus, and the first click reaches its buttons.
+    .focused(false)
+    .focusable(false)
+    .accept_first_mouse(true)
+    .visible_on_all_workspaces(true)
     .visible(false)
     .build()
 }
@@ -262,12 +267,9 @@ pub fn ensure_ask_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::Webv
     }
 }
 
+/// Shows the Ask panel above the pill without taking focus (plan `ask-panel-above-pill`).
 pub fn show_ask_popup_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWindow> {
-    let window = ensure_ask_window(handle)?;
-    let _ = window.unminimize();
-    let _ = window.show();
-    let _ = window.set_focus();
-    Ok(window)
+    ask_panel::show(handle)
 }
 
 #[tauri::command]
@@ -389,8 +391,16 @@ mod tests {
         assert_eq!(ask["transparent"].as_bool(), Some(true));
         assert_eq!(ask["shadow"].as_bool(), Some(false));
         assert_eq!(ask["resizable"].as_bool(), Some(false));
-        assert_eq!(ask["width"].as_i64(), Some(400));
-        assert_eq!(ask["height"].as_i64(), Some(220));
+        // Plan `ask-panel-above-pill`: 420 pt panel plus 16 pt shadow room on each side, and a
+        // non-activating panel like the capsule.
+        assert_eq!(ask["width"].as_i64(), Some(452));
+        assert_eq!(ask["focus"].as_bool(), Some(false));
+        assert_eq!(ask["focusable"].as_bool(), Some(false));
+        assert_eq!(ask["acceptFirstMouse"].as_bool(), Some(true));
+        assert!(
+            ask.get("minHeight").is_none(),
+            "the window fits the panel's height"
+        );
     }
 
     #[test]
@@ -1084,6 +1094,7 @@ pub fn run() {
             app.manage(commands::ai_setup::AiSetupState::default());
             tauri::async_runtime::block_on(commands::ai_setup::init(&app_handle));
             app.manage(commands::ask::AskDictationState::default());
+            app.manage(ask_panel::AskPanelState::default());
             app.manage(commands::audio::MicMonitorState::default());
             app.manage(HotkeyModeCache(Arc::new(Mutex::new(
                 initial_config.hotkey_mode.clone(),
@@ -1324,6 +1335,8 @@ pub fn run() {
             commands::ask::abort_ask_dictation,
             commands::ask::take_pending_ask_message,
             commands::ask::answer_ask_anyway,
+            ask_panel::close_ask_panel,
+            ask_panel::resize_ask_panel,
             commands::audio::list_input_devices,
             commands::audio::start_mic_level_monitor,
             commands::audio::stop_mic_level_monitor,
