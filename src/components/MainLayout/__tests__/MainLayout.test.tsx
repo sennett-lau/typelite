@@ -67,6 +67,21 @@ describe('MainLayout', () => {
     expect(screen.queryByRole('button', { name: 'Ask' })).not.toBeInTheDocument()
   })
 
+  it('shows the app icon next to the name at the top of the sidebar', () => {
+    render(
+      <MainLayout>
+        <div>content</div>
+      </MainLayout>,
+    )
+
+    const brand = screen.getByTestId('sidebar-brand')
+    expect(brand).toHaveTextContent('Typelite')
+    const icon = brand.querySelector('img')
+    expect(icon).not.toBeNull()
+    expect(icon).toHaveAttribute('width', '28')
+    expect(icon).toHaveAttribute('alt', '')
+  })
+
   it('shows Home, Settings and Dictionary as tabs and About pinned at the bottom', () => {
     render(
       <MainLayout>
