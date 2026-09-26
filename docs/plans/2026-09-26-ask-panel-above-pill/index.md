@@ -6,7 +6,7 @@ takes focus from the app the user is typing in, stays until it is closed, and of
 Insert. While Ask listens with highlighted text, the pill shows which text is included. The
 visual reference is [mock.html](mock.html).
 
-Status: building — 2026-09-26
+Status: done — 2026-09-26
 
 ## Goals
 
