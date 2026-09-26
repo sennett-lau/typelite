@@ -576,6 +576,33 @@ section {
   margin-inline: auto;
   text-align: center;
 }
+/* A short aurora underline under each section's eyebrow; it sweeps in when the heading
+   scrolls into view (and is simply there otherwise). */
+.section-head .eyebrow {
+  position: relative;
+}
+.section-head .eyebrow::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--aurora-a), var(--aurora-b));
+  transform-origin: 0 50%;
+  opacity: 0.8;
+}
+.section-head.center .eyebrow::after {
+  transform-origin: 50% 50%;
+}
+.section-head.reveal-armed .eyebrow::after {
+  transform: scaleX(0);
+}
+.section-head.reveal-armed.is-in .eyebrow::after {
+  transform: scaleX(1);
+  transition: transform 0.9s var(--ease) 0.3s;
+}
 .section-title {
   font-size: clamp(32px, 5vw, 52px);
   font-weight: 700;
@@ -618,6 +645,53 @@ section {
     opacity 0.7s ease,
     transform 0.8s var(--ease);
   transition-delay: var(--reveal-delay, 0s);
+}
+/* Cards in a grid arrive one after another. */
+:is(.lib-grid, .privacy-grid, .contrib-grid, .setup-grid) > :nth-child(2) {
+  --reveal-delay: 0.08s;
+}
+:is(.lib-grid, .privacy-grid, .contrib-grid, .setup-grid) > :nth-child(3) {
+  --reveal-delay: 0.16s;
+}
+:is(.lib-grid, .privacy-grid, .contrib-grid, .setup-grid) > :nth-child(4) {
+  --reveal-delay: 0.24s;
+}
+:is(.lib-grid, .privacy-grid, .contrib-grid, .setup-grid) > :nth-child(n + 5) {
+  --reveal-delay: 0.32s;
+}
+/* Inside a revealed card, its parts (and chips) follow in a short cascade. */
+.reveal-armed :is(.feature-copy > *, .feature-points > li, .chips > .chip) {
+  opacity: 0.2;
+  transform: translateY(10px);
+}
+.reveal-armed.is-in :is(.feature-copy > *, .feature-points > li, .chips > .chip) {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s ease,
+    transform 0.7s var(--ease);
+  transition-delay: calc(0.12s + var(--si, 0) * 0.07s);
+}
+:is(.feature-copy, .feature-points, .chips) > :nth-child(2) {
+  --si: 1;
+}
+:is(.feature-copy, .feature-points, .chips) > :nth-child(3) {
+  --si: 2;
+}
+:is(.feature-copy, .feature-points, .chips) > :nth-child(4) {
+  --si: 3;
+}
+:is(.feature-copy, .feature-points, .chips) > :nth-child(5) {
+  --si: 4;
+}
+:is(.feature-copy, .feature-points, .chips) > :nth-child(n + 6) {
+  --si: 5;
+}
+.reveal-armed.is-in .feature-points > li {
+  transition-delay: calc(0.35s + var(--si, 0) * 0.07s);
+}
+.reveal-armed.is-in .chips > .chip {
+  transition-delay: calc(0.2s + var(--si, 0) * 0.05s);
 }
 
 /* ─── Hero ─── */
