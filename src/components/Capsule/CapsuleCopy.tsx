@@ -12,7 +12,7 @@ export const COPY_PILL_HOLD_MS = 8000
 export const COPIED_HIDE_MS = 1000
 
 /** Fallback size of the Copy button before it is measured. */
-const BUTTON_FALLBACK = { width: 66, height: 26 }
+const BUTTON_FALLBACK = { width: 60, height: 22 }
 
 interface CapsuleCopyProps {
   offer: CopyOffer
@@ -90,7 +90,7 @@ export function CapsuleCopy({ offer, active }: CapsuleCopyProps) {
 
   return (
     <div
-      className="relative z-10 flex h-full min-w-0 items-center gap-2 pl-3.5 pr-[7px]"
+      className="relative z-10 flex h-full min-w-0 items-center gap-2 pl-3.5 pr-[5px]"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       data-testid="capsule-copy"
@@ -100,7 +100,7 @@ export function CapsuleCopy({ offer, active }: CapsuleCopyProps) {
           {TARGET_LANGUAGE_SHORT_LABELS[lang] ?? lang.slice(0, 2).toUpperCase()}
         </span>
       )}
-      <p className="min-w-0 flex-1 truncate text-[11px] font-medium leading-4 text-white/90">
+      <p className="min-w-0 flex-1 truncate text-[10.5px] font-medium leading-[14px] text-white/90">
         {preview}
       </p>
       <button
@@ -138,7 +138,7 @@ export function CapsuleCopy({ offer, active }: CapsuleCopyProps) {
           </svg>
         )}
         <span key={copied ? 'copied' : 'copy'} className="pill-copy-label">
-          {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+          {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
           {copied ? t('capsule.copied') : t('capsule.copy')}
         </span>
       </button>
