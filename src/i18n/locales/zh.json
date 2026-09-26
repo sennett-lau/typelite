@@ -117,24 +117,16 @@
       "otherOptions": "其他方式"
     },
     "speed": {
-      "title": "速度",
+      "title": "洞察",
       "empty": "听写一次，就能看到时间花在哪里。",
-      "lastRun": "上一次",
+      "noFinished": "还没有顺利完成的运行。听写一次，就能看到时间花在哪里。",
+      "average": "平均",
+      "runsOne": "所有预设共 1 次运行",
+      "runsMany": "所有预设共 {{count}} 次运行",
       "totalText": "从停止到文字出现 {{time}}",
-      "totalAnswer": "从停止到回答出现 {{time}}",
-      "forSpeech": "录音 {{time}}",
-      "failed": "这次运行因错误结束（{{code}}）。",
-      "skipped": "已跳过",
-      "typical": "通常",
-      "basedOnOne": "基于当前预设的 1 次运行的中位数",
-      "basedOnMany": "基于当前预设的 {{count}} 次运行的中位数",
-      "noTypical": "当前预设还没有完成的运行。",
       "steps": {
-        "recording": "结束录音",
         "speech": "语音识别",
         "ai": "AI 润色",
-        "aiTranslate": "AI 翻译",
-        "aiAnswer": "AI 回答",
         "paste": "粘贴"
       },
       "tips": {

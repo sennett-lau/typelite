@@ -1,7 +1,7 @@
 /**
- * Plan `speed-board`: the Speed board's numbers. The backend keeps the last 50 runs in memory
- * (never on disk) and sends one `timing:run` event per run; this file turns those records into the
- * "last run" bar, the "typical" medians and one rule-based tip.
+ * Plans `speed-board` and `home-refresh`: the numbers behind Home's Insights. The backend keeps
+ * the last 50 runs in memory (never on disk) and sends one `timing:run` event per run; this file
+ * turns those records into the average time per step across all presets and one rule-based tip.
  */
 import type { AppConfig } from '../stores/appStore'
 import { findActivePreset } from '../stores/appStore'
@@ -40,6 +40,12 @@ export interface RunTiming {
 export type StepId = 'recording' | 'speech' | 'ai' | 'paste'
 
 export const STEP_IDS: StepId[] = ['recording', 'speech', 'ai', 'paste']
+
+/**
+ * The steps Insights shows (plan `home-refresh`). Finish recording is left out: it is a short,
+ * fixed cost the user cannot tune.
+ */
+export const INSIGHT_STEPS: StepId[] = ['speech', 'ai', 'paste']
 
 /** Step colour tokens (globals.css): recording grey, speech accent, AI violet, paste green. */
 export const STEP_COLOR: Record<StepId, string> = {
@@ -97,41 +103,37 @@ export function currentPresets(config: AppConfig): CurrentPresets {
   }
 }
 
-export function matchesPresets(run: RunTiming, presets: CurrentPresets): boolean {
-  return (
-    run.speechPresetId === presets.speechPresetId &&
-    run.speechModel === presets.speechModel &&
-    run.language === presets.language &&
-    run.aiPresetId === presets.aiPresetId &&
-    run.aiModel === presets.aiModel
-  )
+/** Arithmetic mean of a list; null when empty. */
+export function mean(values: number[]): number | null {
+  if (values.length === 0) return null
+  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
-export interface Typical {
-  /** Median per step over the runs that had that step; null when none had it. */
+export interface AverageTimes {
+  /** Mean per step over the finished runs that had that step; null when none had it. */
   steps: Record<StepId, number | null>
+  /** Sum of the step averages shown in Insights, so the number matches the bar. */
   totalMs: number
+  /** Finished runs the averages are taken over. */
   runCount: number
 }
 
 /**
- * Median time per step over the successful runs made with the current presets. Medians, not
- * averages, so one slow cold start does not distort the picture. Null when there are none.
+ * Plan `home-refresh`: the average time per step over every finished run, whatever preset it
+ * used. Failed runs are left out, and each step is averaged only over the runs where it ran (an
+ * Ask answer has no paste, a run with polish off has no AI). Null when no run finished.
  */
-export function typicalTimes(runs: RunTiming[], presets: CurrentPresets): Typical | null {
-  const matching = runs.filter((run) => isOk(run) && matchesPresets(run, presets))
-  if (matching.length === 0) return null
+export function averageTimes(runs: RunTiming[]): AverageTimes | null {
+  const finished = runs.filter(isOk)
+  if (finished.length === 0) return null
   const steps = {} as Record<StepId, number | null>
   for (const step of STEP_IDS) {
-    steps[step] = median(
-      matching.map((run) => stepMs(run, step)).filter((ms): ms is number => ms !== null),
+    steps[step] = mean(
+      finished.map((run) => stepMs(run, step)).filter((ms): ms is number => ms !== null),
     )
   }
-  return {
-    steps,
-    totalMs: median(matching.map((run) => run.totalMs)) ?? 0,
-    runCount: matching.length,
-  }
+  const totalMs = INSIGHT_STEPS.reduce((sum, step) => sum + (steps[step] ?? 0), 0)
+  return { steps, totalMs, runCount: finished.length }
 }
 
 export type TipId = 'speech' | 'ai' | 'paste'

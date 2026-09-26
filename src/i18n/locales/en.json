@@ -117,24 +117,16 @@
       "otherOptions": "Other options"
     },
     "speed": {
-      "title": "Speed",
+      "title": "Insights",
       "empty": "Dictate once to see where the time goes.",
-      "lastRun": "Last run",
+      "noFinished": "No run has finished yet. Dictate once to see where the time goes.",
+      "average": "Average",
+      "runsOne": "1 run across all presets",
+      "runsMany": "{{count}} runs across all presets",
       "totalText": "{{time}} from stop to text",
-      "totalAnswer": "{{time}} from stop to answer",
-      "forSpeech": "for {{time}} of speech",
-      "failed": "This run ended with an error ({{code}}).",
-      "skipped": "skipped",
-      "typical": "Typical",
-      "basedOnOne": "Median of 1 run with the current presets",
-      "basedOnMany": "Median of {{count}} runs with the current presets",
-      "noTypical": "No finished runs with the current presets yet.",
       "steps": {
-        "recording": "Finish recording",
         "speech": "Speech recognition",
         "ai": "AI polish",
-        "aiTranslate": "AI translation",
-        "aiAnswer": "AI answer",
         "paste": "Paste"
       },
       "tips": {
