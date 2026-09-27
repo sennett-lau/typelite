@@ -451,8 +451,6 @@
     "license": "License",
     "mit": "MIT",
     "github": "Source code",
-    "framework": "Built with",
-    "tauriReact": "Tauri 2 · React · Rust",
     "view": "View",
     "maxRecordingDuration": "Single recording duration",
     "accessibilityPermission": "macOS Accessibility",
