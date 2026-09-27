@@ -3428,6 +3428,83 @@ mod tests {
         assert!(!config.translate_enabled);
     }
 
+    /// A run's config, built the way `start_with_options` builds it, from a config saved before
+    /// 2026-09-27 with "Always translate output" on. Speech and AI are ready, so
+    /// `without_unready_ai` changes nothing.
+    fn run_config_from_a_saved_always_translate(
+        options: PipelineStartOptions,
+    ) -> storage::AppConfig {
+        let mut loaded = storage::AppConfig::from_stored_value(serde_json::json!({
+            "translate_enabled": true,
+            "target_lang": "ja",
+            "translation": {"targets": ["en", "ja"], "active_target": "ja"}
+        }))
+        .unwrap();
+        for preset in &mut loaded.speech_presets {
+            preset.verified_at = Some(1);
+        }
+        for preset in &mut loaded.ai_presets {
+            preset.verified_at = Some(1);
+        }
+        assert!(
+            crate::readiness::start_error(&loaded, crate::readiness::Feature::Translate).is_none()
+        );
+        apply_pipeline_start_options(crate::readiness::without_unready_ai(loaded), options)
+    }
+
+    /// Plan `translation-language-presets` (2026-09-27): Dictate does not translate its result,
+    /// even when an older version saved "Always translate output" on.
+    #[test]
+    fn dictate_does_not_translate_when_always_translate_was_saved_on() {
+        let config = run_config_from_a_saved_always_translate(PipelineStartOptions::default());
+        assert!(!config.translate_enabled);
+
+        let speech = "The meeting moved to Thursday afternoon.";
+        let intent = route_pipeline_voice_intent(
+            crate::voice_intent::VoiceMode::Dictate,
+            speech,
+            None,
+            &config,
+        );
+        assert_eq!(
+            intent.kind,
+            crate::voice_intent::VoiceIntentKind::DictateInsert
+        );
+        let (translate, target) = request_translation(&intent, speech, &config);
+        assert!(!translate);
+        let parts = language_parts(&config, None, translate, &target, true, speech, None);
+        assert_eq!(parts.translation_instructions, "");
+    }
+
+    /// The Translate shortcut still translates into the active language: its run's own copy of
+    /// the config turns translation on.
+    #[test]
+    fn the_translate_shortcut_still_translates_into_the_active_language() {
+        let config = run_config_from_a_saved_always_translate(PipelineStartOptions {
+            force_translate: true,
+        });
+        assert!(config.translate_enabled);
+
+        let speech = "The meeting moved to Thursday afternoon.";
+        let intent = route_pipeline_voice_intent(
+            crate::voice_intent::VoiceMode::Translate,
+            speech,
+            None,
+            &config,
+        );
+        assert_eq!(
+            intent.kind,
+            crate::voice_intent::VoiceIntentKind::TranslateInsert
+        );
+        let (translate, target) = request_translation(&intent, speech, &config);
+        assert_eq!((translate, target.as_str()), (true, "ja"));
+        let parts = language_parts(&config, None, translate, &target, false, speech, None);
+        assert_eq!(
+            parts.translation_instructions,
+            llm::prompt::default_translation_instructions("ja")
+        );
+    }
+
     #[test]
     fn switch_translation_target_updates_capture_without_restart_and_freezes_at_finalization() {
         let mut operation = TranslationOperationState::new("ja".to_string(), &[]);
