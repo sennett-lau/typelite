@@ -520,6 +520,13 @@ interface AppState {
   /** Plan `typing-speed-and-nudge`: the typing nudge shows in the pill. */
   typingNudge: boolean
   setTypingNudge: (shown: boolean) => void
+  /**
+   * Plan `quiet-no-speech`: the run heard no speech, so the pill shows the calm fade (no text, no
+   * red; its light drains to grey and it hides) instead of an error. Cleared after `QUIET_MS` or
+   * when a new run starts.
+   */
+  quietFade: boolean
+  setQuietFade: (shown: boolean) => void
 
   // Config
   config: AppConfig
@@ -1304,6 +1311,8 @@ export const useAppStore = create<AppState>((set) => ({
   setCopyOffer: (copyOffer) => set({ copyOffer }),
   typingNudge: false,
   setTypingNudge: (typingNudge) => set({ typingNudge }),
+  quietFade: false,
+  setQuietFade: (quietFade) => set({ quietFade }),
 
   config: defaultConfig,
   setConfig: (config) => set((s) => ({ config: syncHotkeyConfig(s.config, config) })),
