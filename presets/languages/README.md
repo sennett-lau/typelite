@@ -23,13 +23,13 @@ each of them.
 
 | Preset | Codes | Used for | Tier | Version | Authors |
 |---|---|---|---|---|---|
-| [Cantonese (Hong Kong) 廣東話](cantonese-hong-kong/preset.md) | `zh-Hant-HK`, `yue-Hant-HK` | Polish, Translate | Official | 2 | sennett-lau |
+| [Cantonese (Hong Kong) 廣東話](cantonese-hong-kong/preset.md) | `zh-Hant-HK`, `yue-Hant-HK` | Polish, Translate | Official | 3 | sennett-lau |
 
 ### Chinese
 
 | Preset | Codes | Used for | Tier | Version | Authors |
 |---|---|---|---|---|---|
-| [Cantonese (Hong Kong) 廣東話](cantonese-hong-kong/preset.md) | `zh-Hant-HK`, `yue-Hant-HK` | Polish, Translate | Official | 2 | sennett-lau |
+| [Cantonese (Hong Kong) 廣東話](cantonese-hong-kong/preset.md) | `zh-Hant-HK`, `yue-Hant-HK` | Polish, Translate | Official | 3 | sennett-lau |
 | [Mandarin (Taiwan) 國語](mandarin-taiwan/preset.md) | `zh-Hant-TW`, `cmn-Hant-TW` | Polish, Translate | Official | 3 | sennett-lau |
 
 ### English

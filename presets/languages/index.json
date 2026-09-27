@@ -4,7 +4,7 @@
     {
       "id": "cantonese-hong-kong",
       "name": "Cantonese (Hong Kong) 廣東話",
-      "version": 2,
+      "version": 3,
       "format": 1,
       "tier": "official",
       "languages": [
@@ -20,10 +20,10 @@
       "authors": [
         "sennett-lau"
       ],
-      "model_hint": "4B models slip into formal written Chinese at times; 7B or larger does better. Some models refuse to repeat swear words.",
+      "model_hint": "Best with a speech model that writes Cantonese as spoken, such as Qwen3-ASR; whisper turns it into written Chinese first.",
       "path": "cantonese-hong-kong/preset.md",
-      "bytes": 2880,
-      "sha256": "6f12a84ccba2d569a40e3b8c67d780b08984755dcaf9bc63f2c6f4aa7915e765"
+      "bytes": 3082,
+      "sha256": "b179371f1c6b943e18d863a99b4328479551fd3ec254b6084b8f269b25c6fb8f"
     },
     {
       "id": "english",
