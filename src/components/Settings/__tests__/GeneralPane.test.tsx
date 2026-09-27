@@ -87,7 +87,7 @@ describe('GeneralPane', () => {
     expect(screen.getByText('settings.generalPane.shortcutsHint')).toBeDefined()
   })
 
-  it('lists all five shortcuts with descriptions, and Cancel as a read-only Esc', () => {
+  it('lists every shortcut with its description, and Cancel as a read-only Esc', () => {
     render(<GeneralPane />)
     const shortcuts = screen.getByRole('region', { name: 'settings.hotkey' })
 
@@ -110,6 +110,61 @@ describe('GeneralPane', () => {
     expect(esc.querySelector('[aria-hidden="true"]')?.textContent).toBe('esc')
     expect(within(cancel).getByText('Escape')).toHaveClass('sr-only')
     expect(within(cancel).queryByRole('button')).toBeNull()
+  })
+
+  it('reads as four blocks, with Switch language inside the Translate block', () => {
+    render(<GeneralPane />)
+    const shortcuts = screen.getByRole('region', { name: 'settings.hotkey' })
+
+    const blocks = Array.from(shortcuts.querySelector('.row-group')!.children)
+    expect(blocks).toHaveLength(4)
+    expect(blocks[0]).toHaveAttribute('data-hotkey-role', 'dictation')
+    expect(blocks[2]).toHaveAttribute('data-hotkey-role', 'ask')
+    expect(blocks[3]).toHaveAttribute('data-testid', 'shortcut-cancel')
+
+    // Translate and its switch key share one block; the hairline rules put a line above the
+    // block and none between the row and its sub-row, which is no `.row`.
+    const translate = within(shortcuts).getByText('home.shortcuts.translate').closest('.row')!
+    expect(translate).toHaveAttribute('data-hotkey-role', 'translate')
+    expect(translate.parentElement).toBe(blocks[1])
+    expect(blocks[1]).toHaveClass('row-block')
+    const sub = translate.nextElementSibling as HTMLElement
+    expect(sub).toHaveClass('row-sub')
+    expect(sub).not.toHaveClass('row')
+    expect(within(sub).getByText('settings.switchLanguageHotkey')).toBeDefined()
+    expect(sub.querySelector('[data-hotkey-role="switchLanguage"]')).not.toBeNull()
+  })
+
+  it('has no Switch language off macOS, so Translate is a plain row', () => {
+    setPlatform('Win32')
+    render(<GeneralPane />)
+    const shortcuts = screen.getByRole('region', { name: 'settings.hotkey' })
+
+    expect(within(shortcuts).queryByText('settings.switchLanguageHotkey')).toBeNull()
+    expect(shortcuts.querySelector('[data-hotkey-role="switchLanguage"]')).toBeNull()
+    expect(shortcuts.querySelector('.row-block, .row-sub')).toBeNull()
+    const translate = shortcuts.querySelector('[data-hotkey-role="translate"]')!
+    expect(translate.parentElement).toHaveClass('row-group')
+  })
+
+  it('names the Translate languages the switch key moves through, in list order', () => {
+    useAppStore.getState().updateConfig({
+      translation: { targets: ['en', 'ja', 'fr'], active_target: 'ja' },
+    })
+    render(<GeneralPane />)
+
+    const sub = document.querySelector('.row-sub') as HTMLElement
+    expect(within(sub).getByText('English → 日本語 → Français')).toHaveClass('text-text-tertiary')
+  })
+
+  it('leaves the language line out with fewer than two Translate languages', () => {
+    useAppStore.getState().updateConfig({ translation: { targets: ['en'], active_target: 'en' } })
+    render(<GeneralPane />)
+
+    // Only the usual help line; no line with "English" alone.
+    const sub = document.querySelector('.row-sub') as HTMLElement
+    const help = Array.from(sub.querySelectorAll('.row-help')).map((line) => line.textContent)
+    expect(help).toEqual(['settings.generalPane.switchLanguageDesc'])
   })
 
   it('draws shortcut keys as key caps inside the recorder field', () => {
