@@ -829,21 +829,49 @@ fn record_hotkey_registration_result(
     }
 }
 
+/// Logs a failed retry: a warning the first time at each wait step (1 s, 2 s, 4 s, 8 s, 10 s),
+/// debug after that, so a long outage (for example a stale Accessibility grant) does not flood
+/// the log. Attempt 1 is the registration at start-up or after a settings change.
+fn log_hotkey_retry_failure(supervisor: &hotkey::HotkeySupervisor, message: &str) {
+    let failures = supervisor.snapshot().retry_attempts;
+    let delay = hotkey::hotkey_retry_delay(failures);
+    let secs = delay.as_secs();
+    if !hotkey::hotkey_retry_failure_is_new_step(failures) {
+        tracing::debug!("Hotkey supervisor: attempt {failures} failed: {message}");
+    } else if delay == hotkey::HOTKEY_RETRY_MAX_DELAY {
+        tracing::warn!(
+            "Hotkey supervisor: attempt {failures} failed: {message}; trying again every {secs}s \
+             until it works (later failures are logged at debug level)"
+        );
+    } else {
+        tracing::warn!(
+            "Hotkey supervisor: attempt {failures} failed: {message}; trying again in {secs}s"
+        );
+    }
+}
+
+/// Retries a failed shortcut registration until it works (plan `typing-speed-and-nudge`: the
+/// key listener cannot start while the Accessibility grant is missing or stale, and must start
+/// as soon as it is fixed). The wait grows from 1 s to 10 s ([`hotkey::hotkey_retry_delay`]).
+/// Ends when the app quits ([`hotkey::HotkeySupervisor::stop`]).
 fn spawn_hotkey_supervisor(app_handle: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
             let delay = app_handle
                 .state::<hotkey::HotkeySupervisor>()
                 .next_retry_delay()
-                .unwrap_or_else(|| {
-                    std::time::Duration::from_secs(hotkey::HOTKEY_SUPERVISOR_RETRY_DELAY_SECS)
-                });
+                .unwrap_or(hotkey::HOTKEY_SUPERVISOR_IDLE_POLL);
             tokio::time::sleep(delay).await;
 
             let supervisor = app_handle.state::<hotkey::HotkeySupervisor>();
+            if supervisor.is_stopped() {
+                tracing::debug!("Hotkey supervisor stopped");
+                break;
+            }
             let Some(generation) = supervisor.begin_retry_registration_attempt() else {
                 continue;
             };
+            let failures_before = supervisor.snapshot().retry_attempts;
 
             let config = match app_handle.state::<storage::ConfigManager>().load().await {
                 Ok(config) => config,
@@ -854,6 +882,7 @@ fn spawn_hotkey_supervisor(app_handle: tauri::AppHandle) {
                     let message = format!("Failed to load hotkey config for retry: {error}");
                     supervisor.record_registration_failure(generation, message.clone());
                     set_hotkey_registration_error_state(&app_handle, Some(message.clone()));
+                    log_hotkey_retry_failure(&supervisor, &message);
                     let _ = app_handle.emit("hotkey:registration-failed", message);
                     continue;
                 }
@@ -869,12 +898,16 @@ fn spawn_hotkey_supervisor(app_handle: tauri::AppHandle) {
                 &supervisor,
                 generation,
             );
-            if let Err(message) =
-                record_hotkey_registration_result(&app_handle, &supervisor, generation, result)
-            {
-                tracing::warn!("Hotkey supervisor retry failed: {message}");
-            } else {
-                tracing::info!("Hotkey supervisor recovered global shortcut registration");
+            match record_hotkey_registration_result(&app_handle, &supervisor, generation, result) {
+                Ok(()) => tracing::info!(
+                    "Hotkey supervisor recovered: shortcuts and key listener are running again \
+                     after {failures_before} failed attempt(s)"
+                ),
+                Err(message) if message != commands::misc::HOTKEY_REGISTRATION_SUPERSEDED_ERROR => {
+                    log_hotkey_retry_failure(&supervisor, &message)
+                }
+                // A settings change or a shortcut recording took over; it reports for itself.
+                Err(_) => {}
             }
         }
     });
@@ -1487,6 +1520,10 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|_app, _event| {
             if let tauri::RunEvent::Exit = _event {
+                // No more shortcut retries while the app quits.
+                if let Some(supervisor) = _app.try_state::<hotkey::HotkeySupervisor>() {
+                    supervisor.stop();
+                }
                 // Plan `typing-speed-and-nudge`: count the burst in progress and save the totals.
                 if let Some(stats) = _app.try_state::<speed_stats::SpeedStats>() {
                     stats.finish();
