@@ -62,6 +62,8 @@ docs/guides/
                                    troubleshooting
   models.md                        choosing a model: by hardware, by language, turning off thinking
   languages.md                     translation languages, instructions, recognition, presets
+                                   (now languages/README.md, with the language guides: plan
+                                   `model-guides`)
   sharing-presets.md               export and import of speech and AI presets
   benchmarks.md                    reference numbers for two common machines
   speech-services.md, speech-recognition.md, ai-polish.md   stubs: "Moved to …"

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Plan `docs-structure`: validates the service cards in docs/guides/{speech,ai-polish}/services/
 // and rewrites the generated tables in the guides and in the language preset catalogue.
-// Plan `model-guides`: also validates the language guides in docs/guides/models/languages/ and
-// writes their index in docs/guides/models/README.md.
+// Plan `model-guides`: also validates the language guides in docs/guides/languages/ and writes
+// their index in docs/guides/languages/README.md (the Languages page, which is not a guide).
 //
 //   node scripts/docs-cards.mjs          validate, then rewrite the generated tables
 //   node scripts/docs-cards.mjs --check  validate, and fail if a generated table is out of date
@@ -222,8 +222,8 @@ export function renderTable(set, cards) {
 
 export const LANGUAGE_GUIDES = {
   id: 'language-guides',
-  dir: 'docs/guides/models/languages',
-  table: 'docs/guides/models/README.md',
+  dir: 'docs/guides/languages',
+  table: 'docs/guides/languages/README.md',
 }
 
 const GUIDE_REQUIRED_KEYS = ['id', 'language', 'codes', 'speech', 'polish', 'tier', 'authors']
@@ -278,7 +278,7 @@ export function validateLanguageGuide(fileId, fields, body, root = REPO_ROOT) {
   return errors
 }
 
-/** Reads and validates every language guide (README.md in the folder is the format, not a guide). */
+/** Reads and validates every language guide (README.md in the folder is the Languages page). */
 export function readLanguageGuides(root = REPO_ROOT) {
   const dir = join(root, LANGUAGE_GUIDES.dir)
   const problems = []
@@ -312,7 +312,9 @@ export function renderLanguageGuides(guides) {
       GUIDE_TIERS.indexOf(a.tier) - GUIDE_TIERS.indexOf(b.tier) ||
       a.language.localeCompare(b.language, 'en'),
   )
+  // The index may sit in the guides' own folder: then a guide is linked by its file name alone.
   const guidesDir = relative(dirname(LANGUAGE_GUIDES.table), LANGUAGE_GUIDES.dir)
+  const guidePath = (file) => (guidesDir ? `${guidesDir}/${file}` : file)
   const rows = [
     '| Language | Codes | Speech recognition | AI polish | Language preset | Tier | Tested |',
     '|---|---|---|---|---|---|---|',
@@ -322,7 +324,7 @@ export function renderLanguageGuides(guides) {
     const preset = guide.preset ? `[${guide.preset}](../../../presets/languages/${guide.preset}/preset.md)` : '—'
     rows.push(
       [
-        `[${guide.language}](${guidesDir}/${guide.file})`,
+        `[${guide.language}](${guidePath(guide.file)})`,
         guide.codes.split(',').map((tag) => code(tag.trim())).join(', '),
         guide.speech,
         guide.polish,

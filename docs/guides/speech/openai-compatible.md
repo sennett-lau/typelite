@@ -40,7 +40,7 @@ and expects a JSON answer with the text, and with `verbose_json` the language it
 {"text": "Let's meet at four tomorrow.", "language": "en"}
 ```
 
-- The detected language lets Typelite add the right [language instructions](../languages.md)
+- The detected language lets Typelite add the right [language instructions](../languages/README.md)
   when it polishes. A server that refuses `verbose_json` gets plain requests for the rest of the
   session and keeps working, without a detected language.
 
@@ -109,13 +109,13 @@ A computer with an NVIDIA GPU recognises speech several times faster than a lapt
 
 [Qwen3-ASR](services/qwen3-asr.md) is the speech model to use when whisper does not write your
 language the way you speak it, for example Cantonese (see the
-[language guides](../models/README.md#language-guides)). It runs on llama.cpp's `llama-server`,
+[language guides](../languages/README.md#language-guides)). It runs on llama.cpp's `llama-server`,
 the same C++ runtime family as whisper.cpp, or on vLLM. Both answer Typelite's transcription
 request; Typelite then:
 
 - removes the language tag Qwen3-ASR puts in front of the text (`language Cantonese<asr_text>…`)
   and uses it as the detected language for the
-  [language router](../languages.md#where-the-instructions-are-used);
+  [language router](../languages/README.md#where-the-instructions-are-used);
 - writes the text in the characters of the Chinese language the router picks: Qwen3-ASR writes
   Chinese in Simplified characters, so a dictation recognised as Cantonese (Hong Kong) becomes Hong
   Kong Traditional, with Cantonese 係 and 覆.

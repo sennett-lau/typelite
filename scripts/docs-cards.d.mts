@@ -26,3 +26,15 @@ export function validateLanguageGuide(
   body: string,
   root?: string,
 ): string[]
+/** One language guide's front matter plus its file name, as `readLanguageGuides` returns it. */
+export interface LanguageGuide {
+  file: string
+  language: string
+  codes: string
+  speech: string
+  polish: string
+  tier: string
+  preset?: string
+  tested?: string
+}
+export function renderLanguageGuides(guides: LanguageGuide[]): string

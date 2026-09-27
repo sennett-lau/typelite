@@ -49,4 +49,4 @@ model. To add one to this list, see [Service cards](../../../CONTRIBUTING.md#ser
 
 - [Troubleshooting](troubleshooting.md): Test fails, slow recognition, nothing pasted.
 - [Sharing presets](../sharing-presets.md): export and import your speech presets.
-- [Languages](../languages.md): the recognition language and hints.
+- [Languages](../languages/README.md): the recognition language and hints.
