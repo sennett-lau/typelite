@@ -21,8 +21,11 @@ server on your network or a cloud key; see [AI polish models](../models/ai-polis
 ## Services
 
 "Your network" means a server on another computer you run; cloud services need your own API key
-and receive your text. How to turn off thinking for each is in
-[AI polish models](../models/ai-polish.md#turn-off-thinking).
+and receive your text.
+
+> **Heads-up: turn thinking off.** Models that "think" (reason before answering) are slow for
+> polish and can return empty text. Pick an instruct model, or turn thinking off: see
+> [Turn off thinking](../models/ai-polish.md#turn-off-thinking). Built-in has it off already.
 
 | Service | Runs | Cost | API key | Address (example) | Model (example) | Notes |
 |---|---|---|---|---|---|---|
@@ -40,7 +43,6 @@ Other services with an OpenAI-compatible chat API should work too. To add one to
 ## More
 
 - [AI polish models](../models/ai-polish.md): suggestions by hardware and by language.
-- [Thinking models](thinking-models.md): why they are slow for polish and how to turn thinking off.
 - [Languages](../languages/README.md): translation languages and per-language instructions.
 - [Troubleshooting](troubleshooting.md): Test fails, empty answers, slow polish.
 - [Sharing presets](../sharing-presets.md): export and import your AI presets.

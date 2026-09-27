@@ -152,7 +152,7 @@ The images are rendered from the app's own components and the website's demos; s
 |---|---|
 | [Guides](docs/guides/README.md) | Choose a setup: built-in, your own server, or a cloud key |
 | [Speech recognition](docs/guides/speech/README.md) | Connections and supported services |
-| [AI polish](docs/guides/ai-polish/README.md) | Connections, services and thinking models |
+| [AI polish](docs/guides/ai-polish/README.md) | Connections, services and turning off thinking |
 | [Choosing models](docs/guides/models/README.md) | Speech and polish models by hardware |
 | [Languages](docs/guides/languages/README.md) | Guides per language, translation languages, presets and recognition |
 | [Sharing presets](docs/guides/sharing-presets.md) | Export and import your speech and AI presets |

@@ -69,4 +69,4 @@ server's command line.
 | OpenAI reasoning models | The lowest `reasoning_effort` the model accepts (check OpenAI's docs), or pick a non-reasoning model such as `gpt-4.1-mini` |
 | LM Studio, OpenRouter and others | Pick an instruct (non-thinking) model, or check your server's docs |
 
-If you are unsure whether a model thinks, see [Thinking models](../ai-polish/thinking-models.md#how-to-tell).
+If you are unsure whether a model thinks, see [Troubleshooting → check thinking first](../ai-polish/troubleshooting.md#slow-or-empty-answers-check-thinking-first).

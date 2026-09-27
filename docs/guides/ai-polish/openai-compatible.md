@@ -37,7 +37,7 @@ Content-Type: application/json
 - An address that already ends in `/chat/completions` is used as it is.
 - The answer is read from `choices[0].delta.content` (streaming) or `choices[0].message.content`.
   A server that puts the whole answer in `reasoning_content` still works, but see
-  [Thinking models](thinking-models.md).
+  [Troubleshooting → check thinking first](troubleshooting.md#slow-or-empty-answers-check-thinking-first).
 - **Extra fields** are copied into the body last, so they replace the defaults: for example
   `{"temperature": 0.7}` changes the temperature.
 - A request times out after 60 seconds. Server errors (5xx) are retried up to two times before
