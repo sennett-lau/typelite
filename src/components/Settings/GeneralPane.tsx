@@ -18,7 +18,7 @@ import { ShortcutBindingList } from './ShortcutBindingList'
 import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
-import { targetLanguageLabel } from '../../lib/constants'
+import { MAX_TRANSLATION_TARGETS, targetLanguageLabel } from '../../lib/constants'
 
 const MAC_ACCESSIBILITY_HOTKEY_ERROR = 'Accessibility permission may be denied'
 
@@ -35,6 +35,11 @@ export function GeneralPane() {
   const [hotkeyStatus, setHotkeyStatus] = useState<HotkeyStatus | null>(null)
   const accessibilityRecoveryAttemptedRef = useRef(false)
   const targetName = targetLanguageLabel(config.translation?.active_target ?? config.target_lang, t)
+  // The languages the Switch language key moves through, in its order: the first three, as the
+  // pill shows them.
+  const translateLanguageNames = (config.translation?.targets ?? [])
+    .slice(0, MAX_TRANSLATION_TARGETS)
+    .map((code) => targetLanguageLabel(code, t))
 
   useEffect(() => {
     if (platformCapabilities) return
@@ -191,21 +196,26 @@ export function GeneralPane() {
           otherBindings={otherBindingsFor('translate')}
           required={false}
           onChange={(bindings) => updateCoreBindings('translate', bindings)}
+          // Plan `general-settings`: the Switch language key (macOS only) only works while
+          // translating, so it sits inside the Translate block rather than as a row of its own.
+          subRow={
+            isMac && (
+              <SwitchLanguageShortcut
+                binding={config.hotkeys.switchLanguage ?? null}
+                otherBindings={[
+                  ...dictationBindings,
+                  ...askBindings,
+                  ...translateBindings,
+                  ...secondaryBindings,
+                ]}
+                languageNames={translateLanguageNames}
+                onChange={(switchLanguage) =>
+                  updateConfig({ hotkeys: { ...config.hotkeys, switchLanguage } })
+                }
+              />
+            )
+          }
         />
-        {isMac && (
-          <SwitchLanguageShortcut
-            binding={config.hotkeys.switchLanguage ?? null}
-            otherBindings={[
-              ...dictationBindings,
-              ...askBindings,
-              ...translateBindings,
-              ...secondaryBindings,
-            ]}
-            onChange={(switchLanguage) =>
-              updateConfig({ hotkeys: { ...config.hotkeys, switchLanguage } })
-            }
-          />
-        )}
         <ShortcutBindingList
           role="ask"
           label={t('home.shortcuts.ask')}
