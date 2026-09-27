@@ -14,7 +14,7 @@ in the config:
 The kinds are `SpeechProviderKind` and `AiProviderKind` in `src-tauri/src/storage/mod.rs`.
 
 Most services need **no new connection**: if a service speaks the OpenAI API, add a
-[service card](../../CONTRIBUTING.md#service-cards) instead. Add a connection only when a
+[service row](../../CONTRIBUTING.md#adding-a-service) instead. Add a connection only when a
 service needs its own protocol. That is a feature: write a plan first
 (`docs/plans/YYYY-MM-DD-slug/`, see [docs/plans/README.md](../plans/README.md)).
 
@@ -98,8 +98,7 @@ unless its environment variables (address, key) are set, and describe them in th
 - A connection page under `docs/guides/speech/` or `docs/guides/ai-polish/` (see
   [qwen-cloud.md](../guides/speech/qwen-cloud.md)), and a row in the connections table of that
   folder's `README.md`.
-- A service card with the new `connection` value, and the value added to `CARD_SETS` in
-  `scripts/docs-cards.mjs`. Run `npm run docs:cards`.
+- A row for the service in the Services table of that folder's `README.md`.
 - If the connection sends data to a cloud service, say so plainly: opt-in, with the user's own
   key.
 
@@ -112,5 +111,5 @@ unless its environment variables (address, key) are set, and describe them in th
 - [ ] Preset sharing decided and tested.
 - [ ] Form detection, note text in English and Chinese, frontend tests.
 - [ ] Optional e2e test.
-- [ ] Connection page, service card, `npm run docs:cards`.
+- [ ] Connection page, row in the Services table.
 - [ ] Offline gate passes (see [CONTRIBUTING.md](../../CONTRIBUTING.md#the-offline-gate)).

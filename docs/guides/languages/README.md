@@ -44,7 +44,7 @@ recording into it, but saves a detection pass and can help very short clips.
 
 - The speech model decides which words reach AI polish. whisper (Built-in, or a whisper.cpp or
   Speaches server) writes Cantonese as standard written Chinese and translates some English words
-  (email → 電郵). [Qwen3-ASR](../speech/services/qwen3-asr.md) and Qwen Cloud write Cantonese as it is
+  (email → 電郵). [Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) and Qwen Cloud write Cantonese as it is
   spoken, with English words kept, in Simplified characters. Typelite writes a Qwen3-ASR transcript
   in the characters of the Chinese language it is recognised as (Hong Kong Traditional for
   Cantonese (Hong Kong)); Qwen Cloud's text keeps its characters, and AI polish writes the final
@@ -94,7 +94,7 @@ The built-in instructions are a plain, natural translation for most languages, p
 | Chinese (Simplified) | Mainland wording and vocabulary (软件, 网络, 出租车). |
 
 For dictation, the Cantonese instructions work best on a Cantonese transcript: with
-[Qwen3-ASR](../speech/services/qwen3-asr.md) as the speech model, a 4B polish model keeps the text
+[Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) as the speech model, a 4B polish model keeps the text
 Cantonese. With whisper, the transcript is already written Chinese and the notes can only put back
 part of it. See [the Cantonese guide](cantonese.md).
 

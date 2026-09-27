@@ -12,6 +12,13 @@ Status: done — 2026-09-26
 The decision to keep model suggestions in one page is superseded by plan
 [model-guides](../2026-09-27-model-guides/index.md).
 
+The service cards are superseded (owner decision, 2026-09-27): most cards repeated a connection
+page or held only "sign in, create a key", and twin file names (`built-in.md` next to
+`services/built-in.md`) caused wrong links. Each Services table is now written by hand, and the
+setup lives in the connection pages (**Running your own server**, **Cloud services**); see
+[Adding a service](../../../CONTRIBUTING.md#adding-a-service). The decisions below about cards
+are kept as history.
+
 ## Goals
 
 - A reader finds the right setup in two clicks: guides index → speech or AI polish → a

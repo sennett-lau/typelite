@@ -72,7 +72,7 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
 
 - Offline gate: `cd src-tauri && cargo test --lib`, `cargo fmt --check`, `npx vitest run`,
   `npx tsc --noEmit`, `npx eslint src/`, `npx prettier --check src`, `npm run docs:check`
-  (service cards and generated doc tables, plan `docs-structure`),
+  (language guides and generated doc tables, plans `docs-structure`, `model-guides`),
   `node scripts/language-presets.mjs --check`.
 - End-to-end against real servers: `bash scripts/e2e.sh` (whisper.cpp + an OpenAI-compatible
   chat server; set `TYPELITE_E2E_AI_URL` etc., see `src-tauri/tests/e2e_services.rs`). Speech
