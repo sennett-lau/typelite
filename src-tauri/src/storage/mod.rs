@@ -3940,6 +3940,44 @@ mod tests {
         assert!(!stored_languages_need_migration(&written));
     }
 
+    /// Plan `translation-language-presets` (2026-09-27): the "Always translate output" switch is
+    /// gone. A config saved with it on loads with it off and is written back at once, so the
+    /// file on disk no longer says true. The languages stay: the Translate shortcut uses them.
+    #[test]
+    fn a_saved_always_translate_switch_loads_as_off() {
+        let stored = serde_json::json!({
+            "translate_enabled": true,
+            "target_lang": "ja",
+            "translation": {"targets": ["en", "ja"], "active_target": "ja"}
+        });
+        assert!(stored_translate_flag_needs_reset(&stored));
+        let config = AppConfig::from_stored_value(stored).unwrap();
+        assert!(!config.translate_enabled);
+        assert_eq!(config.translation.targets, ["en", "ja"]);
+        assert_eq!(config.translation.active_target, "ja");
+
+        let written = serde_json::to_value(&config).unwrap();
+        assert_eq!(written["translate_enabled"], false);
+        assert!(!stored_translate_flag_needs_reset(&written));
+        assert!(!stored_translate_flag_needs_reset(&serde_json::json!({})));
+    }
+
+    /// Every save normalises the config before writing it (`ConfigManager::save`, and
+    /// `update_config` before that), so a `true` that reaches a save is written as false.
+    #[test]
+    fn saving_writes_translate_enabled_as_false() {
+        let mut config = AppConfig {
+            translate_enabled: true,
+            ..AppConfig::default()
+        };
+        config.normalize_values();
+        assert!(!config.translate_enabled);
+        assert_eq!(
+            serde_json::to_value(&config).unwrap()["translate_enabled"],
+            false
+        );
+    }
+
     #[test]
     fn library_presets_switches_and_hints_round_trip() {
         let sha = "a".repeat(64);
