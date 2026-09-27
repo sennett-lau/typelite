@@ -28,6 +28,11 @@ const DRAG_THRESHOLD = 5
 /** How long the done flash stays before the pill hides. */
 const DONE_FLASH_MS = 500
 /**
+ * Plan `quiet-no-speech`: how long the calm fade stays after a run that heard no speech before
+ * the pill hides.
+ */
+export const QUIET_MS = 620
+/**
  * Plan `copy-when-no-field` content cross-fade: the old content fades out while the new one fades
  * in.
  */
@@ -37,6 +42,19 @@ const CONTENT_EXIT = { duration: 0.14, ease: 'easeIn' as const }
 /** The aurora light fades in quickly and out slowly instead of cutting. */
 const AURORA_FADE_IN = { duration: 0.15, ease: 'easeOut' as const }
 const AURORA_FADE_OUT = { duration: 0.3, ease: 'easeOut' as const }
+/**
+ * Plan `quiet-no-speech`: during the calm fade the light that was showing turns grey (no
+ * saturation, a little brighter) over 0.3 s and fades to a faint trace over 0.42 s. The trace
+ * leaves with the pill.
+ */
+const AURORA_DRAIN = {
+  opacity: 0.2,
+  filter: 'saturate(0) brightness(1.35)',
+  transition: {
+    opacity: { duration: 0.42, ease: 'linear' as const },
+    filter: { duration: 0.3, ease: 'linear' as const },
+  },
+}
 
 /** A distinct key per Copy offer, so a new offer starts with a fresh Copy pill. */
 const offerKeys = new WeakMap<CopyOffer, number>()
@@ -59,6 +77,8 @@ interface ShownPill {
   error: string | null
   errorHasAction: boolean
   copyOffer: CopyOffer | null
+  /** Plan `quiet-no-speech`: during the calm fade, the light shown just before it, which drains. */
+  drainFrom: AuroraMode | null
 }
 
 function auroraModeFor(capsuleState: string): AuroraMode | null {
@@ -76,6 +96,50 @@ function auroraModeFor(capsuleState: string): AuroraMode | null {
     default:
       return null
   }
+}
+
+/** One light inside the pill; `draining` lights turn grey and fade (plan `quiet-no-speech`). */
+interface AuroraLayer {
+  mode: AuroraMode
+  draining: boolean
+}
+
+/**
+ * The lights for what the pill shows. The calm fade (plan `quiet-no-speech`) keeps the light
+ * shown before it (`drainFrom`: the sweep, or the glow when a recording ended with no speech),
+ * drains that to grey and adds a soft grey flash on top. With reduced motion it has no light, so
+ * the old light just fades like at any other change.
+ */
+function auroraLayersFor(
+  capsuleState: string,
+  drainFrom: AuroraMode | null,
+  reducedMotion: boolean,
+): AuroraLayer[] {
+  if (capsuleState !== 'quiet') {
+    const mode = auroraModeFor(capsuleState)
+    return mode ? [{ mode, draining: false }] : []
+  }
+  if (reducedMotion) return []
+  const flash: AuroraLayer = { mode: 'quiet', draining: false }
+  return drainFrom ? [{ mode: drainFrom, draining: true }, flash] : [flash]
+}
+
+/**
+ * Plan `quiet-no-speech`: the calm fade ends `QUIET_MS` after it started, so the pill hides; a
+ * new run ends it sooner (`useTauriEvents`). Like the end of an error, it then clears what the
+ * finished recording left in the store.
+ */
+function useQuietFadeTimer(quietFade: boolean) {
+  useEffect(() => {
+    if (!quietFade) return
+    const timer = setTimeout(() => {
+      const { setQuietFade, resetRecording, pipelineState } = useAppStore.getState()
+      setQuietFade(false)
+      // A new run may have started meanwhile; leave its recording state alone.
+      if (pipelineState === 'idle') resetRecording()
+    }, QUIET_MS)
+    return () => clearTimeout(timer)
+  }, [quietFade])
 }
 
 /** States after which reaching idle means the run produced its result. */
@@ -134,6 +198,7 @@ export function Capsule() {
   const setCopyOffer = useAppStore((s) => s.setCopyOffer)
   const typingNudge = useAppStore((s) => s.typingNudge)
   const setTypingNudge = useAppStore((s) => s.setTypingNudge)
+  const quietFade = useAppStore((s) => s.quietFade)
   const askSelectionPreview = useAppStore((s) => s.askSelectionPreview)
   const lastInsertStatus = useAppStore((s) => s.lastInsertResult?.status ?? null)
   const { stopRecording, isRecording } = useRecording()
@@ -146,6 +211,7 @@ export function Capsule() {
 
   const hasError = pipelineError !== null
   const doneFlash = useDoneFlash(pipelineState, hasError)
+  useQuietFadeTimer(quietFade)
   useCapsuleResize(doneFlash, rootRef)
 
   const liveState = getCapsuleState(
@@ -154,6 +220,7 @@ export function Capsule() {
     doneFlash,
     copyOffer !== null,
     typingNudge,
+    quietFade,
   )
   const liveSize = getPillSize(
     liveState,
@@ -173,6 +240,7 @@ export function Capsule() {
     doneFlash,
     copyPill: copyOffer !== null,
     typingNudge,
+    quietFade,
   })
 
   // While visible the pill shows the live state. While it hides it keeps what it last showed,
@@ -183,23 +251,35 @@ export function Capsule() {
     error: pipelineError,
     errorHasAction,
     copyOffer,
+    drainFrom: null,
   })
   if (visible) {
+    const before = shown.current
     shown.current = {
       state: liveState,
       size: liveSize,
       error: pipelineError,
       errorHasAction,
       copyOffer,
+      drainFrom:
+        liveState !== 'quiet'
+          ? null
+          : before.state === 'quiet'
+            ? before.drainFrom
+            : auroraModeFor(before.state),
     }
   }
   const capsuleState = shown.current.state
   const capsuleShellSize = shown.current.size
-  const auroraMode = visible ? auroraModeFor(capsuleState) : null
+  const auroraLayers = visible
+    ? auroraLayersFor(capsuleState, shown.current.drainFrom, reducedMotion === true)
+    : []
 
-  // The render that shows the pill again takes the new size at once; later changes animate.
+  // The render that shows the pill again takes the new size at once; later changes animate. The
+  // calm fade (plan `quiet-no-speech`) always narrows from the pill just shown: an Ask run goes
+  // idle a moment before it reports no speech, which only starts the hide.
   const committedVisible = useRef(visible)
-  const appearing = visible && !committedVisible.current
+  const appearing = visible && !committedVisible.current && capsuleState !== 'quiet'
   useEffect(() => {
     committedVisible.current = visible
   }, [visible])
@@ -293,22 +373,31 @@ export function Capsule() {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
+        {/* The lights, keyed by mode: during the calm fade the light shown before stays the same
+            element and drains to grey (plan `quiet-no-speech`). */}
         <AnimatePresence initial={false}>
-          {auroraMode && (
+          {auroraLayers.map(({ mode, draining }) => (
             <motion.div
-              key={auroraMode}
+              key={mode}
               className="absolute inset-0"
               style={{ borderRadius: 'inherit' }}
               initial={{ opacity: 0 }}
-              animate={{
-                opacity: 1,
-                transition: auroraMode === 'done' ? { duration: 0 } : AURORA_FADE_IN,
-              }}
+              animate={
+                draining
+                  ? AURORA_DRAIN
+                  : {
+                      opacity: 1,
+                      filter: 'none',
+                      // The flashes draw their own fade (CSS), so they start at full strength.
+                      transition:
+                        mode === 'done' || mode === 'quiet' ? { duration: 0 } : AURORA_FADE_IN,
+                    }
+              }
               exit={{ opacity: 0, transition: AURORA_FADE_OUT }}
             >
-              <CapsuleAurora mode={auroraMode} />
+              <CapsuleAurora mode={mode} draining={draining} />
             </motion.div>
-          )}
+          ))}
         </AnimatePresence>
         <AnimatePresence mode="sync" initial={false}>
           <motion.div
@@ -343,6 +432,7 @@ export function Capsule() {
                 hasAction={shown.current.errorHasAction}
               />
             )}
+            {/* 'quiet' (plan `quiet-no-speech`) shows no content: no text and no icon. */}
             {capsuleState === 'nudge' && <CapsuleNudge active={visible} />}
             {capsuleState === 'copy' && shown.current.copyOffer && (
               <CapsuleCopy

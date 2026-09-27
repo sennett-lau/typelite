@@ -1,0 +1,935 @@
+<title>Typelite No-Speech Pill</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: rgba(0, 0, 0, 0.04);
+    --text: #1d1d1f;
+    --text-2: #5f5f66;
+    --text-3: #86868c;
+    --border: rgba(0, 0, 0, 0.09);
+    --accent: #0a84ff;
+    --accent-soft: rgba(10, 132, 255, 0.12);
+    --on-accent: #ffffff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(20, 30, 60, 0.06);
+    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, Roboto,
+      'Helvetica Neue', Arial, sans-serif;
+    --display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui,
+      Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --bg: #07090e;
+      --surface: #0f141d;
+      --surface-2: rgba(255, 255, 255, 0.05);
+      --text: #f1f6ff;
+      --text-2: #a6b3c8;
+      --text-3: #7d8ba3;
+      --border: rgba(255, 255, 255, 0.1);
+      --accent: #3fd8c2;
+      --accent-soft: rgba(63, 216, 194, 0.14);
+      --on-accent: #04241f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+  }
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #07090e;
+    --surface: #0f141d;
+    --surface-2: rgba(255, 255, 255, 0.05);
+    --text: #f1f6ff;
+    --text-2: #a6b3c8;
+    --text-3: #7d8ba3;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #3fd8c2;
+    --accent-soft: rgba(63, 216, 194, 0.14);
+    --on-accent: #04241f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.25);
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  h1 {
+    margin: 0;
+    font: 800 clamp(26px, 4vw, 38px) / 1.1 var(--display);
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .lede {
+    max-width: 68ch;
+    margin: 10px 0 0;
+    color: var(--text-2);
+  }
+  h2 {
+    margin: 40px 0 6px;
+    font: 750 20px/1.2 var(--display);
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    margin: 0 0 16px;
+    max-width: 70ch;
+    color: var(--text-2);
+    font-size: 14px;
+  }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    margin: 22px 0 12px;
+  }
+  .ctl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ctl > span {
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 11px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .seg button {
+    padding: 5px 11px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-2);
+    font: 600 13px var(--sans);
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--border);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: 650 13px var(--sans);
+    cursor: pointer;
+  }
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-2);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* ── The desktop stage ── */
+  .stage {
+    --aurora-a: #3fd8c2;
+    --aurora-b: #af52de;
+    position: relative;
+    max-width: 100%;
+    height: 300px;
+    overflow: hidden;
+    border-radius: 18px;
+    background: radial-gradient(90% 90% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%);
+    box-shadow: var(--shadow), 0 0 0 1px var(--border);
+  }
+  .stage.light {
+    --aurora-a: #0a84ff;
+    background: radial-gradient(90% 90% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%);
+  }
+  .stage .window {
+    position: absolute;
+    left: 50%;
+    top: 26px;
+    width: min(520px, 78%);
+    height: 150px;
+    transform: translateX(-50%);
+    border-radius: 12px;
+    background: rgba(14, 20, 30, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 50px rgba(0, 0, 0, 0.35);
+  }
+  .stage.light .window {
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 20px 50px rgba(20, 20, 50, 0.18);
+  }
+  .window::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 13px;
+    width: 46px;
+    height: 10px;
+    background:
+      radial-gradient(circle at 5px 5px, #ff5f57 4.5px, transparent 5px),
+      radial-gradient(circle at 23px 5px, #febc2e 4.5px, transparent 5px),
+      radial-gradient(circle at 41px 5px, #28c840 4.5px, transparent 5px);
+  }
+  .window i {
+    position: absolute;
+    left: 22px;
+    height: 9px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .stage.light .window i {
+    background: rgba(0, 0, 0, 0.09);
+  }
+  .dock {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%);
+  }
+  .keyflash {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.25);
+    color: #1d1d1f;
+    font: 700 13px var(--sans);
+    opacity: 0;
+  }
+  .stage-note {
+    position: absolute;
+    right: 14px;
+    top: 12px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.35);
+    color: rgba(255, 255, 255, 0.85);
+    font: 600 11.5px var(--sans);
+  }
+
+  /* ── The pill: values from the app (globals.css .pill, compact-pill: 32 pt, 10.5 pt labels) ── */
+  .pillwrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+  }
+  .pill {
+    position: relative;
+    height: 32px;
+    border-radius: 9999px;
+    background: rgba(30, 30, 32, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+    backdrop-filter: blur(18px) saturate(1.6);
+    box-shadow: 0 10px 30px rgba(20, 20, 40, 0.22);
+    color: #fff;
+    overflow: hidden;
+    font-family: var(--sans);
+    letter-spacing: -0.01em;
+  }
+  .aur {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+  .glow {
+    position: absolute;
+    inset: 0;
+  }
+  .blob {
+    position: absolute;
+    top: -60%;
+    width: 55%;
+    height: 220%;
+    border-radius: 9999px;
+    filter: blur(14px);
+  }
+  .blob.a {
+    left: -15%;
+    background: var(--aurora-a);
+  }
+  .blob.b {
+    right: -15%;
+    background: var(--aurora-b);
+  }
+  .sweep {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 70%;
+    opacity: 0.6;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--aurora-a) 60%, transparent) 35%,
+      color-mix(in srgb, var(--aurora-b) 60%, transparent) 65%,
+      transparent 100%
+    );
+    filter: blur(6px);
+  }
+  .flash {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55) 0%, transparent 78%);
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 14px;
+    white-space: nowrap;
+  }
+  .dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff453a;
+  }
+  .wave {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    height: 13px;
+  }
+  .wave i {
+    display: block;
+    width: 2px;
+    height: 13px;
+    border-radius: 9999px;
+  }
+  .flex {
+    flex: 1;
+  }
+  .x {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .x svg,
+  .icon svg {
+    display: block;
+  }
+  .lbl {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 14px;
+  }
+  .askicon {
+    flex: none;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .layer.center {
+    justify-content: center;
+    gap: 6px;
+    padding: 0 14px;
+  }
+  .clbl {
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 14px;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  .icon {
+    flex: none;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  kbd.esc {
+    flex: none;
+    padding: 1px 5px 1.5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.92);
+    font: 700 9.5px/12px var(--sans);
+    letter-spacing: 0.02em;
+  }
+  .muted {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  /* ── Option cards ── */
+  .options {
+    display: grid;
+    gap: 14px;
+  }
+  .opt {
+    padding: 16px 18px 18px;
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow), 0 0 0 1px var(--border);
+  }
+  .opt.sel {
+    box-shadow: var(--shadow), 0 0 0 2px var(--accent);
+  }
+  .opt-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+  }
+  .opt-head h3 {
+    margin: 0;
+    font: 750 17px/1.25 var(--display);
+    letter-spacing: -0.015em;
+  }
+  .letter {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    margin-right: 6px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+    font: 800 13px var(--display);
+    vertical-align: 2px;
+  }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+  .badge.grey {
+    background: var(--surface-2);
+    color: var(--text-3);
+  }
+  .opt p {
+    margin: 6px 0 12px;
+    max-width: 78ch;
+    color: var(--text-2);
+    font-size: 14px;
+  }
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+    gap: 8px;
+  }
+  .frame {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .frame .mini {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 70px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: radial-gradient(90% 120% at 15% 10%, #16304f 0%, #241a3f 50%, #33202a 100%);
+  }
+  .light-strips .frame .mini {
+    background: radial-gradient(90% 120% at 15% 10%, #7fb2ff 0%, #b49cf0 45%, #f5b8a4 100%);
+  }
+  .frame small {
+    color: var(--text-3);
+    font: 600 11.5px var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .spec {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 12px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+  .spec b {
+    color: var(--text-2);
+    font-weight: 600;
+  }
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .notes section {
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow), 0 0 0 1px var(--border);
+  }
+  .notes h3 {
+    margin: 0 0 8px;
+    font: 700 14px var(--display);
+  }
+  .notes ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-2);
+    font-size: 13.5px;
+  }
+  .notes li + li {
+    margin-top: 5px;
+  }
+  code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--surface-2);
+    font: 12.5px var(--mono);
+  }
+
+  .pill.err {
+    background: rgba(60, 24, 24, 0.78);
+    border-color: rgba(255, 69, 58, 0.35);
+  }
+  .wdot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.8);
+  }
+  .elbl {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10.5px;
+    line-height: 14px;
+    color: #fff;
+  }
+  .stage .keyflash b {
+    font-size: 12px;
+    font-weight: 800;
+  }
+</style>
+<div class="wrap">
+  <h1>When nothing was said</h1>
+  <p class="lede">
+    You start Dictate, say nothing, and press the shortcut again. Today the pill turns red and says
+    “Didn't catch that” for 1.5 s. With the <b>calm fade</b> it shows no text and no red: the label
+    blurs away, the aurora drains to a soft grey glow, and the pill narrows a little and slides
+    away. It takes about 0.8 s, and nothing is pasted, as before.
+  </p>
+
+  <div class="controls">
+    <div class="ctl">
+      <span>Pill</span>
+      <div class="seg" id="optSeg">
+        <button data-v="calm" aria-pressed="true">Calm fade · new</button>
+        <button data-v="now" aria-pressed="false">Today</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span>Run</span>
+      <div class="seg" id="fromSeg">
+        <button data-v="rec" aria-pressed="true">Dictate</button>
+        <button data-v="ask" aria-pressed="false">Ask</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span>App</span>
+      <div class="seg" id="themeSeg">
+        <button data-v="dark" aria-pressed="true">Dark</button>
+        <button data-v="light" aria-pressed="false">Light</button>
+      </div>
+    </div>
+    <button class="btn" id="replay" type="button">↻ Replay</button>
+    <label class="check"><input type="checkbox" id="slow" /> Slow motion ×4</label>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="window">
+      <i style="top: 46px; width: 58%"></i><i style="top: 66px; width: 72%"></i
+      ><i style="top: 86px; width: 44%"></i>
+    </div>
+    <div class="dock" id="dock"></div>
+    <div class="keyflash" id="keyflash"><b>fn</b> Dictate key</div>
+    <div class="stage-note" id="stageNote">Recording… (silence)</div>
+  </div>
+
+  <h2>Frame by frame</h2>
+  <p class="sub">
+    Times are counted from the moment the voice check finds no speech, just after the shortcut is
+    pressed again.
+  </p>
+  <div class="options" id="options"></div>
+
+  <h2>What changes in the app</h2>
+  <div class="notes">
+    <section>
+      <h3>Behaviour</h3>
+      <ul>
+        <li>Only the pill's look changes. No-speech detection (the voice check and the hallucination guard) is unchanged, and nothing is pasted.</li>
+        <li>It applies to Dictate, Translate and Ask, whether you stop with the shortcut or by clicking the pill.</li>
+        <li>Real problems (speech server offline, AI failed, setup needed) keep the red error pill with their message.</li>
+        <li>Esc is unchanged: the pill hides at once. The same fade could be used there later.</li>
+        <li>A new run started during the fade replaces it at once. With reduced motion, the pill just fades.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Implementation sketch</h3>
+      <ul>
+        <li>Frontend only. The backend already sends <code>pipeline:error</code> with <code>stt_no_speech_detected</code>. The pill turns that into a new <code>quiet</code> state instead of the error pill.</li>
+        <li><code>quiet</code> shows no content, is 104 pt wide, and hides after about 0.6 s. The aurora gets a <code>quiet</code> mode: the previous glow drains to grey, plus a brief soft grey flash.</li>
+        <li>The onboarding tutorial still gets the event and keeps its own hint.</li>
+        <li>New plan <code>quiet-no-speech</code>, and the lesson in <code>CLAUDE.md</code> is updated.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<script>
+  /* A pure function of time drives the live demo and every frame. Values are the app's: 32 pt
+     pill, 18-bar waveform (3/13 minimum), aurora blobs and 1.4 s sweep, width easing
+     cubic-bezier(.2,0,0,1) over 0.28 s, content fade 0.22 s in and 0.14 s out, and the error pill
+     rgba(60,24,24,.78) that shows "Didn't catch that" for 1.5 s today. */
+  const WAVE = 18
+  const MIN = 3 / 13
+  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x))
+  const seg = (t, a, b) => clamp((t - a) / (b - a))
+  const lerp = (a, b, t) => a + (b - a) * t
+  const easeOut = (x) => 1 - Math.pow(1 - x, 3)
+  const easeIn = (x) => x * x * x
+  const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by
+    const sx = (u) => ((ax * u + bx) * u + cx) * u
+    const sy = (u) => ((ay * u + by) * u + cy) * u
+    return (x) => {
+      if (x <= 0) return 0
+      if (x >= 1) return 1
+      let lo = 0, hi = 1, u = x
+      for (let i = 0; i < 30; i++) {
+        if (sx(u) < x) lo = u
+        else hi = u
+        u = (lo + hi) / 2
+      }
+      return sy(u)
+    }
+  }
+  const EMPH = bezier(0.2, 0, 0, 1)
+  const ICON_X = (s, w = 2) =>
+    `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`
+  const ICON_MSG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.8 8.8 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5Z"/></svg>`
+
+  /** Room noise only: the user says nothing. */
+  const ambient = (t, i) =>
+    0.05 + 0.05 * (0.5 + 0.5 * Math.sin(t * 7.1 + i * 0.9)) * (0.5 + 0.5 * Math.sin(t * 13.3 + i * 1.7))
+
+  /** The timeline (ms since the pill appeared): stop pressed, then the no-speech result. */
+  const TS = 1800
+  const TN = 2100
+  const CALM_HIDE = 620
+  const TODAY_HIDE = 1500
+  const HIDE_MS = 220
+
+  function makePill(parent, zoom = 1) {
+    const wrap = document.createElement('div')
+    wrap.className = 'pillwrap'
+    wrap.style.zoom = String(zoom)
+    wrap.innerHTML = `<div class="pill">
+      <div class="aur"><div class="glow"><div class="blob a"></div><div class="blob b"></div></div><div class="sweep"></div><div class="flash"></div></div>
+      <div class="layer base rec"><span class="dot"></span><div class="wave">${'<i></i>'.repeat(WAVE)}</div><span class="flex"></span><span class="x">${ICON_X(10)}</span></div>
+      <div class="layer base ask"><span class="askicon">${ICON_MSG}</span><div class="wave">${'<i></i>'.repeat(WAVE)}</div><span class="flex"></span><span class="x">${ICON_X(10)}</span></div>
+      <div class="layer base work"><p class="lbl" style="margin:0"></p><span class="x">${ICON_X(10)}</span></div>
+      <div class="layer err"><span class="wdot"></span><p class="elbl" style="margin:0">Didn't catch that</p></div>
+    </div>`
+    parent.appendChild(wrap)
+    const q = (s) => wrap.querySelector(s)
+    const p = {
+      wrap,
+      pill: q('.pill'),
+      aur: q('.aur'),
+      glow: q('.glow'),
+      blobA: q('.blob.a'),
+      blobB: q('.blob.b'),
+      sweep: q('.sweep'),
+      flash: q('.flash'),
+      rec: q('.base.rec'),
+      ask: q('.base.ask'),
+      work: q('.base.work'),
+      workLbl: q('.base.work .lbl'),
+      err: q('.layer.err'),
+      dot: q('.base.rec .dot'),
+    }
+    p.bars = { rec: [...p.rec.querySelectorAll('.wave i')], ask: [...p.ask.querySelectorAll('.wave i')] }
+    for (const key of ['rec', 'ask'])
+      p.bars[key].forEach((b, i) => {
+        const tb = Math.round((i / (WAVE - 1)) * 100)
+        b.style.background = `color-mix(in srgb, color-mix(in srgb, var(--aurora-b) ${tb}%, var(--aurora-a)) 25%, #ffffff)`
+      })
+    return p
+  }
+
+  function render(p, opt, from, t) {
+    const s = t / 1000
+    const appear = easeOut(seg(t, 0, 220))
+    let wrapO = appear
+    let wrapY = 6 * (1 - appear)
+    let wrapS = 0.96 + 0.04 * appear
+    let wrapB = 2 * (1 - appear)
+    const hideAt = (h) => {
+      const k = seg(t, h, h + HIDE_MS)
+      if (k > 0) {
+        wrapO = 1 - k
+        wrapY = 6 * EMPH(k)
+        wrapS = 1 - 0.04 * EMPH(k)
+        wrapB = 2 * k
+      }
+    }
+    // Stop pressed: recording content out, "Transcribing" in, 160 → 140 pt, glow → sweep.
+    const recO = 1 - easeIn(seg(t, TS, TS + 140))
+    const recB = 3 * seg(t, TS, TS + 140)
+    const wIn = EMPH(seg(t, TS + 60, TS + 280))
+    let workO = wIn
+    let workB = 3 * (1 - wIn)
+    let W = lerp(160, 140, EMPH(seg(t, TS, TS + 280)))
+    const glowO = 1 - seg(t, TS, TS + 300)
+    let sweepO = seg(t, TS, TS + 150)
+    let sat = 1
+    let flash = 0
+    let errO = 0
+    let errB = 0
+    let errY = 0
+    let red = 0
+    const L = t - TN
+    if (L >= 0) {
+      const out = easeIn(seg(L, 0, 140))
+      workO *= 1 - out
+      workB = Math.max(workB, 3 * seg(L, 0, 140))
+      if (opt === 'calm') {
+        sat = 1 - seg(L, 0, 300)
+        sweepO *= 1 - 0.8 * seg(L, 0, 420)
+        flash = 0.3 * seg(L, 40, 80) * (1 - seg(L, 80, 560))
+        W = lerp(140, 104, EMPH(seg(L, 60, 340)))
+        hideAt(TN + CALM_HIDE)
+      } else {
+        const e = EMPH(seg(L, 60, 280))
+        errO = e
+        errB = 3 * (1 - e)
+        errY = 2 * (1 - e)
+        red = seg(L, 0, 280)
+        sweepO *= 1 - seg(L, 0, 300)
+        W = lerp(140, 224, EMPH(seg(L, 0, 280)))
+        hideAt(TN + TODAY_HIDE)
+      }
+    }
+
+    p.wrap.style.opacity = wrapO.toFixed(3)
+    p.wrap.style.transform = `translateY(${wrapY.toFixed(2)}px) scale(${wrapS.toFixed(4)})`
+    p.wrap.style.filter = wrapB > 0.05 ? `blur(${wrapB.toFixed(2)}px)` : 'none'
+    p.pill.style.width = `${W.toFixed(2)}px`
+    p.pill.style.background = `rgba(${lerp(30, 60, red).toFixed(1)}, ${lerp(30, 24, red).toFixed(1)}, ${lerp(32, 24, red).toFixed(1)}, ${lerp(0.72, 0.78, red).toFixed(3)})`
+    p.pill.style.borderColor = `rgba(${lerp(255, 255, red)}, ${lerp(255, 69, red).toFixed(0)}, ${lerp(255, 58, red).toFixed(0)}, ${lerp(0.14, 0.35, red).toFixed(3)})`
+
+    // Aurora: breathing glow while recording, the sweep while transcribing.
+    const lvlNow = ambient(s, 8)
+    p.glow.style.display = glowO > 0.001 ? '' : 'none'
+    p.glow.style.opacity = ((0.35 + 0.3 * lvlNow) * glowO).toFixed(3)
+    const ping = (period) => {
+      const ph = (s / period) % 2
+      return easeInOut(ph <= 1 ? ph : 2 - ph)
+    }
+    const k3 = (u, a, b, c) => (u < 0.5 ? a + (b - a) * (u / 0.5) : b + (c - b) * ((u - 0.5) / 0.5))
+    p.blobA.style.transform = `translateX(${k3(ping(10), 0, 60, 120)}%) scale(${k3(ping(10), 1, 1.15, 0.95)})`
+    p.blobB.style.transform = `translateX(${k3(ping(12), 0, -60, -120)}%) scale(${k3(ping(12), 1, 0.9, 1.1)})`
+    p.sweep.style.display = sweepO > 0.001 ? '' : 'none'
+    const sweepT = opt === 'calm' && L >= 0 ? TN : t
+    const sweepX = -100 + 245 * easeInOut(((Math.max(0, sweepT - TS) / 1000) % 1.4) / 1.4)
+    p.sweep.style.transform = `translateX(${sweepX.toFixed(2)}%)`
+    p.sweep.style.opacity = (0.6 * sweepO).toFixed(3)
+    p.aur.style.filter = sat < 0.999 ? `saturate(${sat.toFixed(3)}) brightness(${(1 + 0.35 * (1 - sat)).toFixed(3)})` : 'none'
+    p.flash.style.opacity = flash.toFixed(3)
+
+    // Content
+    for (const key of ['rec', 'ask']) {
+      const on = key === from && recO > 0.001
+      p[key].style.display = on ? '' : 'none'
+      if (!on) continue
+      p[key].style.opacity = recO.toFixed(3)
+      p[key].style.filter = recB > 0.05 ? `blur(${recB.toFixed(2)}px)` : 'none'
+      p.bars[key].forEach((b, i) => {
+        const lv = ambient(s - (WAVE - 1 - i) * 0.033, i)
+        b.style.transform = `scaleY(${(MIN + (1 - MIN) * lv).toFixed(3)})`
+        b.style.opacity = (0.4 + 0.6 * lv).toFixed(3)
+      })
+    }
+    if (from === 'rec') p.dot.style.opacity = (0.75 + 0.25 * Math.cos((s / 1.5) * Math.PI * 2)).toFixed(3)
+    p.workLbl.textContent = 'Transcribing'
+    p.work.style.display = workO > 0.001 ? '' : 'none'
+    p.work.style.opacity = workO.toFixed(3)
+    p.work.style.filter = workB > 0.05 ? `blur(${workB.toFixed(2)}px)` : 'none'
+    p.err.style.display = errO > 0.001 ? '' : 'none'
+    p.err.style.opacity = errO.toFixed(3)
+    p.err.style.filter = errB > 0.05 ? `blur(${errB.toFixed(2)}px)` : 'none'
+    p.err.style.transform = `translateY(${errY.toFixed(2)}px)`
+  }
+
+  /* ── Live demo ── */
+  const state = { opt: 'calm', from: 'rec', theme: 'dark', slow: false }
+  const stage = document.getElementById('stage')
+  const keyflash = document.getElementById('keyflash')
+  const stageNote = document.getElementById('stageNote')
+  const live = makePill(document.getElementById('dock'), 2)
+  let start = performance.now()
+  function fitZoom() {
+    live.wrap.style.zoom = String(Math.max(1, Math.min(2, (stage.clientWidth - 32) / 232)))
+  }
+  window.addEventListener('resize', fitZoom)
+  fitZoom()
+  const restart = () => (start = performance.now())
+  const now = () => (performance.now() - start) / (state.slow ? 4 : 1)
+  function loop() {
+    const t = now()
+    render(live, state.opt, state.from, t)
+    const k = (t - TS) / 600
+    keyflash.style.opacity = String(k >= 0 && k <= 1 ? 1 - k : 0)
+    keyflash.style.transform = `translateY(${k >= 0 && k < 0.12 ? 2 : 0}px)`
+    stageNote.textContent =
+      t < TS ? 'Recording… (silence)' : t < TN ? 'Shortcut pressed again' : 'No speech found'
+    const end = TN + (state.opt === 'calm' ? CALM_HIDE : TODAY_HIDE) + HIDE_MS + 900
+    if (t > end) restart()
+    requestAnimationFrame(loop)
+  }
+  requestAnimationFrame(loop)
+
+  function bindSeg(id, key, after) {
+    const seg = document.getElementById(id)
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button')
+      if (!b) return
+      state[key] = b.dataset.v
+      seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+      if (after) after()
+      restart()
+    })
+  }
+  bindSeg('optSeg', 'opt', () =>
+    document.querySelectorAll('.opt').forEach((o) => o.classList.toggle('sel', o.dataset.opt === state.opt)),
+  )
+  bindSeg('fromSeg', 'from', drawStrips)
+  bindSeg('themeSeg', 'theme', () => {
+    stage.classList.toggle('light', state.theme === 'light')
+    document.getElementById('options').classList.toggle('light-strips', state.theme === 'light')
+    drawStrips()
+  })
+  document.getElementById('replay').addEventListener('click', restart)
+  document.getElementById('slow').addEventListener('change', (e) => {
+    state.slow = e.target.checked
+    restart()
+  })
+  const dark =
+    document.documentElement.dataset.theme === 'dark' ||
+    (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+
+  /* ── Frame rows ── */
+  const CARDS = [
+    {
+      opt: 'calm',
+      title: 'Calm fade, no text',
+      badge: 'New',
+      text: '“Transcribing” blurs away and the sweep stops where it is. The colour drains to grey under a soft grey flash, the pill narrows from 140 to 104 pt, then slides away as usual. No words, no red: you pressed the key without speaking, so there is nothing to report.',
+      spec: ['<b>104 pt</b> wide', 'gone <b>0.84 s</b> after the result', 'same hide as every pill'],
+      frames: [
+        [TS - 300, 'recording'],
+        [TN - 60, 'transcribing'],
+        [TN + 120, '+120 ms'],
+        [TN + 320, '+320 ms'],
+        [TN + 700, '+700 ms'],
+      ],
+    },
+    {
+      opt: 'now',
+      title: 'Today',
+      badge: 'Current',
+      grey: true,
+      text: 'The pill turns red, widens to 224 pt and says “Didn’t catch that” for 1.5 s. It reads as an error, and the red is the only red in the whole interface.',
+      spec: ['<b>224 pt</b> red pill', 'stays <b>1.5 s</b>'],
+      frames: [
+        [TS - 300, 'recording'],
+        [TN - 60, 'transcribing'],
+        [TN + 320, '+320 ms'],
+        [TN + 1100, '+1.1 s'],
+        [TN + 1600, '+1.6 s'],
+      ],
+    },
+  ]
+  let frames = []
+  function fitFrames() {
+    const mini = document.querySelector('.frame .mini')
+    if (!mini) return
+    const z = Math.max(0.7, Math.min(1.15, (mini.clientWidth - 14) / 224))
+    frames.forEach((p) => (p.wrap.style.zoom = z.toFixed(3)))
+  }
+  window.addEventListener('resize', fitFrames)
+  function drawStrips() {
+    const host = document.getElementById('options')
+    host.innerHTML = ''
+    frames = []
+    for (const c of CARDS) {
+      const card = document.createElement('article')
+      card.className = `opt${c.opt === state.opt ? ' sel' : ''}`
+      card.dataset.opt = c.opt
+      card.innerHTML = `<div class="opt-head"><h3>${c.title}</h3><span class="badge${c.grey ? ' grey' : ''}">${c.badge}</span></div><p>${c.text}</p><div class="strip"></div><div class="spec">${c.spec.map((x) => `<span>${x}</span>`).join('')}</div>`
+      const strip = card.querySelector('.strip')
+      for (const [t, label] of c.frames) {
+        const fr = document.createElement('div')
+        fr.className = 'frame'
+        const mini = document.createElement('div')
+        mini.className = 'mini'
+        mini.style.setProperty('--aurora-a', state.theme === 'light' ? '#0a84ff' : '#3fd8c2')
+        mini.style.setProperty('--aurora-b', '#af52de')
+        fr.appendChild(mini)
+        const small = document.createElement('small')
+        small.textContent = label
+        fr.appendChild(small)
+        strip.appendChild(fr)
+        const p = makePill(mini, 1)
+        render(p, c.opt, state.from, t)
+        frames.push(p)
+      }
+      card.style.cursor = 'pointer'
+      card.addEventListener('click', () => document.querySelector(`#optSeg [data-v="${c.opt}"]`).click())
+      host.appendChild(card)
+    }
+    fitFrames()
+  }
+  drawStrips()
+  if (!dark) document.querySelector('#themeSeg [data-v="light"]').click()
+</script>

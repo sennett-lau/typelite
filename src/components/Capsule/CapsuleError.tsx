@@ -5,12 +5,11 @@ import { useAppStore } from '../../stores/appStore'
 import { openSettingsPane } from '../../lib/tauri'
 
 /**
- * How long a plain error stays; a setup message with a button stays longer to be clicked, and
- * the "Didn't catch that" notice (a run that heard no speech) goes quickly.
+ * How long a plain error stays; a setup message with a button stays longer to be clicked. A run
+ * that heard no speech is not an error: it ends with the calm fade (plan `quiet-no-speech`).
  */
 const ERROR_MS = 2500
 const SETUP_ERROR_MS = 6000
-const NO_SPEECH_MS = 1500
 
 interface CapsuleErrorProps {
   /**
@@ -30,7 +29,6 @@ export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
   const showAction = action !== null || hasAction === true
   const setPipelineError = useAppStore((s) => s.setPipelineError)
   const resetRecording = useAppStore((s) => s.resetRecording)
-  const isNoSpeech = pipelineError === t('capsule.errors.stt_no_speech_detected')
 
   useEffect(() => {
     const timer = setTimeout(
@@ -44,10 +42,10 @@ export function CapsuleError({ message, hasAction }: CapsuleErrorProps = {}) {
           resetRecording()
         }
       },
-      action ? SETUP_ERROR_MS : isNoSpeech ? NO_SPEECH_MS : ERROR_MS,
+      action ? SETUP_ERROR_MS : ERROR_MS,
     )
     return () => clearTimeout(timer)
-  }, [setPipelineError, resetRecording, pipelineError, action, isNoSpeech])
+  }, [setPipelineError, resetRecording, pipelineError, action])
 
   const handleSetUp = (event: React.MouseEvent) => {
     event.stopPropagation()

@@ -12,6 +12,9 @@ import {
   getCapsuleVisibility,
   ASK_RECORDING_SIZE,
   ASK_RECORDING_WITH_SELECTION_SIZE,
+  DICTATION_RECORDING_SIZE,
+  ERROR_PILL_SIZE,
+  QUIET_PILL_SIZE,
   getPillSize,
   getSizeForState,
   growFirstSize,
@@ -266,6 +269,68 @@ describe('typing nudge (plan `typing-speed-and-nudge`)', () => {
         true,
       ),
     ).toEqual(NUDGE_PILL_SIZE)
+  })
+})
+
+describe('calm fade (plan `quiet-no-speech`)', () => {
+  const quiet = (pipelineState: Parameters<typeof getSizeForState>[0], hasError = false) =>
+    getSizeForState(
+      pipelineState,
+      false,
+      hasError,
+      false,
+      'dictate',
+      false,
+      NO_TRANSLATE_LANGUAGE,
+      false,
+      null,
+      false,
+      false,
+      true,
+    )
+
+  it('shows once the pipeline is idle, behind errors and the done flash', () => {
+    expect(getCapsuleState('idle', false, false, false, false, true)).toBe('quiet')
+    expect(getCapsuleState('idle', true, false, false, false, true)).toBe('error')
+    expect(getCapsuleState('idle', false, true, false, false, true)).toBe('done')
+    // Ahead of the Copy pill and the typing nudge (a new run closes those anyway).
+    expect(getCapsuleState('idle', false, false, true, true, true)).toBe('quiet')
+    expect(getCapsuleState('idle', false, false, false, false, false)).toBe('idle')
+  })
+
+  it('always gives way to a live run', () => {
+    // Dictate reports no speech while still transcribing and goes idle just after.
+    for (const state of ['preparing', 'recording', 'ask_recording', 'transcribing'] as const) {
+      expect(getCapsuleState(state, false, false, false, false, true)).toBe(state)
+    }
+  })
+
+  it('keeps the pill visible while it shows', () => {
+    const idle = {
+      contextMenuOpen: false,
+      capsuleExpanded: false,
+      hasError: false,
+      pipelineState: 'idle' as const,
+    }
+    expect(getCapsuleVisibility({ ...idle, quietFade: true })).toBe(true)
+    expect(getCapsuleVisibility({ ...idle, quietFade: false })).toBe(false)
+  })
+
+  it('is 104 × 32 pt; an error or a live run keeps its own size', () => {
+    expect(QUIET_PILL_SIZE).toEqual({ width: 104, height: PILL_HEIGHT })
+    expect(getPillSize('quiet', 'dictate', false, NO_TRANSLATE_LANGUAGE)).toEqual(QUIET_PILL_SIZE)
+    expect(quiet('idle')).toEqual(QUIET_PILL_SIZE)
+    expect(quiet('idle', true)).toEqual(ERROR_PILL_SIZE)
+    expect(quiet('recording')).toEqual(DICTATION_RECORDING_SIZE)
+  })
+
+  it('shrinks the window only after the pill narrowed from the working pill', () => {
+    const windowFor = ({ width, height }: { width: number; height: number }) => ({
+      width: width + 24,
+      height: height + 24,
+    })
+    const working = windowFor(getSizeForState('transcribing', false, false, false, 'dictate'))
+    expect(growFirstSize(working, windowFor(quiet('idle')))).toEqual(working)
   })
 })
 
