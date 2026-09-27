@@ -34,8 +34,8 @@ pub const BURST_GAP: Duration = Duration::from_secs(2);
 pub const KEYSTROKES_PER_WORD: f64 = 5.0;
 /// Speaking speed is shown once this much speech was measured.
 pub const MIN_SPEAKING_SECS: f64 = 10.0;
-/// Typing speed is shown once this much active typing was measured.
-pub const MIN_TYPING_MINUTES: f64 = 1.0;
+/// Typing speed is shown once this much active typing (counted gaps) was measured: 30 s.
+pub const MIN_TYPING_MINUTES: f64 = 0.5;
 /// A typing stretch this long may show the nudge.
 pub const NUDGE_STRETCH: Duration = Duration::from_secs(60);
 /// A pause longer than this ends a typing stretch (the nudge wants mostly continuous typing).
@@ -506,11 +506,39 @@ pub fn local_day() -> String {
 
 // ─── Shared state ───
 
+/// Most ended bursts kept for the log between two worker ticks. The worker ticks at least once
+/// a second while a burst is open, so the limit only matters when it is not running.
+const MAX_UNLOGGED_BURSTS: usize = 32;
+
 struct Inner {
     file: StatsFile,
     tracker: TypingTracker,
     /// The file changed since it was last saved.
     dirty: bool,
+    /// Bursts added to the totals but not logged yet. The worker logs them: the log file is on
+    /// disk, and the key listener thread never touches the disk.
+    unlogged: Vec<FinishedBurst>,
+}
+
+impl Inner {
+    fn add_burst(&mut self, burst: FinishedBurst) {
+        self.file.add_burst(burst);
+        self.dirty = true;
+        if self.unlogged.len() < MAX_UNLOGGED_BURSTS {
+            self.unlogged.push(burst);
+        }
+    }
+}
+
+/// One debug line per burst added to the totals, with only its keystroke count and seconds.
+fn log_bursts(bursts: &[FinishedBurst]) {
+    for burst in bursts {
+        tracing::debug!(
+            "Typing speed: {} keystrokes in {:.1}s added",
+            burst.keystrokes,
+            burst.secs
+        );
+    }
 }
 
 /// What the worker thread should do after a tick.
@@ -541,6 +569,7 @@ impl SpeedStats {
                 file,
                 tracker: TypingTracker::default(),
                 dirty: false,
+                unlogged: Vec::new(),
             })),
             enabled: Arc::new(AtomicBool::new(true)),
             path,
@@ -579,8 +608,7 @@ impl SpeedStats {
             let mut inner = self.lock();
             let outcome = inner.tracker.key(now);
             if let Some(burst) = outcome.finished {
-                inner.file.add_burst(burst);
-                inner.dirty = true;
+                inner.add_burst(burst);
             }
             outcome
         };
@@ -610,23 +638,29 @@ impl SpeedStats {
         self.wake_worker();
     }
 
-    /// Closes an idle burst and checks the typing stretch.
+    /// Closes an idle burst, checks the typing stretch, and logs the bursts added since the last
+    /// tick (worker thread).
     pub fn tick(&self, now: Instant) -> TickResult {
-        let mut inner = self.lock();
-        if let Some(burst) = inner.tracker.flush(now) {
-            inner.file.add_burst(burst);
-            inner.dirty = true;
-        }
-        let nudge_due = self.enabled()
-            && !inner.file.nudge.dismissed
-            && inner.tracker.stretch(now) >= NUDGE_STRETCH;
-        if nudge_due {
-            inner.tracker.restart_stretch();
-        }
-        TickResult {
-            changed: std::mem::take(&mut inner.dirty),
-            nudge_due,
-        }
+        let (result, added) = {
+            let mut inner = self.lock();
+            if let Some(burst) = inner.tracker.flush(now) {
+                inner.add_burst(burst);
+            }
+            let nudge_due = self.enabled()
+                && !inner.file.nudge.dismissed
+                && inner.tracker.stretch(now) >= NUDGE_STRETCH;
+            if nudge_due {
+                inner.tracker.restart_stretch();
+            }
+            let result = TickResult {
+                changed: std::mem::take(&mut inner.dirty),
+                nudge_due,
+            };
+            (result, std::mem::take(&mut inner.unlogged))
+        };
+        // Logged after the lock is released, so a keystroke never waits for the log file.
+        log_bursts(&added);
+        result
     }
 
     pub fn has_open_burst(&self) -> bool {
@@ -647,6 +681,7 @@ impl SpeedStats {
         inner.file.reset_totals();
         inner.tracker.clear();
         inner.dirty = false;
+        inner.unlogged.clear();
     }
 
     /// Whether the nudge already showed on `day`, and whether it was dismissed for good.
@@ -663,12 +698,16 @@ impl SpeedStats {
         self.lock().file.nudge.dismissed = true;
     }
 
-    /// Ends the open burst (the app quits).
+    /// Ends the open burst (the app quits) and logs the bursts not logged yet.
     pub fn finish(&self) {
-        let mut inner = self.lock();
-        if let Some(burst) = inner.tracker.finish() {
-            inner.file.add_burst(burst);
-        }
+        let added = {
+            let mut inner = self.lock();
+            if let Some(burst) = inner.tracker.finish() {
+                inner.add_burst(burst);
+            }
+            std::mem::take(&mut inner.unlogged)
+        };
+        log_bursts(&added);
     }
 
     /// Writes the totals to disk (no-op without a path).
@@ -1001,19 +1040,93 @@ mod tests {
     #[test]
     fn typing_wpm_is_keystrokes_over_five_per_active_minute() {
         let mut file = StatsFile::default();
-        // 30 s of typing: not enough yet.
+        // 15 s of typing: not enough yet.
         file.add_burst(FinishedBurst {
             keystrokes: 150,
-            secs: 30.0,
+            secs: 15.0,
         });
         assert_eq!(file.typing_wpm(), None);
         file.add_burst(FinishedBurst {
             keystrokes: 250,
-            secs: 30.0,
+            secs: 45.0,
         });
         // 400 keystrokes = 80 words in one minute.
         assert!((file.typing_wpm().unwrap() - 80.0).abs() < 1e-9);
         assert_eq!(file.typing.bursts, 2);
+    }
+
+    #[test]
+    fn thirty_seconds_of_typing_show_a_number_and_twenty_nine_do_not() {
+        // Keys 250 ms apart (48 WPM): 116 gaps take 29 s, 120 gaps take 30 s.
+        for (keys, shown) in [(117u32, false), (121, true)] {
+            let stats = SpeedStats::load(None);
+            let t0 = Instant::now();
+            let mut now = t0;
+            for key in 0..keys {
+                now = t0 + Duration::from_millis(250) * key;
+                stats.note_keystroke(now);
+            }
+            stats.tick(now + Duration::from_secs(3));
+            let wpm = stats.summary().typing_wpm;
+            assert_eq!(wpm.is_some(), shown, "{keys} keys: {wpm:?}");
+            if let Some(wpm) = wpm {
+                assert!((wpm - 48.0).abs() < 1e-9);
+            }
+        }
+    }
+
+    /// Collects what a test subscriber writes, to check log lines.
+    #[derive(Clone, Default)]
+    struct LogBuffer(Arc<Mutex<Vec<u8>>>);
+
+    impl LogBuffer {
+        fn text(&self) -> String {
+            String::from_utf8_lossy(&self.0.lock().unwrap()).into_owned()
+        }
+    }
+
+    impl std::io::Write for LogBuffer {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().unwrap().extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn each_ended_burst_logs_one_debug_line_from_the_worker() {
+        let buffer = LogBuffer::default();
+        let writer = buffer.clone();
+        let subscriber = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::DEBUG)
+            .with_ansi(false)
+            .with_writer(move || writer.clone())
+            .finish();
+        tracing::subscriber::with_default(subscriber, || {
+            let stats = SpeedStats::load(None);
+            let t0 = Instant::now();
+            // 5 keys 200 ms apart, then a key after a pause, which ends that burst.
+            for key in 0..5u32 {
+                stats.note_keystroke(t0 + Duration::from_millis(200) * key);
+            }
+            stats.note_keystroke(t0 + Duration::from_secs(5));
+            // The key listener thread only counts; the worker writes the log line.
+            assert_eq!(buffer.text(), "");
+            stats.tick(t0 + Duration::from_secs(5));
+            // The lone key after the pause adds nothing and logs nothing.
+            stats.tick(t0 + Duration::from_secs(10));
+        });
+        let text = buffer.text();
+        assert_eq!(text.lines().count(), 1, "{text}");
+        assert!(text.contains("DEBUG"), "{text}");
+        assert!(
+            text.trim_end()
+                .ends_with("Typing speed: 4 keystrokes in 0.8s added"),
+            "{text}"
+        );
     }
 
     #[test]
