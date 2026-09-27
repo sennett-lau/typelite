@@ -326,6 +326,30 @@ describe('ShortcutBindingList (macOS native capture)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove shortcut' }))
     expect(onChange).toHaveBeenCalledWith([])
   })
+
+  it('draws a sub-row in one block with its row, and no block without one (plan general-settings)', () => {
+    const props = {
+      role: 'translate' as const,
+      label: 'Translate',
+      bindings: [f8],
+      otherBindings: [],
+      required: false,
+      onChange: vi.fn(),
+    }
+    const { container, unmount } = render(
+      <ShortcutBindingList {...props} subRow={<div className="row-sub">Switch language</div>} />,
+    )
+    const block = container.firstElementChild as HTMLElement
+    expect(block).toHaveClass('row-block')
+    expect(block.children).toHaveLength(2)
+    expect(block.children[0]).toHaveAttribute('data-hotkey-role', 'translate')
+    expect(block.children[1]).toHaveTextContent('Switch language')
+    unmount()
+
+    const plain = render(<ShortcutBindingList {...props} subRow={false} />)
+    expect(plain.container.firstElementChild).toHaveAttribute('data-hotkey-role', 'translate')
+    expect(plain.container.querySelector('.row-block')).toBeNull()
+  })
 })
 
 describe('ShortcutBindingList (web fallback off macOS)', () => {
