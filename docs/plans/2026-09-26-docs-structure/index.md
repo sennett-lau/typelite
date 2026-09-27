@@ -9,6 +9,9 @@ developer guide for adding a new connection.
 
 Status: done — 2026-09-26
 
+The decision to keep model suggestions in one page is superseded by plan
+[model-guides](../2026-09-27-model-guides/index.md).
+
 ## Goals
 
 - A reader finds the right setup in two clicks: guides index → speech or AI polish → a
@@ -59,6 +62,8 @@ docs/guides/
                                    troubleshooting
   models.md                        choosing a model: by hardware, by language, turning off thinking
   languages.md                     translation languages, instructions, recognition, presets
+                                   (now languages/README.md, with the language guides: plan
+                                   `model-guides`)
   sharing-presets.md               export and import of speech and AI presets
   benchmarks.md                    reference numbers for two common machines
   speech-services.md, speech-recognition.md, ai-polish.md   stubs: "Moved to …"

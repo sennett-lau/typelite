@@ -61,4 +61,4 @@ Content-Type: application/json
 - **Languages:** leave the spoken language on auto-detect for mixed English, Mandarin and
   Cantonese. Chinese comes back in **Simplified characters**, and Cantonese as colloquial
   Cantonese in Simplified characters (for example `听日下昼三点开会得唔得`). AI polish and your
-  [language settings](../languages.md) decide the final script.
+  [language settings](../languages/README.md) decide the final script.

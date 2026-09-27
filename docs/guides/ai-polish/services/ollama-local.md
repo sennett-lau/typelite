@@ -19,4 +19,4 @@ ollama pull qwen3:4b-instruct-2507-q4_K_M
 ```
 
 The model above does not think. For a model that does, add the extra field shown above under
-**Advanced**; see [Choosing a model](../../models.md#turn-off-thinking).
+**Advanced**; see [AI polish models](../../models/ai-polish.md#turn-off-thinking).

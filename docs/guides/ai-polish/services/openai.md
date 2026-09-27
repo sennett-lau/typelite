@@ -16,4 +16,4 @@ thinking_off: gpt-4.1-mini does not think; for reasoning models see Choosing a m
 3. Open **API keys**, choose **Create new secret key**, and paste it into Typelite.
 
 Your text is sent to OpenAI. For reasoning models, see
-[Choosing a model](../../models.md#turn-off-thinking).
+[AI polish models](../../models/ai-polish.md#turn-off-thinking).

@@ -15,7 +15,7 @@ later in **Settings → AI → AI polish uses**.
 | OpenAI-compatible | Any chat server that accepts `POST <address>/chat/completions`: Ollama, LM Studio, llama.cpp, or a cloud service | Your server, or the cloud service you chose | [OpenAI-compatible](openai-compatible.md) |
 
 Not sure? Start with Built-in on Apple Silicon. On an Intel Mac, or for faster answers, use a
-server on your network or a cloud key; see [Choosing a model](../models.md) and
+server on your network or a cloud key; see [AI polish models](../models/ai-polish.md) and
 [Benchmarks](../benchmarks.md).
 
 ## Services
@@ -43,8 +43,8 @@ Other services with an OpenAI-compatible chat API should work too. To add one to
 
 ## More
 
-- [Choosing a model](../models.md): suggestions by hardware and by language.
+- [AI polish models](../models/ai-polish.md): suggestions by hardware and by language.
 - [Thinking models](thinking-models.md): why they are slow for polish and how to turn thinking off.
-- [Languages](../languages.md): translation languages and per-language instructions.
+- [Languages](../languages/README.md): translation languages and per-language instructions.
 - [Troubleshooting](troubleshooting.md): Test fails, empty answers, slow polish.
 - [Sharing presets](../sharing-presets.md): export and import your AI presets.
