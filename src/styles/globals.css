@@ -353,6 +353,41 @@ body,
     line-height: 1.4;
     color: var(--color-text-secondary);
   }
+  /* Plan `general-settings`: a row with a sub-row under it (Translate and its Switch language
+     key) is one block. The hairline goes between blocks, never between a row and its sub-row. */
+  .row + .row-block,
+  .row-block + .row,
+  .row-block + .row-block {
+    border-top: 1px solid var(--color-hairline);
+  }
+  /* The sub-row sits under its row's label, indented; its control keeps the row's right-hand
+     column (same right padding). No top padding: the row above already ends with 10 pt. */
+  .row-sub {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px 12px;
+    padding: 0 14px 10px 36px;
+  }
+  /* A small L-shaped guide from under the row's label to the sub-row's label. */
+  .row-sub::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 10px;
+    height: 17px;
+    border-bottom: 1.5px solid var(--color-key-line);
+    border-left: 1.5px solid var(--color-key-line);
+    border-bottom-left-radius: 6px;
+    pointer-events: none;
+  }
+  /* A row label's 160 pt less the 22 pt of extra indent: the row and its sub-row wrap at the
+     same width. */
+  .row-sub .row-label {
+    flex-basis: 138px;
+  }
 
   /* Home shortcut tile: no coloured border or shadow, only the hairline ring. */
   .tile {

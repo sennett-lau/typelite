@@ -498,6 +498,12 @@ interface ShortcutBindingListProps {
   description?: string
   /** Draw each binding as key caps (Settings → General). */
   showKeycaps?: boolean
+  /**
+   * A sub-row (a `.row-sub` element) drawn under this row, in the same block: the hairline goes
+   * above the block, never between the row and its sub-row. Settings → General uses it for
+   * Translate's Switch language key (plan `general-settings`).
+   */
+  subRow?: React.ReactNode
 }
 
 const bindingIdentity = hotkeyBindingIdentity
@@ -513,6 +519,7 @@ export function ShortcutBindingList({
   trailingAction,
   description,
   showKeycaps = false,
+  subRow,
 }: ShortcutBindingListProps) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
@@ -566,7 +573,7 @@ export function ShortcutBindingList({
     onChange([bindings[index], ...bindings.filter((_, currentIndex) => currentIndex !== index)])
   }
 
-  return (
+  const row = (
     <div data-hotkey-role={role} className="row items-start">
       <div className="row-label pt-1">
         <span>{label}</span>
@@ -674,6 +681,14 @@ export function ShortcutBindingList({
           <Plus size={14} />
         </button>
       </div>
+    </div>
+  )
+
+  if (!subRow) return row
+  return (
+    <div className="row-block">
+      {row}
+      {subRow}
     </div>
   )
 }
