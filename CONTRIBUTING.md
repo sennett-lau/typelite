@@ -10,6 +10,7 @@ TypeScript:
 | Make Typelite write your language better | [Language presets](#language-presets) |
 | Recommend models for your language | [Language guides](#language-guides) |
 | Support a service that needs its own protocol | [New connections](#new-connections) |
+| Know the formats the docs check enforces | [Docs formats](#docs-formats) |
 | Report a problem | [Reporting bugs](#reporting-bugs) |
 | Cut a release (maintainers) | [Maintainers](#maintainers) |
 
@@ -93,12 +94,11 @@ table of [Speech recognition](docs/guides/speech/README.md#services) or
 Only add services that work with the current code through an existing connection (Built-in,
 OpenAI-compatible, or for speech Qwen Cloud). Test it in the app first.
 
-- Add one row: where it runs, cost, whether it needs a key, an example address as the app's
-  **Address** field wants it (no trailing `/audio/transcriptions` or `/chat/completions`; use
-  `<computer-address>` for a server on another computer) and an example model.
-- If it needs setup beyond a key, add a short section under **Running your own server** in the
-  connection's page (`openai-compatible.md`) and link the row to it; a cloud service gets a line in
-  that page's **Cloud services** table.
+- Add one row in the [Services row](#services-row) format.
+- If it needs setup beyond a key, add a [server section](#server-section) under **Running your
+  own server** in the connection's page (`openai-compatible.md`) and link the row to it. A cloud
+  service gets a line in that page's **Cloud services** table and links there.
+- Run `npm run docs:check`.
 
 ## Language presets
 
@@ -224,6 +224,75 @@ What you measured, and how.
 - The front matter passes the check, and the example in **Why** is real, not invented.
 - Numbers say how they were measured; synthetic speech is labelled as such.
 - No private addresses, machine names or keys.
+
+## Docs formats
+
+The guides follow two formats, so a new service, language or whole new part of Typelite looks
+like what is already there. `npm run docs:check` enforces them, locally and on every pull request
+that touches the docs (the **Docs** workflow). Claude Code users can let the skills in
+`.claude/skills/` write the files: `add-service`, `add-language-guide`, `add-language-preset` and
+`add-guide-step`.
+
+### Guide steps
+
+A step is one part of the pipeline with its own models and services: today speech recognition
+and AI polish. A later one (for example read-aloud) copies the same shape:
+
+```
+docs/guides/<step>/
+  README.md             what it does · ## Connections · ## Services · ## More
+  built-in.md           if it has one: set it up · models · how it runs
+  <connection>.md       one per connection: enter a service · protocol ·
+                        ## Running your own server · ## Cloud services
+  troubleshooting.md    Test fails · slow or wrong results · still stuck
+docs/guides/models/<step>.md   kinds of model · by hardware · by language
+```
+
+A step folder holds only `.md` pages, no subfolders. Register a new step in `STEPS` in
+`scripts/docs-cards.mjs` and add it to the table in `docs/guides/README.md`.
+
+#### Services row
+
+The Services table in the step's `README.md` starts with exactly this header, one row per service:
+
+```markdown
+| Service | Runs | Cost | API key | Address (example) | Model (example) | Notes |
+|---|---|---|---|---|---|---|
+| [Groq](openai-compatible.md#cloud-services) | Cloud | Free tier | Yes | `https://api.groq.com/openai/v1` | `whisper-large-v3-turbo` | Free daily allowance. |
+```
+
+| Column | Allowed |
+|---|---|
+| Service | A link to where it is set up: its server section, the Cloud services table, or its own page. |
+| Runs | `On your computer`, `Your computer or network`, `Your network` or `Cloud`. |
+| Cost | `Free`, `Free tier` or `Paid`. |
+| API key | `Yes` or `No`; a cloud service always needs one. |
+| Address (example) | As the app's **Address** field wants it, in backticks: `http://` or `https://`, no trailing `/`, stopping before the path Typelite adds (`/audio/transcriptions`, `/chat/completions`). `<computer-address>` for another computer; `—` for Built-in. |
+| Model (example) | As the app's **Model** field wants it. |
+| Notes | One short line; may be empty. |
+
+Rows go Built-in first, then servers you run, then cloud services.
+
+#### Server section
+
+A `###` section under **Running your own server**, in this order:
+
+1. One sentence: what it is, with a link to the project.
+2. How to install and start it, as a command block.
+3. "Use address `…` and model `…`."
+4. Notes that matter: memory, serving other computers, firewall, turning thinking off.
+
+### Language guides
+
+The format is in [The guide file](#the-guide-file) and the [Guide template](#guide-template)
+above. The check validates the front matter and the required sections, and rewrites the index on
+the Languages page with `npm run docs:cards`.
+
+### Links
+
+Every relative link in `README.md`, `CONTRIBUTING.md`, `docs/guides`, `docs/dev`,
+`presets/languages` and `.claude/skills`, and its `#anchor`, must point at a file and heading that
+exist.
 
 ## New connections
 

@@ -27,3 +27,14 @@ export interface LanguageGuide {
   tested?: string
 }
 export function renderLanguageGuides(guides: LanguageGuide[]): string
+export interface Step {
+  id: string
+  dir: string
+  models: string
+}
+export const STEPS: Step[]
+export const SERVICES_HEADER: string
+export function validateServiceRow(row: string): string[]
+export function validateStep(step: Step, root?: string): string[]
+export function headingAnchor(heading: string): string
+export function checkLinks(root?: string): string[]
