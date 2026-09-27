@@ -11,9 +11,16 @@ language presets from the repository.
 handles mixed languages, such as English with Cantonese or Mandarin. A fixed language forces every
 recording into it, but saves a detection pass and can help very short clips.
 
-- whisper (Built-in, or a whisper.cpp or Speaches server) writes Cantonese as standard written
-  Chinese. Qwen Cloud writes Cantonese as colloquial Cantonese, in Simplified characters.
-- AI polish then writes the final text in the style your language instructions ask for.
+- The speech model decides which words reach AI polish. whisper (Built-in, or a whisper.cpp or
+  Speaches server) writes Cantonese as standard written Chinese and translates some English words
+  (email → 電郵). [Qwen3-ASR](speech/services/qwen3-asr.md) and Qwen Cloud write Cantonese as it is
+  spoken, with English words kept, in Simplified characters. Typelite writes a Qwen3-ASR transcript
+  in the characters of the Chinese language it is recognised as (Hong Kong Traditional for
+  Cantonese (Hong Kong)); Qwen Cloud's text keeps its characters, and AI polish writes the final
+  script.
+- AI polish then writes the final text in the style your language instructions ask for. It can
+  adjust wording and script, but it cannot bring back words speech recognition changed; see
+  [Choosing models → Do you need a language guide?](models/README.md#do-you-need-a-language-guide).
 
 ## Translation languages
 
@@ -55,9 +62,10 @@ The built-in instructions are a plain, natural translation for most languages, p
 | Chinese (Traditional, Taiwan) | Taiwan Mandarin wording and vocabulary (軟體, 網路, 計程車). |
 | Chinese (Simplified) | Mainland wording and vocabulary (软件, 网络, 出租车). |
 
-Small 4B models write passable Cantonese but still slip into written Chinese now and then; a
-larger or Cantonese-tuned model as the AI polish model does better. See
-[Choosing a model](models.md#by-language).
+For dictation, the Cantonese instructions work best on a Cantonese transcript: with
+[Qwen3-ASR](speech/services/qwen3-asr.md) as the speech model, a 4B polish model keeps the text
+Cantonese. With whisper, the transcript is already written Chinese and the notes can only put back
+part of it. See [the Cantonese guide](models/languages/cantonese.md).
 
 ## Language presets
 
@@ -120,6 +128,6 @@ to default** goes back to the built-in instructions.
 ## See also
 
 - [Preset catalogue](../../presets/languages/README.md): every preset, grouped by language.
-- [Choosing a model](models.md): models that suit your languages.
+- [Choosing models](models/README.md): models that suit your languages, and the language guides.
 - [Sharing presets](sharing-presets.md): export and import of speech and AI presets (a different
   kind of preset: saved connections).

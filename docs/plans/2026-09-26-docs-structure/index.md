@@ -9,6 +9,9 @@ developer guide for adding a new connection.
 
 Status: done — 2026-09-26
 
+The decision to keep model suggestions in one page is superseded by plan
+[model-guides](../2026-09-27-model-guides/index.md).
+
 ## Goals
 
 - A reader finds the right setup in two clicks: guides index → speech or AI polish → a

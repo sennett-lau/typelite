@@ -1,7 +1,8 @@
 # Benchmarks
 
-Reference numbers for two common machines running the same AI polish model, so you can judge what
-to expect from similar hardware. They are measurements, not a recommendation: pick the setup that
+Reference numbers for two common machines, so you can judge what to expect from similar hardware:
+AI polish speed, [speech recognition accuracy and speed for Cantonese](#speech-recognition-cantonese)
+and Typelite's Built-in models. They are measurements, not a recommendation: pick the setup that
 fits your privacy, cost and speed needs.
 
 ## AI polish: reference numbers for two common machines
@@ -91,6 +92,59 @@ generation well above 150 tokens/s.
   size and the operating system. Treat these as a rough reference.
 - **Output length dominates** once the prompt is cached: the long English answer is slow on the
   Apple machine because it generates ~150 tokens.
+
+## Speech recognition: Cantonese
+
+How well speech models keep Cantonese as it was spoken, and how fast they are on the GPU machine
+above (RTX 3080 Ti).
+
+### Method
+
+- **Clips:** 11 Cantonese recordings and 1 English one, made with the macOS Cantonese voice (Sinji)
+  from known text: ten everyday sentences with fillers, self-corrections, English words and a
+  swear word, plus one 13-second sentence with heavy code-mixing ("我一直都keep住試緊廣東話…").
+- **Requests:** Typelite's own request (`POST <address>/audio/transcriptions`, 16 kHz mono WAV,
+  auto-detect). Each clip 3 times after a warm-up; times are medians.
+- **Scores:** character error rate against the known text (punctuation and spaces ignored), how
+  many of 50 Cantonese words (我哋, 聽日, 咗, 緊, 咯…) and 18 English words survived, and whether
+  Simplified characters appeared.
+
+### Results
+
+| Model and server | Error rate | Cantonese words kept | English words kept | Script | Time, short clip | Time, 13-s clip |
+|---|---|---|---|---|---|---|
+| whisper large-v3-turbo q5_0, whisper.cpp with CUDA | 43.8% | 2 of 50 | 7 of 18 | Traditional, formal written Chinese | 0.17 s | – |
+| Qwen3-ASR-1.7B, vLLM, raw output | 24.3% | 32 of 50 | 18 of 18 | Simplified | 0.14 s | 0.37 s |
+| Qwen3-ASR-1.7B, vLLM, in Hong Kong characters (as Typelite writes it) | **2.4%** | **49 of 50** | **18 of 18** | Hong Kong Traditional | 0.2–0.3 s over the network | 0.6 s over the network |
+| Qwen3-ASR-1.7B Q8_0, llama.cpp `llama-server` with CUDA | same text as vLLM | | | Simplified (converted by Typelite) | **0.10 s** | **0.27 s** |
+| Qwen3-ASR-1.7B Q8_0, llama.cpp `llama-server` (on the Apple machine), in Hong Kong characters | **2.4%** | **49 of 50** | **18 of 18** | Hong Kong Traditional | 0.45 s | 1.7 s |
+| alvanlii/whisper-small-cantonese, whisper.cpp (on the Apple machine) | 30.2% | 40 of 50 | 9 of 18 | Traditional, colloquial | 0.45 s | 0.79 s |
+
+- whisper wrote the 13-second sentence as "我一直都記住試廣東話，但出來的效果好像不是這樣…";
+  Qwen3-ASR wrote it exactly as spoken.
+- Qwen3-ASR's raw error rate is high mostly because of its Simplified characters (听日 for 聽日);
+  the words themselves were right. Typelite converts them to the characters of your Chinese
+  language.
+- The Cantonese whisper-small model writes colloquial Cantonese, but it added stray words ("laa",
+  "對啊") to most clips, dropped one clip entirely and could not transcribe the English clip.
+- VRAM: Qwen3-ASR-1.7B used about 3.4 GB with llama.cpp (Q8_0, `-c 4096 -np 1`) and about 6.8 GB
+  with vLLM (`--gpu-memory-utilization 0.55`, 3.9 GB of it weights). whisper large-v3-turbo used
+  about 1.2 GB.
+- The same model gives the same text on vLLM and on llama.cpp (Q8_0); llama.cpp on the Apple
+  machine needed `-c 4096 -np 1`, as its default context ran the GPU out of memory.
+
+For comparison, the Qwen team's published results (error rate, lower is better) on Cantonese:
+Fleurs 3.98 against whisper large-v3's 9.18, WenetSpeech-Yue 5.82 against 32.26, and Cantonese
+dialogue 4.12 against 31.04 ([Qwen3-ASR technical report](https://arxiv.org/abs/2601.21337)).
+
+### Caveats
+
+- **Synthetic speech.** A text-to-speech voice is clearer than real speech, and it mispronounced a
+  few words (book → 讀); real recordings will score worse for every model. Test with your own voice.
+- **A small set.** Twelve clips show large differences reliably, not small ones.
+- **Timing.** whisper was timed from another computer over the local network; Qwen3-ASR on vLLM
+  and on llama.cpp with CUDA was timed on the GPU machine itself; add about 0.1–0.2 s over the
+  network.
 
 ## Built-in models on Apple Silicon
 

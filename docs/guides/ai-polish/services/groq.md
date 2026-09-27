@@ -15,4 +15,4 @@ thinking_off: For Qwen3 models, Extra fields {"reasoning_effort":"none"}
 2. Open **API Keys**, choose **Create API Key**, and paste it into Typelite.
 
 Your text is sent to Groq. The model above does not think; for Groq's Qwen3 models add the extra
-field shown above under **Advanced** (see [Choosing a model](../../models.md#turn-off-thinking)).
+field shown above under **Advanced** (see [AI polish models](../../models/ai-polish.md#turn-off-thinking)).

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Plan `docs-structure`: validates the service cards in docs/guides/{speech,ai-polish}/services/
 // and rewrites the generated tables in the guides and in the language preset catalogue.
+// Plan `model-guides`: also validates the language guides in docs/guides/models/languages/ and
+// writes their index in docs/guides/models/README.md.
 //
 //   node scripts/docs-cards.mjs          validate, then rewrite the generated tables
 //   node scripts/docs-cards.mjs --check  validate, and fail if a generated table is out of date
@@ -216,6 +218,126 @@ export function renderTable(set, cards) {
   return rows.join('\n')
 }
 
+// ─── Language guides (plan `model-guides`) ───
+
+export const LANGUAGE_GUIDES = {
+  id: 'language-guides',
+  dir: 'docs/guides/models/languages',
+  table: 'docs/guides/models/README.md',
+}
+
+const GUIDE_REQUIRED_KEYS = ['id', 'language', 'codes', 'speech', 'polish', 'tier', 'authors']
+const GUIDE_OPTIONAL_KEYS = ['preset', 'tested', 'notes']
+const GUIDE_LIMITS = { language: 40, codes: 60, speech: 60, polish: 60, authors: 80, notes: 120 }
+const GUIDE_TIERS = ['official', 'community']
+export const GUIDE_SECTIONS = ['## Recommended setup', '## Why', '## Set it up']
+const TAG_PATTERN = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
+
+/** Validates one language guide; returns the list of problems (empty when it is fine). */
+export function validateLanguageGuide(fileId, fields, body, root = REPO_ROOT) {
+  const errors = []
+  for (const key of Object.keys(fields)) {
+    if (![...GUIDE_REQUIRED_KEYS, ...GUIDE_OPTIONAL_KEYS].includes(key)) {
+      errors.push(`unknown front matter key: ${key}`)
+    }
+  }
+  for (const key of GUIDE_REQUIRED_KEYS) {
+    if (!(key in fields)) errors.push(`missing ${key}`)
+  }
+  for (const [key, max] of Object.entries(GUIDE_LIMITS)) {
+    const value = fields[key]
+    if (value === undefined) continue
+    if (typeof value !== 'string' || value.trim() === '') errors.push(`${key} must be text`)
+    else if (charCount(value) > max) errors.push(`${key} is longer than ${max} characters`)
+    else if (value.includes('|')) errors.push(`${key} must not contain "|"`)
+  }
+  if (typeof fields.id === 'string') {
+    if (!ID_PATTERN.test(fields.id)) errors.push('id must be a lowercase slug')
+    else if (fields.id !== fileId) errors.push(`id "${fields.id}" differs from its file "${fileId}.md"`)
+  }
+  if (typeof fields.codes === 'string') {
+    for (const tag of fields.codes.split(',').map((part) => part.trim())) {
+      if (!TAG_PATTERN.test(tag)) errors.push(`codes: "${tag}" is not a language tag such as zh-Hant-HK`)
+    }
+  }
+  if ('tier' in fields && !GUIDE_TIERS.includes(fields.tier)) {
+    errors.push(`tier must be one of ${GUIDE_TIERS.join(', ')}`)
+  }
+  if ('preset' in fields) {
+    const preset = fields.preset
+    if (typeof preset !== 'string' || !existsSync(join(root, 'presets/languages', preset, 'preset.md'))) {
+      errors.push(`preset "${preset}" is not a folder in presets/languages/`)
+    }
+  }
+  if ('tested' in fields && !/^\d{4}-\d{2}-\d{2}$/.test(String(fields.tested))) {
+    errors.push('tested must be a date such as 2026-09-27')
+  }
+  for (const heading of GUIDE_SECTIONS) {
+    if (!body.split('\n').includes(heading)) errors.push(`missing section "${heading}"`)
+  }
+  return errors
+}
+
+/** Reads and validates every language guide (README.md in the folder is the format, not a guide). */
+export function readLanguageGuides(root = REPO_ROOT) {
+  const dir = join(root, LANGUAGE_GUIDES.dir)
+  const problems = []
+  const guides = []
+  if (!existsSync(dir)) return { guides, problems: [`${LANGUAGE_GUIDES.dir}: folder is missing`] }
+  for (const file of readdirSync(dir).sort()) {
+    if (file === 'README.md') continue
+    const path = `${LANGUAGE_GUIDES.dir}/${file}`
+    if (!file.endsWith('.md')) {
+      problems.push(`${path}: only .md guides belong here`)
+      continue
+    }
+    let parsed
+    try {
+      parsed = parseCard(readFileSync(join(dir, file), 'utf8'))
+    } catch (error) {
+      problems.push(`${path}: ${error.message}`)
+      continue
+    }
+    const errors = validateLanguageGuide(file.slice(0, -3), parsed.fields, parsed.body, root)
+    for (const error of errors) problems.push(`${path}: ${error}`)
+    if (errors.length === 0) guides.push({ file, ...parsed.fields })
+  }
+  return { guides, problems }
+}
+
+/** The index of language guides: official first, then by language name. */
+export function renderLanguageGuides(guides) {
+  const sorted = [...guides].sort(
+    (a, b) =>
+      GUIDE_TIERS.indexOf(a.tier) - GUIDE_TIERS.indexOf(b.tier) ||
+      a.language.localeCompare(b.language, 'en'),
+  )
+  const guidesDir = relative(dirname(LANGUAGE_GUIDES.table), LANGUAGE_GUIDES.dir)
+  const rows = [
+    '| Language | Codes | Speech recognition | AI polish | Language preset | Tier | Tested |',
+    '|---|---|---|---|---|---|---|',
+  ]
+  if (sorted.length === 0) rows.push('| No language guides yet | | | | | | |')
+  for (const guide of sorted) {
+    const preset = guide.preset ? `[${guide.preset}](../../../presets/languages/${guide.preset}/preset.md)` : '—'
+    rows.push(
+      [
+        `[${guide.language}](${guidesDir}/${guide.file})`,
+        guide.codes.split(',').map((tag) => code(tag.trim())).join(', '),
+        guide.speech,
+        guide.polish,
+        preset,
+        guide.tier === 'official' ? 'Official' : 'Community',
+        guide.tested ? String(guide.tested) : '—',
+      ]
+        .join(' | ')
+        .replace(/^/, '| ')
+        .concat(' |'),
+    )
+  }
+  return rows.join('\n')
+}
+
 // ─── Language preset catalogue ───
 
 export const CATALOGUE = {
@@ -310,6 +432,13 @@ export function buildDocs(root = REPO_ROOT) {
   }
   const catalogue = renderCatalogue(root)
   if (catalogue !== null) update(CATALOGUE.table, CATALOGUE.id, catalogue)
+  if (existsSync(join(root, LANGUAGE_GUIDES.dir))) {
+    const { guides, problems: guideProblems } = readLanguageGuides(root)
+    problems.push(...guideProblems)
+    if (guideProblems.length === 0) {
+      update(LANGUAGE_GUIDES.table, LANGUAGE_GUIDES.id, renderLanguageGuides(guides))
+    }
+  }
   return { problems, files }
 }
 
@@ -328,7 +457,7 @@ function main() {
     const problems = checkDocs()
     for (const problem of problems) console.error(`error: ${problem}`)
     if (problems.length > 0) process.exit(1)
-    console.log('Service cards are valid and the generated tables are up to date.')
+    console.log('Service cards and language guides are valid and the generated tables are up to date.')
     return
   }
   const { problems, files } = buildDocs()

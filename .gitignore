@@ -50,6 +50,8 @@ build/
 
 # Local models and data (downloaded, never committed)
 models/
+# ...but the model guides are docs
+!docs/guides/models/
 *.bin
 *.gguf
 *.safetensors

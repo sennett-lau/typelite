@@ -153,7 +153,7 @@ The images are rendered from the app's own components and the website's demos; s
 | [Guides](docs/guides/README.md) | Choose a setup: built-in, your own server, or a cloud key |
 | [Speech recognition](docs/guides/speech/README.md) | Connections and supported services |
 | [AI polish](docs/guides/ai-polish/README.md) | Connections, services and thinking models |
-| [Choosing a model](docs/guides/models.md) | Suggested models by hardware and language |
+| [Choosing models](docs/guides/models/README.md) | Speech and polish models by hardware, and guides per language |
 | [Languages](docs/guides/languages.md) | Translation languages, presets and recognition |
 | [Sharing presets](docs/guides/sharing-presets.md) | Export and import your speech and AI presets |
 | [Benchmarks](docs/guides/benchmarks.md) | Reference numbers on an NVIDIA GPU and on Apple Silicon |

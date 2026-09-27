@@ -104,3 +104,62 @@ A computer with an NVIDIA GPU recognises speech several times faster than a lapt
   check that no automatic "block" rule was created for the server the first time it ran.
 - Across networks, use a private network such as Tailscale instead of opening the port to the
   internet.
+
+### Qwen3-ASR
+
+[Qwen3-ASR](services/qwen3-asr.md) is the speech model to use when whisper does not write your
+language the way you speak it, for example Cantonese (see the
+[language guides](../models/README.md#language-guides)). It runs on llama.cpp's `llama-server`,
+the same C++ runtime family as whisper.cpp, or on vLLM. Both answer Typelite's transcription
+request; Typelite then:
+
+- removes the language tag Qwen3-ASR puts in front of the text (`language Cantonese<asr_text>…`)
+  and uses it as the detected language for the
+  [language router](../languages.md#where-the-instructions-are-used);
+- writes the text in the characters of the Chinese language the router picks: Qwen3-ASR writes
+  Chinese in Simplified characters, so a dictation recognised as Cantonese (Hong Kong) becomes Hong
+  Kong Traditional, with Cantonese 係 and 覆.
+
+In Typelite, use address `http://<that-computer's-address>:<port>/v1`, model `qwen3-asr`, no API
+key, and leave **Spoken language** on **Auto-detect**.
+
+**With llama.cpp (Mac, NVIDIA or CPU).** Install llama.cpp (on a Mac, `brew install llama.cpp`; on
+Windows or Linux, a release from [llama.cpp's releases](https://github.com/ggml-org/llama.cpp/releases),
+the CUDA build for an NVIDIA GPU), then:
+
+```sh
+llama-server -hf ggml-org/Qwen3-ASR-1.7B-GGUF:Q8_0 --host 127.0.0.1 --port 8180 -c 4096 -np 1
+```
+
+- `-hf` downloads the model and its audio encoder (`mmproj`, about 2.5 GB together) on the first
+  start. Use `Qwen3-ASR-0.6B-GGUF` for the smaller model.
+- `-c 4096 -np 1` keep memory low: dictation needs a short context and one request at a time. The
+  defaults reserve far more, and can run a Mac's GPU out of memory.
+- A short clip takes about 0.5 s on an M1 Pro, faster than Built-in whisper, and 0.1 s on an RTX
+  3080 Ti with the CUDA build, which needs about 3.4 GB of VRAM. On Windows it runs natively, with
+  no WSL or Python.
+
+**With vLLM (NVIDIA GPU).** An alternative to llama.cpp for Linux, or WSL2 on Windows. It was a
+little slower than llama.cpp in our test and needs about twice the VRAM (about 7 GB for the 1.7B
+model).
+
+```sh
+python3 -m venv ~/qwen3-asr && source ~/qwen3-asr/bin/activate
+pip install "qwen-asr[vllm]"
+qwen-asr-serve Qwen/Qwen3-ASR-1.7B --host 0.0.0.0 --port 8180 \
+  --gpu-memory-utilization 0.55 --max-model-len 4096 --max-num-seqs 2
+```
+
+- Start the model with `qwen-asr-serve`, not `vllm serve`: it registers Qwen3-ASR with vLLM first.
+- `--gpu-memory-utilization` is the share of the whole GPU vLLM may use. If vLLM stops with "No
+  available memory for the cache blocks", raise it or free GPU memory; 0.55 fits the 1.7B model on
+  a 12 GB card next to a 4B polish model.
+- **WSL2 on Windows:** a WSL server is reachable only from the Windows computer itself. Forward the
+  port with `netsh interface portproxy add v4tov4 listenport=8180 listenaddress=<windows address>
+  connectport=8180 connectaddress=127.0.0.1` and allow it through the firewall for your network
+  only. Windows stops WSL when nothing is attached to it, which also stops servers inside it: run
+  `wsl.exe -d Ubuntu -e sleep infinity` from a logon task, and start the server as a systemd
+  service.
+
+Either way, to serve other computers use `--host 0.0.0.0` and allow the port through the firewall
+for your local network only.

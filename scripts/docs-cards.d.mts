@@ -1,4 +1,5 @@
-// Types for scripts/docs-cards.mjs, so the vitest test can import it (plan `docs-structure`).
+// Types for scripts/docs-cards.mjs, so the vitest test can import it (plans `docs-structure` and
+// `model-guides`).
 
 export interface CardSet {
   id: string
@@ -17,3 +18,11 @@ export function parseCard(text: string): { fields: CardFields; body: string }
 export function validateCard(set: CardSet, fileId: string, fields: CardFields, body: string): string[]
 export function replaceBetweenMarkers(text: string, id: string, content: string): string
 export function checkDocs(root?: string): string[]
+export const LANGUAGE_GUIDES: { id: string; dir: string; table: string }
+export const GUIDE_SECTIONS: string[]
+export function validateLanguageGuide(
+  fileId: string,
+  fields: CardFields,
+  body: string,
+  root?: string,
+): string[]

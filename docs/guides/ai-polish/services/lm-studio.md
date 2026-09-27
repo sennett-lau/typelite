@@ -15,4 +15,4 @@ Install [LM Studio](https://lmstudio.ai/), download a small instruct model, then
 server (the **Developer** tab). Enter the address above and the model identifier LM Studio shows.
 It can also serve other computers on your network; use that computer's address then.
 
-See [Choosing a model](../../models.md) for model suggestions and for turning off thinking.
+See [AI polish models](../../models/ai-polish.md) for model suggestions and for turning off thinking.

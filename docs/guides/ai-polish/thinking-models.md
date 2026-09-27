@@ -7,7 +7,7 @@ empty text. Use a non-thinking (instruct) model, or turn thinking off.
 Built-in models always run with thinking off.
 
 How to turn it off for each server, and where to enter the setting, is in
-[Choosing a model → Turn off thinking](../models.md#turn-off-thinking). The service cards also
+[AI polish models → Turn off thinking](../models/ai-polish.md#turn-off-thinking). The service cards also
 list it for their service (see [AI polish](README.md#services)).
 
 ## How to tell

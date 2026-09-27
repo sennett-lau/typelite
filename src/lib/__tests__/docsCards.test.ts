@@ -1,6 +1,7 @@
 /**
  * Plan `docs-structure`: the service cards are valid and the generated tables in the guides (and
- * the language preset catalogue) match them. Fix a failure with `npm run docs:cards`.
+ * the language preset catalogue) match them. Plan `model-guides`: so are the language guides and
+ * their index. Fix a failure with `npm run docs:cards`.
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -9,7 +10,11 @@ import {
   parseCard,
   replaceBetweenMarkers,
   validateCard,
+  validateLanguageGuide,
 } from '../../../scripts/docs-cards.mjs'
+
+const GUIDE_BODY =
+  '## Recommended setup\n\nA table.\n\n## Why\n\nText.\n\n## Set it up\n\n1. Steps.\n'
 
 const speech = CARD_SETS.find((set) => set.id === 'speech-services')!
 const ai = CARD_SETS.find((set) => set.id === 'ai-polish-services')!
@@ -86,5 +91,47 @@ describe('docs cards', () => {
     expect(result).not.toContain('old')
     expect(result.endsWith('<!-- END GENERATED: x -->\nafter\n')).toBe(true)
     expect(() => replaceBetweenMarkers('no markers', 'x', 'new')).toThrow(/markers/)
+  })
+
+  describe('language guides', () => {
+    const guide = (extra = '', body = GUIDE_BODY) => `---
+id: example
+language: Example (Region)
+codes: zh-Hant-HK, yue
+speech: Qwen3-ASR-1.7B
+polish: By hardware
+tier: community
+authors: someone
+preset: cantonese-hong-kong
+${extra}---
+
+${body}`
+    const guideProblems = (text: string, id = 'example') => {
+      const { fields, body } = parseCard(text)
+      return validateLanguageGuide(id, fields, body)
+    }
+
+    it('accepts a well-formed guide', () => {
+      expect(guideProblems(guide('tested: 2026-09-27\n'))).toEqual([])
+    })
+
+    it('rejects missing sections and unknown keys', () => {
+      expect(guideProblems(guide('', '## Why\n\nText.\n'))).toEqual([
+        'missing section "## Recommended setup"',
+        'missing section "## Set it up"',
+      ])
+      expect(guideProblems(guide('colour: blue\n'))).toContain('unknown front matter key: colour')
+    })
+
+    it('rejects a preset that does not exist, bad codes and a bad date', () => {
+      const text = guide('tested: yesterday\n')
+        .replace('preset: cantonese-hong-kong', 'preset: no-such-preset')
+        .replace('codes: zh-Hant-HK, yue', 'codes: zh-Hant-HK, Cantonese!')
+      expect(guideProblems(text)).toEqual([
+        'codes: "Cantonese!" is not a language tag such as zh-Hant-HK',
+        'preset "no-such-preset" is not a folder in presets/languages/',
+        'tested must be a date such as 2026-09-27',
+      ])
+    })
   })
 })
