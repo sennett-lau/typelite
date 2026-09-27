@@ -8,12 +8,12 @@ import {
   type PresetDetail,
 } from '../../../lib/tauri'
 import type { LibraryPresetRef, TranslationLanguageSettings } from '../../../stores/appStore'
-import { AI_POLISH_GUIDE_URL } from '../../Speech/services'
 
 // Plan `language-prompt-library`: what Settings needs from the language preset library.
 
-/** The guide section behind "About language presets". */
-export const LANGUAGE_PRESETS_GUIDE_URL = `${AI_POLISH_GUIDE_URL}#language-presets`
+/** The guide section behind "About language presets": Languages → Language presets. */
+export const LANGUAGE_PRESETS_GUIDE_URL =
+  'https://github.com/sennett-lau/typelite/blob/main/docs/guides/languages/README.md#language-presets'
 /** The library folder on GitHub ("Library on GitHub" in Browse). */
 export const LANGUAGE_LIBRARY_URL =
   'https://github.com/sennett-lau/typelite/tree/main/presets/languages'
