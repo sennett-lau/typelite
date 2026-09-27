@@ -36,8 +36,10 @@ pub fn start_error(config: &AppConfig, feature: Feature) -> Option<UserError> {
     None
 }
 
-/// The config a Dictate run uses: when AI is not ready, AI cleanup and "always translate"
-/// are turned off for this run only, so the raw transcript is pasted without an error.
+/// The config a Dictate run uses: when AI is not ready, AI cleanup and translation are turned
+/// off for this run only, so the raw transcript is pasted without an error. (The saved
+/// `translate_enabled` is always false; clearing it too keeps a run without AI from ever
+/// translating.)
 pub fn without_unready_ai(mut config: AppConfig) -> AppConfig {
     if !config.ai_ready() {
         config.polish_enabled = false;
