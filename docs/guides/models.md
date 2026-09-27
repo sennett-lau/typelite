@@ -5,8 +5,8 @@ language need special care, and what hardware runs the models.
 
 - By hardware: [Speech recognition](models/speech-recognition.md#by-hardware) and
   [AI polish](models/ai-polish.md#by-hardware)
-- By language: the [language guides](models/README.md#language-guides), for example
-  [Cantonese](models/languages/cantonese.md)
+- By language: the [language guides](languages/README.md#language-guides), for example
+  [Cantonese](languages/cantonese.md)
 - "Uncensored" models: [AI polish → Uncensored models](models/ai-polish.md#uncensored-or-abliterated-models)
 
 ## Turn off thinking
@@ -15,4 +15,4 @@ Moved to [AI polish → Turn off thinking](models/ai-polish.md#turn-off-thinking
 
 ## Cantonese
 
-Moved to [Cantonese](models/languages/cantonese.md).
+Moved to [Cantonese](languages/cantonese.md).

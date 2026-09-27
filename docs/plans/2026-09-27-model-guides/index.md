@@ -35,19 +35,19 @@ suggestions live in one page, `models.md`". Everything else there stands.
 
 | Decision | Reason |
 |---|---|
-| `docs/guides/models/` with `README.md` (start here), `speech-recognition.md`, `ai-polish.md` and `languages/` | The two tasks and the languages are the two ways people look for a model. |
-| A language guide is `languages/<id>.md` with front matter (`id`, `language`, `codes`, `speech`, `polish`, `tier`, `authors`, optional `preset`, `tested`, `notes`) and the sections Recommended setup, Why, Set it up (Results and Known issues optional) | The same strict front matter as service cards and presets; fixed sections make guides comparable. |
-| `scripts/docs-cards.mjs` validates the guides and writes their index in `models/README.md`; the existing vitest check covers it | One generator and one check for all docs tables; a stale index fails CI. |
+| `docs/guides/models/` with `README.md` (start here), `speech-recognition.md` and `ai-polish.md`; the language guides live in `docs/guides/languages/` (see the last decision) | The two tasks and the languages are the two ways people look for a model. |
+| A language guide is `docs/guides/languages/<id>.md` with front matter (`id`, `language`, `codes`, `speech`, `polish`, `tier`, `authors`, optional `preset`, `tested`, `notes`) and the sections Recommended setup, Why, Set it up (Results and Known issues optional) | The same strict front matter as service cards and presets; fixed sections make guides comparable. |
+| `scripts/docs-cards.mjs` validates the guides and writes their index in `docs/guides/languages/README.md`; the existing vitest check covers it | One generator and one check for all docs tables; a stale index fails CI. |
 | `preset` must name a folder in `presets/languages/` | A guide cannot point at a preset that does not exist. |
 | `tier: official` for guides the maintainers tested, `community` for others | Same meaning as for presets. |
-| `languages/README.md` holds the format and a template, and is not a guide itself | Contributors find the rules where they add the file. |
+| The format, a template and the review checklist are in `CONTRIBUTING.md` (Language guides), next to the service card format | Contribution rules live in one place; the guides folder holds only pages for readers. |
 | `models.md` becomes a "Moved to …" stub listing where each old section went | Links from older releases and elsewhere keep working. |
-| `languages.md` (the app's language settings) stays where it is | It documents Settings, not model choice; it links to the language guides. |
+| 2026-09-27, owner's decision: `languages.md` becomes the folder `docs/guides/languages/`, with `README.md` (the language settings page, which opens with the index of language guides) and one file per guide, such as `cantonese.md`. `languages.md` stays as a "Moved to …" stub | One place for everything about a language: its settings and the community's guides for it. Replaces the earlier decision that `languages.md` stays a single page and the guides live under `models/languages/`. |
 
 ## Parts
 
-This plan has no part files; the structure and the format are in `docs/guides/models/README.md`
-and `docs/guides/models/languages/README.md`.
+This plan has no part files; the structure is in `docs/guides/models/README.md` and
+`docs/guides/languages/README.md`, and the guide format in `CONTRIBUTING.md` (Language guides).
 
 ## Open questions
 

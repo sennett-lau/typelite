@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest'
 import {
   CARD_SETS,
   checkDocs,
+  LANGUAGE_GUIDES,
   parseCard,
+  renderLanguageGuides,
   replaceBetweenMarkers,
   validateCard,
   validateLanguageGuide,
@@ -132,6 +134,26 @@ ${body}`
         'preset "no-such-preset" is not a folder in presets/languages/',
         'tested must be a date such as 2026-09-27',
       ])
+    })
+
+    // The index sits on the Languages page, in the same folder as the guides.
+    it('links each guide by file name from the Languages page', () => {
+      expect(LANGUAGE_GUIDES.dir).toBe('docs/guides/languages')
+      expect(LANGUAGE_GUIDES.table).toBe('docs/guides/languages/README.md')
+      const table = renderLanguageGuides([
+        {
+          file: 'cantonese.md',
+          language: 'Cantonese (Hong Kong)',
+          codes: 'zh-Hant-HK, yue',
+          speech: 'Qwen3-ASR-1.7B',
+          polish: 'By hardware',
+          tier: 'official',
+          preset: 'cantonese-hong-kong',
+          tested: '2026-09-27',
+        },
+      ])
+      expect(table).toContain('| [Cantonese (Hong Kong)](cantonese.md) |')
+      expect(table).toContain('(../../../presets/languages/cantonese-hong-kong/preset.md)')
     })
   })
 })

@@ -37,7 +37,7 @@ loads it. A download that breaks off resumes where it stopped.
 
 Leave **Settings → Speech → Spoken language** on auto-detect to have whisper detect it; it handles mixed English, Mandarin and
 Cantonese (Cantonese comes out as standard written Chinese). A fixed language saves the detection
-pass and can help a short clip. See [Languages](../languages.md).
+pass and can help a short clip. See [Languages](../languages/README.md).
 
 ## No speech, no text
 

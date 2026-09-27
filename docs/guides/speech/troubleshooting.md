@@ -33,7 +33,7 @@ recognition and the reply. Ways to speed it up:
 - Mixed languages work best with auto-detect. A fixed language forces every recording into it.
 - Cantonese comes back as standard written Chinese from whisper, and in Simplified characters from
   Qwen Cloud. AI polish and your language settings turn it into the style you want; see
-  [Languages](../languages.md).
+  [Languages](../languages/README.md).
 
 ## Still stuck
 

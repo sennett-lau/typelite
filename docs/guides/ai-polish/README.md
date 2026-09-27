@@ -45,6 +45,6 @@ Other services with an OpenAI-compatible chat API should work too. To add one to
 
 - [AI polish models](../models/ai-polish.md): suggestions by hardware and by language.
 - [Thinking models](thinking-models.md): why they are slow for polish and how to turn thinking off.
-- [Languages](../languages.md): translation languages and per-language instructions.
+- [Languages](../languages/README.md): translation languages and per-language instructions.
 - [Troubleshooting](troubleshooting.md): Test fails, empty answers, slow polish.
 - [Sharing presets](../sharing-presets.md): export and import your AI presets.

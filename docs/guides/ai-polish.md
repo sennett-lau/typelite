@@ -11,8 +11,8 @@ This guide moved to [AI polish](ai-polish/README.md).
 
 ## Translation languages
 
-Moved to [Languages → Translation languages](languages.md#translation-languages).
+Moved to [Languages → Translation languages](languages/README.md#translation-languages).
 
 ## Language presets
 
-Moved to [Languages → Language presets](languages.md#language-presets).
+Moved to [Languages → Language presets](languages/README.md#language-presets).

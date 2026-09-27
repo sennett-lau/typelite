@@ -29,7 +29,7 @@ and a swear word, two runs each. "Similar" is how close the output is to what wa
 With a Cantonese transcript the preset keeps Cantonese, English words and swear words, and removes
 fillers. With whisper's written-Chinese transcript it puts back only a few words: the words whisper
 changed or misheard are gone before polish sees them. See
-[Choosing a model → Cantonese](../../../docs/guides/models/languages/cantonese.md).
+[Choosing a model → Cantonese](../../../docs/guides/languages/cantonese.md).
 
 Known gap: a self-correction without pauses ("下個禮拜三唔係禮拜四") was sometimes resolved to the
 wrong day.

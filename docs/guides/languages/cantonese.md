@@ -22,9 +22,9 @@ preset.
 
 | Step | Model | Why |
 |---|---|---|
-| Speech recognition | [Qwen3-ASR-1.7B](../../speech/services/qwen3-asr.md) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
-| AI polish | Qwen3 4B Instruct 2507 or Qwen3.5 4B, or what fits your hardware ([AI polish](../ai-polish.md)) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. |
-| Language preset | [Cantonese (Hong Kong)](../../../../presets/languages/cantonese-hong-kong/preset.md) | Tells polish how Hongkongers write, and lets Typelite recognise that you spoke Cantonese. |
+| Speech recognition | [Qwen3-ASR-1.7B](../speech/services/qwen3-asr.md) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
+| AI polish | Qwen3 4B Instruct 2507 or Qwen3.5 4B, or what fits your hardware ([AI polish](../models/ai-polish.md)) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. |
+| Language preset | [Cantonese (Hong Kong)](../../../presets/languages/cantonese-hong-kong/preset.md) | Tells polish how Hongkongers write, and lets Typelite recognise that you spoke Cantonese. |
 
 ## Why
 
@@ -42,7 +42,7 @@ was said.
 
 1. **Run Qwen3-ASR** on your Mac or on a computer with an NVIDIA GPU, with llama.cpp's
    `llama-server` (on Windows, the CUDA build from llama.cpp's releases; see
-   [Qwen3-ASR](../../speech/services/qwen3-asr.md) for vLLM and other options):
+   [Qwen3-ASR](../speech/services/qwen3-asr.md) for vLLM and other options):
 
    ```sh
    llama-server -hf ggml-org/Qwen3-ASR-1.7B-GGUF:Q8_0 --host 127.0.0.1 --port 8180 -c 4096 -np 1
@@ -66,14 +66,14 @@ was said.
    with Cantonese 係 and 覆 where a plain conversion would write 系 or 復. Nothing to set.
 
 5. **AI polish:** keep your current polish model, or pick one for your hardware in
-   [AI polish](../ai-polish.md). Stock Qwen models refuse to repeat some Cantonese insults; an
-   ["uncensored" variant](../ai-polish.md#uncensored-or-abliterated-models) keeps them.
+   [AI polish](../models/ai-polish.md). Stock Qwen models refuse to repeat some Cantonese insults; an
+   ["uncensored" variant](../models/ai-polish.md#uncensored-or-abliterated-models) keeps them.
 
 ## Results
 
 Measured with 11 Cantonese clips and 1 English clip made with the macOS Cantonese voice (Sinji):
 ten everyday sentences with fillers, a self-correction, English words and a swear word, plus the
-13-second sentence above. Details in [Benchmarks](../../benchmarks.md#speech-recognition-cantonese).
+13-second sentence above. Details in [Benchmarks](../benchmarks.md#speech-recognition-cantonese).
 
 | Speech model | Error rate | Cantonese words kept | English words kept |
 |---|---|---|---|

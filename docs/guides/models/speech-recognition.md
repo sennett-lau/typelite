@@ -34,13 +34,13 @@ Which speech model to run, by hardware and by language. How to connect each one 
 | Language | Suggested model | Notes |
 |---|---|---|
 | English | whisper large-v3-turbo | Qwen3-ASR is as good on clean English and better with accents. |
-| Mandarin | whisper large-v3-turbo, or Qwen3-ASR for higher accuracy | Pick the characters with your Chinese language and its [preset](../languages.md#language-presets). |
-| Cantonese | Qwen3-ASR-1.7B | whisper turns Cantonese into formal written Chinese. See the [Cantonese guide](languages/cantonese.md). |
-| Other languages | whisper large-v3-turbo | Check [whether you need a language guide](README.md#do-you-need-a-language-guide). |
+| Mandarin | whisper large-v3-turbo, or Qwen3-ASR for higher accuracy | Pick the characters with your Chinese language and its [preset](../languages/README.md#language-presets). |
+| Cantonese | Qwen3-ASR-1.7B | whisper turns Cantonese into formal written Chinese. See the [Cantonese guide](../languages/cantonese.md). |
+| Other languages | whisper large-v3-turbo | Check [whether you need a language guide](../languages/README.md#language-guides). |
 
 ## Spoken language
 
 Leave **Settings → Speech → Language → Spoken language** on **Auto-detect**: both whisper and
 Qwen3-ASR handle mixed languages that way, and report the language they heard, which Typelite uses
-to pick your [language instructions](../languages.md#where-the-instructions-are-used). A fixed
+to pick your [language instructions](../languages/README.md#where-the-instructions-are-used). A fixed
 language forces every recording into it.
