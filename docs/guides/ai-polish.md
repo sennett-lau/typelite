@@ -6,7 +6,7 @@ This guide moved to [AI polish](ai-polish/README.md).
 - Your own server or API key: [ai-polish/openai-compatible.md](ai-polish/openai-compatible.md)
   and the service cards in [AI polish → Services](ai-polish/README.md#services)
 - Thinking models: [ai-polish/thinking-models.md](ai-polish/thinking-models.md)
-- Choosing a model: [models.md](models.md)
+- Choosing a model: [models/ai-polish.md](models/ai-polish.md)
 - Sharing presets: [sharing-presets.md](sharing-presets.md)
 
 ## Translation languages

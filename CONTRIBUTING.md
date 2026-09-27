@@ -8,6 +8,7 @@ TypeScript:
 | Fix a bug or build a feature | [Code](#code) |
 | Document a speech or AI service that already works | [Service cards](#service-cards) |
 | Make Typelite write your language better | [Language presets](#language-presets) |
+| Recommend models for your language | [Language guides](#language-guides) |
 | Support a service that needs its own protocol | [New connections](#new-connections) |
 | Report a problem | [Reporting bugs](#reporting-bugs) |
 | Cut a release (maintainers) | [Maintainers](#maintainers) |
@@ -165,6 +166,21 @@ Reviewers check that:
 
 A `NOTES.md` next to the preset with test sentences, the model you used and what came out makes
 review much faster.
+
+## Language guides
+
+A language guide tells people who dictate in one language which speech recognition model, AI
+polish model and language preset to use, how to set them up, and what you measured. Each one is a
+Markdown file, `docs/guides/models/languages/<id>.md`, with checked front matter and fixed
+sections. The format, a template and the review checklist are in
+[docs/guides/models/languages/README.md](docs/guides/models/languages/README.md).
+
+- Write one when the general setup does not write your language well, and you have found a setup
+  that does. Test it with your own voice, not only with synthetic speech.
+- Run `npm run docs:cards` to validate it and regenerate the index in
+  `docs/guides/models/README.md`, and commit both.
+- A guide can name a language preset; if your language needs one too, send it in the same pull
+  request ([Language presets](#language-presets)).
 
 ## New connections
 
