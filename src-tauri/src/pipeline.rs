@@ -418,6 +418,38 @@ fn language_parts(
     }
 }
 
+/// Plan `qwen3-asr-support`: a Qwen3-ASR transcript (Simplified Chinese) in the characters of the
+/// Chinese language the router picks for it (Hong Kong Traditional for Cantonese (Hong Kong), and
+/// so on). Unchanged when the router picks no Chinese language. Only called for Qwen3-ASR answers,
+/// so whisper, Built-in and Qwen Cloud transcripts keep their script (plan `qwen-cloud-speech`
+/// leaves that to polish). Logs the language code only, never text.
+fn transcript_in_language_script(
+    config: &storage::AppConfig,
+    store: Option<&llm::language_library::store::LibraryStore>,
+    transcript: &str,
+    detected_language: Option<&str>,
+) -> String {
+    use crate::stt::chinese_script::{convert, ChineseScript};
+    use llm::language_router::{language_profiles, route};
+    let detected = config
+        .speech_language()
+        .and_then(crate::stt::normalize_detected_language)
+        .or_else(|| detected_language.map(str::to_string));
+    let profiles = language_profiles(config, store);
+    let Some(index) = route(&profiles, transcript, detected.as_deref()).index() else {
+        return transcript.to_string();
+    };
+    let code = &profiles[index].code;
+    let Some(script) = ChineseScript::for_language(code) else {
+        return transcript.to_string();
+    };
+    let converted = convert(transcript, script);
+    if converted != transcript {
+        tracing::info!("Transcript written in {code} characters");
+    }
+    converted
+}
+
 /// The config the Speed board records for a run: the AI preset is the one the run's AI request
 /// used (plan `translation-language-presets`), which can differ from the AI polish preset.
 pub(crate) fn config_for_run_timing(
@@ -806,6 +838,8 @@ pub struct PipelineHandle {
     accumulated_text: Arc<Mutex<String>>,
     /// Plan `language-prompt-library`: the language the speech step recognised in this run.
     detected_language: Arc<Mutex<Option<String>>>,
+    /// Plan `qwen3-asr-support`: this run's transcript came from a Qwen3-ASR server.
+    speech_was_qwen3_asr: Arc<Mutex<bool>>,
     stt_session: Arc<Mutex<Option<SttTaskControl>>>,
     stt_error: Arc<Mutex<Option<(u64, crate::error::UserError)>>>,
     active_stt_session_id: Arc<AtomicU64>,
@@ -1058,6 +1092,7 @@ impl PipelineHandle {
             audio_volume: Arc::new(Mutex::new(0.0)),
             accumulated_text: Arc::new(Mutex::new(String::new())),
             detected_language: Arc::new(Mutex::new(None)),
+            speech_was_qwen3_asr: Arc::new(Mutex::new(false)),
             stt_session: Arc::new(Mutex::new(None)),
             stt_error: Arc::new(Mutex::new(None)),
             active_stt_session_id: Arc::new(AtomicU64::new(0)),
@@ -1216,6 +1251,10 @@ impl PipelineHandle {
             .detected_language
             .lock()
             .unwrap_or_else(|e| e.into_inner()) = None;
+        *self
+            .speech_was_qwen3_asr
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = false;
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // Force state to Idle — emits pipeline:state event to sync frontend
@@ -1304,6 +1343,10 @@ impl PipelineHandle {
             .detected_language
             .lock()
             .unwrap_or_else(|e| e.into_inner()) = None;
+        *self
+            .speech_was_qwen3_asr
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = false;
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
 
         // P0-2: Load config BEFORE starting audio capture — fail fast on missing API key
@@ -1638,6 +1681,7 @@ impl PipelineHandle {
         let app_handle = self.app_handle.clone();
         let accumulated = self.accumulated_text.clone();
         let detected_language = self.detected_language.clone();
+        let speech_was_qwen3_asr = self.speech_was_qwen3_asr.clone();
         let stt_control = SttTaskControl {
             id: session_id,
             done: Arc::new(Notify::new()),
@@ -1709,6 +1753,8 @@ impl PipelineHandle {
                                             drop(acc);
                                             *detected_language.lock().unwrap_or_else(|e| e.into_inner()) =
                                                 provider.detected_language();
+                                            *speech_was_qwen3_asr.lock().unwrap_or_else(|e| e.into_inner()) =
+                                                provider.answered_as_qwen3_asr();
                                             let _ = app_handle.emit("stt:final", &current);
                                         }
                                     }
@@ -2032,6 +2078,27 @@ impl PipelineHandle {
                 return Ok(());
             }
         };
+        let detected_language = self
+            .detected_language
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+        let speech_was_qwen3_asr = *self
+            .speech_was_qwen3_asr
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let raw_text = if speech_was_qwen3_asr {
+            transcript_in_language_script(
+                &config,
+                crate::commands::language_presets::library_store(&self.app_handle)
+                    .ok()
+                    .as_ref(),
+                &raw_text,
+                detected_language.as_deref(),
+            )
+        } else {
+            raw_text
+        };
         let transcript_at = std::time::Instant::now();
         let voice_intent =
             route_pipeline_voice_intent(voice_mode, &raw_text, selected_text.as_deref(), &config);
@@ -2051,11 +2118,6 @@ impl PipelineHandle {
         }
 
         // ── Phase 2: LLM polish + output ───────────────────────────────
-        let detected_language = self
-            .detected_language
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .clone();
         let polish_outcome = self
             .polish_text(PolishTextInput {
                 raw_text: &raw_text,
@@ -3965,7 +4027,7 @@ mod tests {
             storage::TranslationLanguageSettings {
                 library_preset: Some(storage::LibraryPresetRef {
                     id: "cantonese-hong-kong".to_string(),
-                    version: 2,
+                    version: 3,
                     sha256,
                 }),
                 ..storage::TranslationLanguageSettings::default()
@@ -3999,6 +4061,36 @@ mod tests {
         assert_eq!(
             off.translation_instructions,
             llm::prompt::plain_translation_instructions("zh-Hant-HK")
+        );
+    }
+
+    /// Plan `qwen3-asr-support`: a transcript routed to Cantonese (Hong Kong) is written in Hong
+    /// Kong characters; Mandarin (no Cantonese hint) and English are left as they are.
+    #[test]
+    fn transcripts_routed_to_a_chinese_language_get_its_characters() {
+        let (config, store) = config_with_cantonese_preset();
+        assert_eq!(
+            transcript_in_language_script(
+                &config,
+                Some(&store),
+                "我哋听日三点钟开会，你唔好迟到啊",
+                Some("yue")
+            ),
+            "我哋聽日三點鐘開會，你唔好遲到啊"
+        );
+        assert_eq!(
+            transcript_in_language_script(&config, Some(&store), "我今天很忙", Some("zh")),
+            "我今天很忙"
+        );
+        assert_eq!(
+            transcript_in_language_script(&config, Some(&store), "Hello there", Some("en")),
+            "Hello there"
+        );
+        // No Chinese language in the list: nothing is converted.
+        let english_only = storage::AppConfig::default();
+        assert_eq!(
+            transcript_in_language_script(&english_only, None, "我哋听日开会", Some("yue")),
+            "我哋听日开会"
         );
     }
 

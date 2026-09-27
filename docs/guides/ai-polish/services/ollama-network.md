@@ -28,4 +28,4 @@ Replace `<computer-address>` with that computer's address.
 - Allow port 11434 through the firewall for your local network only. On Windows, check that no
   automatic "block" rule was created for `ollama.exe` the first time it ran.
 - Across networks, use a private network such as Tailscale.
-- For a model that thinks, see [Choosing a model](../../models.md#turn-off-thinking).
+- For a model that thinks, see [AI polish models](../../models/ai-polish.md#turn-off-thinking).

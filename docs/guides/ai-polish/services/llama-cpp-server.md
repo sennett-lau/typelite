@@ -20,4 +20,4 @@ llama-server -m Qwen3-4B-Instruct-2507-Q4_K_M.gguf --host 127.0.0.1 --port 8080 
 ```
 
 Use `--host 0.0.0.0` to serve other computers on your network, and set `--api-key` if you do.
-See [Choosing a model](../../models.md#turn-off-thinking).
+See [AI polish models](../../models/ai-polish.md#turn-off-thinking).

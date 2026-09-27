@@ -26,14 +26,14 @@ recognition and the reply. Ways to speed it up:
 - Choose a fixed spoken language instead of auto-detect, which saves a detection pass.
 - Use a smaller model (Built-in **Faster**, or `small` on your own server), at some cost in
   accuracy.
-- See [Benchmarks](../benchmarks.md) and [Choosing a model](../models.md).
+- See [Benchmarks](../benchmarks.md) and [Choosing models](../models/speech-recognition.md).
 
 ## Wrong language or script
 
 - Mixed languages work best with auto-detect. A fixed language forces every recording into it.
 - Cantonese comes back as standard written Chinese from whisper, and in Simplified characters from
   Qwen Cloud. AI polish and your language settings turn it into the style you want; see
-  [Languages](../languages.md).
+  [Languages](../languages/README.md).
 
 ## Still stuck
 

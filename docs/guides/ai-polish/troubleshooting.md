@@ -19,7 +19,7 @@ Usually a thinking model; see [Thinking models](thinking-models.md). Otherwise:
   `OLLAMA_KEEP_ALIVE=-1`.
 - The first request after a start processes the long polish instructions once; later requests
   are faster if the server caches prompts.
-- A large model on a small computer is slow; see [Choosing a model](../models.md) and
+- A large model on a small computer is slow; see [Choosing models](../models/ai-polish.md) and
   [Benchmarks](../benchmarks.md).
 
 ## The text changes too much, or not enough
@@ -27,7 +27,7 @@ Usually a thinking model; see [Thinking models](thinking-models.md). Otherwise:
 - Small models sometimes rephrase more than you want or miss a correction. A 4B instruct model is
   a good balance; a larger model follows the rules more closely.
 - For a language other than English, set up its language instructions; see
-  [Languages](../languages.md).
+  [Languages](../languages/README.md).
 
 ## Still stuck
 

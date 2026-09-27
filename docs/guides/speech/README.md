@@ -16,7 +16,7 @@ its own option, and in **Your server or API key** the address decides.
 | Qwen Cloud | Qwen's own speech API, used automatically for a Qwen Cloud address | Qwen Cloud, with your own key | [Qwen Cloud](qwen-cloud.md) |
 
 Not sure? Start with Built-in. If it is too slow on your computer, a GPU computer on your network
-or a cloud service is faster; see [Choosing a model](../models.md) and
+or a cloud service is faster; see [Choosing models](../models/speech-recognition.md) and
 [Benchmarks](../benchmarks.md).
 
 ## Services
@@ -31,6 +31,7 @@ run; "Cloud" services need your own API key and receive your audio.
 |---|---|---|---|---|---|---|---|
 | [Built-in (whisper.cpp)](services/built-in.md) | [Built-in](built-in.md) | On your computer | Free | No | — | large-v3-turbo or small | About 100 languages, auto-detect. One click in Typelite; audio never leaves your computer. |
 | [LocalAI](services/localai.md) | [OpenAI-compatible](openai-compatible.md) | On your computer | Free | No | `http://127.0.0.1:8080/v1` | `whisper-1` | Use the name of the Whisper model you installed in LocalAI. |
+| [Qwen3-ASR (llama.cpp or vLLM)](services/qwen3-asr.md) | [OpenAI-compatible](openai-compatible.md) | On your computer | Free | No | `http://127.0.0.1:8180/v1` | `qwen3-asr` | 30 languages and 22 Chinese dialects, auto-detect. Writes Cantonese as spoken, with English words kept. Can also run on a GPU computer. |
 | [whisper.cpp server](services/whisper-cpp-server.md) | [OpenAI-compatible](openai-compatible.md) | On your computer | Free | No | `http://127.0.0.1:8178/v1` | `large-v3-turbo` | About 100 languages, auto-detect. Can also run on another computer (start it with --host 0.0.0.0). |
 | [Speaches (faster-whisper)](services/speaches.md) | [OpenAI-compatible](openai-compatible.md) | Your network | Free | No | `http://<computer-address>:8000/v1` | `Systran/faster-whisper-large-v3` | About 100 languages, auto-detect. Fast on a computer with an NVIDIA GPU. |
 | [Groq](services/groq.md) | [OpenAI-compatible](openai-compatible.md) | Cloud | Free tier | Yes | `https://api.groq.com/openai/v1` | `whisper-large-v3-turbo` | Free daily allowance. |
@@ -48,4 +49,4 @@ model. To add one to this list, see [Service cards](../../../CONTRIBUTING.md#ser
 
 - [Troubleshooting](troubleshooting.md): Test fails, slow recognition, nothing pasted.
 - [Sharing presets](../sharing-presets.md): export and import your speech presets.
-- [Languages](../languages.md): the recognition language and hints.
+- [Languages](../languages/README.md): the recognition language and hints.

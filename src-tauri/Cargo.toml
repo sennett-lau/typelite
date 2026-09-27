@@ -54,6 +54,7 @@ sha2 = "0.10"
 fs4 = { version = "0.13", features = ["sync"] }
 # Plan `preset-sharing`: native save and open dialogs for preset Export and Import, called from Rust.
 tauri-plugin-dialog = "2"
+ferrous-opencc = { version = "0.4", default-features = false, features = ["s2t-conversion", "t2s-conversion"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }

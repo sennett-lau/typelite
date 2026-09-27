@@ -16,4 +16,4 @@ thinking_off: Pick a non-thinking (instruct) model.
 3. Use any chat model it lists; the model id is shown on each model's page.
 
 Your text is sent to OpenRouter and the provider that runs the model. See
-[Choosing a model](../../models.md).
+[AI polish models](../../models/ai-polish.md).

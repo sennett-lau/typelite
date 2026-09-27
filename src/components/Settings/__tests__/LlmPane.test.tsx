@@ -558,7 +558,9 @@ describe('LlmPane', () => {
     it('links the Translation group to the language presets guide', () => {
       render(<LlmPane />)
       fireEvent.click(screen.getByRole('button', { name: 'About language presets' }))
-      expect(openUrl).toHaveBeenCalledWith(`${GUIDE}#language-presets`)
+      expect(openUrl).toHaveBeenCalledWith(
+        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/languages/README.md#language-presets',
+      )
     })
   })
 })

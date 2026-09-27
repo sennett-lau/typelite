@@ -13,7 +13,8 @@ You are a voice-to-text assistant. Transform raw speech transcription into clean
 Rules:
 1. PUNCTUATION: Add appropriate punctuation (commas, periods, colons, question marks) where the speech pauses or clauses naturally end. This is the most important rule — raw transcription has no punctuation. The end of the whole output follows rule 7.
 2. CLEANUP: Remove filler words (um, uh, 嗯, 那个, 就是说, like, you know), false starts, and repetitions.
-   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase.
+   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, no, actually Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase, also when the transcript has no punctuation around it.
+   SPELLED WORDS: When the speaker spells a word letter by letter, write the word once with exactly that spelling and drop the spelled letters, wherever they are in the sentence: "email Bovy B-O-V-E-Y" → "email Bovey", "send it to Kristen, K-R-I-S-T-E-N." → "send it to Kristen."
 3. LISTS: When the user enumerates items (signaled by words like 第一/第二, 首先/然后/最后, 一是/二是, first/second/third, etc.), format as a numbered list. CRITICAL: each list item MUST be on its own line.
 4. PARAGRAPHS: When the speech covers multiple distinct topics, separate them with a blank line. Do NOT split a single flowing thought into multiple paragraphs.
    LINE BREAKS: Never put a line break inside a sentence or between sentences about the same topic. Use line breaks only for list items and between clearly separate topics. Most dictations are a single paragraph.
@@ -38,6 +39,9 @@ Output: 我今日要send個report俾老闆，但係啲數仲未check完
 
 Input: "today I had a meeting with the team we discussed the project timeline and the budget"
 Output: Today I had a meeting with the team. We discussed the project timeline and the budget.
+
+Input: "please email Bovy B-O-V-E-Y that we will meet tomorrow at 9 no actually at 10"
+Output: Please email Bovey that we will meet tomorrow at 10
 
 Input: "um can we move the call to Wednesday no wait Thursday morning"
 Output: Can we move the call to Thursday morning?
@@ -76,10 +80,10 @@ const THOUGHT_AWARE_RULES: &str = r#"Treat disfluency conservatively:
 - Remove filler sounds only when they carry no meaning. Preserve meaningful discourse markers.
 - Remove accidental repetition, but preserve intentional repetition used for emphasis.
 - Resolve a false start or explicit correction only when the replacement is unambiguous; discard the replaced alternative and keep the correction.
-- A late correction applies only to the fact it clearly replaces. An ambiguous word such as "actually" is ordinary content and must remain.
+- A late correction applies only to the fact it clearly replaces. "Actually" on its own is ordinary content and must remain; "no, actually" or "no wait" before a replacement is a correction.
 - Omit a side note only when the speaker explicitly retracts or excludes it. Keep ordinary parenthetical content.
 - Preserve explicit ordering cues. When order is uncertain, keep the original order.
-- Preserve uncertain names and described terms as spoken. Do not search, guess, normalize, or invent a likely name."#;
+- Preserve uncertain names and described terms as spoken. Do not search, guess, normalize, or invent a likely name. A name the speaker spelled out is not uncertain: use the spelling."#;
 
 const CUSTOM_PROMPT_MAX_CHARS: usize = 2000;
 const ACTIVE_SCENE_PROMPT_MAX_CHARS: usize = 4000;
@@ -1322,6 +1326,18 @@ mod tests {
         assert!(prompt.contains("LISTS"));
         assert!(prompt.contains("numbered list"));
         assert!(prompt.contains("own line"));
+    }
+
+    /// A spelled-out word is written once with its spelling, and "no, actually" is a
+    /// correction even without punctuation ("email Bovy B-O-V-E-Y … at 9 no actually at 10").
+    #[test]
+    fn test_prompt_has_spelled_word_and_correction_rules() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+        assert!(prompt.contains("SPELLED WORDS"));
+        assert!(prompt.contains("drop the spelled letters"));
+        assert!(prompt.contains("\"X, no, actually Y\""));
+        assert!(prompt.contains("no punctuation around it"));
+        assert!(prompt.contains("A name the speaker spelled out is not uncertain"));
     }
 
     #[test]

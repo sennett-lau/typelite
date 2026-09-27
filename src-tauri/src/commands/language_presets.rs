@@ -500,7 +500,7 @@ mod tests {
             .into_iter()
             .map(|(code, entry)| format!("{code}:{}:v{}", entry.id, entry.version))
             .collect();
-        assert_eq!(plan, ["zh-Hant-HK:cantonese-hong-kong:v2"]);
+        assert_eq!(plan, ["zh-Hant-HK:cantonese-hong-kong:v3"]);
 
         // Off: not checked at all.
         let off = config_with(serde_json::json!({
@@ -509,7 +509,7 @@ mod tests {
         assert!(auto_update_languages(&off).is_empty());
         // Already at the newest version: nothing to do.
         let current = config_with(serde_json::json!({
-            "zh-Hant-HK": {"library_preset": reference("cantonese-hong-kong", 2), "auto_update": true}
+            "zh-Hant-HK": {"library_preset": reference("cantonese-hong-kong", 3), "auto_update": true}
         }));
         assert!(plan_auto_updates(&current, &index).is_empty());
     }

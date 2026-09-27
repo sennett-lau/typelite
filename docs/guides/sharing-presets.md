@@ -32,4 +32,4 @@ someone else.
 - Qwen Cloud speech presets keep their connection; see [Qwen Cloud](speech/qwen-cloud.md).
 
 Language presets (how Typelite writes each language) are shared differently: through the
-repository's catalogue. See [Languages](languages.md).
+repository's catalogue. See [Languages](languages/README.md).
