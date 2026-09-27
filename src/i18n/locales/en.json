@@ -441,8 +441,6 @@
     "askAnything": "Ask Anything",
     "askAnythingDesc": "Voice question, one-shot answer. No chat history.",
     "tryAsk": "Try Ask",
-    "translationMode": "Always translate output",
-    "translationModeDesc": "Translates each dictation result into the target language below.",
     "selectedTextContext": "Use selected text in Ask/polish",
     "selectedTextContextDesc": "Lets Ask and polish summarize, rewrite, or translate selected text. Uses more AI tokens.",
     "targetLanguage": "Translate to",
