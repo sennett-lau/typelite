@@ -5,8 +5,9 @@
 //!   text is dropped at once.
 //! - **Typing:** the native key listener (`native_hotkey.rs`) tells [`SpeedStats`] "one text
 //!   keystroke now" for every key-down that typed text ([`counts_as_typing`]). Which key it was
-//!   is never passed on, stored or logged. [`TypingTracker`] groups keystrokes into bursts and
-//!   adds finished bursts to the totals.
+//!   is never passed on, stored or logged. [`TypingTracker`] counts the gaps between keystrokes:
+//!   a keystroke within [`BURST_GAP`] of the one before adds one keystroke and that gap's time.
+//!   Such keystrokes form a burst, which is added to the totals when it ends.
 //! - **Nudge:** the tracker also follows the current typing stretch. After about a minute of
 //!   typing, a background thread checks [`nudge_allowed`] and shows the nudge in the pill.
 //!
@@ -26,10 +27,9 @@ pub const SPEED_STATS_EVENT: &str = "speed:stats";
 /// Event that shows the typing nudge in the pill (no payload).
 pub const TYPING_NUDGE_EVENT: &str = "typing:nudge";
 
-/// A pause longer than this ends a typing burst.
+/// A pause longer than this is not typing time: it ends the burst, and the keystroke after it
+/// only starts the next one.
 pub const BURST_GAP: Duration = Duration::from_secs(2);
-/// Bursts shorter than this (a quick reply, a stray key) are not counted.
-pub const MIN_BURST: Duration = Duration::from_secs(5);
 /// The usual convention: five keystrokes make one word.
 pub const KEYSTROKES_PER_WORD: f64 = 5.0;
 /// Speaking speed is shown once this much speech was measured.
@@ -222,33 +222,39 @@ pub fn counts_as_typing(event: &crate::native_hotkey::MacKeyEvent, swallowed: bo
 
 // ─── Bursts and stretches ───
 
-/// A typing burst that ended and was long enough to count.
+/// What an ended typing burst adds to the totals: one keystroke for every key that came within
+/// [`BURST_GAP`] of the key before it, and the time of those gaps.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FinishedBurst {
     pub keystrokes: u64,
     pub secs: f64,
 }
 
+/// Counted keys with no pause over [`BURST_GAP`] between them.
 #[derive(Debug, Clone, Copy)]
 struct Burst {
+    /// The first key. Nothing came shortly before it, so it has no gap and adds nothing.
     start: Instant,
+    /// The latest key.
     last: Instant,
-    keystrokes: u64,
+    /// Keys after the first: each adds one keystroke, and its gap to the key before adds time.
+    gaps: u64,
 }
 
 impl Burst {
-    /// The burst as counted, or `None` when it was shorter than [`MIN_BURST`].
+    /// What the burst adds to the totals, or `None` for a lone key (no gap to count).
     fn finish(self) -> Option<FinishedBurst> {
-        let length = self.last.saturating_duration_since(self.start);
-        (length >= MIN_BURST).then(|| FinishedBurst {
-            keystrokes: self.keystrokes,
-            secs: length.as_secs_f64(),
+        // No gap inside a burst is over BURST_GAP, so together the gaps span first to last key.
+        let gaps_time = self.last.saturating_duration_since(self.start);
+        (self.gaps > 0).then(|| FinishedBurst {
+            keystrokes: self.gaps,
+            secs: gaps_time.as_secs_f64(),
         })
     }
 }
 
-/// Groups keystroke times into bursts (for typing speed) and stretches (for the nudge). Holds
-/// only times and a count, never keys.
+/// Counts the gaps between keystrokes (for typing speed) and follows stretches (for the nudge).
+/// Holds only times and a count, never keys.
 #[derive(Debug, Default)]
 pub struct TypingTracker {
     burst: Option<Burst>,
@@ -259,7 +265,7 @@ pub struct TypingTracker {
 /// What one keystroke did to the tracker.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct KeyOutcome {
-    /// The previous burst ended (a gap over [`BURST_GAP`]) and counted.
+    /// The previous burst ended (a gap over [`BURST_GAP`]) and had gaps to add.
     pub finished: Option<FinishedBurst>,
     /// This keystroke started a new burst.
     pub new_burst: bool,
@@ -278,7 +284,7 @@ impl TypingTracker {
 
         match self.burst.as_mut() {
             Some(burst) if now.saturating_duration_since(burst.last) <= BURST_GAP => {
-                burst.keystrokes += 1;
+                burst.gaps += 1;
                 burst.last = now;
                 KeyOutcome::default()
             }
@@ -287,7 +293,7 @@ impl TypingTracker {
                 self.burst = Some(Burst {
                     start: now,
                     last: now,
-                    keystrokes: 1,
+                    gaps: 0,
                 });
                 KeyOutcome {
                     finished,
@@ -889,12 +895,17 @@ mod tests {
         now
     }
 
+    /// Words per minute of what was counted so far, without the threshold for showing it.
+    fn counted_wpm(typing: &TypingTotals) -> f64 {
+        typing.keystrokes as f64 / KEYSTROKES_PER_WORD / typing.minutes
+    }
+
     #[test]
-    fn a_long_gap_ends_a_burst_and_short_bursts_are_ignored() {
+    fn a_long_gap_ends_a_burst_and_each_burst_adds_its_gaps() {
         let mut tracker = TypingTracker::default();
         let mut finished = Vec::new();
         let t0 = Instant::now();
-        // 3 s burst: too short.
+        // 16 keys 200 ms apart: 15 gaps in 3 s.
         let last = type_keys(
             &mut tracker,
             t0,
@@ -902,7 +913,7 @@ mod tests {
             Duration::from_millis(200),
             &mut finished,
         );
-        // 10 s burst after a 3 s gap.
+        // The first key after a 3 s pause ends that burst and starts the next: 51 keys in 10 s.
         let second = last + Duration::from_secs(3);
         let last = type_keys(
             &mut tracker,
@@ -911,13 +922,80 @@ mod tests {
             Duration::from_millis(200),
             &mut finished,
         );
-        assert!(finished.is_empty(), "the short burst must not count");
-        // Still open until the next gap.
+        assert_eq!(finished.len(), 1);
+        assert_eq!(finished[0].keystrokes, 15);
+        assert!(
+            (finished[0].secs - 3.0).abs() < 1e-6,
+            "the pause is not typing time"
+        );
+        // Still open until the next pause.
         assert_eq!(tracker.flush(last + Duration::from_secs(1)), None);
         let burst = tracker.flush(last + Duration::from_secs(3)).expect("burst");
-        assert_eq!(burst.keystrokes, 51);
+        assert_eq!(burst.keystrokes, 50);
         assert!((burst.secs - 10.0).abs() < 1e-6);
         assert!(!tracker.has_open_burst());
+    }
+
+    #[test]
+    fn short_runs_between_pauses_count() {
+        // Short replies and commands: 20 runs of 8 keys 200 ms apart, 3 s between runs.
+        let stats = SpeedStats::load(None);
+        let t0 = Instant::now();
+        let mut now = t0;
+        for run in 0..20u32 {
+            let start = t0 + Duration::from_millis(4400) * run;
+            for key in 0..8u32 {
+                now = start + Duration::from_millis(200) * key;
+                stats.note_keystroke(now);
+            }
+        }
+        assert!(stats.tick(now + Duration::from_secs(3)).changed);
+        // Each run adds its 7 gaps: 140 keystrokes in 28 s, which is 60 WPM.
+        let typing = stats.file().typing;
+        assert_eq!(typing.keystrokes, 140);
+        assert_eq!(typing.bursts, 20);
+        assert!((typing.minutes * 60.0 - 28.0).abs() < 1e-6);
+        assert!((counted_wpm(&typing) - 60.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn a_single_stray_key_counts_nothing() {
+        let stats = SpeedStats::load(None);
+        let t0 = Instant::now();
+        stats.note_keystroke(t0);
+        assert!(stats.has_open_burst());
+        assert_eq!(
+            stats.tick(t0 + Duration::from_secs(3)),
+            TickResult::default()
+        );
+        assert!(!stats.has_open_burst());
+        // Stray keys with long pauses between them never add up either.
+        for i in 1..=10u32 {
+            stats.note_keystroke(t0 + Duration::from_secs(6) * i);
+        }
+        assert!(!stats.tick(t0 + Duration::from_secs(70)).changed);
+        assert_eq!(stats.file().typing, TypingTotals::default());
+    }
+
+    #[test]
+    fn speed_does_not_depend_on_run_length() {
+        // Keys 250 ms apart are 48 WPM, whether the run has 10 keys or 100.
+        for count in [10u32, 100] {
+            let mut tracker = TypingTracker::default();
+            let mut finished = Vec::new();
+            let t0 = Instant::now();
+            let last = type_keys(
+                &mut tracker,
+                t0,
+                count,
+                Duration::from_millis(250),
+                &mut finished,
+            );
+            let burst = tracker.flush(last + Duration::from_secs(3)).expect("burst");
+            assert_eq!(burst.keystrokes, u64::from(count - 1));
+            let wpm = burst.keystrokes as f64 / KEYSTROKES_PER_WORD / (burst.secs / 60.0);
+            assert!((wpm - 48.0).abs() < 1e-6, "{count} keys: {wpm} WPM");
+        }
     }
 
     #[test]
@@ -1038,7 +1116,8 @@ mod tests {
         let result = stats.tick(t0 + Duration::from_secs(10));
         assert!(result.changed);
         assert!(!result.nudge_due);
-        assert_eq!(stats.file().typing.keystrokes, 60);
+        // The first key has no gap before it, so it adds nothing.
+        assert_eq!(stats.file().typing.keystrokes, 59);
     }
 
     #[test]
