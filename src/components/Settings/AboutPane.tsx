@@ -68,9 +68,6 @@ export function AboutPane() {
         <Row label={t('settings.license')}>
           <span className="mono-value">{t('settings.mit')}</span>
         </Row>
-        <Row label={t('settings.framework')}>
-          <span className="mono-value">{t('settings.tauriReact')}</span>
-        </Row>
       </Group>
     </div>
   )
