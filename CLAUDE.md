@@ -97,8 +97,9 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
   −45 dBFS and 12 dB above that floor, and need 200 ms of them (a click gives ~20 ms, a bump
   ~100 ms, a quiet "Yes." ~300 ms). After recognition, built-in whisper drops segments with
   no-speech > 0.6 and average log-prob < −1.0, and `stt/hallucination.rs` drops a transcript
-  that is only a known Whisper phrase when under 1.5 s was voiced. Then the pill shows "Didn't
-  catch that" and nothing is pasted. The log line "speech check: …" gives the numbers.
+  that is only a known Whisper phrase when under 1.5 s was voiced. Then nothing is pasted and the
+  pill ends with the calm fade, not an error: no text and no red, its light drains to grey and it
+  hides (plan `quiet-no-speech`). The log line "speech check: …" gives the numbers.
 - Built-in speech (in-process whisper.cpp, `stt/builtin.rs`): GGML's Metal backend aborts the
   process in its exit-time cleanup if a model is still loaded, so the model is freed on
   `RunEvent::Exit` (and at the end of tests). whisper.cpp is built by cmake at the crate's
