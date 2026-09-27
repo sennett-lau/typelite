@@ -441,8 +441,6 @@
     "askAnything": "Ask Anything",
     "askAnythingDesc": "语音提问，一次回答。不带聊天历史。",
     "tryAsk": "试用 Ask",
-    "translationMode": "始终翻译输出",
-    "translationModeDesc": "每次听写后，都翻译成下方选择的目标语言。",
     "selectedTextContext": "Ask/润色可读取选中文本",
     "selectedTextContextDesc": "用于对选中文本提问、总结、改写或翻译。会增加 AI 用量。",
     "targetLanguage": "翻译为",
