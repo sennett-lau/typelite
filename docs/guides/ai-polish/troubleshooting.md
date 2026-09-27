@@ -11,9 +11,27 @@
 | Built-in: server missing | You built Typelite without `llama-server`; see [Built-in](built-in.md#building-typelite-yourself). |
 | Built-in: first start is slow | The first start after installing or updating takes a minute or two while macOS prepares the GPU code. |
 
-## Empty or very slow answers
+## Slow or empty answers: check thinking first
 
-Usually a thinking model; see [Thinking models](thinking-models.md). Otherwise:
+If polish is slow, especially oddly slow for a short sentence, first check that the model's
+thinking (reasoning) is off. A thinking model reasons step by step before it answers: polish needs
+none of that, and it can spend many seconds on it, or use up its token limit and return empty text.
+
+Signs of a thinking model:
+
+- Test passes, but polish takes several seconds even for one short sentence.
+- Polish returns nothing, or the log (`~/Library/Logs/Typelite/typelite.log`) says the content was
+  empty and reasoning text was used instead.
+- The model's name has "thinking" or "reasoning" in it, or it thinks by default (Qwen3 base
+  models, Qwen3.5, DeepSeek-R1 and others).
+
+Use an instruct (non-thinking) model, or turn thinking off: see
+[AI polish models → Turn off thinking](../models/ai-polish.md#turn-off-thinking) for each server.
+Built-in always runs with thinking off.
+
+## Still slow
+
+If thinking is off:
 
 - A server on another computer may unload the model when idle; for Ollama set
   `OLLAMA_KEEP_ALIVE=-1`.
