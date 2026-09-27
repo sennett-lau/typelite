@@ -6,14 +6,38 @@ use crate::storage;
 use crate::AskHotkeyCache;
 use crate::HotkeyModeCache;
 use crate::HotkeyRoleCache;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::Emitter;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
 
-pub const HOTKEY_SUPERVISOR_RETRY_DELAY_SECS: u64 = 3;
-pub const HOTKEY_SUPERVISOR_FAST_RETRY_LIMIT: u8 = 3;
+/// After a failed registration the supervisor tries again, first after this wait, doubling it
+/// after every failure up to [`HOTKEY_RETRY_MAX_DELAY`], until registration works. The usual
+/// cause is the key listener: its event tap cannot start while the Accessibility grant is
+/// missing, or stale after a rebuild, and starts as soon as the grant is fixed.
+pub const HOTKEY_RETRY_FIRST_DELAY: Duration = Duration::from_secs(1);
+/// The longest wait between two attempts.
+pub const HOTKEY_RETRY_MAX_DELAY: Duration = Duration::from_secs(10);
+/// How often the supervisor looks at its state while nothing needs a retry.
+pub const HOTKEY_SUPERVISOR_IDLE_POLL: Duration = Duration::from_secs(3);
+
+/// The wait before the next attempt after `failures` failed attempts in a row: 1 s, 2 s, 4 s,
+/// 8 s, then 10 s for as long as it keeps failing.
+pub fn hotkey_retry_delay(failures: u32) -> Duration {
+    let doublings = failures.saturating_sub(1).min(31);
+    HOTKEY_RETRY_FIRST_DELAY
+        .saturating_mul(1 << doublings)
+        .min(HOTKEY_RETRY_MAX_DELAY)
+}
+
+/// Whether failure number `failures` is the first one at its wait step (1 s, 2 s, 4 s, 8 s,
+/// 10 s). Only those are logged as warnings, so hours without Accessibility do not flood the
+/// log; the later failures at 10 s go to debug.
+pub fn hotkey_retry_failure_is_new_step(failures: u32) -> bool {
+    failures <= 1 || hotkey_retry_delay(failures) != hotkey_retry_delay(failures - 1)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HotkeySupervisorState {
@@ -27,7 +51,8 @@ pub enum HotkeySupervisorState {
 pub struct HotkeySupervisorSnapshot {
     pub generation: u64,
     pub state: HotkeySupervisorState,
-    pub retry_attempts: u8,
+    /// Failed attempts in a row; sets the wait before the next retry.
+    pub retry_attempts: u32,
     pub last_error: Option<String>,
 }
 
@@ -35,27 +60,35 @@ pub struct HotkeySupervisorSnapshot {
 struct HotkeySupervisorInner {
     generation: u64,
     state: HotkeySupervisorState,
-    retry_attempts: u8,
+    retry_attempts: u32,
     last_error: Option<String>,
 }
 
 #[derive(Clone, Debug)]
-pub struct HotkeySupervisor(Arc<Mutex<HotkeySupervisorInner>>);
+pub struct HotkeySupervisor {
+    inner: Arc<Mutex<HotkeySupervisorInner>>,
+    /// The app is quitting: no more retries. Outside the mutex, so stopping never waits for an
+    /// attempt in progress.
+    stopped: Arc<AtomicBool>,
+}
 
 impl Default for HotkeySupervisor {
     fn default() -> Self {
-        Self(Arc::new(Mutex::new(HotkeySupervisorInner {
-            generation: 1,
-            state: HotkeySupervisorState::Starting,
-            retry_attempts: 0,
-            last_error: None,
-        })))
+        Self {
+            inner: Arc::new(Mutex::new(HotkeySupervisorInner {
+                generation: 1,
+                state: HotkeySupervisorState::Starting,
+                retry_attempts: 0,
+                last_error: None,
+            })),
+            stopped: Arc::new(AtomicBool::new(false)),
+        }
     }
 }
 
 impl HotkeySupervisor {
     pub fn snapshot(&self) -> HotkeySupervisorSnapshot {
-        let guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         HotkeySupervisorSnapshot {
             generation: guard.generation,
             state: guard.state,
@@ -65,16 +98,19 @@ impl HotkeySupervisor {
     }
 
     pub fn begin_registration_attempt(&self) -> u64 {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         guard.state = HotkeySupervisorState::Starting;
         guard.generation
     }
 
+    /// Starts a retry after a failed registration; `None` when nothing failed or the app is
+    /// quitting. There is no attempt limit: it keeps failing only while the cause lasts.
     pub fn begin_retry_registration_attempt(&self) -> Option<u64> {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
-        if guard.state != HotkeySupervisorState::Failed
-            || guard.retry_attempts > HOTKEY_SUPERVISOR_FAST_RETRY_LIMIT
-        {
+        if self.is_stopped() {
+            return None;
+        }
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        if guard.state != HotkeySupervisorState::Failed {
             return None;
         }
         guard.state = HotkeySupervisorState::Starting;
@@ -82,7 +118,7 @@ impl HotkeySupervisor {
     }
 
     pub fn wake_for_settings_change(&self) -> u64 {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         guard.generation = guard.generation.saturating_add(1);
         guard.state = HotkeySupervisorState::Starting;
         guard.retry_attempts = 0;
@@ -91,7 +127,7 @@ impl HotkeySupervisor {
     }
 
     pub fn is_current_generation(&self, generation: u64) -> bool {
-        let guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         guard.generation == generation
     }
 
@@ -100,7 +136,7 @@ impl HotkeySupervisor {
         generation: u64,
         f: impl FnOnce() -> R,
     ) -> Option<R> {
-        let guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         if guard.generation != generation {
             return None;
         }
@@ -108,7 +144,7 @@ impl HotkeySupervisor {
     }
 
     pub fn record_registration_success(&self, generation: u64) {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         if guard.generation != generation {
             return;
         }
@@ -118,7 +154,7 @@ impl HotkeySupervisor {
     }
 
     pub fn record_registration_failure(&self, generation: u64, message: String) {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         if guard.generation != generation {
             return;
         }
@@ -128,7 +164,7 @@ impl HotkeySupervisor {
     }
 
     pub fn record_disabled(&self, generation: u64) {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         if guard.generation != generation {
             return;
         }
@@ -137,7 +173,7 @@ impl HotkeySupervisor {
     }
 
     pub fn disable(&self) -> u64 {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let mut guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
         guard.generation = guard.generation.saturating_add(1);
         guard.state = HotkeySupervisorState::Disabled;
         guard.retry_attempts = 0;
@@ -145,15 +181,24 @@ impl HotkeySupervisor {
         guard.generation
     }
 
+    /// The wait before the next retry ([`hotkey_retry_delay`] of the failures so far); `None`
+    /// when nothing needs a retry.
     pub fn next_retry_delay(&self) -> Option<Duration> {
-        let guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
-        if guard.state == HotkeySupervisorState::Failed
-            && guard.retry_attempts <= HOTKEY_SUPERVISOR_FAST_RETRY_LIMIT
-        {
-            Some(Duration::from_secs(HOTKEY_SUPERVISOR_RETRY_DELAY_SECS))
-        } else {
-            None
+        if self.is_stopped() {
+            return None;
         }
+        let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        (guard.state == HotkeySupervisorState::Failed)
+            .then(|| hotkey_retry_delay(guard.retry_attempts))
+    }
+
+    /// The app is quitting: no new retries, and the retry loop ends at its next wake-up.
+    pub fn stop(&self) {
+        self.stopped.store(true, Ordering::SeqCst);
+    }
+
+    pub fn is_stopped(&self) -> bool {
+        self.stopped.load(Ordering::SeqCst)
     }
 }
 
@@ -2491,28 +2536,75 @@ mod tests {
         assert_eq!(snapshot.retry_attempts, 1);
         assert_eq!(
             supervisor.next_retry_delay(),
-            Some(std::time::Duration::from_secs(
-                HOTKEY_SUPERVISOR_RETRY_DELAY_SECS
-            ))
+            Some(HOTKEY_RETRY_FIRST_DELAY)
         );
     }
 
     #[test]
-    fn hotkey_supervisor_stops_fast_retry_after_configured_attempts() {
-        let supervisor = HotkeySupervisor::default();
+    fn hotkey_retry_delay_doubles_from_one_second_up_to_ten() {
+        let delays: Vec<u64> = (1..=8)
+            .map(|failures| hotkey_retry_delay(failures).as_secs())
+            .collect();
+        assert_eq!(delays, [1, 2, 4, 8, 10, 10, 10, 10]);
+        assert_eq!(hotkey_retry_delay(0), HOTKEY_RETRY_FIRST_DELAY);
+        assert_eq!(hotkey_retry_delay(u32::MAX), HOTKEY_RETRY_MAX_DELAY);
+    }
 
-        for attempt in 0..=HOTKEY_SUPERVISOR_FAST_RETRY_LIMIT {
-            let generation = supervisor.begin_registration_attempt();
-            supervisor
-                .record_registration_failure(generation, format!("registration failed {attempt}"));
+    #[test]
+    fn hotkey_retry_failures_warn_once_per_delay_step() {
+        let warned: Vec<bool> = (1..=8).map(hotkey_retry_failure_is_new_step).collect();
+        assert_eq!(warned, [true, true, true, true, true, false, false, false]);
+        assert!(!hotkey_retry_failure_is_new_step(u32::MAX));
+    }
+
+    #[test]
+    fn hotkey_supervisor_keeps_retrying_with_a_growing_delay() {
+        // For example the key listener while the Accessibility grant is stale: it fails for
+        // hours, and the supervisor must still try again once the grant is fixed.
+        let supervisor = HotkeySupervisor::default();
+        let generation = supervisor.begin_registration_attempt();
+        supervisor.record_registration_failure(generation, "tap failed".to_string());
+
+        let mut delays = Vec::new();
+        for _ in 0..20 {
+            delays.push(supervisor.next_retry_delay().expect("a retry").as_secs());
+            let generation = supervisor
+                .begin_retry_registration_attempt()
+                .expect("retries never give up");
+            assert_eq!(supervisor.snapshot().state, HotkeySupervisorState::Starting);
+            supervisor.record_registration_failure(generation, "tap failed".to_string());
         }
 
-        let snapshot = supervisor.snapshot();
-        assert_eq!(
-            snapshot.retry_attempts,
-            HOTKEY_SUPERVISOR_FAST_RETRY_LIMIT + 1
-        );
+        assert_eq!(delays[..6], [1, 2, 4, 8, 10, 10]);
+        assert!(delays[6..].iter().all(|&delay| delay == 10));
+        assert_eq!(supervisor.snapshot().retry_attempts, 21);
+
+        // A retry that works resets the wait for the next failure.
+        let generation = supervisor.begin_retry_registration_attempt().unwrap();
+        supervisor.record_registration_success(generation);
         assert_eq!(supervisor.next_retry_delay(), None);
+        assert_eq!(supervisor.begin_retry_registration_attempt(), None);
+        supervisor.record_registration_failure(generation, "tap failed".to_string());
+        assert_eq!(
+            supervisor.next_retry_delay(),
+            Some(HOTKEY_RETRY_FIRST_DELAY)
+        );
+    }
+
+    #[test]
+    fn hotkey_supervisor_stop_ends_retries() {
+        let supervisor = HotkeySupervisor::default();
+        let generation = supervisor.snapshot().generation;
+        supervisor.record_registration_failure(generation, "tap failed".to_string());
+        assert!(!supervisor.is_stopped());
+
+        supervisor.stop();
+
+        assert!(supervisor.is_stopped());
+        assert_eq!(supervisor.next_retry_delay(), None);
+        assert_eq!(supervisor.begin_retry_registration_attempt(), None);
+        // Clones share the flag (Tauri state and the retry loop hold clones).
+        assert!(supervisor.clone().is_stopped());
     }
 
     #[test]
