@@ -311,8 +311,11 @@ fn route_pipeline_voice_intent(
 
 /// Whether the AI request translates, and into which language. Plan
 /// `ask-translate-and-live-questions`: a selection translation goes into the language named in
-/// speech, else the active translation language (after any Switch language presses). Everything
-/// else keeps the configured behaviour.
+/// speech, else, on a Translate run, the active translation language (after any Switch language
+/// presses). Everything else translates only on a Translate run: `config` is the run's own
+/// copy, and only the Translate shortcut sets its `translate_enabled`
+/// (`apply_pipeline_start_options`). The saved value is always false (plan
+/// `translation-language-presets`), so Dictate does not translate its result.
 fn request_translation(
     intent: &crate::voice_intent::VoiceIntent,
     utterance: &str,
@@ -781,6 +784,8 @@ impl TranslationOperationState {
     }
 }
 
+/// The run's own copy of the config. The Translate shortcut turns `translate_enabled` on for
+/// this run only; the saved config always has it off (plan `translation-language-presets`).
 fn apply_pipeline_start_options(
     mut config: storage::AppConfig,
     options: PipelineStartOptions,

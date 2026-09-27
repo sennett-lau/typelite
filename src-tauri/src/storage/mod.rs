@@ -1111,6 +1111,11 @@ pub struct AppConfig {
     pub system_scene_overrides: Vec<SystemSceneOverride>,
     pub active_scene: Option<ActiveScene>,
     pub family_scene_assignments: Vec<FamilySceneAssignment>,
+    /// Whether a run translates its result. Never true on disk; only a run's own copy sets it
+    /// (Translate shortcut, `apply_pipeline_start_options` in `pipeline.rs`). It used to store
+    /// the "Always translate output" switch, removed on 2026-09-27 (plan
+    /// `translation-language-presets`), so `normalize_translate_enabled` resets a stored `true`.
+    /// The field stays so older files still load and a run can still turn it on.
     pub translate_enabled: bool,
     pub target_lang: String,
     pub translation: TranslationConfig,
@@ -1720,12 +1725,29 @@ impl AppConfig {
         self.translation.normalize(&self.target_lang);
         self.translation.normalize_languages();
         self.target_lang = self.translation.active_target.clone();
+        self.normalize_translate_enabled();
         self.normalize_insertion_strategy();
         self.normalize_paste_shortcut();
         self.normalize_windows_sendinput_newline_mode();
         self.normalize_hotkey_settings();
         self.recompute_recording_limit_mirror();
         self.input_device = self.input_device.trim().to_string();
+    }
+
+    /// Plan `translation-language-presets` (2026-09-27): the "Always translate output" switch is
+    /// gone, and Dictate no longer translates its result; the Translate shortcut does that.
+    /// `translate_enabled` is never true on disk; only a run's own copy sets it (Translate
+    /// shortcut). This resets a `true` saved by an older version, when the config is loaded and
+    /// before every save. A run's copy never goes through `normalize_values`, so a Translate run
+    /// keeps its `true`.
+    fn normalize_translate_enabled(&mut self) {
+        if self.translate_enabled {
+            tracing::info!(
+                "\"Always translate output\" was removed: the saved setting is reset and Dictate \
+                 no longer translates (the Translate shortcut does)"
+            );
+            self.translate_enabled = false;
+        }
     }
 
     fn normalize_insertion_strategy(&mut self) {
@@ -2372,6 +2394,17 @@ fn stored_languages_need_migration(value: &serde_json::Value) -> bool {
         })
 }
 
+/// True when a stored config still says `translate_enabled: true`, saved by the removed "Always
+/// translate output" switch (plan `translation-language-presets`). Loading resets it (see
+/// `AppConfig::normalize_translate_enabled`); this makes the reset config be written back at
+/// once, so the file on disk no longer says true.
+fn stored_translate_flag_needs_reset(value: &serde_json::Value) -> bool {
+    value
+        .get("translate_enabled")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
+}
+
 /// True when a stored config predates the current built-in preset templates.
 fn stored_presets_need_migration(value: &serde_json::Value) -> bool {
     value
@@ -2407,7 +2440,8 @@ impl ConfigManager {
                         .and_then(|value| value.as_bool())
                         .unwrap_or(false);
                     migrated = stored_presets_need_migration(&val)
-                        || stored_languages_need_migration(&val);
+                        || stored_languages_need_migration(&val)
+                        || stored_translate_flag_needs_reset(&val);
                     AppConfig::from_stored_value_with_onboarding(val, onboarding_completed)
                         .unwrap_or_else(|_| AppConfig::new_install_default())
                 }
