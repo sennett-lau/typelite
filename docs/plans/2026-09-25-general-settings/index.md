@@ -1,12 +1,14 @@
 # General settings — Shortcuts, Recording, Output
 
 Settings → General is regrouped into three groups that match the rest of Settings: **Shortcuts**
-(all five, each with a one-line description and its keys drawn as key caps), **Recording** (how
-the shortcut starts and stops, microphone, live input level, mute other audio) and **Output**
-(paste or type). It is a regrouping and restyling of settings that already exist; no new
-backend behaviour. Open [mock.html](mock.html) and pick "Settings → General" for the exact look.
+(Dictate, Translate with its Switch language key, Ask anything and Cancel, each with a one-line
+description and its keys drawn as key caps), **Recording** (how the shortcut starts and stops,
+microphone, live input level, mute other audio) and **Output** (paste or type). It is a
+regrouping and restyling of settings that already exist; no new backend behaviour. Open
+[mock.html](mock.html) and pick "Settings → General" for the exact look; the Switch language
+sub-row came later and is described under Layout.
 
-Status: building — 2026-09-25
+Status: building — 2026-09-27
 
 ## Goals
 
@@ -28,7 +30,8 @@ Status: building — 2026-09-25
 SHORTCUTS                         Click a shortcut, then press the keys
   Dictate          Speak and paste polished text          [Fn]            + 
   Translate        Speak and paste it in English          [Fn][Left Shift] +
-  Switch language  While translating, next language       [Shift]  (reset)
+  └ Switch language  While translating, next language     [Shift]  (reset)
+                     English → 日本語
   Ask anything     Ask a question, or edit selected text  [Fn][Space] (Try) +
   Cancel           Stops a recording or run               [Esc]   (read-only)
 RECORDING
@@ -41,6 +44,15 @@ OUTPUT
                                                                (Pasting | Typing)
 ```
 
+Translate and its Switch language key form one block (macOS only; Windows and Linux have no
+switch key, so Translate is a plain row there). The hairline goes between blocks, never between
+Translate and its sub-row. The sub-row sits under Translate's label and help, indented (36 pt on
+the left, 14 pt on the right, 10 pt at the bottom, no extra top padding), with a small L-shaped
+guide line (1.5 pt, rounded corner, the key-cap line colour) from under "Translate" to its own
+label. Its key field and reset button sit in the same column as Translate's field. Its label is
+22 pt narrower than a row label, as much as its extra indent, so on a narrow window the row and
+its sub-row move their key fields under the label at the same width.
+
 ## Key decisions
 
 | Decision | Reason |
@@ -50,6 +62,8 @@ OUTPUT
 | Shortcut keys are drawn as key caps inside the clickable recorder field; the field keeps the text for screen readers | Matches the mock and Home, and the field still says "click me". |
 | Extra bindings (up to three), the ⋯ menu, + add and Try Ask stay | Existing features; the redesign must not drop them. |
 | Switch language keeps its reset button and shows only on macOS | As today (plan [`translate-controls`](../2026-09-25-translate-controls/index.md)). |
+| Switch language is a sub-row inside the Translate block, not a row of its own; its rules (recorded by pressing keys, may be part of the Translate shortcut but not another shortcut, reset to Shift) stay as they were | It only works while a Translate recording runs, so it belongs to Translate, and the section reads as four blocks: Dictate, Translate, Ask anything, Cancel. |
+| A second help line in tertiary grey names the Translate languages the key moves through, in list order ("English → 日本語"), with the names the pill shows; it shows only with two or more | It says what the key will do with the user's own languages; with one language there is nothing to switch to. |
 | Cancel is a read-only row showing Esc | Escape is fixed by plan [`pill-follows-cursor-and-escape`](../2026-09-25-pill-follows-cursor-and-escape/index.md); nothing to configure. |
 | "Start and stop" maps to the existing `hotkey_mode` (`toggle` / `hold`); toggle is listed first | Both modes exist in the backend and apply to Dictate and Translate. |
 | The existing microphone picker and its level meter are reused unchanged, with the row label "Microphone" | The meter already runs in Settings while idle; no new code path. |
@@ -61,12 +75,17 @@ OUTPUT
 
 - A separate always-on level meter outside the picker: not needed, the picker already has one.
 - Bare key caps without a field: harder to see that a row is clickable to record.
+- Switch language as its own row between Translate and Ask anything (the first version): it read
+  as a fifth feature, though it only works while Translate records.
+- Both keys inside one Translate row, stacked under small captions ("Start and stop", "Switch
+  language"): the row grows taller than its neighbours, and the captions are a pattern no other
+  row uses.
 
 ## Parts
 
 | File | Covers |
 |---|---|
-| [mock.html](mock.html) | Visual reference; choose "Settings → General". |
+| [mock.html](mock.html) | Visual reference; choose "Settings → General". It predates the Switch language sub-row (see Layout). |
 
 ## Open questions
 
