@@ -25,6 +25,7 @@ not into formal written Chinese. Users who want formal written Chinese edit its 
 - An edited prompt can never break the output: the output contract stays in code.
 - Every translation path uses the language's settings: spoken Translate, "Always translate
   output", highlight-and-translate, and Ask's translate operations.
+  Superseded in part (2026-09-27): "Always translate output" is removed, see Key decisions.
 
 ## Non-goals
 
@@ -48,6 +49,7 @@ not into formal written Chinese. Users who want formal written Chinese edit its 
 | Text equal to the built-in default is stored as "no custom text" | "Custom" means the user really changed something, and later default improvements still reach them. |
 | Defaults come from the backend through one command, not copied into the frontend | One source for the prompt text and the Settings prefill. |
 | Logs name the preset id and the language code of each translation, never the text | Same privacy rule as the rest of the log. |
+| 2026-09-27: the "Always translate output" switch is removed. Dictate never translates by itself; the Translate shortcut translates (with or without highlighted text), and a spoken "translate this into …" on highlighted text still works. The saved `translate_enabled` is reset to false on load and on every save; only a Translate run's own copy of the config turns it on | The owner's decision: the Translate shortcut is the way to translate, so Dictate should never translate. |
 
 ## Parts
 

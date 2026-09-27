@@ -50,6 +50,10 @@ A collapsed **Advanced** holds Extra fields (JSON, placeholder `{"reasoning_effo
    web), which is a macOS permission, not a stored setting.
 5. **Translation** group: languages as chips (default first, up to three, **+ Add**; clicking a
    chip makes it the default, × removes it), and the "Always translate output" switch.
+   Superseded in part by
+   [translation-language-presets](../2026-09-26-translation-language-presets/index.md)
+   (2026-09-27): the switch is removed; Dictate never translates by itself, the Translate
+   shortcut does.
 6. **Advanced** (collapsed): use selected text in Ask and polish; custom instructions (2000
    characters).
 
