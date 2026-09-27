@@ -63,8 +63,9 @@ models/
 /output/
 .worktrees/
 
-# Claude Code agent worktrees
-.claude/
+# Claude Code agent worktrees and personal settings (.claude/rules and settings.json are shared)
+.claude/worktrees/
+.claude/settings.local.json
 
 # Local-only agent notes
 CLAUDE.local.md
