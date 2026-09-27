@@ -8,6 +8,10 @@ speech setup from [two-tab-speech](../2026-09-25-two-tab-speech/index.md). The v
 
 Status: building — 2026-09-25
 
+Superseded in part by
+[translation-language-presets](../2026-09-26-translation-language-presets/index.md)
+(2026-09-27: the "Always translate output" switch is removed from Settings → AI → Translation).
+
 ## Goals
 
 - One-click local AI polish on Apple Silicon Macs: pick a model, it downloads, is checked and

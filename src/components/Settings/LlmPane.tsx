@@ -30,8 +30,8 @@ const STYLE_KEY: Record<PolishStyle, string> = {
  * Settings → AI (plan `ai-polish-setup`): "AI polish uses" (Built-in or your server or API key,
  * with their details), then Polish (clean-up switch, style cards, match the app, the last app and
  * browser access), Translation (one row per language with its instructions sheet, plan
- * `language-prompt-library`; always translate) and a collapsed Advanced (selected text, custom
- * instructions).
+ * `language-prompt-library`; the languages the Translate shortcut uses) and a collapsed Advanced
+ * (selected text, custom instructions).
  */
 export function LlmPane() {
   const config = useAppStore((s) => s.config)
@@ -262,22 +262,15 @@ export function LlmPane() {
           </button>
         }
       >
-        {/* The languages are used by the Translate shortcut too, so they always show,
-            not only when "Always translate output" is on. */}
+        {/* The languages the Translate shortcut translates into. There is no "Always
+            translate output" switch: Dictate never translates by itself (plan
+            `translation-language-presets`). */}
         <LanguageRows
           config={config}
           status={libraryStatus}
           onChange={(translation) => updateConfig({ translation })}
           onEdit={setEditingLanguage}
         />
-        <Row label={t('settings.translationMode')} help={t('settings.translationModeDesc')}>
-          <Toggle
-            checked={config.translate_enabled}
-            onChange={(checked) => updateConfig({ translate_enabled: checked })}
-            label={t('settings.translationMode')}
-            hideLabel
-          />
-        </Row>
       </Group>
 
       <div className="mx-1 mt-4">

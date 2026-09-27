@@ -413,6 +413,11 @@ export interface AppConfig {
   system_scene_overrides: SystemSceneOverride[]
   active_scene: ActiveScene | null
   family_scene_assignments: FamilySceneAssignment[]
+  /**
+   * Never true on disk; only a run's own copy sets it (Translate shortcut). It used to store the
+   * removed "Always translate output" switch, and the backend resets it to false on load and
+   * save (plan `translation-language-presets`). Kept so the config shape stays the same.
+   */
   translate_enabled: boolean
   target_lang: string
   translation: TranslationConfig

@@ -530,8 +530,7 @@ describe('LlmPane', () => {
       expect(screen.queryByText('Gmail')).not.toBeInTheDocument()
     })
 
-    it('shows one row per translation language next to translation when enabled', () => {
-      mockAppStore.config.translate_enabled = true
+    it('shows one row per translation language', () => {
       mockAppStore.config.translation = { targets: ['en'], active_target: 'en' }
 
       render(<LlmPane />)
@@ -541,11 +540,19 @@ describe('LlmPane', () => {
       expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
     })
 
-    it('shows the translation languages even when always-translate is off', () => {
-      mockAppStore.config.translate_enabled = false
-
+    // Plan `translation-language-presets` (2026-09-27): no "Always translate output" switch.
+    // The Translation group holds only the languages the Translate shortcut uses.
+    it('has no always-translate switch, only the languages list', () => {
       render(<LlmPane />)
-      expect(screen.getByRole('list', { name: 'Translation languages' })).toBeInTheDocument()
+
+      const group = screen.getByRole('region', { name: 'Translation' })
+      const list = within(group).getByRole('list', { name: 'Translation languages' })
+      expect(within(list).getAllByRole('listitem')).toHaveLength(3)
+      // The only switches left are the languages' own on/off switches.
+      const switches = within(group).getAllByRole('switch')
+      expect(switches).toHaveLength(3)
+      for (const toggle of switches) expect(list).toContainElement(toggle)
+      expect(screen.queryByText('Always translate output')).not.toBeInTheDocument()
     })
 
     it('links the Translation group to the language presets guide', () => {
