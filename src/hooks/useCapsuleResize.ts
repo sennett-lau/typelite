@@ -64,6 +64,11 @@ export function translateRecordingSize({ nameWidth, dots }: TranslatePillMetrics
  * flash: a short label over the aurora sweep.
  */
 export const WORKING_PILL_SIZE: CapsuleSize = { width: 140, height: PILL_HEIGHT }
+/**
+ * Plan `quiet-no-speech`: the calm fade after a run that heard no speech. No content, a little
+ * narrower than the working pill it follows.
+ */
+export const QUIET_PILL_SIZE: CapsuleSize = { width: 104, height: PILL_HEIGHT }
 /** An error message (icon and one line). */
 export const ERROR_PILL_SIZE: CapsuleSize = { width: 224, height: PILL_HEIGHT }
 /** A setup message ("Set up speech recognition first") with its "Set up" button. */
@@ -115,9 +120,9 @@ export const PILL_HIDE_MS = 220
 
 /**
  * The pill's own size (without the context menu or window padding) for a capsule state.
- * `capsuleState` is the pipeline state, `error`, `done` (the brief flash after pasting) or
- * `copy` (the Copy pill, sized by `copyOffer`). `askWithSelection` widens the Ask pill for its
- * highlight chip.
+ * `capsuleState` is the pipeline state, `error`, `done` (the brief flash after pasting), `quiet`
+ * (the calm fade after a run that heard no speech), `nudge` or `copy` (the Copy pill, sized by
+ * `copyOffer`). `askWithSelection` widens the Ask pill for its highlight chip.
  */
 export function getPillSize(
   capsuleState: string,
@@ -134,6 +139,8 @@ export function getPillSize(
       return NUDGE_PILL_SIZE
     case 'error':
       return errorHasAction ? SETUP_ERROR_SIZE : ERROR_PILL_SIZE
+    case 'quiet':
+      return QUIET_PILL_SIZE
     case 'recording':
       if (activeVoiceMode !== 'translate') return DICTATION_RECORDING_SIZE
       return translateRecordingSize(translate)
@@ -162,6 +169,8 @@ export interface CapsuleVisibilityInput {
   copyPill?: boolean
   /** Plan `typing-speed-and-nudge`: the typing nudge shows. */
   typingNudge?: boolean
+  /** Plan `quiet-no-speech`: the calm fade after a run that heard no speech. */
+  quietFade?: boolean
 }
 
 /** The idle capsule is always hidden; it shows only while working, or for an error or menu. */
@@ -173,12 +182,14 @@ export function getCapsuleVisibility({
   doneFlash = false,
   copyPill = false,
   typingNudge = false,
+  quietFade = false,
 }: CapsuleVisibilityInput): boolean {
   return (
     contextMenuOpen ||
     capsuleExpanded ||
     hasError ||
     doneFlash ||
+    quietFade ||
     copyPill ||
     typingNudge ||
     pipelineState !== 'idle'
@@ -186,8 +197,10 @@ export function getCapsuleVisibility({
 }
 
 /**
- * The state the pill shows: an error first, then the done flash, the Copy pill or the typing
- * nudge once the pipeline is idle, else the pipeline state.
+ * The state the pill shows: an error first, then the done flash, the calm fade (plan
+ * `quiet-no-speech`), the Copy pill or the typing nudge once the pipeline is idle, else the
+ * pipeline state. A live run always wins over the idle-only states, so a new run replaces them
+ * at once.
  */
 export function getCapsuleState(
   pipelineState: string,
@@ -195,9 +208,11 @@ export function getCapsuleState(
   doneFlash: boolean,
   copyPill = false,
   typingNudge = false,
+  quietFade = false,
 ): string {
   if (hasError) return 'error'
   if (doneFlash && pipelineState === 'idle') return 'done'
+  if (quietFade && pipelineState === 'idle') return 'quiet'
   if (copyPill && pipelineState === 'idle') return 'copy'
   if (typingNudge && pipelineState === 'idle') return 'nudge'
   return pipelineState
@@ -371,11 +386,19 @@ export function getSizeForState(
   copyOffer: CopyOffer | null = null,
   askWithSelection = false,
   typingNudge = false,
+  quietFade = false,
 ): CapsuleSize {
   if (contextMenuOpen) return { width: 220, height: 220 }
   if (hasError) return getPillSize('error', activeVoiceMode, errorHasAction, translate)
   if (expanded) return { width: 220, height: 90 }
-  const capsuleState = getCapsuleState(state, false, doneFlash, copyOffer !== null, typingNudge)
+  const capsuleState = getCapsuleState(
+    state,
+    false,
+    doneFlash,
+    copyOffer !== null,
+    typingNudge,
+    quietFade,
+  )
   return getPillSize(
     capsuleState,
     activeVoiceMode,
@@ -422,6 +445,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const copyOffer = useAppStore((s) => s.copyOffer)
   const askWithSelection = useAppStore((s) => s.askSelectionPreview !== null)
   const typingNudge = useAppStore((s) => s.typingNudge)
+  const quietFade = useAppStore((s) => s.quietFade)
   const anchor = useRef<CapsuleAnchor | null>(null)
   /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
   const anchorMonitor = useRef<string | null>(null)
@@ -445,6 +469,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     doneFlash,
     copyPill: copyOffer !== null,
     typingNudge,
+    quietFade,
   })
 
   useEffect(() => {
@@ -460,6 +485,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       copyOffer,
       askWithSelection,
       typingNudge,
+      quietFade,
     )
     const windowWidth = size.width + 2 * CAPSULE_WINDOW_PADDING
     const windowHeight = size.height + 2 * CAPSULE_WINDOW_PADDING
@@ -563,6 +589,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     copyOffer,
     askWithSelection,
     typingNudge,
+    quietFade,
     shouldShow,
     setContextMenuReady,
   ])
@@ -630,5 +657,6 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     copyOffer,
     askWithSelection,
     typingNudge,
+    quietFade,
   )
 }

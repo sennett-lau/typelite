@@ -2035,6 +2035,32 @@ body,
     opacity: 0;
   }
 }
+/* Plan `quiet-no-speech`: a run that heard no speech. The done flash's calm twin: one brief soft
+   grey flash (up to 0.3 by 80 ms, gone by 560 ms) while the light that was showing drains to
+   grey (`AURORA_DRAIN` in Capsule/index.tsx) and stops where it is. */
+.aurora-quiet {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55) 0%, transparent 78%);
+  animation: aurora-quiet 0.56s linear;
+}
+@keyframes aurora-quiet {
+  0%,
+  7% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.aurora-draining .aurora-blob,
+.aurora-draining .aurora-sweep {
+  animation-play-state: paused;
+}
 @keyframes pill-copy-label-in {
   from {
     opacity: 0;
@@ -2081,8 +2107,13 @@ body,
   }
   .aurora-blob,
   .aurora-sweep,
-  .aurora-flash {
+  .aurora-flash,
+  .aurora-quiet {
     animation: none;
+  }
+  /* The calm fade (plan `quiet-no-speech`) has no flash: the pill only fades. */
+  .aurora-quiet {
+    display: none;
   }
   .aurora-glow {
     opacity: 0.35 !important;

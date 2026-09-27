@@ -5,7 +5,6 @@ import { CapsuleError } from '../CapsuleError'
 import * as tauri from '../../../lib/tauri'
 import { useAppStore } from '../../../stores/appStore'
 import { getSizeForState, SETUP_ERROR_SIZE, ERROR_PILL_SIZE } from '../../../hooks/useCapsuleResize'
-import { translate } from '../../../test-utils/i18nMock'
 
 vi.mock('../../../lib/tauri')
 
@@ -63,14 +62,15 @@ describe('capsule setup messages', () => {
     expect(useAppStore.getState().pipelineError).toBeNull()
   })
 
-  it('shows "Didn\'t catch that" briefly when a run heard no speech', () => {
+  // A run that heard no speech no longer comes here: it ends with the calm fade (plan
+  // `quiet-no-speech`, CapsuleQuietFade.test.tsx).
+  it('hides an ordinary error after 2.5 s', () => {
     vi.useFakeTimers()
-    useAppStore.getState().setPipelineError(translate('capsule.errors.stt_no_speech_detected'))
+    useAppStore.getState().setPipelineError('STT failed')
     render(<CapsuleError />)
 
-    expect(screen.getByText("Didn't catch that")).toBeInTheDocument()
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
-    act(() => vi.advanceTimersByTime(1400))
+    expect(screen.getByText('STT failed')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(2400))
     expect(useAppStore.getState().pipelineError).not.toBeNull()
     act(() => vi.advanceTimersByTime(200))
     expect(useAppStore.getState().pipelineError).toBeNull()
