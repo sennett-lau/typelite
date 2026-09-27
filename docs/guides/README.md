@@ -17,8 +17,7 @@ speech with AI polish on a GPU computer on your network.
 |---|---|---|
 | Everything on your computer, nothing to install (Apple Silicon) | [Built-in](speech/built-in.md) | [Built-in](ai-polish/built-in.md) |
 | Faster, with a GPU computer on your network | [Speaches or whisper.cpp](speech/openai-compatible.md#a-gpu-computer-on-your-network) | [Ollama on another computer](ai-polish/services/ollama-network.md) |
-| Your language written as you speak it, for example Cantonese, with a GPU computer on your network | [Qwen3-ASR](speech/services/qwen3-asr.md) (see [the Cantonese guide](languages/cantonese.md)) | [Ollama on another computer](ai-polish/services/ollama-network.md), with your [language preset](languages/README.md#language-presets) |
-| No local models (an Intel Mac, or little memory) | A cloud service with your own key, such as [Groq](speech/services/groq.md) | A cloud service with your own key, such as [Groq](ai-polish/services/groq.md) |
+| No local models (an Intel Mac, or little memory) | A cloud service with your own key, such as [Groq](speech/services/groq.md), [OpenAI](speech/services/openai.md)... | A cloud service with your own key, such as [Groq](ai-polish/services/groq.md), [OpenAI](speech/services/openai.md)... |
 
 Cloud services are only used when you enter one with your own key. They then receive your audio or
 text.
