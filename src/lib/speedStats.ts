@@ -1,6 +1,6 @@
 /**
  * Plan `typing-speed-and-nudge`: speaking and typing speed as the backend reports them. A value is
- * null until there is enough data (10 s of speech, 1 minute of active typing).
+ * null until there is enough data (10 s of speech, 30 s of active typing).
  */
 export interface SpeedSummary {
   speakingWpm: number | null
