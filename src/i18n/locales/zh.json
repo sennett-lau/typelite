@@ -451,8 +451,6 @@
     "license": "许可证",
     "mit": "MIT",
     "github": "源代码",
-    "framework": "构建于",
-    "tauriReact": "Tauri 2 · React · Rust",
     "view": "查看",
     "maxRecordingDuration": "单次录音时长",
     "accessibilityPermission": "macOS 辅助功能",
