@@ -2,7 +2,8 @@
 // Plan `docs-structure`: rewrites the generated language preset catalogue. Plan `model-guides`:
 // validates the language guides in docs/guides/languages/ and writes their index in
 // docs/guides/languages/README.md (the Languages page, which is not a guide). The speech and AI
-// service tables are written by hand..
+// service tables are written by hand; this script checks their format (every step folder has the
+// same pages and a Services table with the same columns) and every relative link in the docs.
 //
 //   node scripts/docs-cards.mjs          validate, then rewrite the generated tables
 //   node scripts/docs-cards.mjs --check  validate, and fail if a generated table is out of date
@@ -244,6 +245,144 @@ export function renderCatalogue(root = REPO_ROOT) {
   return out.join('\n').trim()
 }
 
+// ─── Guide steps: speech, AI polish, and any later one (CONTRIBUTING.md#guide-steps) ───
+
+export const STEPS = [
+  { id: 'speech', dir: 'docs/guides/speech', models: 'docs/guides/models/speech-recognition.md' },
+  { id: 'ai-polish', dir: 'docs/guides/ai-polish', models: 'docs/guides/models/ai-polish.md' },
+]
+export const STEP_PAGES = ['README.md', 'troubleshooting.md']
+export const STEP_README_SECTIONS = ['## Connections', '## Services', '## More']
+export const SERVICES_HEADER =
+  '| Service | Runs | Cost | API key | Address (example) | Model (example) | Notes |'
+const SERVICE_RUNS = ['On your computer', 'Your computer or network', 'Your network', 'Cloud']
+const SERVICE_COSTS = ['Free', 'Free tier', 'Paid']
+// Paths the app adds to an address itself.
+const ADDRESS_ENDINGS = ['/audio/transcriptions', '/chat/completions']
+
+/** Splits a Markdown table row into trimmed cells. */
+const cells = (row) => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+
+/** Checks one Services table row; returns its problems. */
+export function validateServiceRow(row) {
+  const errors = []
+  const parts = cells(row)
+  if (parts.length !== 7) return [`row needs 7 cells, has ${parts.length}: ${row}`]
+  const [service, runs, cost, key, address] = parts
+  const name = service.replace(/^\[([^\]]+)\].*$/, '$1')
+  if (!/^\[[^\]]+\]\([^)]+\)$/.test(service)) errors.push(`${name}: Service must be a link to its setup`)
+  if (!SERVICE_RUNS.includes(runs)) errors.push(`${name}: Runs must be one of ${SERVICE_RUNS.join(', ')}`)
+  if (!SERVICE_COSTS.includes(cost)) errors.push(`${name}: Cost must be one of ${SERVICE_COSTS.join(', ')}`)
+  if (!['Yes', 'No'].includes(key)) errors.push(`${name}: API key must be Yes or No`)
+  if (runs === 'Cloud' && key !== 'Yes') errors.push(`${name}: a cloud service needs a key`)
+  if (address !== '—') {
+    const url = address.replace(/^`|`$/g, '')
+    if (!/^`https?:\/\/[^\s`]+`$/.test(address)) errors.push(`${name}: Address must be \`http(s)://…\` or —`)
+    else if (url.endsWith('/')) errors.push(`${name}: Address must not end with /`)
+    else if (ADDRESS_ENDINGS.some((ending) => url.endsWith(ending))) {
+      errors.push(`${name}: Address must stop before the path Typelite adds`)
+    }
+  }
+  return errors
+}
+
+/** Checks one step folder: its pages, its README sections and its Services table. */
+export function validateStep(step, root = REPO_ROOT) {
+  const problems = []
+  for (const page of STEP_PAGES) {
+    if (!existsSync(join(root, step.dir, page))) problems.push(`${step.dir}/${page}: file is missing`)
+  }
+  if (!existsSync(join(root, step.models))) problems.push(`${step.models}: file is missing`)
+  for (const entry of existsSync(join(root, step.dir)) ? readdirSync(join(root, step.dir)) : []) {
+    if (!entry.endsWith('.md')) problems.push(`${step.dir}/${entry}: a step folder holds only .md pages`)
+  }
+  const readmePath = join(root, step.dir, 'README.md')
+  if (!existsSync(readmePath)) return problems
+  const lines = readFileSync(readmePath, 'utf8').split('\n')
+  const where = `${step.dir}/README.md`
+  for (const heading of STEP_README_SECTIONS) {
+    if (!lines.includes(heading)) problems.push(`${where}: missing section "${heading}"`)
+  }
+  const start = lines.indexOf(SERVICES_HEADER)
+  if (start < 0) {
+    problems.push(`${where}: the Services table must start with ${SERVICES_HEADER}`)
+    return problems
+  }
+  let rows = 0
+  for (const row of lines.slice(start + 2)) {
+    if (!row.startsWith('|')) break
+    rows++
+    for (const error of validateServiceRow(row)) problems.push(`${where}: ${error}`)
+  }
+  if (rows === 0) problems.push(`${where}: the Services table has no rows`)
+  return problems
+}
+
+// ─── Links ───
+
+/** Markdown files whose relative links are checked. */
+export const LINKED_DOCS = ['README.md', 'CONTRIBUTING.md', 'docs/guides', 'docs/dev', 'presets/languages', '.claude/skills']
+
+/** GitHub's anchor for a heading. */
+export function headingAnchor(heading) {
+  return heading
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N} _-]/gu, '')
+    .replace(/ /g, '-')
+}
+
+function markdownFiles(root, path) {
+  const full = join(root, path)
+  if (!existsSync(full)) return []
+  if (path.endsWith('.md')) return [path]
+  return readdirSync(full, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory()
+      ? markdownFiles(root, `${path}/${entry.name}`)
+      : entry.name.endsWith('.md')
+        ? [`${path}/${entry.name}`]
+        : [],
+  )
+}
+
+function anchorsOf(text) {
+  const seen = new Map()
+  const anchors = new Set()
+  for (const line of text.replace(/```[\s\S]*?```/g, '').split('\n')) {
+    const match = /^#{1,6} (.+)$/.exec(line)
+    if (!match) continue
+    const base = headingAnchor(match[1])
+    const count = seen.get(base) ?? 0
+    seen.set(base, count + 1)
+    anchors.add(count === 0 ? base : `${base}-${count}`)
+  }
+  return anchors
+}
+
+/** Every relative link (and its #anchor) in the checked docs must point at something that exists. */
+export function checkLinks(root = REPO_ROOT) {
+  const problems = []
+  const cache = new Map()
+  const anchors = (path) => {
+    if (!cache.has(path)) cache.set(path, anchorsOf(readFileSync(path, 'utf8')))
+    return cache.get(path)
+  }
+  for (const file of LINKED_DOCS.flatMap((path) => markdownFiles(root, path))) {
+    const text = readFileSync(join(root, file), 'utf8').replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
+    for (const match of text.matchAll(/\]\(([^)\s]+)\)/g)) {
+      const link = match[1]
+      if (/^[a-z]+:/.test(link)) continue
+      const [target, anchor] = link.split('#')
+      const full = target ? join(root, dirname(file), decodeURI(target)) : join(root, file)
+      if (!existsSync(full)) problems.push(`${file}: broken link ${link}`)
+      else if (anchor && full.endsWith('.md') && !anchors(full).has(anchor)) {
+        problems.push(`${file}: no heading for #${anchor} in ${link}`)
+      }
+    }
+  }
+  return problems
+}
+
 // ─── Markers ───
 
 /** Replaces the text between the markers of `id` in `text`; throws when they are missing. */
@@ -286,6 +425,8 @@ export function buildDocs(root = REPO_ROOT) {
       update(LANGUAGE_GUIDES.table, LANGUAGE_GUIDES.id, renderLanguageGuides(guides))
     }
   }
+  for (const step of STEPS) problems.push(...validateStep(step, root))
+  problems.push(...checkLinks(root))
   return { problems, files }
 }
 
@@ -304,7 +445,7 @@ function main() {
     const problems = checkDocs()
     for (const problem of problems) console.error(`error: ${problem}`)
     if (problems.length > 0) process.exit(1)
-    console.log('Language guides are valid and the generated tables are up to date.')
+    console.log('Docs are valid: step folders, Services tables, language guides, links and generated tables.')
     return
   }
   const { problems, files } = buildDocs()

@@ -1,11 +1,15 @@
 /**
  * Plan `docs-structure`: the generated language preset catalogue is up to date. Plan
  * `model-guides`: the language guides are valid and their index matches them. Fix a failure with
- * `npm run docs:cards`.
+ * `npm run docs:cards`. Step folders (speech, AI polish) share one format, and every relative
+ * link resolves.
  */
 import { describe, expect, it } from 'vitest'
 import {
   checkDocs,
+  headingAnchor,
+  STEPS,
+  validateServiceRow,
   LANGUAGE_GUIDES,
   parseCard,
   renderLanguageGuides,
@@ -98,5 +102,39 @@ ${body}`
       expect(table).toContain('| [Cantonese (Hong Kong)](cantonese.md) |')
       expect(table).toContain('(../../../presets/languages/cantonese-hong-kong/preset.md)')
     })
+  })
+
+  describe('step folders', () => {
+    const row = (runs = 'Cloud', key = 'Yes', address = '`https://api.example.com/v1`') =>
+      `| [Example](openai-compatible.md#cloud-services) | ${runs} | Paid | ${key} | ${address} | \`m\` | |`
+
+    it('lists speech and AI polish', () => {
+      expect(STEPS.map((step) => step.id)).toEqual(['speech', 'ai-polish'])
+    })
+
+    it('accepts a well-formed Services row', () => {
+      expect(validateServiceRow(row())).toEqual([])
+      expect(validateServiceRow(row('On your computer', 'No', '—'))).toEqual([])
+    })
+
+    it('rejects bad values, a keyless cloud service and an address with the added path', () => {
+      expect(validateServiceRow(row('Somewhere'))).toContain(
+        'Example: Runs must be one of On your computer, Your computer or network, Your network, Cloud',
+      )
+      expect(validateServiceRow(row('Cloud', 'No'))).toContain(
+        'Example: a cloud service needs a key',
+      )
+      expect(
+        validateServiceRow(row('Cloud', 'Yes', '`https://api.example.com/v1/chat/completions`')),
+      ).toContain('Example: Address must stop before the path Typelite adds')
+      expect(validateServiceRow('| a | b |')[0]).toMatch(/needs 7 cells/)
+    })
+  })
+
+  it('makes GitHub heading anchors', () => {
+    expect(headingAnchor('Slow or empty answers: check thinking first')).toBe(
+      'slow-or-empty-answers-check-thinking-first',
+    )
+    expect(headingAnchor('llama.cpp server')).toBe('llamacpp-server')
   })
 })

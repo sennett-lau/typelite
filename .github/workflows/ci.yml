@@ -64,7 +64,7 @@ jobs:
       - name: Format
         run: npx prettier --check src
 
-      - name: Docs (service cards and generated tables)
+      - name: Docs (format, links and generated tables)
         run: npm run docs:check
 
       - name: Language presets
