@@ -171,7 +171,7 @@ The images are rendered from the app's own components and the website's demos; s
 
 ## Contributing
 
-Code, service cards, language presets and docs are all welcome. Start with the
+Code, services, language presets and docs are all welcome. Start with the
 [Contributing guide](CONTRIBUTING.md).
 
 ## Licence

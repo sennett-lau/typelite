@@ -16,8 +16,8 @@ speech with AI polish on a GPU computer on your network.
 | You want… | Speech recognition | AI polish |
 |---|---|---|
 | Everything on your computer, nothing to install (Apple Silicon) | [Built-in](speech/built-in.md) | [Built-in](ai-polish/built-in.md) |
-| Faster, with a GPU computer on your network | [Speaches or whisper.cpp](speech/openai-compatible.md#a-gpu-computer-on-your-network) | [Ollama on another computer](ai-polish/services/ollama-network.md) |
-| No local models (an Intel Mac, or little memory) | A cloud service with your own key, such as [Groq](speech/services/groq.md), [OpenAI](speech/services/openai.md)... | A cloud service with your own key, such as [Groq](ai-polish/services/groq.md), [OpenAI](speech/services/openai.md)... |
+| Faster, with a GPU computer on your network | [Speaches or whisper.cpp](speech/openai-compatible.md#a-gpu-computer-on-your-network) | [Ollama](ai-polish/openai-compatible.md#ollama) or the [llama.cpp server](ai-polish/openai-compatible.md#llamacpp-server) on that computer |
+| No local models (an Intel Mac, or little memory) | A cloud service with your own key, such as [Groq, OpenAI, Qwen Cloud](speech/README.md#services) | A cloud service with your own key, such as [Groq, OpenAI, OpenRouter](ai-polish/README.md#services) |
 
 Cloud services are only used when you enter one with your own key. They then receive your audio or
 text.

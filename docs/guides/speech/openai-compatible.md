@@ -60,9 +60,9 @@ and expects a JSON answer with the text, and with `verbose_json` the language it
 
 ## Running your own server
 
-### whisper.cpp on your computer (macOS)
+### whisper.cpp
 
-Needs [Homebrew](https://brew.sh). From a copy of this repository:
+On macOS, with [Homebrew](https://brew.sh), from a copy of this repository:
 
 ```sh
 bash scripts/setup-local-whisper.sh
@@ -91,13 +91,15 @@ whisper-server -m ~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin \
 ```
 </details>
 
-With Built-in available, a separate whisper.cpp server on the same computer is rarely needed; it
-is useful to share one server with several computers.
+On Linux or Windows, build whisper.cpp and start `whisper-server` with
+`--inference-path /v1/audio/transcriptions`. With Built-in available, a separate whisper.cpp
+server on the same computer is rarely needed; it is useful to share one server with several
+computers.
 
 ### A GPU computer on your network
 
 A computer with an NVIDIA GPU recognises speech several times faster than a laptop. Run
-[Speaches](services/speaches.md) with Docker, or build whisper.cpp with CUDA and start
+[Speaches](#speaches) with Docker, or build whisper.cpp with CUDA and start
 `whisper-server` with `--host 0.0.0.0`. Then use `http://<that-computer's-address>:<port>/v1`.
 
 - Allow the port through that computer's firewall, for your local network only. On Windows,
@@ -107,7 +109,7 @@ A computer with an NVIDIA GPU recognises speech several times faster than a lapt
 
 ### Qwen3-ASR
 
-[Qwen3-ASR](services/qwen3-asr.md) is the speech model to use when whisper does not write your
+[Qwen3-ASR](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) (Apache-2.0) is the speech model to use when whisper does not write your
 language the way you speak it, for example Cantonese (see the
 [language guides](../languages/README.md#language-guides)). It runs on llama.cpp's `llama-server`,
 the same C++ runtime family as whisper.cpp, or on vLLM. Both answer Typelite's transcription
@@ -163,3 +165,35 @@ qwen-asr-serve Qwen/Qwen3-ASR-1.7B --host 0.0.0.0 --port 8180 \
 
 Either way, to serve other computers use `--host 0.0.0.0` and allow the port through the firewall
 for your local network only.
+
+### Speaches
+
+[Speaches](https://github.com/speaches-ai/speaches) is an OpenAI-compatible server built on
+faster-whisper. Run it with Docker on a computer with an NVIDIA GPU:
+
+```sh
+docker run -d --name speaches --gpus=all -p 8000:8000 \
+  -v hf-hub-cache:/home/ubuntu/.cache/huggingface/hub \
+  ghcr.io/speaches-ai/speaches:latest-cuda
+```
+
+Use address `http://<that-computer's-address>:8000/v1` and model `Systran/faster-whisper-large-v3`.
+
+### LocalAI
+
+[LocalAI](https://localai.io/) serves many kinds of models behind the OpenAI API, including
+Whisper. Install a Whisper model in LocalAI, use address `http://127.0.0.1:8080/v1` (or the
+address of the computer it runs on) and the name of that model.
+
+## Cloud services
+
+Each needs your own API key, and your audio is sent to that service. Enter the address and model
+from [Speech recognition → Services](README.md#services).
+
+| Service | Getting a key |
+|---|---|
+| Groq | Sign in at [console.groq.com](https://console.groq.com), open **API Keys**, **Create API Key**. Free daily allowance. |
+| OpenAI | Sign in at [platform.openai.com](https://platform.openai.com), add a payment method under **Billing**, then **API keys** → **Create new secret key**. Billed per minute of audio. |
+| Mistral | Sign in at [console.mistral.ai](https://console.mistral.ai), choose a plan under **Billing**, then create a key under **API Keys**. |
+| Together AI | Sign in at [api.together.ai](https://api.together.ai); the key is under **Settings → API Keys**. |
+| Qwen Cloud | Its own connection; see [Qwen Cloud](qwen-cloud.md). |

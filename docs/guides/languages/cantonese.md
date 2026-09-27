@@ -22,7 +22,7 @@ preset.
 
 | Step | Model | Why |
 |---|---|---|
-| Speech recognition | [Qwen3-ASR-1.7B](../speech/services/qwen3-asr.md) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
+| Speech recognition | [Qwen3-ASR-1.7B](../speech/openai-compatible.md#qwen3-asr) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
 | AI polish | Qwen3 4B Instruct 2507 or Qwen3.5 4B, or what fits your hardware ([AI polish](../models/ai-polish.md)) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. |
 | Language preset | [Cantonese (Hong Kong)](../../../presets/languages/cantonese-hong-kong/preset.md) | Tells polish how Hongkongers write, and lets Typelite recognise that you spoke Cantonese. |
 
@@ -42,7 +42,7 @@ was said.
 
 1. **Run Qwen3-ASR** on your Mac or on a computer with an NVIDIA GPU, with llama.cpp's
    `llama-server` (on Windows, the CUDA build from llama.cpp's releases; see
-   [Qwen3-ASR](../speech/services/qwen3-asr.md) for vLLM and other options):
+   [Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) for vLLM and other options):
 
    ```sh
    llama-server -hf ggml-org/Qwen3-ASR-1.7B-GGUF:Q8_0 --host 127.0.0.1 --port 8180 -c 4096 -np 1
