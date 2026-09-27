@@ -120,6 +120,74 @@ describe('useTauriEvents', () => {
     expect(useAppStore.getState().speechHealth).toBeNull()
   })
 
+  // Plan `quiet-no-speech`: no speech is not an error; the pill ends with the calm fade.
+  it('ends a run that heard no speech with the calm fade instead of an error', async () => {
+    useAppStore.setState({
+      pipelineError: null,
+      pipelineErrorAction: null,
+      quietFade: false,
+      speechHealth: null,
+      aiHealth: null,
+    })
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:error')).toBe(true))
+
+    act(() => {
+      eventListeners.get('pipeline:error')?.({
+        payload: { code: 'stt_no_speech_detected', retry_count: 0 },
+      })
+    })
+
+    const state = useAppStore.getState()
+    expect(state.quietFade).toBe(true)
+    expect(state.pipelineError).toBeNull()
+    expect(state.pipelineErrorAction).toBeNull()
+    // As before, hearing nothing says nothing about the servers.
+    expect(state.speechHealth).toBeNull()
+    expect(state.aiHealth).toBeNull()
+
+    // An older plain-text payload means the same.
+    act(() => {
+      useAppStore.setState({ quietFade: false })
+      eventListeners.get('pipeline:error')?.({ payload: 'No speech detected' })
+    })
+    expect(useAppStore.getState().quietFade).toBe(true)
+    expect(useAppStore.getState().pipelineError).toBeNull()
+  })
+
+  it('clears the calm fade when a new run starts', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:state')).toBe(true))
+
+    for (const start of ['preparing', 'recording', 'ask_recording']) {
+      act(() => {
+        useAppStore.setState({ quietFade: true })
+        eventListeners.get('pipeline:state')?.({ payload: start })
+      })
+      expect(useAppStore.getState().quietFade).toBe(false)
+    }
+
+    // Reaching idle keeps it: the Ask flow goes idle just before it reports no speech.
+    act(() => {
+      useAppStore.setState({ quietFade: true })
+      eventListeners.get('pipeline:state')?.({ payload: 'idle' })
+    })
+    expect(useAppStore.getState().quietFade).toBe(true)
+  })
+
+  it('still shows other errors in the error pill, without the calm fade', async () => {
+    useAppStore.setState({ pipelineError: null, quietFade: false })
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:error')).toBe(true))
+
+    act(() => {
+      eventListeners.get('pipeline:error')?.({ payload: { code: 'stt_connection_failed' } })
+    })
+
+    expect(useAppStore.getState().pipelineError).toBe('capsule.errors.stt_connection_failed')
+    expect(useAppStore.getState().quietFade).toBe(false)
+  })
+
   it('mirrors preset test results saved by the backend', async () => {
     render(<HookHarness />)
     await waitFor(() => expect(eventListeners.has('preset:verification')).toBe(true))

@@ -68,6 +68,7 @@ export function useTauriEvents() {
     setLastContext,
     setCopyOffer,
     setPipelineError,
+    setQuietFade,
     setAccessibilityTrusted,
     applyPersistedConfigPatch,
     setHotkeyRegistrationError,
@@ -110,8 +111,9 @@ export function useTauriEvents() {
         useAppStore.getState().setAskSelectionPreview(null)
       }
       if (state === 'preparing' || state === 'recording' || state === 'ask_recording') {
-        // Clear any previous error when starting a new pipeline run
+        // Clear any previous error, or the calm fade, when starting a new pipeline run
         setPipelineError(null)
+        setQuietFade(false)
         run.polished = false
         run.aiFailed = false
       }
@@ -160,7 +162,13 @@ export function useTauriEvents() {
     addListener<void>(TYPING_NUDGE_EVENT, () => useAppStore.getState().setTypingNudge(true))
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
       const capsuleErrorKey = capsuleErrorKeyFromPayload(payload)
-      setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), setupPaneForError(capsuleErrorKey))
+      if (capsuleErrorKey === 'stt_no_speech_detected') {
+        // Plan `quiet-no-speech`: hearing no speech is not an error. The pill ends with the calm
+        // fade (no text, no red) instead of the error pill; nothing is pasted either way.
+        setQuietFade(true)
+      } else {
+        setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), setupPaneForError(capsuleErrorKey))
+      }
       const endpoint = endpointForError(capsuleErrorKey)
       if (endpoint === 'speech') recordSpeechResult(false)
       if (endpoint === 'ai') {
@@ -236,6 +244,7 @@ export function useTauriEvents() {
     setLastContext,
     setCopyOffer,
     setPipelineError,
+    setQuietFade,
     setAccessibilityTrusted,
     applyPersistedConfigPatch,
     setHotkeyRegistrationError,
