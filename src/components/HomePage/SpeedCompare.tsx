@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { listen } from '@tauri-apps/api/event'
 import { getSpeedStats } from '../../lib/tauri'
+import { useAppStore } from '../../stores/appStore'
 import {
   EMPTY_SPEED,
   formatTimesFaster,
@@ -51,7 +52,18 @@ function useSpeedSummary(): SpeedSummary {
   return summary
 }
 
-function Stat({ label, value, testId }: { label: string; value: string | null; testId: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+  testId,
+}: {
+  label: string
+  value: string | null
+  /** Shown quietly instead of "—" while there is no value yet. */
+  hint?: string
+  testId: string
+}) {
   const { t } = useTranslation()
   return (
     <div className="flex min-w-0 flex-col gap-0.5" data-testid={testId}>
@@ -59,7 +71,16 @@ function Stat({ label, value, testId }: { label: string; value: string | null; t
         {label}
       </span>
       <span className="text-[24px] font-bold leading-tight tracking-[-0.01em] text-text-primary tabular-nums">
-        {value ?? '—'}
+        {value === null && hint ? (
+          <span
+            className="text-[12.5px] font-medium tracking-normal text-text-tertiary"
+            data-testid={`${testId}-hint`}
+          >
+            {hint}
+          </span>
+        ) : (
+          (value ?? '—')
+        )}
         {value !== null && (
           <small className="ml-[3px] text-[12px] font-semibold text-text-secondary">
             {t('home.speedCompare.wpm')}
@@ -72,11 +93,14 @@ function Stat({ label, value, testId }: { label: string; value: string | null; t
 
 /**
  * Plan `typing-speed-and-nudge`: the top row of Insights. "Speaking 142 WPM · Typing 48 WPM ·
- * 3.0× faster than typing". A side without enough data shows "—", and the badge then hides.
+ * 3.0× faster than typing". Speaking shows "—" until 10 s of speech were measured. Typing shows
+ * a quiet "Keep typing…" until 30 s of typing were counted, or "—" while measuring is off. The
+ * badge hides until both sides have a number.
  */
 export function SpeedCompare() {
   const { t } = useTranslation()
   const summary = useSpeedSummary()
+  const measuringTyping = useAppStore((s) => s.config.measure_typing_speed)
   const speaking = formatWpm(summary.speakingWpm)
   const typing = formatWpm(summary.typingWpm)
   const faster = formatTimesFaster(summary)
@@ -87,7 +111,12 @@ export function SpeedCompare() {
       data-testid="speed-compare"
     >
       <Stat label={t('home.speedCompare.speaking')} value={speaking} testId="speed-speaking" />
-      <Stat label={t('home.speedCompare.typing')} value={typing} testId="speed-typing" />
+      <Stat
+        label={t('home.speedCompare.typing')}
+        value={typing}
+        hint={measuringTyping ? t('home.speedCompare.keepTyping') : undefined}
+        testId="speed-typing"
+      />
       {faster !== null && (
         <div
           className="justify-self-end rounded-[10px] bg-accent-light px-2.5 py-1.5 text-center text-[13px] font-bold leading-tight text-accent"
