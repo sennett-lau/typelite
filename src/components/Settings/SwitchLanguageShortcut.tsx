@@ -7,7 +7,6 @@ import {
   hotkeyBindingIdentity,
 } from '../../stores/appStore'
 import type { ShortcutBinding } from '../../stores/appStore'
-import { Row } from '../ui/Group'
 import { HotkeyRecorder } from './ShortcutBindingList'
 import { switchLanguageLabel, switchLanguageVariants } from '../../lib/switchLanguage'
 
@@ -15,6 +14,11 @@ interface SwitchLanguageShortcutProps {
   binding: ShortcutBinding | null
   /** Every other configured shortcut; the switch key must not repeat one of them. */
   otherBindings: ShortcutBinding[]
+  /**
+   * Names of the Translate languages the key moves through, in that order. With two or more
+   * they show as a second help line: "English → 日本語".
+   */
+  languageNames: string[]
   onChange: (binding: ShortcutBinding | null) => void
 }
 
@@ -23,10 +27,14 @@ interface SwitchLanguageShortcutProps {
  * pressing keys like the other shortcuts. It only listens while a Translate recording runs, so a
  * bare key such as Shift is fine. It may be part of the Translate shortcut (Fn + Shift with Shift);
  * it may not be the same as another shortcut.
+ *
+ * Plan `general-settings`: because it only works while translating, it is drawn as a sub-row of
+ * Translate (a `.row-sub`, passed as Translate's `subRow`), not as a shortcut of its own.
  */
 export function SwitchLanguageShortcut({
   binding,
   otherBindings,
+  languageNames,
   onChange,
 }: SwitchLanguageShortcutProps) {
   const { t } = useTranslation()
@@ -48,10 +56,14 @@ export function SwitchLanguageShortcut({
   }
 
   return (
-    <Row
-      label={t('settings.switchLanguageHotkey')}
-      help={t('settings.generalPane.switchLanguageDesc')}
-    >
+    <div className="row-sub">
+      <div className="row-label pt-1">
+        <span>{t('settings.switchLanguageHotkey')}</span>
+        <span className="row-help">{t('settings.generalPane.switchLanguageDesc')}</span>
+        {languageNames.length >= 2 && (
+          <span className="row-help text-text-tertiary">{languageNames.join(' → ')}</span>
+        )}
+      </div>
       <div
         data-hotkey-role="switchLanguage"
         className="flex w-[280px] max-w-full min-w-0 items-start gap-1"
@@ -78,6 +90,6 @@ export function SwitchLanguageShortcut({
           <RotateCcw size={13} />
         </button>
       </div>
-    </Row>
+    </div>
   )
 }
