@@ -119,6 +119,7 @@
     "speedCompare": {
       "speaking": "说话",
       "typing": "打字",
+      "keepTyping": "继续打字…",
       "wpm": "WPM",
       "times": "{{value}}×",
       "fasterThanTyping": "比打字快"

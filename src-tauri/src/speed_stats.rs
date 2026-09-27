@@ -446,7 +446,8 @@ impl StatsFile {
     }
 }
 
-/// What Insights shows. `None` means "not enough data yet" (shown as "—").
+/// What Insights shows. `None` means "not enough data yet": "—" for speaking, and a quiet
+/// "Keep typing…" for typing while measuring is on.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpeedSummary {
