@@ -1,5 +1,6 @@
 pub mod builtin;
 pub mod capabilities;
+pub mod chinese_script;
 pub mod config;
 pub mod hallucination;
 pub mod hardware;
@@ -60,6 +61,12 @@ pub trait SttProvider: Send + Sync {
     /// (`en`, `zh`, `yue`), for the polish router. `None` when the provider does not say.
     fn detected_language(&self) -> Option<String> {
         None
+    }
+    /// Plan `qwen3-asr-support`: whether the last `disconnect` got a Qwen3-ASR answer (its text
+    /// started with `language <Name><asr_text>`). Only such a transcript is written in the
+    /// characters of the Chinese language the router picks; other engines keep their script.
+    fn answered_as_qwen3_asr(&self) -> bool {
+        false
     }
 }
 

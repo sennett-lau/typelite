@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::error::AppError;
 
 use super::silence::{accept_transcript, log_decision, NoSpeechGuard, VoiceActivity};
-use super::transcript::normalize_transcript;
+use super::transcript::{normalize_transcript, split_language_tag};
 use super::{SttConfig, SttProvider, TranscriptEvent};
 
 /// Configuration for a Whisper-compatible HTTP file-upload STT provider.
@@ -42,6 +42,8 @@ fn remember_verbose_json_refused(endpoint: &str) {
 struct Answer {
     text: Option<String>,
     language: Option<String>,
+    /// Plan `qwen3-asr-support`: the text carried Qwen3-ASR's language tag.
+    qwen3_asr: bool,
 }
 
 /// Max audio buffer: ~24 MB PCM ≈ 12.5 min at 16kHz 16-bit mono.
@@ -57,6 +59,7 @@ pub struct WhisperCompatProvider {
     client: reqwest::Client,
     upload_probe: Option<crate::timing::UploadProbe>,
     detected_language: Option<String>,
+    answered_as_qwen3_asr: bool,
 }
 
 impl WhisperCompatProvider {
@@ -72,6 +75,7 @@ impl WhisperCompatProvider {
             client,
             upload_probe: None,
             detected_language: None,
+            answered_as_qwen3_asr: false,
         }
     }
 
@@ -134,6 +138,7 @@ impl SttProvider for WhisperCompatProvider {
 
     async fn disconnect(&mut self) -> Result<Option<String>, AppError> {
         self.detected_language = None;
+        self.answered_as_qwen3_asr = false;
         let config = match &self.stt_config {
             Some(c) => c.clone(),
             None => return Ok(None),
@@ -196,6 +201,7 @@ impl SttProvider for WhisperCompatProvider {
         }
         let answer = result?;
         self.detected_language = answer.language.clone();
+        self.answered_as_qwen3_asr = answer.qwen3_asr;
         if let Some(language) = &answer.language {
             tracing::info!(
                 "{}: detected language {language}",
@@ -219,6 +225,10 @@ impl SttProvider for WhisperCompatProvider {
 
     fn detected_language(&self) -> Option<String> {
         self.detected_language.clone()
+    }
+
+    fn answered_as_qwen3_asr(&self) -> bool {
+        self.answered_as_qwen3_asr
     }
 }
 
@@ -281,10 +291,14 @@ impl WhisperCompatProvider {
                     if status.is_success() {
                         let v: serde_json::Value = serde_json::from_str(&body)
                             .map_err(|e| AppError::Config(e.to_string()))?;
-                        let text = normalize_transcript(v["text"].as_str().unwrap_or(""));
+                        // Plan `qwen3-asr-support`: Qwen3-ASR servers put the language in
+                        // front of the text; a `language` field, when present, wins.
+                        let (body, tagged) = split_language_tag(v["text"].as_str().unwrap_or(""));
+                        let text = normalize_transcript(body);
                         let language = v["language"]
                             .as_str()
-                            .and_then(super::normalize_detected_language);
+                            .and_then(super::normalize_detected_language)
+                            .or_else(|| tagged.and_then(super::normalize_detected_language));
 
                         tracing::info!(
                             "{} transcription: {} chars",
@@ -295,6 +309,7 @@ impl WhisperCompatProvider {
                         return Ok(Answer {
                             text: (!text.is_empty()).then_some(text),
                             language,
+                            qwen3_asr: tagged.is_some(),
                         });
                     } else if status.as_u16() >= 500 && attempt < 2 {
                         let truncate_at = body
@@ -541,12 +556,35 @@ mod tests {
         .await;
         let provider = transcribe_with(&url, None).await;
         assert_eq!(provider.detected_language().as_deref(), Some("en"));
+        assert!(!provider.answered_as_qwen3_asr());
         assert_eq!(verbose_hits.load(std::sync::atomic::Ordering::SeqCst), 1);
 
         // A fixed language needs no detection: plain JSON, no detected language.
         let provider = transcribe_with(&url, Some("en")).await;
         assert_eq!(provider.detected_language(), None);
         assert_eq!(verbose_hits.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    /// Plan `qwen3-asr-support`: a Qwen3-ASR answer loses its language tag, and the tag's
+    /// language counts as detected when the answer has no `language` field.
+    #[tokio::test]
+    async fn a_qwen3_asr_language_tag_is_removed_and_used_as_the_language() {
+        let (url, _) = language_server(
+            (
+                200,
+                r#"{"text":"language Cantonese<asr_text>Hello there","usage":{"type":"tokens"}}"#,
+            ),
+            (200, r#"{"text":"language English<asr_text>Hello there"}"#),
+        )
+        .await;
+        let provider = transcribe_with(&url, None).await;
+        assert_eq!(provider.detected_language().as_deref(), Some("yue"));
+        assert!(provider.answered_as_qwen3_asr());
+
+        // With a fixed language the tag is still removed.
+        let provider = transcribe_with(&url, Some("en")).await;
+        assert_eq!(provider.detected_language().as_deref(), Some("en"));
+        assert!(provider.answered_as_qwen3_asr());
     }
 
     #[tokio::test]
