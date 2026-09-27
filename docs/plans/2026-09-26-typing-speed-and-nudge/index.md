@@ -6,7 +6,7 @@ in another app, a small glass toast where the pill appears suggests the Dictate 
 most once a day. The visual reference is [mock.html](mock.html) (the "Speaking / Typing / N×
 faster" row at the top of Insights, and the "Typing nudge" toast: switch it on in the mock).
 
-Status: done — 2026-09-26
+Status: done — 2026-09-27
 
 ## Goals
 
@@ -30,10 +30,12 @@ Status: done — 2026-09-26
 | The final text is counted and dropped at once; only run count, word total and minutes are kept | No dictation content is stored (hard constraint). |
 | Typing is measured from the existing key listener (a `CGEventTap` under Accessibility) | No new permission and no second listener. |
 | Only key-downs that type text count: letters, digits, punctuation, Space; not modifiers, arrows, function keys, key repeats, shortcuts with ⌘ or ⌃, keys Typelite swallowed, or keys Typelite itself sent | Counts what the user types, not navigation, shortcuts or Typelite's own paste. |
-| Typing is grouped into bursts: a gap over 2 s ends a burst, bursts under 5 s are ignored; typing WPM = (keystrokes / 5) / active minutes | The standard "five keystrokes = one word"; pauses and single shortcuts do not drag the number down. |
+| Typing counts gaps: a counted key within 2 s of the previous counted key adds one keystroke and that gap's time; a longer pause, and a lone key, add nothing. Typing WPM = (keystrokes / 5) / active minutes | Short replies, commands and fixes count too, pauses do not drag the number down, and the speed does not depend on how long a run is. "Five keystrokes = one word" is the standard. |
 | Totals live in a small `speed-stats.json` in the app data folder, written by a background thread | Survives restarts; the key listener thread never touches the disk. |
 | "Measure typing speed" (default on) and "Reset speed stats" sit in Settings → System → Insights, next to "Clear insights data" of plan `speed-by-preset` | The user decides, and every Insights data control is in one place; when off nothing is counted and there is no nudge. |
-| The row shows "—" for a side with too little data (under 10 s of speech, or under 1 min of active typing) and hides the badge | A number from a few seconds would be misleading. |
+| With too little data the row shows "—" for speaking (under 10 s of speech) and a quiet grey "Keep typing…" for typing (under 30 s of counted typing; "—" while measuring is off), and hides the badge | A number from a few seconds would be misleading, and a bare dash on the typing side looked broken. |
+| Each burst added to the totals writes one debug log line with only its keystroke count and seconds, from the background thread | The log shows that typing is measured without holding any content, and the key listener thread never touches the disk. |
+| When the key listener cannot start (Accessibility missing, or stale after a rebuild), the shortcut supervisor retries until it works: after 1 s, doubling to 10 s; it stops when the app quits | A stale grant once left shortcuts and typing dead for hours after 3 quick retries; now they come back within about 10 s of the grant being fixed, without a restart. |
 | The nudge is a pill state in the capsule window, so it appears where the pill does and never takes focus | Reuses the non-activating panel and its screen placement. |
 | Nudge after about 60 s of mostly continuous typing (pauses under 5 s) in another app, at most once per local day, never during a run, before onboarding is finished, or while Typelite's own window has focus | Helpful at the right moment, never in the way. |
 | The nudge offers "Don't show again" (kept in `speed-stats.json`) and ✕, and hides by itself after 8 s | Easy to silence for good. |
@@ -43,7 +45,7 @@ Status: done — 2026-09-26
 | File | Covers |
 |---|---|
 | [mock.html](mock.html) | Interactive reference for the Insights row and the nudge toast. |
-| [measuring.md](measuring.md) | How words and keystrokes are counted, the burst maths, what is stored, permissions. |
+| [measuring.md](measuring.md) | How words and keystrokes are counted, the gap maths, what is stored and logged, permissions and the listener retry. |
 | [nudge.md](nudge.md) | When the typing nudge shows, how it looks, and how it is dismissed. |
 
 ## Open questions
