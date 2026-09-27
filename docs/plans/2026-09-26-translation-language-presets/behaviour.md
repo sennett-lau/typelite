@@ -22,6 +22,11 @@ How per-language translation settings are stored, used and edited. Back to [inde
 - `ai_preset_id` must name a saved AI preset. When the config is loaded or saved, an id that no
   longer exists is cleared and the log says so (id and language code only). A language whose
   fields are both `null` is removed from the map.
+- `translate_enabled` (top level, next to `translation`) is never true on disk; only a run's own
+  copy of the config sets it (the Translate shortcut). It used to hold the "Always translate
+  output" switch, removed on 2026-09-27: a stored `true` is reset to false when the config is
+  loaded, the file is written back at once, and every save writes false. The field stays so
+  older files still load.
 
 ## Which preset serves a request
 
@@ -30,6 +35,8 @@ How per-language translation settings are stored, used and edited. Back to [inde
   shortcut, "Always translate output", highlight-and-translate (with or without speech) and Ask's
   "translate this into X". The target is the one the run ends with, so a Switch language press
   during the recording picks the new target's preset.
+  Superseded in part (2026-09-27, see [index](index.md)): "Always translate output" is removed,
+  so Dictate never translates by itself. The other paths are unchanged.
 - Everything else (polish, Ask answers, edits of selected text, the live-question check) keeps
   the AI polish preset.
 - The preset's address, model, API key (Keychain, under the preset id) and extra request fields
