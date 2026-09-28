@@ -1,7 +1,7 @@
 # AI polish models
 
 Which model to use for AI polish, by hardware and by language. How to connect each one is in
-[AI polish](../ai-polish/README.md); measured numbers are in [Benchmarks](../benchmarks.md).
+[AI polish](../ai-polish/README.md); measured numbers are in [Benchmarks](../benchmarks/README.md).
 
 ## Kinds of model
 
@@ -35,7 +35,7 @@ Qwen3-ASR-1.7B and a 4B polish model.
 |---|---|---|
 | English and most European languages | Qwen3 4B Instruct 2507 | Llama 3.1 8B Instruct and similar instruct models also work well. |
 | Chinese (Mandarin) | Qwen3 4B Instruct 2507; Qwen3 8B for better wording | Qwen models are trained on a lot of Chinese. |
-| Cantonese | Qwen3 4B Instruct 2507 or Qwen3.5 4B | Good once the transcript is Cantonese; the speech model matters more. See the [Cantonese guide](../languages/cantonese.md). |
+| Cantonese | An uncensored Qwen3.5 4B (Huihui abliterated) | Stock instruct models censor many Cantonese words. The speech model matters most. See the [Cantonese guide](../languages/cantonese.md). |
 
 Language-tuned polish models can write more naturally, but test them first: some ignore the
 cleanup instructions and answer the dictation like a chatbot. A
@@ -69,4 +69,4 @@ server's command line.
 | OpenAI reasoning models | The lowest `reasoning_effort` the model accepts (check OpenAI's docs), or pick a non-reasoning model such as `gpt-4.1-mini` |
 | LM Studio, OpenRouter and others | Pick an instruct (non-thinking) model, or check your server's docs |
 
-If you are unsure whether a model thinks, see [Thinking models](../ai-polish/thinking-models.md#how-to-tell).
+If you are unsure whether a model thinks, see [Troubleshooting → check thinking first](../ai-polish/troubleshooting.md#slow-or-empty-answers-check-thinking-first).

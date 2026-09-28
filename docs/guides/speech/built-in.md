@@ -25,7 +25,7 @@ loads it. A download that breaks off resumes where it stopped.
 ## Hardware notes
 
 - On Apple Silicon, whisper.cpp uses the GPU through Metal. On an M1 Pro a short clip takes
-  about 2 seconds with large-v3-turbo (see [Benchmarks](../benchmarks.md)); newer chips are
+  about 2 seconds with large-v3-turbo (see [Benchmarks](../benchmarks/README.md)); newer chips are
   faster.
 - Intel Macs have no GPU that whisper.cpp uses well, so they get only the small model. A GPU
   computer on your network or a cloud service is much faster there; see
