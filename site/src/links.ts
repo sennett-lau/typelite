@@ -17,7 +17,7 @@ export const links = {
   docs: `${BLOB}/docs/guides/README.md`,
   speechDocs: `${BLOB}/docs/guides/speech/README.md`,
   aiDocs: `${BLOB}/docs/guides/ai-polish/README.md`,
-  models: `${BLOB}/docs/guides/models.md`,
+  models: `${BLOB}/docs/guides/models/README.md`,
   languages: `${BLOB}/docs/guides/languages/README.md`,
   presets: `${TREE}/presets/languages`,
   presetCatalogue: `${BLOB}/presets/languages/README.md`,
