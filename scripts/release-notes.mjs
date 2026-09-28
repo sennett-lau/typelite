@@ -5,7 +5,7 @@
 // src/i18n/locales/en.json), so the release page and the Home tab say the same thing.
 //
 // Usage:
-//   node scripts/release-notes.mjs 0.1.0 > notes.md
+//   node scripts/release-notes.mjs 1.0.0 > notes.md
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
