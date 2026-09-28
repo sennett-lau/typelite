@@ -1028,6 +1028,26 @@ fn ends_with_spoken_period(raw_transcript: &str) -> bool {
 mod tests {
     use super::*;
 
+    /// Benchmarks (docs/guides/benchmarks/polish-speed.md) publish the exact polish prompt, so
+    /// anyone can time the same request. Regenerate it after a prompt change with
+    /// `TYPELITE_WRITE_BENCHMARK_PROMPT=1 cargo test --lib benchmark_prompt`.
+    #[test]
+    fn benchmark_prompt_matches_the_published_file() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../docs/guides/benchmarks/data/polish-system-prompt.txt"
+        );
+        if std::env::var_os("TYPELITE_WRITE_BENCHMARK_PROMPT").is_some() {
+            std::fs::write(path, &prompt).unwrap();
+        }
+        let published = std::fs::read_to_string(path).unwrap_or_default();
+        assert!(
+            published == prompt,
+            "the polish prompt changed; regenerate {path} (see this test's comment)"
+        );
+    }
+
     #[test]
     fn test_build_prompt_without_translation() {
         let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
