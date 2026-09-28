@@ -44,7 +44,7 @@ Content-Type: application/json
   the answer starts.
 - The system prompt is the same for every dictation (it changes only with your settings), so a
   server with a prompt cache answers much faster after the first request. See
-  [Benchmarks](../benchmarks.md).
+  [Benchmarks](../benchmarks/README.md).
 
 ## Running your own server
 

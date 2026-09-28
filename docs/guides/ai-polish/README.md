@@ -16,7 +16,7 @@ later in **Settings → AI → AI polish uses**.
 
 Not sure? Start with Built-in on Apple Silicon. On an Intel Mac, or for faster answers, use a
 server on your network or a cloud key; see [AI polish models](../models/ai-polish.md) and
-[Benchmarks](../benchmarks.md).
+[Benchmarks](../benchmarks/README.md).
 
 ## Services
 

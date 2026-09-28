@@ -230,8 +230,8 @@ What you measured, and how.
 The guides follow two formats, so a new service, language or whole new part of Typelite looks
 like what is already there. `npm run docs:check` enforces them, locally and on every pull request
 that touches the docs (the **Docs** workflow). Claude Code users can let the skills in
-`.claude/skills/` write the files: `add-service`, `add-language-guide`, `add-language-preset` and
-`add-guide-step`.
+`.claude/skills/` write the files: `add-service`, `add-language-guide`, `add-language-preset`,
+`add-guide-step` and `add-benchmark`.
 
 ### Guide steps
 
@@ -287,6 +287,22 @@ A `###` section under **Running your own server**, in this order:
 The format is in [The guide file](#the-guide-file) and the [Guide template](#guide-template)
 above. The check validates the front matter and the required sections, and rewrites the index on
 the Languages page with `npm run docs:cards`.
+
+### Benchmarks
+
+[Benchmarks](docs/guides/benchmarks/README.md) measure speed only, with fixed data in
+`docs/guides/benchmarks/data/` and one script, so every row is comparable. Each test page has a
+hand-written **Results** table, one row per setup (hardware, server, model, how it was reached,
+then the numbers).
+
+- Measure with `node scripts/benchmark.mjs polish|speech --address … --model …` and copy its
+  medians. Do not change the data; different data needs a new test.
+- Name the hardware class (`Apple M1 Pro, 32 GB`), never your machine's name or address.
+- Put anything unusual (a busy GPU, your own recording instead of the clip) in a short note under
+  the table.
+- When the polish prompt changes, a Rust test fails until `data/polish-system-prompt.txt` is
+  regenerated (see `benchmark_prompt_matches_the_published_file` in `src-tauri/src/llm/prompt.rs`).
+  Old rows then no longer match; mark or re-measure them.
 
 ### Links
 

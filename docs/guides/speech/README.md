@@ -17,7 +17,7 @@ its own option, and in **Your server or API key** the address decides.
 
 Not sure? Start with Built-in. If it is too slow on your computer, a GPU computer on your network
 or a cloud service is faster; see [Choosing models](../models/speech-recognition.md) and
-[Benchmarks](../benchmarks.md).
+[Benchmarks](../benchmarks/README.md).
 
 ## Services
 
