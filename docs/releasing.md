@@ -4,6 +4,23 @@ How a maintainer cuts a Typelite release. The
 [Release workflow](../.github/workflows/release.yml) builds the app on GitHub Actions and creates
 a **draft** release. Nothing is public until you publish the draft by hand.
 
+## Branches and tags
+
+Typelite uses trunk-based releases:
+
+- **`main` is always releasable.** Every change reaches it through a pull request with the gate
+  passing; there is no long-lived develop or release branch.
+- **A release is an annotated tag** `vX.Y.Z` on a `main` commit (Semantic Versioning: a patch
+  `X.Y.Z+1` for fixes, a minor `X.Y+1.0` for features, a major for breaking changes such as a
+  settings format that older builds cannot read). The tag starts the Release workflow; tags are
+  never moved or reused once a release is published.
+- **Prepare a release** on a short-lived branch `release/prepare-X.Y.Z` (version bump and What's
+  New), merged to `main` like any pull request, then tag the merge commit.
+- **Release branches only for patches of an older line.** When `main` has moved on and `X.Y` needs
+  a fix, create `release/X.Y` from the tag `vX.Y.Z`, fix on `main` first and cherry-pick the fix
+  onto `release/X.Y`, bump the patch version there, and tag `vX.Y.Z+1` on that branch. Until then,
+  no release branch exists.
+
 ## What the workflow builds
 
 | File | What it is |
@@ -30,7 +47,7 @@ plus a DMG. The release notes come from What's New for that version
 
    ```sh
    git switch main && git pull
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m "Typelite X.Y.Z"
    git push origin vX.Y.Z
    ```
 
