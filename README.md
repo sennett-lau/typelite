@@ -29,8 +29,13 @@ text you have highlighted.
 
 ### Download
 
-Get the DMG for Apple Silicon from [Releases](https://github.com/sennett-lau/typelite/releases).
-The first release is coming soon. Until then, build it from source.
+Typelite 1.0 runs on Macs with Apple Silicon (M1 or later).
+
+1. Download `Typelite_X.Y.Z_aarch64.dmg` from the
+   [latest release](https://github.com/sennett-lau/typelite/releases/latest). To check it,
+   download `SHA256SUMS.txt` too and run `shasum -a 256 -c SHA256SUMS.txt --ignore-missing`.
+2. Open the DMG and drag **Typelite** to **Applications**.
+3. Start it once as described in [First launch](#first-launch).
 
 ### Build from source
 
