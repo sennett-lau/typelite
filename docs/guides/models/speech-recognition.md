@@ -1,14 +1,14 @@
 # Speech recognition models
 
 Which speech model to run, by hardware and by language. How to connect each one is in
-[Speech recognition](../speech/README.md); measured numbers are in [Benchmarks](../benchmarks.md).
+[Speech recognition](../speech/README.md); measured numbers are in [Benchmarks](../benchmarks/README.md).
 
 ## Kinds of model
 
 | Model family | Languages | Runs on | How Typelite reaches it |
 |---|---|---|---|
 | **whisper** (large-v3-turbo, small) | About 100, auto-detect; handles mixed English with Mandarin | Built-in on your computer, or a whisper.cpp or Speaches server | [Built-in](../speech/built-in.md), or [OpenAI-compatible](../speech/openai-compatible.md) |
-| **Qwen3-ASR** (1.7B, 0.6B) | 30 languages and 22 Chinese dialects, auto-detect; writes Cantonese as spoken and keeps English words | llama.cpp `llama-server` (Mac, NVIDIA, CPU) or vLLM (NVIDIA) | [Qwen3-ASR](../speech/services/qwen3-asr.md) |
+| **Qwen3-ASR** (1.7B, 0.6B) | 30 languages and 22 Chinese dialects, auto-detect; writes Cantonese as spoken and keeps English words | llama.cpp `llama-server` (Mac, NVIDIA, CPU) or vLLM (NVIDIA) | [Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) |
 | **Cloud services** (OpenAI, Groq, Qwen Cloud, …) | Depends on the service | The provider's servers, with your own key; they receive your audio | [Services](../speech/README.md#services) |
 
 - whisper is the general choice, and Typelite's Built-in. It writes some languages in their

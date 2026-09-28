@@ -1,0 +1,38 @@
+# Docs check on pull requests that touch the docs: step folders and Services tables in their
+# format, language guides valid, every relative link resolving, generated tables up to date, and
+# language presets valid (CONTRIBUTING.md#docs-formats). Plain Node, no install, so it runs in
+# seconds on Linux; the full gate in ci.yml runs the same checks again on macOS.
+name: Docs
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'presets/**'
+      - 'scripts/docs-cards.mjs'
+      - 'scripts/language-presets.mjs'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Docs (format, links and generated tables)
+        run: node scripts/docs-cards.mjs --check
+
+      - name: Language presets
+        run: node scripts/language-presets.mjs --check

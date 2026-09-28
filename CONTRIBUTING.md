@@ -6,10 +6,11 @@ TypeScript:
 | You want to… | Section |
 |---|---|
 | Fix a bug or build a feature | [Code](#code) |
-| Document a speech or AI service that already works | [Service cards](#service-cards) |
+| Document a speech or AI service that already works | [Adding a service](#adding-a-service) |
 | Make Typelite write your language better | [Language presets](#language-presets) |
 | Recommend models for your language | [Language guides](#language-guides) |
 | Support a service that needs its own protocol | [New connections](#new-connections) |
+| Know the formats the docs check enforces | [Docs formats](#docs-formats) |
 | Report a problem | [Reporting bugs](#reporting-bugs) |
 | Cut a release (maintainers) | [Maintainers](#maintainers) |
 
@@ -57,7 +58,7 @@ npx vitest run
 npx tsc --noEmit
 npx eslint src/
 npx prettier --check src
-npm run docs:check                          # service cards and generated tables
+npm run docs:check                          # language guides and generated tables
 node scripts/language-presets.mjs --check   # language presets and index.json
 ```
 
@@ -84,63 +85,20 @@ code comments, tests and commit messages. A small fix needs no plan.
   (a cloud service is only ever used with the user's own key, after they choose it); never log
   dictated text. Do not copy code from GPL projects: Typelite is MIT.
 
-## Service cards
+## Adding a service
 
-The speech and AI guides list the services Typelite works with. Each service is one small
-Markdown file, a **service card**:
+The speech and AI guides list the services Typelite works with, one row each in the Services
+table of [Speech recognition](docs/guides/speech/README.md#services) or
+[AI polish](docs/guides/ai-polish/README.md#services).
 
-- speech: `docs/guides/speech/services/<id>.md`
-- AI polish: `docs/guides/ai-polish/services/<id>.md`
+Only add services that work with the current code through an existing connection (Built-in,
+OpenAI-compatible, or for speech Qwen Cloud). Test it in the app first.
 
-Only add services that work with the current code through an existing connection
-(`builtin`, `openai-compatible`, or for speech `qwen-cloud`). Test it in the app first.
-
-### Template
-
-```markdown
----
-id: example-service
-name: Example Service
-connection: openai-compatible
-address: https://api.example.com/v1
-model: example-model-1
-needs_key: true
-runs: cloud
-cost: free-tier
-languages: About 50 languages
-notes: Free daily allowance; audio is sent to Example.
----
-
-Short setup: where to get a key, what to install, anything unusual.
-```
-
-### Front matter
-
-One `key: value` per line; values are text (quotes optional), `true` or `false`. No other YAML
-features.
-
-| Key | Required | Allowed values |
-|---|---|---|
-| `id` | yes | Same as the file name without `.md`; `a-z`, `0-9` and `-`. |
-| `name` | yes | Name shown in the table, at most 40 characters. |
-| `connection` | yes | Speech: `builtin`, `openai-compatible` or `qwen-cloud`. AI: `builtin` or `openai-compatible`. |
-| `address` | yes | An example address as the app's **Address** field wants it (`http://` or `https://`, no trailing `/audio/transcriptions` or `/chat/completions`), or `none` for built-in. Use `<computer-address>` for a server on another computer. |
-| `model` | yes | An example model name as the app's **Model** field wants it. |
-| `needs_key` | yes | `true` or `false`. |
-| `runs` | yes | `on-device`, `local-network` or `cloud`. |
-| `cost` | yes | `free`, `free-tier` or `paid`. |
-| `languages` | no | A short note, at most 60 characters. |
-| `notes` | no | One line shown in the table, at most 120 characters. |
-
-### Check and regenerate
-
-```sh
-npm run docs:cards     # validate every card and rewrite the generated tables
-npm run docs:check     # validate only; fails if a table is out of date
-```
-
-Commit the card together with the regenerated `README.md` of its folder. The tests fail when a
-card is invalid or a table is stale.
+- Add one row in the [Services row](#services-row) format.
+- If it needs setup beyond a key, add a [server section](#server-section) under **Running your
+  own server** in the connection's page (`openai-compatible.md`) and link the row to it. A cloud
+  service gets a line in that page's **Cloud services** table and links there.
+- Run `npm run docs:check`.
 
 ## Language presets
 
@@ -192,8 +150,8 @@ their language, or improve one, with a pull request.
 One Markdown file per guide: `docs/guides/languages/<id>.md`, where `<id>` is a lowercase slug
 such as `cantonese` or `mandarin-taiwan`. It starts with front matter, then fixed sections.
 
-The front matter is one `key: value` per line, in the same strict format as the
-[service cards](#service-cards): plain text, no lists, no `|`.
+The front matter is one `key: value` per line, in a strict format: plain text, no
+lists, no `|`.
 
 | Key | Required | What it holds |
 |---|---|---|
@@ -212,7 +170,7 @@ The front matter is one `key: value` per line, in the same strict format as the
 |---|---|---|
 | `## Recommended setup` | yes | A table: speech recognition, AI polish and language preset, each with one line on why. |
 | `## Why` | yes | What goes wrong with the general setup, with a real example: what was said, what the general setup wrote, what this setup writes. |
-| `## Set it up` | yes | The steps, by hardware if they differ. Link to the service cards and setup guides instead of repeating them. |
+| `## Set it up` | yes | The steps, by hardware if they differ. Link to the setup guides instead of repeating them. |
 | `## Results` | no | What you measured and how: the clips, the models and servers, the numbers. Say whether the speech was real or synthetic. |
 | `## Known issues` | no | What still goes wrong, and anything the reader must do by hand. |
 
@@ -266,6 +224,91 @@ What you measured, and how.
 - The front matter passes the check, and the example in **Why** is real, not invented.
 - Numbers say how they were measured; synthetic speech is labelled as such.
 - No private addresses, machine names or keys.
+
+## Docs formats
+
+The guides follow two formats, so a new service, language or whole new part of Typelite looks
+like what is already there. `npm run docs:check` enforces them, locally and on every pull request
+that touches the docs (the **Docs** workflow). Claude Code users can let the skills in
+`.claude/skills/` write the files: `add-service`, `add-language-guide`, `add-language-preset`,
+`add-guide-step` and `add-benchmark`.
+
+### Guide steps
+
+A step is one part of the pipeline with its own models and services: today speech recognition
+and AI polish. A later one (for example read-aloud) copies the same shape:
+
+```
+docs/guides/<step>/
+  README.md             what it does · ## Connections · ## Services · ## More
+  built-in.md           if it has one: set it up · models · how it runs
+  <connection>.md       one per connection: enter a service · protocol ·
+                        ## Running your own server · ## Cloud services
+  troubleshooting.md    Test fails · slow or wrong results · still stuck
+docs/guides/models/<step>.md   kinds of model · by hardware · by language
+```
+
+A step folder holds only `.md` pages, no subfolders. Register a new step in `STEPS` in
+`scripts/docs-cards.mjs` and add it to the table in `docs/guides/README.md`.
+
+#### Services row
+
+The Services table in the step's `README.md` starts with exactly this header, one row per service:
+
+```markdown
+| Service | Runs | Cost | API key | Address (example) | Model (example) | Notes |
+|---|---|---|---|---|---|---|
+| [Groq](openai-compatible.md#cloud-services) | Cloud | Free tier | Yes | `https://api.groq.com/openai/v1` | `whisper-large-v3-turbo` | Free daily allowance. |
+```
+
+| Column | Allowed |
+|---|---|
+| Service | A link to where it is set up: its server section, the Cloud services table, or its own page. |
+| Runs | `On your computer`, `Your computer or network`, `Your network` or `Cloud`. |
+| Cost | `Free`, `Free tier` or `Paid`. |
+| API key | `Yes` or `No`; a cloud service always needs one. |
+| Address (example) | As the app's **Address** field wants it, in backticks: `http://` or `https://`, no trailing `/`, stopping before the path Typelite adds (`/audio/transcriptions`, `/chat/completions`). `<computer-address>` for another computer; `—` for Built-in. |
+| Model (example) | As the app's **Model** field wants it. |
+| Notes | One short line; may be empty. |
+
+Rows go Built-in first, then servers you run, then cloud services.
+
+#### Server section
+
+A `###` section under **Running your own server**, in this order:
+
+1. One sentence: what it is, with a link to the project.
+2. How to install and start it, as a command block.
+3. "Use address `…` and model `…`."
+4. Notes that matter: memory, serving other computers, firewall, turning thinking off.
+
+### Language guides
+
+The format is in [The guide file](#the-guide-file) and the [Guide template](#guide-template)
+above. The check validates the front matter and the required sections, and rewrites the index on
+the Languages page with `npm run docs:cards`.
+
+### Benchmarks
+
+[Benchmarks](docs/guides/benchmarks/README.md) measure speed only, with fixed data in
+`docs/guides/benchmarks/data/` and one script, so every row is comparable. Each test page has a
+hand-written **Results** table, one row per setup (hardware, server, model, how it was reached,
+then the numbers).
+
+- Measure with `node scripts/benchmark.mjs polish|speech --address … --model …` and copy its
+  medians. Do not change the data; different data needs a new test.
+- Name the hardware class (`Apple M1 Pro, 32 GB`), never your machine's name or address.
+- Put anything unusual (a busy GPU, your own recording instead of the clip) in a short note under
+  the table.
+- When the polish prompt changes, a Rust test fails until `data/polish-system-prompt.txt` is
+  regenerated (see `benchmark_prompt_matches_the_published_file` in `src-tauri/src/llm/prompt.rs`).
+  Old rows then no longer match; mark or re-measure them.
+
+### Links
+
+Every relative link in `README.md`, `CONTRIBUTING.md`, `docs/guides`, `docs/dev`,
+`presets/languages` and `.claude/skills`, and its `#anchor`, must point at a file and heading that
+exist.
 
 ## New connections
 

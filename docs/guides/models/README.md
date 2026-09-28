@@ -13,7 +13,7 @@ polish** model cleans that text up. Two questions decide which ones to use:
    cloud service with your own key.
 
 These are starting points, not requirements: any model that fits your hardware and does the job
-well will work. Measured numbers are in [Benchmarks](../benchmarks.md).
+well will work. Measured numbers are in [Benchmarks](../benchmarks/README.md).
 
 ## Start here
 

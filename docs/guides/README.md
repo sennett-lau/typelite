@@ -16,9 +16,8 @@ speech with AI polish on a GPU computer on your network.
 | You want… | Speech recognition | AI polish |
 |---|---|---|
 | Everything on your computer, nothing to install (Apple Silicon) | [Built-in](speech/built-in.md) | [Built-in](ai-polish/built-in.md) |
-| Faster, with a GPU computer on your network | [Speaches or whisper.cpp](speech/openai-compatible.md#a-gpu-computer-on-your-network) | [Ollama on another computer](ai-polish/services/ollama-network.md) |
-| Your language written as you speak it, for example Cantonese, with a GPU computer on your network | [Qwen3-ASR](speech/services/qwen3-asr.md) (see [the Cantonese guide](languages/cantonese.md)) | [Ollama on another computer](ai-polish/services/ollama-network.md), with your [language preset](languages/README.md#language-presets) |
-| No local models (an Intel Mac, or little memory) | A cloud service with your own key, such as [Groq](speech/services/groq.md) | A cloud service with your own key, such as [Groq](ai-polish/services/groq.md) |
+| Faster, with a GPU computer on your network | [Speaches or whisper.cpp](speech/openai-compatible.md#a-gpu-computer-on-your-network) | [Ollama](ai-polish/openai-compatible.md#ollama) or the [llama.cpp server](ai-polish/openai-compatible.md#llamacpp-server) on that computer |
+| No local models (an Intel Mac, or little memory) | A cloud service with your own key, such as [Groq, OpenAI, Qwen Cloud](speech/README.md#services) | A cloud service with your own key, such as [Groq, OpenAI, OpenRouter](ai-polish/README.md#services) |
 
 Cloud services are only used when you enter one with your own key. They then receive your audio or
 text.
@@ -28,11 +27,11 @@ text.
 | Guide | Covers |
 |---|---|
 | [Speech recognition](speech/README.md) | Connections (Built-in, OpenAI-compatible, Qwen Cloud) and every supported service. |
-| [AI polish](ai-polish/README.md) | Connections (Built-in, OpenAI-compatible), services, thinking models. |
+| [AI polish](ai-polish/README.md) | Connections (Built-in, OpenAI-compatible), services, turning off thinking. |
 | [Choosing models](models/README.md) | Which speech and polish models to use, by hardware. |
 | [Languages](languages/README.md) | Language guides (which models for your language, such as Cantonese), translation languages, per-language instructions, recognition, language presets. |
 | [Sharing presets](sharing-presets.md) | Export and import your speech and AI presets. |
-| [Benchmarks](benchmarks.md) | Reference numbers on an NVIDIA GPU and on Apple Silicon. |
+| [Benchmarks](benchmarks/README.md) | How fast AI polish and speech recognition are on real setups, with the data and script to measure yours. |
 
 Something wrong? See the troubleshooting pages for [speech](speech/troubleshooting.md) and
 [AI polish](ai-polish/troubleshooting.md), or [report a bug](../../CONTRIBUTING.md#reporting-bugs).

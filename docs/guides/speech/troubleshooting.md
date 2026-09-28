@@ -26,7 +26,7 @@ recognition and the reply. Ways to speed it up:
 - Choose a fixed spoken language instead of auto-detect, which saves a detection pass.
 - Use a smaller model (Built-in **Faster**, or `small` on your own server), at some cost in
   accuracy.
-- See [Benchmarks](../benchmarks.md) and [Choosing models](../models/speech-recognition.md).
+- See [Benchmarks](../benchmarks/README.md) and [Choosing models](../models/speech-recognition.md).
 
 ## Wrong language or script
 

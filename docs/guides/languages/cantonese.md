@@ -3,7 +3,7 @@ id: cantonese
 language: Cantonese (Hong Kong)
 codes: zh-Hant-HK, yue
 speech: Qwen3-ASR-1.7B
-polish: A 4B instruct model, by hardware
+polish: Huihui Qwen3.5 4B abliterated (uncensored)
 tier: official
 authors: sennett-lau
 preset: cantonese-hong-kong
@@ -15,15 +15,15 @@ notes: Whisper writes Cantonese as formal written Chinese; Qwen3-ASR keeps it as
 
 For people who dictate in Hong Kong Cantonese, often mixed with English, and want it written the
 way Hongkongers type messages: 我哋聽日開會，你記得send個email俾佢. Use Qwen3-ASR for speech
-recognition, any 4B polish model that fits your hardware, and the Cantonese (Hong Kong) language
+recognition, an uncensored Qwen3.5 4B for polish, and the Cantonese (Hong Kong) language
 preset.
 
 ## Recommended setup
 
 | Step | Model | Why |
 |---|---|---|
-| Speech recognition | [Qwen3-ASR-1.7B](../speech/services/qwen3-asr.md) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
-| AI polish | Qwen3 4B Instruct 2507 or Qwen3.5 4B, or what fits your hardware ([AI polish](../models/ai-polish.md)) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. |
+| Speech recognition | [Qwen3-ASR-1.7B](../speech/openai-compatible.md#qwen3-asr) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
+| AI polish | [Huihui-Qwen3.5-4B-abliterated](https://huggingface.co/huihui-ai/Huihui-Qwen3.5-4B-abliterated) (tested) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. Use an uncensored model: stock instruct models soften or drop Cantonese slang and swear words, so the text stops sounding native. |
 | Language preset | [Cantonese (Hong Kong)](../../../presets/languages/cantonese-hong-kong/preset.md) | Tells polish how Hongkongers write, and lets Typelite recognise that you spoke Cantonese. |
 
 ## Why
@@ -42,7 +42,7 @@ was said.
 
 1. **Run Qwen3-ASR** on your Mac or on a computer with an NVIDIA GPU, with llama.cpp's
    `llama-server` (on Windows, the CUDA build from llama.cpp's releases; see
-   [Qwen3-ASR](../speech/services/qwen3-asr.md) for vLLM and other options):
+   [Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) for vLLM and other options):
 
    ```sh
    llama-server -hf ggml-org/Qwen3-ASR-1.7B-GGUF:Q8_0 --host 127.0.0.1 --port 8180 -c 4096 -np 1
@@ -65,15 +65,29 @@ was said.
    recognised as Cantonese (Hong Kong), Typelite writes it in Hong Kong Traditional characters,
    with Cantonese 係 and 覆 where a plain conversion would write 系 or 復. Nothing to set.
 
-5. **AI polish:** keep your current polish model, or pick one for your hardware in
-   [AI polish](../models/ai-polish.md). Stock Qwen models refuse to repeat some Cantonese insults; an
-   ["uncensored" variant](../models/ai-polish.md#uncensored-or-abliterated-models) keeps them.
+5. **AI polish:** [Huihui-Qwen3.5-4B-abliterated](https://huggingface.co/huihui-ai/Huihui-Qwen3.5-4B-abliterated), an
+   ["uncensored" variant](../models/ai-polish.md#uncensored-or-abliterated-models) of Qwen3.5 4B.
+   Stock Qwen models refuse to repeat some Cantonese insults; this one keeps them. Huihui publishes
+   the original weights; for llama.cpp use a GGUF such as
+   [mradermacher's](https://huggingface.co/mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF)
+   (Q4_K_M, about 3 GB of memory) with the [llama.cpp server](../ai-polish/openai-compatible.md#llamacpp-server):
+
+   ```sh
+   llama-server -m Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf --host 127.0.0.1 --port 8181 \
+     --jinja --reasoning off
+   ```
+
+   Qwen3.5 thinks by default, so keep `--reasoning off`. Ollama's own Qwen3.5 files do not load in
+   llama.cpp, hence the separate GGUF. Avoid stock instruct models such as Qwen3 4B
+   Instruct: they censor many everyday Cantonese words.
 
 ## Results
 
 Measured with 11 Cantonese clips and 1 English clip made with the macOS Cantonese voice (Sinji):
 ten everyday sentences with fillers, a self-correction, English words and a swear word, plus the
-13-second sentence above. Details in [Benchmarks](../benchmarks.md#speech-recognition-cantonese).
+13-second sentence above. The error rate is the character error rate against the known text,
+punctuation and spaces ignored, on the text as Typelite writes it; times are medians of 3 runs
+after a warm-up. Speed on other hardware: [Benchmarks](../benchmarks/README.md).
 
 | Speech model | Error rate | Cantonese words kept | English words kept |
 |---|---|---|---|
