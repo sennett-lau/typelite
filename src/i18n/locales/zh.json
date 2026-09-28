@@ -915,16 +915,19 @@
     "failed": "无法开始录制快捷键：{{error}}"
   },
   "whatsNew": {
-    "rename": "Typelite：应用有了自己的名字和外观。",
+    "builtin": "首个正式版本。内置语音识别和 AI 润色：一键设置，你的语音和文字都留在你的 Mac 上。",
+    "ownServer": "也可以使用你自己的服务器或 API 密钥：任何兼容 OpenAI 的语音或聊天服务，或 Qwen Cloud。",
+    "qwen3Asr": "支持以 llama.cpp 运行的 Qwen3-ASR 语音服务器，中文会按你的语言写成对应的字（例如粤语写成香港繁体）。",
+    "shortcuts": "听写、翻译和问答，各有自己的快捷键；按下按键即可录制快捷键。",
+    "translationLanguages": "最多三种翻译语言，翻译时可用“切换语言”键切换。",
+    "languagePresets": "来自 GitHub 项目库的语言预设：每种语言的说明可以来自预设，你说这种语言时也会用于润色。",
+    "pill": "说话时胶囊显示实时波形，可以显示在全屏应用上方，没听到语音时会安静地淡出。",
+    "insights": "主页上的洞察：每一步用了多久，以及你说话和打字速度的对比。",
     "presets": "语音和 AI 预设：保存多个端点并随时切换。",
     "microphonePicker": "麦克风选择器，带实时输入电平。",
-    "pressKeysShortcut": "按下按键即可录制快捷键。",
-    "liveWaveform": "说话时胶囊中显示实时波形。",
-    "translationLanguages": "最多三种翻译语言，翻译时可用“切换语言”键切换。",
-    "setupTutorial": "全新的分步设置教程。",
+    "setupTutorial": "分步设置教程。",
     "nativeGlass": "Native Glass 外观，跟随浅色和深色模式。",
-    "noHistory": "不再保存历史：Typelite 不会记录你说的内容。",
-    "languagePresets": "来自 GitHub 项目库的语言预设：每种语言的说明可以来自预设，你说这种语言时也会用于润色。"
+    "noHistory": "不保存历史：Typelite 不会记录你说的内容。"
   },
   "status": {
     "label": "连接状态",

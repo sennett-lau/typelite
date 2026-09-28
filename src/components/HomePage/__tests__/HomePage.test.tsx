@@ -323,8 +323,8 @@ describe('HomePage', () => {
 })
 
 describe("What's New data", () => {
-  it('starts with the 0.1.0 release and has text for every change in both languages', () => {
-    expect(WHATS_NEW[0].version).toBe('0.1.0')
+  it('starts with the 1.0.0 release and has text for every change in both languages', () => {
+    expect(WHATS_NEW[0].version).toBe('1.0.0')
     const lookup = (messages: Record<string, unknown>, key: string) =>
       (messages.whatsNew as Record<string, string>)[key]
     for (const entry of WHATS_NEW) {

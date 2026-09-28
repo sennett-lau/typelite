@@ -3,7 +3,7 @@
  * key under `whatsNew.` so the list follows the UI language; add both en and zh strings.
  */
 export interface WhatsNewEntry {
-  /** Release version without the leading "v", e.g. "0.1.0". */
+  /** Release version without the leading "v", e.g. "1.0.0". */
   version: string
   /** i18n keys (under `whatsNew.`) for the changes in this release. */
   changeKeys: string[]
@@ -11,15 +11,18 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
-    version: '0.1.0',
+    version: '1.0.0',
     changeKeys: [
-      'rename',
-      'presets',
-      'microphonePicker',
-      'pressKeysShortcut',
-      'liveWaveform',
+      'builtin',
+      'ownServer',
+      'qwen3Asr',
+      'shortcuts',
       'translationLanguages',
       'languagePresets',
+      'pill',
+      'insights',
+      'presets',
+      'microphonePicker',
       'setupTutorial',
       'nativeGlass',
       'noHistory',

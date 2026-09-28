@@ -5,7 +5,7 @@ export const UI_LANGUAGES = [
 ] as const
 
 export const APP_NAME = 'Typelite'
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v0.1.0'
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.0.0'
 export const APP_REPO_URL = 'https://github.com/sennett-lau/typelite'
 export const APP_LICENSE_URL = 'https://github.com/sennett-lau/typelite/blob/main/LICENSE'
 
