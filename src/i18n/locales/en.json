@@ -915,16 +915,19 @@
     "failed": "Could not start recording the shortcut: {{error}}"
   },
   "whatsNew": {
-    "rename": "Typelite: the app has its own name and look.",
+    "builtin": "First release. Built-in speech recognition and AI polish: set up in one click, and your voice and text stay on your Mac.",
+    "ownServer": "Or use your own server or API key: any OpenAI-compatible speech or chat service, or Qwen Cloud.",
+    "qwen3Asr": "Qwen3-ASR on llama.cpp as a speech server, with Chinese written in the characters of your language (for example Hong Kong Traditional for Cantonese).",
+    "shortcuts": "Dictate, Translate and Ask anything, each on its own shortcut; record a shortcut by pressing the keys.",
+    "translationLanguages": "Up to three translation languages, with a Switch language key while you translate.",
+    "languagePresets": "Language presets from the project's library on GitHub: each language's instructions can come from a preset, and they also shape polish when you speak that language.",
+    "pill": "The pill shows a live waveform while you speak, appears over full-screen apps, and simply fades out when it heard no speech.",
+    "insights": "Insights on Home: how long each step took, and your speaking speed compared with your typing speed.",
     "presets": "Speech and AI presets: save several endpoints and switch between them.",
     "microphonePicker": "Microphone picker with a live input level.",
-    "pressKeysShortcut": "Record a shortcut by pressing the keys.",
-    "liveWaveform": "Live waveform in the capsule while you speak.",
-    "translationLanguages": "Up to three translation languages, with a Switch language key while you translate.",
-    "setupTutorial": "A new step-by-step setup tutorial.",
+    "setupTutorial": "A step-by-step setup tutorial.",
     "nativeGlass": "Native Glass look that follows light and dark mode.",
-    "noHistory": "No history: Typelite keeps no record of what you say.",
-    "languagePresets": "Language presets from the project's library on GitHub: each language's instructions can come from a preset, and they also shape polish when you speak that language."
+    "noHistory": "No history: Typelite keeps no record of what you say."
   },
   "status": {
     "label": "Connection status",
