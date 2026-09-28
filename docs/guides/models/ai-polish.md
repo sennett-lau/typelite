@@ -35,7 +35,7 @@ Qwen3-ASR-1.7B and a 4B polish model.
 |---|---|---|
 | English and most European languages | Qwen3 4B Instruct 2507 | Llama 3.1 8B Instruct and similar instruct models also work well. |
 | Chinese (Mandarin) | Qwen3 4B Instruct 2507; Qwen3 8B for better wording | Qwen models are trained on a lot of Chinese. |
-| Cantonese | Qwen3 4B Instruct 2507 or Qwen3.5 4B | Good once the transcript is Cantonese; the speech model matters more. See the [Cantonese guide](../languages/cantonese.md). |
+| Cantonese | An uncensored Qwen3.5 4B (Huihui abliterated) | Stock instruct models censor many Cantonese words. The speech model matters most. See the [Cantonese guide](../languages/cantonese.md). |
 
 Language-tuned polish models can write more naturally, but test them first: some ignore the
 cleanup instructions and answer the dictation like a chatbot. A
