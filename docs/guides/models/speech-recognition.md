@@ -1,7 +1,7 @@
 # Speech recognition models
 
 Which speech model to run, by hardware and by language. How to connect each one is in
-[Speech recognition](../speech/README.md); measured numbers are in [Benchmarks](../benchmarks.md).
+[Speech recognition](../speech/README.md); measured numbers are in [Benchmarks](../benchmarks/README.md).
 
 ## Kinds of model
 

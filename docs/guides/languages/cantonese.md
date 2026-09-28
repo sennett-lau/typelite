@@ -85,7 +85,9 @@ was said.
 
 Measured with 11 Cantonese clips and 1 English clip made with the macOS Cantonese voice (Sinji):
 ten everyday sentences with fillers, a self-correction, English words and a swear word, plus the
-13-second sentence above. Details in [Benchmarks](../benchmarks.md#speech-recognition-cantonese).
+13-second sentence above. The error rate is the character error rate against the known text,
+punctuation and spaces ignored, on the text as Typelite writes it; times are medians of 3 runs
+after a warm-up. Speed on other hardware: [Benchmarks](../benchmarks/README.md).
 
 | Speech model | Error rate | Cantonese words kept | English words kept |
 |---|---|---|---|

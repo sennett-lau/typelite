@@ -32,7 +32,7 @@ starts the server and sends one test request.
 - The very first start after installing or updating Typelite takes a minute or two while macOS
   prepares the GPU code; later starts take a few seconds.
 - The first polish after a start is a second or two slower, while the server processes the long
-  polish instructions once and caches them. See [Benchmarks](../benchmarks.md) for measured
+  polish instructions once and caches them. See [Benchmarks](../benchmarks/README.md) for measured
   numbers.
 
 ## Building Typelite yourself

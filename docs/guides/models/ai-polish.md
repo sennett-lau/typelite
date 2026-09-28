@@ -1,7 +1,7 @@
 # AI polish models
 
 Which model to use for AI polish, by hardware and by language. How to connect each one is in
-[AI polish](../ai-polish/README.md); measured numbers are in [Benchmarks](../benchmarks.md).
+[AI polish](../ai-polish/README.md); measured numbers are in [Benchmarks](../benchmarks/README.md).
 
 ## Kinds of model
 

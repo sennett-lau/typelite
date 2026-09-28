@@ -31,7 +31,7 @@ text.
 | [Choosing models](models/README.md) | Which speech and polish models to use, by hardware. |
 | [Languages](languages/README.md) | Language guides (which models for your language, such as Cantonese), translation languages, per-language instructions, recognition, language presets. |
 | [Sharing presets](sharing-presets.md) | Export and import your speech and AI presets. |
-| [Benchmarks](benchmarks.md) | Reference numbers on an NVIDIA GPU and on Apple Silicon. |
+| [Benchmarks](benchmarks/README.md) | How fast AI polish and speech recognition are on real setups, with the data and script to measure yours. |
 
 Something wrong? See the troubleshooting pages for [speech](speech/troubleshooting.md) and
 [AI polish](ai-polish/troubleshooting.md), or [report a bug](../../CONTRIBUTING.md#reporting-bugs).

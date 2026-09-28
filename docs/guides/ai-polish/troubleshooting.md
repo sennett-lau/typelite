@@ -38,7 +38,7 @@ If thinking is off:
 - The first request after a start processes the long polish instructions once; later requests
   are faster if the server caches prompts.
 - A large model on a small computer is slow; see [Choosing models](../models/ai-polish.md) and
-  [Benchmarks](../benchmarks.md).
+  [Benchmarks](../benchmarks/README.md).
 
 ## The text changes too much, or not enough
 
