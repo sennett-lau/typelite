@@ -3,7 +3,7 @@ id: cantonese
 language: Cantonese (Hong Kong)
 codes: zh-Hant-HK, yue
 speech: Qwen3-ASR-1.7B
-polish: Huihui Qwen3.5 4B abliterated, or a 4B instruct model
+polish: Huihui Qwen3.5 4B abliterated (uncensored)
 tier: official
 authors: sennett-lau
 preset: cantonese-hong-kong
@@ -15,7 +15,7 @@ notes: Whisper writes Cantonese as formal written Chinese; Qwen3-ASR keeps it as
 
 For people who dictate in Hong Kong Cantonese, often mixed with English, and want it written the
 way Hongkongers type messages: 我哋聽日開會，你記得send個email俾佢. Use Qwen3-ASR for speech
-recognition, an uncensored Qwen3.5 4B (or any 4B instruct model) for polish, and the Cantonese (Hong Kong) language
+recognition, an uncensored Qwen3.5 4B for polish, and the Cantonese (Hong Kong) language
 preset.
 
 ## Recommended setup
@@ -23,7 +23,7 @@ preset.
 | Step | Model | Why |
 |---|---|---|
 | Speech recognition | [Qwen3-ASR-1.7B](../speech/openai-compatible.md#qwen3-asr) (Apache-2.0) | Writes what you said in Cantonese (我哋, 聽日, 咗, 緊, 咯) and keeps the English words you mix in. |
-| AI polish | [Huihui-Qwen3.5-4B-abliterated](https://huggingface.co/huihui-ai/Huihui-Qwen3.5-4B-abliterated) (tested); or Qwen3 4B Instruct 2507, or what fits your hardware ([AI polish](../models/ai-polish.md)) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. The uncensored Qwen3.5 4B keeps slang and swear words that stock Qwen refuses to repeat. |
+| AI polish | [Huihui-Qwen3.5-4B-abliterated](https://huggingface.co/huihui-ai/Huihui-Qwen3.5-4B-abliterated) (tested) | Given a Cantonese transcript, it only has to clean up: fillers, self-corrections, punctuation. Use an uncensored model: stock instruct models soften or drop Cantonese slang and swear words, so the text stops sounding native. |
 | Language preset | [Cantonese (Hong Kong)](../../../presets/languages/cantonese-hong-kong/preset.md) | Tells polish how Hongkongers write, and lets Typelite recognise that you spoke Cantonese. |
 
 ## Why
@@ -78,8 +78,8 @@ was said.
    ```
 
    Qwen3.5 thinks by default, so keep `--reasoning off`. Ollama's own Qwen3.5 files do not load in
-   llama.cpp, hence the separate GGUF. Any other polish model for your hardware also works (see
-   [AI polish](../models/ai-polish.md)).
+   llama.cpp, hence the separate GGUF. Avoid stock instruct models such as Qwen3 4B
+   Instruct: they censor many everyday Cantonese words.
 
 ## Results
 

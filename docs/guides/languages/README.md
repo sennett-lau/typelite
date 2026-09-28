@@ -17,7 +17,7 @@ them: anyone can add one for their language.
 
 | Language | Codes | Speech recognition | AI polish | Language preset | Tier | Tested |
 |---|---|---|---|---|---|---|
-| [Cantonese (Hong Kong)](cantonese.md) | `zh-Hant-HK`, `yue` | Qwen3-ASR-1.7B | Huihui Qwen3.5 4B abliterated, or a 4B instruct model | [cantonese-hong-kong](../../../presets/languages/cantonese-hong-kong/preset.md) | Official | 2026-09-27 |
+| [Cantonese (Hong Kong)](cantonese.md) | `zh-Hant-HK`, `yue` | Qwen3-ASR-1.7B | Huihui Qwen3.5 4B abliterated (uncensored) | [cantonese-hong-kong](../../../presets/languages/cantonese-hong-kong/preset.md) | Official | 2026-09-27 |
 
 <!-- END GENERATED: language-guides -->
 
@@ -94,7 +94,7 @@ The built-in instructions are a plain, natural translation for most languages, p
 | Chinese (Simplified) | Mainland wording and vocabulary (软件, 网络, 出租车). |
 
 For dictation, the Cantonese instructions work best on a Cantonese transcript: with
-[Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) as the speech model, a 4B polish model keeps the text
+[Qwen3-ASR](../speech/openai-compatible.md#qwen3-asr) as the speech model, an uncensored 4B polish model keeps the text
 Cantonese. With whisper, the transcript is already written Chinese and the notes can only put back
 part of it. See [the Cantonese guide](cantonese.md).
 
