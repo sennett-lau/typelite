@@ -4,7 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::storage::AppConfig;
 
+/// The Keychain service the keys are stored under. The development build (`dev-build` feature)
+/// keeps its own, so testing never reads or changes the release app's keys.
+#[cfg(not(feature = "dev-build"))]
 const SERVICE_NAME: &str = "Typelite";
+#[cfg(feature = "dev-build")]
+const SERVICE_NAME: &str = "Typelite Dev";
 const API_KEY_ACCOUNT_SUFFIX: &str = "api_key";
 const STORED_CREDENTIAL_VERSION: u8 = 1;
 

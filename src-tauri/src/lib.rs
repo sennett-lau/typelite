@@ -988,6 +988,20 @@ fn dispatch_cli_action(app: &tauri::AppHandle, action: CliAction) {
     }
 }
 
+/// The app's name in the menu bar tooltip: "Typelite Dev" for the development build, so the two
+/// apps can be told apart when both are installed.
+#[cfg(not(feature = "dev-build"))]
+pub(crate) const APP_NAME: &str = "Typelite";
+#[cfg(feature = "dev-build")]
+pub(crate) const APP_NAME: &str = "Typelite Dev";
+
+/// The log folder's name under `~/Library/Logs`. The development build (`dev-build` feature)
+/// writes to its own folder, so its log never mixes with the release app's.
+#[cfg(not(feature = "dev-build"))]
+const LOG_FOLDER: &str = "Typelite";
+#[cfg(feature = "dev-build")]
+const LOG_FOLDER: &str = "Typelite Dev";
+
 /// Where the log file lives: `~/Library/Logs/Typelite/typelite.log` on macOS (open it with
 /// Console.app or any editor). The log holds timings, sizes and errors only, never dictated text.
 fn log_file_path() -> Option<std::path::PathBuf> {
@@ -996,7 +1010,8 @@ fn log_file_path() -> Option<std::path::PathBuf> {
         let home = std::env::var_os("HOME")?;
         Some(
             std::path::PathBuf::from(home)
-                .join("Library/Logs/Typelite")
+                .join("Library/Logs")
+                .join(LOG_FOLDER)
                 .join("typelite.log"),
         )
     }
@@ -1239,7 +1254,7 @@ pub fn run() {
 
             let tray = tray_builder
                 .menu(&tray_menu)
-                .tooltip("Typelite")
+                .tooltip(APP_NAME)
                 .on_menu_event(move |app, event| match event.id.as_ref() {
                     "quit" => {
                         app.exit(0);
