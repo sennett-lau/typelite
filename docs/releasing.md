@@ -30,8 +30,13 @@ Typelite uses trunk-based releases:
 | `SHA256SUMS.txt` | SHA-256 of the DMG and the ZIP |
 
 It runs on a `macos-14` runner (Apple Silicon). It builds `llama-server`
-(`npm run build:llama-server`), then the app with the same bundle config as `npm run build:app`
-plus a DMG. The release notes come from What's New for that version
+(`npm run build:llama-server`), then the app with the same bundle config as `npm run build:app`,
+then the DMG with `scripts/build-dmg.sh`: a window with large icons, the app on the left and an
+arrow to Applications on the right (`scripts/dmg-settings.py`, background
+`src-tauri/icons/dmg/background.svg`). dmgbuild writes that layout itself; Tauri's own DMG step
+needs Finder for it and skips it on CI. To try it locally:
+`bash scripts/build-dmg.sh "$PWD/src-tauri/target/release/bundle/macos/Typelite.app" /tmp/Typelite.dmg`.
+The release notes come from What's New for that version
 (`node scripts/release-notes.mjs X.Y.Z`), followed by install steps.
 
 ## Cut a release
