@@ -22,6 +22,10 @@
 //! - `TYPELITE_E2E_QWEN_KEY`: a Qwen Cloud Token Plan key for the Qwen Cloud speech tests
 //!   (plan `qwen-cloud-speech`); they are skipped without it. `TYPELITE_E2E_QWEN_URL` overrides
 //!   the address.
+//! - `TYPELITE_E2E_ELEVENLABS_KEY`: an ElevenLabs API key with the Speech to Text permission for
+//!   the ElevenLabs Scribe tests (plan `elevenlabs-speech`); they are skipped without it.
+//!   `TYPELITE_E2E_ELEVENLABS_URL` and `TYPELITE_E2E_ELEVENLABS_MODEL` override the address and
+//!   model.
 //!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
 
@@ -792,6 +796,108 @@ async fn qwen_cloud_connection_test_passes_and_rejects_a_wrong_key() {
     println!("qwen cloud test: {ms} ms");
 
     let error = stt::qwen_cloud::check_connection(&client, &config, "sk-wrong")
+        .await
+        .expect_err("a wrong key must fail");
+    assert!(error.contains("401"), "unexpected error {error:?}");
+}
+
+/// Plan `elevenlabs-speech`: an ElevenLabs speech preset, or `None` when no key is set.
+fn elevenlabs_preset_and_key() -> Option<(SpeechPreset, String)> {
+    let key = std::env::var("TYPELITE_E2E_ELEVENLABS_KEY")
+        .ok()
+        .filter(|v| !v.trim().is_empty())?;
+    let preset = SpeechPreset::elevenlabs(
+        "e2e-elevenlabs",
+        "ElevenLabs",
+        &env_or(
+            "TYPELITE_E2E_ELEVENLABS_URL",
+            stt::elevenlabs::DEFAULT_BASE_URL,
+        ),
+        &env_or(
+            "TYPELITE_E2E_ELEVENLABS_MODEL",
+            stt::elevenlabs::DEFAULT_MODEL,
+        ),
+    );
+    Some((preset, key))
+}
+
+/// Runs a recording through the ElevenLabs provider the way the pipeline does. Returns the
+/// text, the detected language and the time the upload took.
+async fn transcribe_elevenlabs(
+    preset: &SpeechPreset,
+    key: &str,
+    pcm: &[u8],
+) -> (Option<String>, Option<String>, Duration) {
+    let mut provider = stt::provider_for_preset(preset, None).expect("ElevenLabs provider");
+    let stt_config = SttConfig {
+        api_key: key.to_string(),
+        language: None,
+        sample_rate: SAMPLE_RATE,
+    };
+    provider.connect(&stt_config).await.expect("connect");
+    for chunk in pcm.chunks(CHUNK_BYTES) {
+        provider.send_audio(chunk).await.expect("send audio");
+    }
+    let started = Instant::now();
+    let text = provider
+        .disconnect()
+        .await
+        .expect("ElevenLabs transcription");
+    (text, provider.detected_language(), started.elapsed())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs TYPELITE_E2E_ELEVENLABS_KEY (ElevenLabs API key)"]
+async fn elevenlabs_transcribes_english_and_cantonese() {
+    let Some((preset, key)) = elevenlabs_preset_and_key() else {
+        println!("elevenlabs: TYPELITE_E2E_ELEVENLABS_KEY not set, skipping");
+        return;
+    };
+
+    let pcm = synthesise(
+        "Please send the design review notes to the team by Friday.",
+        None,
+    );
+    let (text, language, took) = transcribe_elevenlabs(&preset, &key, &pcm).await;
+    let text = text.expect("English transcript should not be empty");
+    println!("elevenlabs (en): {took:?}, language {language:?} -> {text:?}");
+    let words = normalised(&text);
+    for expected in ["design", "review", "notes", "friday"] {
+        assert!(words.contains(expected), "missing {expected:?} in {text:?}");
+    }
+    assert_eq!(language.as_deref(), Some("en"));
+
+    let pcm = synthesise("聽日下晝三點開會得唔得", Some("Sinji"));
+    let (text, language, took) = transcribe_elevenlabs(&preset, &key, &pcm).await;
+    let text = text.expect("Cantonese transcript should not be empty");
+    println!("elevenlabs (yue): {took:?}, language {language:?} -> {text:?}");
+    assert!(
+        matches!(language.as_deref(), Some("yue" | "zh")),
+        "unexpected language {language:?}"
+    );
+
+    // Silence is skipped before any request, as with the other providers.
+    let (silent, _, _) =
+        transcribe_elevenlabs(&preset, &key, &vec![0u8; SAMPLE_RATE as usize * 2]).await;
+    assert_eq!(silent, None);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs TYPELITE_E2E_ELEVENLABS_KEY (ElevenLabs API key)"]
+async fn elevenlabs_connection_test_passes_and_rejects_a_wrong_key() {
+    let Some((preset, key)) = elevenlabs_preset_and_key() else {
+        println!("elevenlabs: TYPELITE_E2E_ELEVENLABS_KEY not set, skipping");
+        return;
+    };
+    let config = stt::config::build_elevenlabs_config(&preset).expect("valid preset");
+    let client = reqwest::Client::new();
+
+    let ms = stt::elevenlabs::check_connection(&client, &config, &key)
+        .await
+        .expect("Test with the real key should pass");
+    println!("elevenlabs test: {ms} ms");
+
+    let error = stt::elevenlabs::check_connection(&client, &config, "sk-wrong")
         .await
         .expect_err("a wrong key must fail");
     assert!(error.contains("401"), "unexpected error {error:?}");

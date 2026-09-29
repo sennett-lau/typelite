@@ -6,7 +6,7 @@
 |---|---|
 | Speech server offline | The server is running, and the address and port are right. |
 | Speech server timed out | The server is busy or too slow; try a smaller model or a GPU server. |
-| HTTP 401 / rejected the API key | The key is correct and has billing or credit. For Qwen Cloud, `InvalidApiKey` means the key is wrong or not for this address. |
+| HTTP 401 / rejected the API key | The key is correct and has billing or credit. For Qwen Cloud, `InvalidApiKey` means the key is wrong or not for this address. For ElevenLabs, the key needs the **Speech to Text** permission; `quota_exceeded` means the plan's credits are used up. |
 | HTTP 404 | The address ends with `/v1` (or the service's base path), not with `/audio/transcriptions`. For Qwen Cloud, `Model not exist.` means the model name is wrong. |
 | Replace `<computer-ip>` … | The address still holds a placeholder; enter the other computer's address. |
 

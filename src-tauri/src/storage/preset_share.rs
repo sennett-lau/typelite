@@ -42,11 +42,12 @@ const MAX_LANGUAGE_CHARS: usize = 16;
 /// The kind an entry has when the file does not say: an OpenAI-compatible server. It is also
 /// the only kind shared for AI presets.
 pub const SHAREABLE_KIND: &str = "openai_compatible";
-/// Speech kinds that are shared: an OpenAI-compatible server, or Qwen Cloud's own API (plan
-/// `qwen-cloud-speech`). Other kinds (the Built-in model, or kinds added later) are left out of
+/// Speech kinds that are shared: an OpenAI-compatible server, Qwen Cloud's own API (plan
+/// `qwen-cloud-speech`) or ElevenLabs (plan `elevenlabs-speech`). Other kinds (the Built-in model, or kinds added later) are left out of
 /// an export and skipped on import.
-pub const SHAREABLE_SPEECH_KINDS: [&str; 2] = [SHAREABLE_KIND, QWEN_CLOUD_KIND];
+pub const SHAREABLE_SPEECH_KINDS: [&str; 3] = [SHAREABLE_KIND, QWEN_CLOUD_KIND, ELEVENLABS_KIND];
 const QWEN_CLOUD_KIND: &str = "qwen_cloud";
+const ELEVENLABS_KIND: &str = "elevenlabs";
 
 /// True when entries of `kind` are shared for `service`.
 fn is_shareable_kind(service: ServiceKind, kind: &str) -> bool {
@@ -611,6 +612,8 @@ pub fn merge_import(
             ServiceKind::Speech => {
                 let mut preset = if entry.kind == QWEN_CLOUD_KIND {
                     SpeechPreset::qwen_cloud(&id, &name, &entry.base_url, &entry.model)
+                } else if entry.kind == ELEVENLABS_KIND {
+                    SpeechPreset::elevenlabs(&id, &name, &entry.base_url, &entry.model)
                 } else {
                     SpeechPreset::server(&id, &name, &entry.base_url, &entry.model)
                 };
@@ -1018,6 +1021,33 @@ mod tests {
         assert_eq!(stored.name, "Qwen Cloud (2)");
         assert_eq!(stored.verified_at, None);
         assert!(!stored.builtin);
+    }
+
+    #[test]
+    fn an_elevenlabs_preset_round_trips_with_its_kind() {
+        let mut config = config_with_user_presets();
+        config.speech_presets.push(SpeechPreset::elevenlabs(
+            "speech-el",
+            "ElevenLabs",
+            crate::stt::elevenlabs::DEFAULT_BASE_URL,
+            crate::stt::elevenlabs::DEFAULT_MODEL,
+        ));
+        let ids = vec!["speech-el".to_string()];
+        let (text, count) =
+            build_export(&config, ServiceKind::Speech, &ids, false, &NoReadVault).unwrap();
+        assert_eq!(count, 1);
+        let value: Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(value["speech"][0]["kind"], "elevenlabs");
+        assert!(value["speech"][0].get("api_key").is_none());
+
+        let parsed = parse_file(&text).unwrap();
+        assert_eq!(parsed.skipped_speech, 0);
+        let outcome = merge_import(&mut config, &parsed, ServiceKind::Speech, &[0]).unwrap();
+        assert!(outcome.speech[0].is_elevenlabs());
+        assert_eq!(
+            outcome.speech[0].base_url,
+            crate::stt::elevenlabs::DEFAULT_BASE_URL
+        );
     }
 
     #[test]
