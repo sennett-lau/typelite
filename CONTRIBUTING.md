@@ -92,7 +92,7 @@ table of [Speech recognition](docs/guides/speech/README.md#services) or
 [AI polish](docs/guides/ai-polish/README.md#services).
 
 Only add services that work with the current code through an existing connection (Built-in,
-OpenAI-compatible, or for speech Qwen Cloud). Test it in the app first.
+OpenAI-compatible, or for speech Qwen Cloud or ElevenLabs). Test it in the app first.
 
 - Add one row in the [Services row](#services-row) format.
 - If it needs setup beyond a key, add a [server section](#server-section) under **Running your

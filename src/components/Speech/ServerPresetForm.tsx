@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { readCredential } from '../../lib/tauri'
 import { parseExtraFields } from '../../lib/extraFields'
-import { addressHostname, formatTestTime } from '../../lib/speechTypes'
+import { addressHostname, formatTestTime, isElevenLabsAddress } from '../../lib/speechTypes'
+import { ElevenLabsTip } from './ElevenLabsTip'
 import type { AiPreset } from '../../stores/appStore'
 import { saveServerPreset } from './saveSpeech'
 import { SPEECH_SERVICE, type AnyPreset, type EngineService } from './services'
@@ -203,6 +204,7 @@ export function ServerPresetForm({
         />
       </div>
       {addressNote && <p className="m-0 mt-2 text-[12px] text-text-secondary">{t(addressNote)}</p>}
+      {service.id === 'speech' && isElevenLabsAddress(draft.base_url) && <ElevenLabsTip />}
       {service.extraFields && (
         <div className="mt-2.5">
           <button
