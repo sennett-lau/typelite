@@ -1146,7 +1146,7 @@ impl PipelineHandle {
                 PipelineState::Outputting => "Typelite - Outputting...",
                 PipelineState::AskRecording => "Typelite - Ask...",
                 PipelineState::AskThinking => "Typelite - Answering...",
-                PipelineState::Idle => "Typelite",
+                PipelineState::Idle => crate::APP_NAME,
             };
             if let Ok(t) = tray_handle.tray.lock() {
                 let _ = t.set_tooltip(Some(tooltip));

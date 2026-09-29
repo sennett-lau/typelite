@@ -48,6 +48,35 @@ macOS asks for Microphone and Accessibility permission. A build signed ad hoc ge
 signature on every build, and macOS may then silently ignore the old Accessibility grant: remove
 Typelite from System Settings → Privacy & Security → Accessibility and add it again.
 
+### A development build next to the release app
+
+To try a branch end to end while you keep using a release, build **Typelite Dev**:
+
+```sh
+npm run build:dev-app
+cp -R "src-tauri/target/release/bundle/macos/Typelite Dev.app" /Applications/
+```
+
+It is a separate app, so it never touches the release app's data:
+
+| | Release | Development build |
+|---|---|---|
+| App | `Typelite.app` | `Typelite Dev.app` |
+| Bundle id | `dev.typelite.mac` | `dev.typelite.mac.dev` |
+| Settings, models, run timings | `~/Library/Application Support/dev.typelite.mac/` | `~/Library/Application Support/dev.typelite.mac.dev/` |
+| Keychain keys | service `Typelite` | service `Typelite Dev` |
+| Log | `~/Library/Logs/Typelite/typelite.log` | `~/Library/Logs/Typelite Dev/typelite.log` |
+| Accessibility and Microphone | its own grant | its own grant (reset with `tccutil reset Accessibility dev.typelite.mac.dev`) |
+
+The development build starts with a fresh setup and no keys; copy a preset over with the share buttons on its Settings card
+(export it in one app, import it in the other). Both apps listen for the same shortcuts, so **quit the release app
+(or give one of them other shortcuts) while you test**. Drive it without the keyboard with
+`"/Applications/Typelite Dev.app/Contents/MacOS/typelite" toggle`. The menu bar tooltip says
+"Typelite Dev".
+
+The build uses the Cargo feature `dev-build` (log folder, Keychain service, tooltip) and
+`src-tauri/tauri.dev-build.conf.json` (name and bundle id). Releases are never built with them.
+
 ### The offline gate
 
 Every pull request must pass these, with no warnings:
