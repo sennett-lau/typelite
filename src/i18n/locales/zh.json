@@ -113,8 +113,7 @@
       "failed": "上次测试失败",
       "speechImpact": "听写、翻译和随便问都需要它。",
       "aiImpact": "听写会粘贴原始转写；翻译和随便问需要它。",
-      "setUp": "去设置",
-      "otherOptions": "其他方式"
+      "setUp": "去设置"
     },
     "speedCompare": {
       "speaking": "说话",
