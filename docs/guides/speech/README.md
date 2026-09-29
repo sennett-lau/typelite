@@ -14,6 +14,7 @@ its own option, and in **Your server or API key** the address decides.
 | Built-in | whisper.cpp running inside Typelite, with a model it downloads for you | Nowhere; it stays on your computer | [Built-in](built-in.md) |
 | OpenAI-compatible | Any server that accepts `POST <address>/audio/transcriptions`: your own whisper.cpp or Speaches server, or a cloud service | Your server, or the cloud service you chose | [OpenAI-compatible](openai-compatible.md) |
 | Qwen Cloud | Qwen's own speech API, used automatically for a Qwen Cloud address | Qwen Cloud, with your own key | [Qwen Cloud](qwen-cloud.md) |
+| ElevenLabs | ElevenLabs' own speech-to-text API (Scribe), used automatically for an ElevenLabs address | ElevenLabs, with your own key | [ElevenLabs](elevenlabs.md) |
 
 Not sure? Start with Built-in. If it is too slow on your computer, a GPU computer on your network
 or a cloud service is faster; see [Choosing models](../models/speech-recognition.md) and
@@ -36,6 +37,7 @@ and receive your audio. The last column links to the setup.
 | [Mistral](openai-compatible.md#cloud-services) | Cloud | Paid | Yes | `https://api.mistral.ai/v1` | `voxtral-mini-latest` | |
 | [Together AI](openai-compatible.md#cloud-services) | Cloud | Paid | Yes | `https://api.together.xyz/v1` | `openai/whisper-large-v3` | |
 | [Qwen Cloud](qwen-cloud.md) | Cloud | Paid | Yes | `https://token-plan.maas.qwencloudapi.com/api/v1` | `qwen-audio-3.0-asr-flash` | Mixed English, Mandarin and Cantonese. Needs a Token Plan. |
+| [ElevenLabs Scribe](elevenlabs.md) | Cloud | Free tier | Yes | `https://api.elevenlabs.io` | `scribe_v2` | About 90 languages, auto-detect. Free plan credits cover about 30 minutes a month. |
 
 Other services that accept the OpenAI transcription API should work too: enter their address and
 model. To add one to this list, see [Adding a service](../../../CONTRIBUTING.md#adding-a-service).

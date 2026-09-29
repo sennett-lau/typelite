@@ -1,12 +1,15 @@
 {
   "permissions": {
     "deny": [
-      "Bash(gh pr merge:*--squash*)",
-      "Bash(gh pr merge:*-s *)",
-      "Bash(gh pr merge:*--rebase*)",
-      "Bash(gh pr merge:*-r *)",
-      "Bash(gh pr merge:*--delete-branch*)",
-      "Bash(gh pr merge:*-d *)"
+      "Bash(gh pr merge *--squash*)",
+      "Bash(gh pr merge * -s *)",
+      "Bash(gh pr merge * -s)",
+      "Bash(gh pr merge *--rebase*)",
+      "Bash(gh pr merge * -r *)",
+      "Bash(gh pr merge * -r)",
+      "Bash(gh pr merge *--delete-branch*)",
+      "Bash(gh pr merge * -d *)",
+      "Bash(gh pr merge * -d)"
     ]
   }
 }

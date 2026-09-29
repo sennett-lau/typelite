@@ -97,7 +97,7 @@ download against a SHA-256.
 
 Prefer a GPU computer on your network or a cloud key? Typelite works with any OpenAI-compatible
 speech or chat server (whisper.cpp server, Speaches, Ollama, LM Studio, OpenAI, Groq, OpenRouter
-and more) and with Qwen Cloud's speech API. Cloud services are opt-in and use your own key. See
+and more) and with the Qwen Cloud and ElevenLabs speech APIs. Cloud services are opt-in and use your own key. See
 the [Guides](docs/guides/README.md).
 
 ## How it compares with Typeless

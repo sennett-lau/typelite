@@ -6,6 +6,7 @@ import {
   builtinWhisperPreset,
   engineOf,
   formatTestTime,
+  isElevenLabsAddress,
   isQwenCloudAddress,
   serverPresets,
   withServerKind,
@@ -104,6 +105,23 @@ describe('speech engines (plan `two-tab-speech`)', () => {
     ).toMatchObject({ kind: 'openai_compatible', base_url: 'https://api.groq.com/openai/v1' })
     const builtin = { ...BUILTIN_SPEECH_PRESETS[0] }
     expect(withServerKind(builtin)).toBe(builtin)
+  })
+
+  it('picks the ElevenLabs kind from the address (plan `elevenlabs-speech`)', () => {
+    expect(isElevenLabsAddress('https://api.elevenlabs.io')).toBe(true)
+    expect(isElevenLabsAddress('https://api.elevenlabs.io/v1')).toBe(true)
+    expect(isElevenLabsAddress('https://api.eu.residency.elevenlabs.io')).toBe(true)
+    expect(isElevenLabsAddress('https://elevenlabs.io.example.com/v1')).toBe(false)
+    expect(isElevenLabsAddress('https://api.openai.com/v1')).toBe(false)
+    expect(isElevenLabsAddress('not a url')).toBe(false)
+
+    expect(withServerKind(preset('https://api.elevenlabs.io'))).toMatchObject({
+      kind: 'elevenlabs',
+      base_url: 'https://api.elevenlabs.io',
+    })
+    expect(
+      withServerKind(preset('https://api.groq.com/openai/v1', { kind: 'elevenlabs' })),
+    ).toMatchObject({ kind: 'openai_compatible' })
   })
 
   it('selects the preferred model when offered, otherwise the first', () => {

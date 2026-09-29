@@ -355,6 +355,7 @@ describe('SttPane', () => {
       })
       fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-q' } })
       expect(screen.getByText(/Qwen Cloud: sent to Qwen’s own speech API/)).toBeInTheDocument()
+      expect(screen.queryByTestId('elevenlabs-tip')).toBeNull()
       expect(screen.getByLabelText('Name')).toHaveValue('token-plan.maas.qwencloudapi.com')
 
       fireEvent.click(screen.getByRole('button', { name: 'Test' }))
@@ -388,6 +389,49 @@ describe('SttPane', () => {
           expect.objectContaining({ kind: 'qwen_cloud' }),
         ),
       )
+    })
+
+    it('an ElevenLabs address tests and saves as ElevenLabs (plan `elevenlabs-speech`)', async () => {
+      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(900)
+      render(<SttPane />)
+      fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: '__add__' } })
+
+      fireEvent.change(screen.getByLabelText('Address'), {
+        target: { value: 'https://api.elevenlabs.io' },
+      })
+      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'scribe_v2' } })
+      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'el-key' } })
+      const tip = screen.getByTestId('elevenlabs-tip')
+      expect(tip).toHaveTextContent(/Speech to Text permission/)
+      vi.mocked(openUrl).mockResolvedValue(undefined)
+      for (const [label, url] of [
+        ['Get an API key', 'https://elevenlabs.io/app/settings/api-keys'],
+        ['Speech to text docs', 'https://elevenlabs.io/docs/overview/capabilities/speech-to-text'],
+        ['Pricing', 'https://elevenlabs.io/pricing/api'],
+      ]) {
+        fireEvent.click(within(tip).getByRole('button', { name: label }))
+        expect(openUrl).toHaveBeenLastCalledWith(url)
+      }
+      expect(screen.getByLabelText('Name')).toHaveValue('api.elevenlabs.io')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+      expect(await screen.findByText('Works · 900 ms')).toBeInTheDocument()
+      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'elevenlabs', base_url: 'https://api.elevenlabs.io' }),
+        'el-key',
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+      await waitFor(() =>
+        expect(
+          config().speech_presets.find((p) => p.id === config().active_speech_preset_id),
+        ).toMatchObject({
+          kind: 'elevenlabs',
+          model: 'scribe_v2',
+          verified_at: expect.any(Number),
+        }),
+      )
+      expect(JSON.stringify(config())).not.toContain('el-key')
     })
 
     it('deletes the selected preset after a second click and moves to the next one', async () => {
