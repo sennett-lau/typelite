@@ -72,7 +72,8 @@ The development build starts with a fresh setup and no keys; copy a preset over 
 (export it in one app, import it in the other). Both apps listen for the same shortcuts, so **quit the release app
 (or give one of them other shortcuts) while you test**. Drive it without the keyboard with
 `"/Applications/Typelite Dev.app/Contents/MacOS/typelite" toggle`. The menu bar tooltip says
-"Typelite Dev".
+"Typelite Dev". Its icon is the Typelite icon in amber with a DEV tag (`src-tauri/icons/dev/`, drawn
+from `app-icon.svg` there).
 
 The build uses the Cargo feature `dev-build` (log folder, Keychain service, tooltip) and
 `src-tauri/tauri.dev-build.conf.json` (name and bundle id). Releases are never built with them.
