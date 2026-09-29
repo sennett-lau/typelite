@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="400" viewBox="0 0 660 400">
+  <!-- The DMG window's background (660 × 400 pt): the app on the left, Applications on the
+       right (positions in tauri.conf.json → bundle.macOS.dmg), an arrow and one line between. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F4F8FF"/>
+      <stop offset="1" stop-color="#E4ECFB"/>
+    </linearGradient>
+  </defs>
+  <rect width="660" height="400" fill="url(#bg)"/>
+  <g fill="none" stroke="#2F8CFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M268 190 H386"/>
+    <path d="M366 170 L390 190 L366 210"/>
+  </g>
+  <text x="330" y="330" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17" fill="#3A4A68">Drag Typelite to Applications</text>
+</svg>
