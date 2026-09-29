@@ -693,6 +693,105 @@ body,
     background: var(--color-bg-elevated);
     box-shadow: 0 0 0 0.5px var(--color-border);
   }
+  /* Plan `searxng-setup`: the Built-in search card (Settings → Search, onboarding). */
+  .search-setup-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px 15px;
+    border-radius: 11px;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 0 0 0.5px var(--color-border);
+  }
+  .search-setup-pill {
+    border-radius: 9999px;
+    background: var(--color-accent-light);
+    padding: 2px 9px;
+    color: var(--color-accent);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .search-setup-pill.is-ok {
+    background: color-mix(in srgb, var(--color-success) 14%, transparent);
+    color: var(--color-success);
+  }
+  .search-setup-pill.is-warn {
+    background: color-mix(in srgb, var(--color-warning, #ff9f0a) 16%, transparent);
+    color: var(--color-warning, #b76e00);
+  }
+  .search-setup-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: var(--color-bg-secondary);
+  }
+  .search-setup-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-accent);
+    transition: width 0.3s linear;
+  }
+  .search-setup-steps {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-text-tertiary);
+    font-size: 12.5px;
+  }
+  .search-setup-steps li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-setup-steps li.is-done {
+    color: var(--color-text-primary);
+  }
+  .search-setup-steps li.is-now {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .search-setup-dot {
+    display: inline-grid;
+    width: 14px;
+    height: 14px;
+    flex: none;
+    place-items: center;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+  }
+  .search-setup-steps li.is-done .search-setup-dot {
+    border-color: var(--color-success);
+    background: var(--color-success);
+    color: #fff;
+  }
+  .search-setup-facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 14px;
+    margin: 0;
+    font-size: 12.5px;
+  }
+  .search-setup-facts dt {
+    color: var(--color-text-secondary);
+  }
+  .search-setup-facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .search-setup-update {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    background: var(--color-accent-light);
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
   /* A setup card whose form is taller than the fixed card (the web search step). */
   .setup-card-fit {
     height: auto;
