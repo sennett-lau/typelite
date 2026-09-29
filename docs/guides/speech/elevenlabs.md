@@ -15,8 +15,8 @@ In **Your server or API key** (setup step or **Settings → Speech**), enter:
 | Model | `scribe_v2` (another Scribe model id also works) |
 | API key | Your ElevenLabs API key (required) |
 
-Press **Test**, then **Save**. The form shows "ElevenLabs: sent to ElevenLabs' own speech-to-text
-API" under the fields. `https://api.elevenlabs.io/v1` and the full
+Press **Test**, then **Save**. Under the fields the form shows a tip with links to get a key, the
+speech-to-text docs and the pricing. `https://api.elevenlabs.io/v1` and the full
 `https://api.elevenlabs.io/v1/speech-to-text` work too.
 
 To change or rotate the key later, open the preset in **Settings → Speech**, paste the new key
@@ -25,13 +25,16 @@ and press Save. Keys are kept in the macOS Keychain, never in the settings file.
 ## Getting a key
 
 1. Sign up or sign in at [elevenlabs.io](https://elevenlabs.io).
-2. Open **Developers → API keys** (from your profile menu) and create a key.
+2. Open [API keys](https://elevenlabs.io/app/settings/api-keys) (**Developers → API keys** in
+   your profile menu) and create a key.
 3. Give it the **Speech to Text** permission (a restricted key with only that permission is
    enough), then copy it into Typelite with the address above.
 
 **Cost:** the free plan includes monthly credits that cover roughly 30 minutes of speech to
 text; paid plans include more hours and bill Scribe at about $0.22 an hour. See
-[ElevenLabs pricing](https://elevenlabs.io/pricing/api) for current numbers. Typelite skips
+[ElevenLabs pricing](https://elevenlabs.io/pricing/api) for current numbers, and the
+[speech to text docs](https://elevenlabs.io/docs/overview/capabilities/speech-to-text) for
+models and languages. Typelite skips
 recordings without speech before uploading, so key clicks are never billed.
 
 ## How Typelite recognises it

@@ -355,6 +355,7 @@ describe('SttPane', () => {
       })
       fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'sk-q' } })
       expect(screen.getByText(/Qwen Cloud: sent to Qwen’s own speech API/)).toBeInTheDocument()
+      expect(screen.queryByTestId('elevenlabs-tip')).toBeNull()
       expect(screen.getByLabelText('Name')).toHaveValue('token-plan.maas.qwencloudapi.com')
 
       fireEvent.click(screen.getByRole('button', { name: 'Test' }))
@@ -400,7 +401,17 @@ describe('SttPane', () => {
       })
       fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'scribe_v2' } })
       fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'el-key' } })
-      expect(screen.getByText(/ElevenLabs: sent to ElevenLabs’ own/)).toBeInTheDocument()
+      const tip = screen.getByTestId('elevenlabs-tip')
+      expect(tip).toHaveTextContent(/Speech to Text permission/)
+      vi.mocked(openUrl).mockResolvedValue(undefined)
+      for (const [label, url] of [
+        ['Get an API key', 'https://elevenlabs.io/app/settings/api-keys'],
+        ['Speech to text docs', 'https://elevenlabs.io/docs/overview/capabilities/speech-to-text'],
+        ['Pricing', 'https://elevenlabs.io/pricing/api'],
+      ]) {
+        fireEvent.click(within(tip).getByRole('button', { name: label }))
+        expect(openUrl).toHaveBeenLastCalledWith(url)
+      }
       expect(screen.getByLabelText('Name')).toHaveValue('api.elevenlabs.io')
 
       fireEvent.click(screen.getByRole('button', { name: 'Test' }))
