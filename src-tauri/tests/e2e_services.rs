@@ -921,6 +921,22 @@ async fn polish_transcribes_requests_instead_of_doing_them() {
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn polish_keeps_only_the_corrected_version_of_a_repeated_phrase() {
     let cases: &[FidelityCase] = &[
+        // The onboarding "Change your mind" line, as speech servers punctuate it.
+        ("Let's have lunch at one. Oh no! Let's do it at two.", |t| {
+            expect_contains(t, &["lunch", "two"])?;
+            expect_absent(t, &["one", "oh no", "oh, no"])
+        }),
+        (
+            "Let's have lunch at one. Oh, no! Let's do it at two.",
+            |t| {
+                expect_contains(t, &["lunch", "two"])?;
+                expect_absent(t, &["one", "oh no", "oh, no"])
+            },
+        ),
+        ("let's have lunch at 1 oh no let's do it at 2", |t| {
+            expect_contains(t, &["lunch", "2"])?;
+            expect_absent(t, &["at 1", "oh no"])
+        }),
         (
             "The first thing, um, sorry, the third thing, it's the budget",
             |t| {
