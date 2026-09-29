@@ -7,6 +7,8 @@ import {
   answerAskAnyway,
   closeAskPanel,
   copyAskText,
+  openAskSource,
+  openSettingsPane,
   resizeAskPanel,
   startAskDictation,
   stopAskDictation,
@@ -49,6 +51,8 @@ vi.mock('../../../lib/tauri', () => ({
   stopAskDictation: vi.fn(),
   abortAskDictation: vi.fn(),
   takePendingAskMessage: vi.fn(),
+  openAskSource: vi.fn(() => Promise.resolve()),
+  openSettingsPane: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@tauri-apps/api/event', () => ({
@@ -392,20 +396,21 @@ describe('AskPanel', () => {
   })
 
   describe('live questions (Plan `ask-translate-and-live-questions`)', () => {
-    const liveResult = () =>
+    const liveResult = (liveSearch: AskDictationResult['liveSearch'] = 'notConfigured') =>
       askResult({
         question: "What's the AI news today?",
         answer: '',
         output: 'needsLiveInfo',
         actualPlacement: null,
+        liveSearch,
       })
 
-    async function showLiveResult() {
+    async function showLiveResult(liveSearch?: AskDictationResult['liveSearch']) {
       render(<AskPanel />)
       await waitFor(() => {
         expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
       })
-      act(() => tauriEventMock.emit('ask:result', liveResult()))
+      act(() => tauriEventMock.emit('ask:result', liveResult(liveSearch)))
       return screen.findByTestId('ask-needs-live-info')
     }
 
@@ -415,16 +420,66 @@ describe('AskPanel', () => {
       expect(screen.getByText('Needs live information')).toBeDefined()
       expect(
         screen.getByText(
-          "This question needs up-to-date information from the web. Typelite can't look things up yet.",
+          'This question needs up-to-date information from the web. Web search is not set up; you can add a search server in Settings.',
         ),
       ).toBeDefined()
       expect(screen.getByText("What's the AI news today?")).toBeDefined()
       expect(screen.getByRole('button', { name: 'Answer anyway' })).toBeDefined()
       expect(screen.getByRole('button', { name: 'Close (Esc)' })).toBeDefined()
-      // No web-search setup yet, and nothing to copy or insert.
-      expect(screen.queryByText(/set up web search/i)).toBeNull()
+      // Nothing to copy or insert.
       expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
       expect(screen.queryByText('About the highlight', { exact: false })).toBeNull()
+    })
+
+    it('without a search provider, Set up web search opens Settings (plan `ask-web-search`)', async () => {
+      await showLiveResult('notConfigured')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Set up web search' }))
+
+      expect(openSettingsPane).toHaveBeenCalledWith('llm')
+      await waitFor(() => expect(closeAskPanel).toHaveBeenCalled())
+    })
+
+    it('a failed search says so and offers no setup button', async () => {
+      await showLiveResult('failed')
+
+      expect(
+        screen.getByText(
+          'This question needs up-to-date information, but the web search did not work. Check the search server in Settings.',
+        ),
+      ).toBeDefined()
+      expect(screen.queryByRole('button', { name: 'Set up web search' })).toBeNull()
+      expect(screen.getByRole('button', { name: 'Answer anyway' })).toBeDefined()
+    })
+
+    it('a web answer shows numbered source links that open in the browser', async () => {
+      render(<AskPanel />)
+      await waitFor(() => {
+        expect(tauriEventMock.listen).toHaveBeenCalledWith('ask:result', expect.any(Function))
+      })
+      act(() =>
+        tauriEventMock.emit(
+          'ask:result',
+          askResult({
+            question: 'Where is the next F1 Grand Prix?',
+            answer: 'Sepang, Malaysia, on 4 October [1].',
+            sources: [
+              {
+                number: 1,
+                title: 'Next race moved',
+                url: 'https://www.example.com/f1/next',
+              },
+            ],
+          }),
+        ),
+      )
+
+      const sources = await screen.findByTestId('ask-panel-sources')
+      expect(sources.textContent).toContain('Sources')
+      const link = screen.getByRole('button', { name: /example\.com/ })
+      fireEvent.click(link)
+      expect(openAskSource).toHaveBeenCalledWith('https://www.example.com/f1/next')
+      expect(screen.queryByText('May be out of date — no web search was used')).toBeNull()
     })
 
     it('answers anyway with the out-of-date note', async () => {

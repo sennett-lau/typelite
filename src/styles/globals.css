@@ -2241,6 +2241,50 @@ body,
   font-size: 11.5px;
   line-height: 16px;
 }
+/* Plan `ask-web-search`: the answer's web sources, as small numbered chips. */
+.ask-glass-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 14px 0;
+}
+.ask-glass-sources-label {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  margin-right: 2px;
+}
+.ask-glass-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 180px;
+  height: 20px;
+  padding: 0 7px 0 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.ask-glass-source:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.ask-glass-source-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 9.5px;
+  font-weight: 600;
+}
 .ask-glass-hint {
   flex: 1;
   color: rgba(255, 255, 255, 0.45);
