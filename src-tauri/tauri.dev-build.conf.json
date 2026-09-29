@@ -4,6 +4,15 @@
   "mainBinaryName": "typelite",
   "identifier": "dev.typelite.mac.dev",
   "bundle": {
-    "externalBin": ["binaries/llama-server"]
+    "externalBin": [
+      "binaries/llama-server"
+    ],
+    "icon": [
+      "icons/dev/32x32.png",
+      "icons/dev/128x128.png",
+      "icons/dev/128x128@2x.png",
+      "icons/dev/icon.icns",
+      "icons/dev/icon.ico"
+    ]
   }
 }
