@@ -286,6 +286,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
       onAnswerAnyway={answerAnyway}
       onClose={closeLiveInfo}
       answering={answeringAnyway}
+      liveSearch={result?.liveSearch}
     />
   ) : null
   const outOfDateNote =

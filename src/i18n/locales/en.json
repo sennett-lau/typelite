@@ -35,13 +35,16 @@
     "routeDisabled": "This route is disabled",
     "searchOpened": "Opened {{provider}} search",
     "liveTitle": "Needs live information",
-    "liveBody": "This question needs up-to-date information from the web. Typelite can't look things up yet.",
+    "liveBody": "This question needs up-to-date information from the web. Web search is not set up; you can add a search server in Settings.",
     "answerAnyway": "Answer anyway",
     "close": "Close",
     "outOfDateNote": "May be out of date — no web search was used",
     "aboutSelection": "About “{{text}}”",
     "aboutSelectionHint": "Asking about the highlighted text",
-    "send": "Ask"
+    "send": "Ask",
+    "liveBodySearchFailed": "This question needs up-to-date information, but the web search did not work. Check the search server in Settings.",
+    "liveBodyNoResults": "This question needs up-to-date information, but the web search found nothing.",
+    "setUpWebSearch": "Set up web search"
   },
   "askPanel": {
     "label": "Ask answer",
@@ -56,7 +59,8 @@
     "insertFailed": "Couldn't insert here. Use Copy instead.",
     "couldNotReplace": "This app didn't allow the replacement. The result is on your clipboard.",
     "tryReplacingAgain": "Try replacing again",
-    "errorTitle": "Something went wrong"
+    "errorTitle": "Something went wrong",
+    "sources": "Sources"
   },
   "errors": {
     "stt_timeout": "The speech server did not answer within {{details}}. Check that it is running, or try a faster server.",
@@ -1093,5 +1097,23 @@
         "needs_disk_space": "Not enough free space for the larger model."
       }
     }
+  },
+  "webSearch": {
+    "group": "Web search for Ask",
+    "title": "Search provider",
+    "help": "Ask anything looks up questions about news, scores, schedules or prices on the web. Off until you add your own search server; SearXNG is free and runs on your computer.",
+    "onboardingTitle": "Web search for Ask (optional)",
+    "provider": "Provider",
+    "key": "Key",
+    "keyPlaceholder": "Optional. SearXNG needs none",
+    "keySaved": "Saved in the Keychain. Type to replace",
+    "privacy": "Your question is sent to this server when Ask needs live information.",
+    "howToRun": "How to run SearXNG",
+    "works": "Works: {{count}} results in {{time}}",
+    "save": "Save",
+    "saved": "Saved. Ask searches live questions now.",
+    "remove": "Turn off web search",
+    "removed": "Web search is off.",
+    "removeKey": "Remove key"
   }
 }

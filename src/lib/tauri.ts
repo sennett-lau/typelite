@@ -631,7 +631,20 @@ export interface AskDictationResult {
   fallbackReason: VoiceExecutionFallbackReason | null
   /** Answered with "Answer anyway" for a live question: may be out of date. */
   mayBeOutOfDate: boolean
+  /** Plan `ask-web-search`: the web pages a live answer came from (empty without a search). */
+  sources?: AskSource[]
+  /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
+  liveSearch?: LiveSearchState | null
 }
+
+/** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */
+export interface AskSource {
+  number: number
+  title: string
+  url: string
+}
+
+export type LiveSearchState = 'notConfigured' | 'failed' | 'noResults'
 
 export interface AskDictationStartResult {
   usedSelectedText: boolean
@@ -672,6 +685,52 @@ export async function abortAskDictation(): Promise<void> {
 
 export async function takePendingAskMessage(): Promise<PendingAskMessage | null> {
   return invoke('take_pending_ask_message')
+}
+
+/** Plan `ask-web-search`: opens one of the answer's source links in the browser. */
+export async function openAskSource(url: string): Promise<void> {
+  return invoke('open_ask_source', { url })
+}
+
+// Plan `ask-web-search`: the search provider for Ask's live questions.
+
+export type SearchProviderKind = 'none' | 'searxng'
+
+export interface WebSearchConfig {
+  provider: SearchProviderKind
+  base_url: string
+}
+
+export interface WebSearchStatus {
+  config: WebSearchConfig
+  /** A key is stored for the provider (never the key itself). */
+  hasKey: boolean
+}
+
+export async function getWebSearchStatus(): Promise<WebSearchStatus> {
+  return invoke('get_web_search_status')
+}
+
+/** `apiKey`: undefined keeps the stored key, '' removes it, anything else replaces it. */
+export async function saveWebSearch(
+  provider: SearchProviderKind,
+  baseUrl: string,
+  apiKey?: string,
+): Promise<WebSearchStatus> {
+  return invoke('save_web_search', { provider, baseUrl, apiKey: apiKey ?? null })
+}
+
+export async function removeWebSearch(): Promise<WebSearchStatus> {
+  return invoke('remove_web_search')
+}
+
+/** One search for a fixed word; resolves with the result count and time, rejects with a message. */
+export async function testWebSearch(
+  provider: SearchProviderKind,
+  baseUrl: string,
+  apiKey?: string,
+): Promise<{ results: number; ms: number }> {
+  return invoke('test_web_search', { provider, baseUrl, apiKey: apiKey ?? null })
 }
 
 /**

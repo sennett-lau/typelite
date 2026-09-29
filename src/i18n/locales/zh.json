@@ -35,13 +35,16 @@
     "routeDisabled": "此功能路径已停用",
     "searchOpened": "已打开 {{provider}} 搜索",
     "liveTitle": "需要实时信息",
-    "liveBody": "这个问题需要来自网络的最新信息。Typelite 目前还不能联网查找。",
+    "liveBody": "这个问题需要网上的最新信息。尚未设置网络搜索；你可以在设置中添加搜索服务器。",
     "answerAnyway": "仍然回答",
     "close": "关闭",
     "outOfDateNote": "可能已过时——未使用网络搜索",
     "aboutSelection": "关于“{{text}}”",
     "aboutSelectionHint": "正在就选中文本提问",
-    "send": "提问"
+    "send": "提问",
+    "liveBodySearchFailed": "这个问题需要最新信息，但网络搜索失败了。请在设置中检查搜索服务器。",
+    "liveBodyNoResults": "这个问题需要最新信息，但网络搜索没有找到结果。",
+    "setUpWebSearch": "设置网络搜索"
   },
   "askPanel": {
     "label": "问答回答",
@@ -56,7 +59,8 @@
     "insertFailed": "无法在此插入，请改用复制。",
     "couldNotReplace": "此应用不允许替换，结果已在剪贴板上。",
     "tryReplacingAgain": "再次尝试替换",
-    "errorTitle": "出了点问题"
+    "errorTitle": "出了点问题",
+    "sources": "来源"
   },
   "errors": {
     "stt_timeout": "语音服务在 {{details}} 内没有响应。请确认服务正在运行，或换用更快的服务。",
@@ -1093,5 +1097,23 @@
         "needs_disk_space": "可用空间不足，无法使用较大的模型。"
       }
     }
+  },
+  "webSearch": {
+    "group": "问答的网络搜索",
+    "title": "搜索服务",
+    "help": "问答遇到新闻、比分、赛程或价格等问题时，会在网上搜索。添加你自己的搜索服务器后才会开启；SearXNG 免费，可在你的电脑上运行。",
+    "onboardingTitle": "问答的网络搜索（可选）",
+    "provider": "服务",
+    "key": "密钥",
+    "keyPlaceholder": "可选。SearXNG 不需要",
+    "keySaved": "已保存在钥匙串中。输入可替换",
+    "privacy": "问答需要实时信息时，你的问题会发送到这个服务器。",
+    "howToRun": "如何运行 SearXNG",
+    "works": "可用：{{time}} 内 {{count}} 条结果",
+    "save": "保存",
+    "saved": "已保存。问答现在会搜索实时问题。",
+    "remove": "关闭网络搜索",
+    "removed": "网络搜索已关闭。",
+    "removeKey": "移除密钥"
   }
 }

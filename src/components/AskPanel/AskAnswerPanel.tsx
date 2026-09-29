@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Check, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { copyAskText, insertAskText } from '../../lib/tauri'
-import type { AskDictationResult } from '../../lib/tauri'
+import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
+import type { AskDictationResult, AskSource } from '../../lib/tauri'
+import { liveBodyKey } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
 
 /** What the panel shows: an Ask result, or an error message. */
@@ -22,6 +23,43 @@ interface AskAnswerPanelProps {
 
 /** How long "Copied ✓" stays on the Copy button. */
 const COPIED_MS = 1500
+
+/** The host name of a link, without `www.`, for a compact source chip. */
+function sourceHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+/**
+ * Plan `ask-web-search`: the web pages an answer came from, numbered as the answer cites them.
+ * A click opens the page in the browser (through the app: the panel never takes focus).
+ */
+export function AskSources({ sources }: { sources: AskSource[] }) {
+  const { t } = useTranslation()
+  if (sources.length === 0) return null
+  return (
+    <div className="ask-glass-sources" data-testid="ask-panel-sources">
+      <span className="ask-glass-sources-label">{t('askPanel.sources')}</span>
+      {sources.map((source) => (
+        <button
+          key={source.url}
+          type="button"
+          className="ask-glass-source"
+          title={`${source.title}\n${source.url}`}
+          onClick={() => {
+            openAskSource(source.url).catch(() => {})
+          }}
+        >
+          <span className="ask-glass-source-number">{source.number}</span>
+          {sourceHost(source.url)}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 /**
  * Plan `ask-panel-above-pill`: the Ask panel above the pill (see `mock.html` in the plan). One
@@ -104,22 +142,38 @@ export function AskAnswerPanel({
       </div>
     )
   } else if (output === 'needsLiveInfo') {
+    const notConfigured = (result?.liveSearch ?? 'notConfigured') === 'notConfigured'
     body = (
       <div className="ask-glass-answer" data-testid="ask-needs-live-info">
         <p className="font-semibold">{t('ask.liveTitle')}</p>
-        <p className="mt-1 text-white/80">{t('ask.liveBody')}</p>
+        <p className="mt-1 text-white/80">{t(liveBodyKey(result?.liveSearch))}</p>
       </div>
     )
     actions = (
-      <button
-        type="button"
-        className="ask-glass-button ask-glass-button-primary"
-        onClick={onAnswerAnyway}
-        disabled={answering}
-      >
-        {answering && <Loader2 size={12} className="animate-spin" aria-hidden="true" />}
-        {t('ask.answerAnyway')}
-      </button>
+      <>
+        {notConfigured && (
+          <button
+            type="button"
+            className="ask-glass-button"
+            onClick={() => {
+              openSettingsPane('llm')
+                .then(onClose)
+                .catch(() => {})
+            }}
+          >
+            {t('ask.setUpWebSearch')}
+          </button>
+        )}
+        <button
+          type="button"
+          className="ask-glass-button ask-glass-button-primary"
+          onClick={onAnswerAnyway}
+          disabled={answering}
+        >
+          {answering && <Loader2 size={12} className="animate-spin" aria-hidden="true" />}
+          {t('ask.answerAnyway')}
+        </button>
+      </>
     )
   } else if (couldNotReplace) {
     body = (
@@ -148,6 +202,7 @@ export function AskAnswerPanel({
     body = (
       <>
         <div className="ask-glass-answer">{text}</div>
+        <AskSources sources={result?.sources ?? []} />
         {result?.mayBeOutOfDate && (
           <p className="ask-glass-note text-white/55">{t('ask.outOfDateNote')}</p>
         )}

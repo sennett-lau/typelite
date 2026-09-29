@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { MAX_TRANSLATION_TARGETS, canonicalTranslationCode } from '../lib/constants'
 import { compactKeyLabel, fullKeyLabel } from '../lib/keyLabels'
+import type { WebSearchConfig } from '../lib/tauri'
 
 export type PipelineState =
   | 'idle'
@@ -458,6 +459,11 @@ export interface AppConfig {
    * typing nudge. Which keys are pressed is never stored.
    */
   measure_typing_speed: boolean
+  /**
+   * Plan `ask-web-search`: the search provider Ask uses for live questions. Saved by its own
+   * section (Settings -> AI polish), not the Save bar.
+   */
+  web_search: WebSearchConfig
 }
 
 /** A Settings pane a setup message can open. */
@@ -1284,6 +1290,7 @@ const defaultConfig: AppConfig = {
   shortcut_tour_completed: false,
   shortcut_tour_prompt_dismissed: false,
   measure_typing_speed: true,
+  web_search: { provider: 'none', base_url: '' },
 }
 
 export const useAppStore = create<AppState>((set) => ({
