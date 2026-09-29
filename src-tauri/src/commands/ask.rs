@@ -1293,6 +1293,7 @@ pub async fn start_ask_follow_up(
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<(), String> {
     let Some(exchange) = state.last_exchange() else {
+        tracing::warn!("Ask follow-up: no answer on screen to follow up on");
         return Err("There is no answer to follow up on".to_string());
     };
     if !state.try_begin_starting() {
@@ -1448,6 +1449,35 @@ pub(crate) async fn start_reserved_ask_dictation(
         let _ = app.emit(ASK_FOLLOW_UP_EVENT, follow_up_preview);
         emit_capsule_state(&app, PipelineState::AskRecording);
         let _ = app.emit("recording:deadline", recording_deadline.event);
+        // The pill's waveform follows the voice while Ask records, as in Dictate
+        // (`pipeline.rs`): the level of this recording until it ends, then silence.
+        {
+            let volume_state = state.0.clone();
+            let volume_app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_millis(
+                        crate::pipeline::VOLUME_POLL_INTERVAL_MS,
+                    ))
+                    .await;
+                    let volume = volume_state
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .session
+                        .as_ref()
+                        .map(|session| session.handle.get_volume());
+                    match volume {
+                        Some(volume) => {
+                            let _ = volume_app.emit("audio:volume", volume);
+                        }
+                        None => {
+                            let _ = volume_app.emit("audio:volume", 0.0_f32);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
         let state_inner = state.0.clone();
         let deadline_state_inner = state.0.clone();
         let deadline_app = app.clone();
