@@ -26,7 +26,7 @@ text.
 
 | Guide | Covers |
 |---|---|
-| [Speech recognition](speech/README.md) | Connections (Built-in, OpenAI-compatible, Qwen Cloud) and every supported service. |
+| [Speech recognition](speech/README.md) | Connections (Built-in, OpenAI-compatible, Qwen Cloud, ElevenLabs) and every supported service. |
 | [AI polish](ai-polish/README.md) | Connections (Built-in, OpenAI-compatible), services, turning off thinking. |
 | [Choosing models](models/README.md) | Which speech and polish models to use, by hardware. |
 | [Languages](languages/README.md) | Language guides (which models for your language, such as Cantonese), translation languages, per-language instructions, recognition, language presets. |
