@@ -63,6 +63,24 @@ describe('WebSearchForm (plan `ask-web-search`)', () => {
     expect(await screen.findByText(/Works: 12 results/)).toBeDefined()
   })
 
+  it('a Test after Save keeps the Saved message visible', async () => {
+    vi.mocked(saveWebSearch).mockResolvedValue({ config: on, hasKey: false })
+    vi.mocked(testWebSearch).mockResolvedValue({ results: 3, ms: 500 })
+    render(<WebSearchForm />)
+
+    fireEvent.change(screen.getByLabelText('Address'), { target: { value: ADDRESS } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByText('Saved. Ask searches live questions now.')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+
+    expect(await screen.findByText(/Works: 3 results/)).toBeDefined()
+    expect(screen.getByText('Saved. Ask searches live questions now.')).toBeDefined()
+    // Turn off is a real button once search is on.
+    expect(screen.getByRole('button', { name: 'Turn off web search' }).className).toContain(
+      'btn-secondary',
+    )
+  })
+
   it('shows why a test failed', async () => {
     vi.mocked(testWebSearch).mockRejectedValue(
       'The server refused JSON. In SearXNG’s settings.yml, add json to search.formats.',

@@ -10,6 +10,7 @@ import {
   openAskSource,
   openSettingsPane,
   resizeAskPanel,
+  startAskFollowUp,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
@@ -53,6 +54,7 @@ vi.mock('../../../lib/tauri', () => ({
   takePendingAskMessage: vi.fn(),
   openAskSource: vi.fn(() => Promise.resolve()),
   openSettingsPane: vi.fn(() => Promise.resolve()),
+  startAskFollowUp: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@tauri-apps/api/event', () => ({
@@ -148,8 +150,9 @@ describe('AskPanel', () => {
     })
     expect(screen.getByTestId('ask-floating-note')).toBeDefined()
     expect(screen.queryByRole('textbox')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Insert at the cursor' })).toBeDefined()
+    // Plan `ask-web-search`: an answer offers Ask follow-up instead of Copy and Insert.
+    expect(screen.getByRole('button', { name: 'Ask follow-up' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
     expect(screen.queryByText('Answer')).toBeNull()
     expect(startAskDictation).not.toHaveBeenCalled()
   })
@@ -215,7 +218,7 @@ describe('AskPanel', () => {
 
     const question = await screen.findByTestId('ask-panel-question')
     expect(question.textContent).toBe('About the highlight · What is Typelite?')
-    expect(screen.getByRole('button', { name: 'Replace the highlight' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Ask follow-up' })).toBeDefined()
   })
 
   it('closes the panel through the app from its close button', async () => {
@@ -255,17 +258,15 @@ describe('AskPanel', () => {
     expect(startAskDictation).not.toHaveBeenCalled()
   })
 
-  it('copies the hotkey answer through the app', async () => {
+  it('starts a follow-up recording from the hotkey answer (plan `ask-web-search`)', async () => {
     render(<AskPanel />)
 
     await emitWhenListening('ask:result', askResult())
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Copy' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask follow-up' }))
 
-    expect(copyAskText).toHaveBeenCalledWith('It turns speech into useful text.')
-    await waitFor(() => {
-      expect(screen.getByText('Copied')).toBeDefined()
-    })
+    await waitFor(() => expect(startAskFollowUp).toHaveBeenCalledTimes(1))
+    expect(copyAskText).not.toHaveBeenCalled()
   })
 
   it('renders a pending hotkey result when the native event was missed', async () => {
@@ -280,7 +281,7 @@ describe('AskPanel', () => {
       expect(screen.getByText('It turns speech into useful text.')).toBeDefined()
     })
     expect(screen.queryByRole('textbox')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Ask follow-up' })).toBeDefined()
     expect(startAskDictation).not.toHaveBeenCalled()
   })
 
@@ -436,7 +437,7 @@ describe('AskPanel', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Set up web search' }))
 
-      expect(openSettingsPane).toHaveBeenCalledWith('llm')
+      expect(openSettingsPane).toHaveBeenCalledWith('search')
       await waitFor(() => expect(closeAskPanel).toHaveBeenCalled())
     })
 

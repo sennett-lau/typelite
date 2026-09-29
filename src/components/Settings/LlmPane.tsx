@@ -17,7 +17,6 @@ import { LANGUAGE_PRESETS_GUIDE_URL, useLibraryStatus } from './languages/langua
 import { LanguageSheet } from './languages/LanguageSheet'
 import { AppStyleMappingDialog } from './AppStyleMappingDialog'
 import { ManageAppMappingsDialog } from './ManageAppMappingsDialog'
-import { WebSearchForm } from '../WebSearch/WebSearchForm'
 
 const POLISH_STYLES: PolishStyle[] = ['minimal', 'clean', 'structured', 'professional']
 const STYLE_KEY: Record<PolishStyle, string> = {
@@ -272,13 +271,6 @@ export function LlmPane() {
           onChange={(translation) => updateConfig({ translation })}
           onEdit={setEditingLanguage}
         />
-      </Group>
-
-      {/* Plan `ask-web-search`: the search provider Ask uses for live questions. */}
-      <Group label={t('webSearch.group')}>
-        <Row label={t('webSearch.title')} help={t('webSearch.help')} layout="stacked">
-          <WebSearchForm idPrefix="settings-web-search" />
-        </Row>
       </Group>
 
       <div className="mx-1 mt-4">

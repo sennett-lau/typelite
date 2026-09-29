@@ -502,6 +502,12 @@ interface AppState {
    */
   askSelectionPreview: string | null
   setAskSelectionPreview: (preview: string | null) => void
+  /** Plan `ask-web-search`: what the Ask thinking pill says (searching the web, or thinking). */
+  askStage: 'searching' | 'thinking'
+  setAskStage: (stage: 'searching' | 'thinking') => void
+  /** Plan `ask-web-search`: the start of the earlier question an Ask follow-up continues. */
+  askFollowUpPreview: string | null
+  setAskFollowUpPreview: (preview: string | null) => void
 
   // Recording
   audioVolume: number
@@ -1224,7 +1230,7 @@ function syncHotkeyConfig(previous: AppConfig, partial: Partial<AppConfig>): App
 }
 
 /** Onboarding step index of the Dictate tutorial, the first step of the shortcut tour. */
-export const SHORTCUT_TOUR_FIRST_STEP = 4
+export const SHORTCUT_TOUR_FIRST_STEP = 5
 
 const defaultConfig: AppConfig = {
   speech_presets: BUILTIN_SPEECH_PRESETS.map((preset) => ({ ...preset })),
@@ -1300,6 +1306,10 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveVoiceMode: (activeVoiceMode) => set({ activeVoiceMode }),
   askSelectionPreview: null,
   setAskSelectionPreview: (askSelectionPreview) => set({ askSelectionPreview }),
+  askStage: 'thinking',
+  setAskStage: (askStage) => set({ askStage }),
+  askFollowUpPreview: null,
+  setAskFollowUpPreview: (askFollowUpPreview) => set({ askFollowUpPreview }),
 
   audioVolume: 0,
   setAudioVolume: (audioVolume) => set({ audioVolume }),

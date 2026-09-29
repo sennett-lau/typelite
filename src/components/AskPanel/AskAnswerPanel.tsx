@@ -1,9 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Check, Loader2, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { AlertTriangle, Check, Loader2, MessageCircle, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
+import {
+  copyAskText,
+  insertAskText,
+  openAskSource,
+  openSettingsPane,
+  startAskFollowUp,
+} from '../../lib/tauri'
 import type { AskDictationResult, AskSource } from '../../lib/tauri'
-import { liveBodyKey } from './liveSearch'
+import { answerSegments, liveBodyKey } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
 
 /** What the panel shows: an Ask result, or an error message. */
@@ -21,9 +27,6 @@ interface AskAnswerPanelProps {
   answering?: boolean
 }
 
-/** How long "Copied ✓" stays on the Copy button. */
-const COPIED_MS = 1500
-
 /** The host name of a link, without `www.`, for a compact source chip. */
 function sourceHost(url: string): string {
   try {
@@ -33,9 +36,14 @@ function sourceHost(url: string): string {
   }
 }
 
+function openSource(url: string) {
+  openAskSource(url).catch(() => {})
+}
+
 /**
- * Plan `ask-web-search`: the web pages an answer came from, numbered as the answer cites them.
- * A click opens the page in the browser (through the app: the panel never takes focus).
+ * Plan `ask-web-search`: the web pages an answer came from, numbered as the answer cites them:
+ * the page title (cut short) and its domain. A click opens the page in the browser (through the
+ * app: the panel never takes focus).
  */
 export function AskSources({ sources }: { sources: AskSource[] }) {
   const { t } = useTranslation()
@@ -49,12 +57,11 @@ export function AskSources({ sources }: { sources: AskSource[] }) {
           type="button"
           className="ask-glass-source"
           title={`${source.title}\n${source.url}`}
-          onClick={() => {
-            openAskSource(source.url).catch(() => {})
-          }}
+          onClick={() => openSource(source.url)}
         >
           <span className="ask-glass-source-number">{source.number}</span>
-          {sourceHost(source.url)}
+          <span className="ask-glass-source-title">{source.title}</span>
+          <span className="ask-glass-source-host">{sourceHost(source.url)}</span>
         </button>
       ))}
     </div>
@@ -62,11 +69,41 @@ export function AskSources({ sources }: { sources: AskSource[] }) {
 }
 
 /**
+ * Plan `ask-web-search`: the answer text with each `[n]` citation as a small numbered link that
+ * opens the same page as source chip n.
+ */
+export function AnswerText({ text, sources }: { text: string; sources: AskSource[] }) {
+  const { t } = useTranslation()
+  if (sources.length === 0) return <>{text}</>
+  const byNumber = new Map(sources.map((source) => [source.number, source]))
+  return (
+    <>
+      {answerSegments(text, [...byNumber.keys()]).map((segment, index) => {
+        if (typeof segment === 'string') return <span key={index}>{segment}</span>
+        const source = byNumber.get(segment)!
+        return (
+          <button
+            key={index}
+            type="button"
+            className="ask-glass-cite"
+            title={`${source.title}\n${source.url}`}
+            aria-label={t('askPanel.openSource', { n: segment })}
+            onClick={() => openSource(source.url)}
+          >
+            {segment}
+          </button>
+        )
+      })}
+    </>
+  )
+}
+
+/**
  * Plan `ask-panel-above-pill`: the Ask panel above the pill (see `mock.html` in the plan). One
- * glass panel for every outcome: an answer (Copy, Insert), an edit that could not replace the
- * highlight (Try replacing again, Copied ✓), a question that needs live information (Answer
- * anyway), a site search, and errors. The window never takes focus, so Copy and Insert go
- * through the app, not the browser clipboard.
+ * glass panel for every outcome: an answer (Ask follow-up, plan `ask-web-search`), an edit that
+ * could not replace the highlight (Try replacing again, Copied ✓), a question that needs live
+ * information (Answer anyway), a site search, and errors. The window never takes focus, so every
+ * button goes through the app, not the browser.
  */
 export function AskAnswerPanel({
   content,
@@ -75,10 +112,9 @@ export function AskAnswerPanel({
   answering = false,
 }: AskAnswerPanelProps) {
   const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
   const [inserting, setInserting] = useState(false)
   const [insertFailed, setInsertFailed] = useState(false)
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [followUpFailed, setFollowUpFailed] = useState(false)
 
   const result = content.kind === 'result' ? content.result : null
   const output = result?.output ?? null
@@ -86,29 +122,16 @@ export function AskAnswerPanel({
   const couldNotReplace = output === 'copiedFallback'
 
   useEffect(() => {
-    setCopied(false)
     setInsertFailed(false)
+    setFollowUpFailed(false)
   }, [content])
 
-  useEffect(() => {
-    return () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current)
-    }
-  }, [])
-
+  // Only the couldn't-replace result has a copy button, and its text is already on the
+  // clipboard; pressing it copies again.
   const copy = useCallback(() => {
     if (!text) return
-    copyAskText(text)
-      .then(() => {
-        setCopied(true)
-        if (copiedTimer.current) clearTimeout(copiedTimer.current)
-        // The couldn't-replace result stays marked as copied: it is on the clipboard.
-        if (!couldNotReplace) {
-          copiedTimer.current = setTimeout(() => setCopied(false), COPIED_MS)
-        }
-      })
-      .catch(() => {})
-  }, [couldNotReplace, text])
+    copyAskText(text).catch(() => {})
+  }, [text])
 
   const insert = useCallback(() => {
     if (!text || inserting) return
@@ -118,6 +141,13 @@ export function AskAnswerPanel({
       .catch(() => setInsertFailed(true))
       .finally(() => setInserting(false))
   }, [inserting, text])
+
+  // Plan `ask-web-search`: records a new question with this answer as its context. The
+  // recording closes the panel; the pill shows a Follow-up chip.
+  const followUp = useCallback(() => {
+    setFollowUpFailed(false)
+    startAskFollowUp().catch(() => setFollowUpFailed(true))
+  }, [])
 
   const aboutHighlight = Boolean(result?.usedSelectedText) && output !== 'needsLiveInfo'
   const question =
@@ -129,6 +159,7 @@ export function AskAnswerPanel({
     ) : (
       <>
         {aboutHighlight && `${t('askPanel.aboutHighlight')} · `}
+        {result?.followUp && `${t('askPanel.followUpLabel')} · `}
         <b>{content.result.question}</b>
       </>
     )
@@ -156,7 +187,7 @@ export function AskAnswerPanel({
             type="button"
             className="ask-glass-button"
             onClick={() => {
-              openSettingsPane('llm')
+              openSettingsPane('search')
                 .then(onClose)
                 .catch(() => {})
             }}
@@ -201,39 +232,30 @@ export function AskAnswerPanel({
   } else {
     body = (
       <>
-        <div className="ask-glass-answer">{text}</div>
+        <div className="ask-glass-answer" data-testid="ask-panel-answer">
+          <AnswerText text={text} sources={result?.sources ?? []} />
+        </div>
         <AskSources sources={result?.sources ?? []} />
         {result?.mayBeOutOfDate && (
           <p className="ask-glass-note text-white/55">{t('ask.outOfDateNote')}</p>
         )}
+        {followUpFailed && (
+          <p className="ask-glass-note mt-1" role="status">
+            {t('askPanel.followUpFailed')}
+          </p>
+        )}
       </>
     )
-    const insertTitle = result?.usedSelectedText
-      ? t('askPanel.replaceHighlight')
-      : t('askPanel.insertAtCursor')
+    // Plan `ask-web-search`: an answer offers only Ask follow-up (no Copy or Insert).
     actions = (
-      <>
-        <button type="button" className="ask-glass-button" onClick={copy}>
-          {copied ? (
-            <>
-              {t('askPanel.copied')}
-              <Check size={12} aria-hidden="true" />
-            </>
-          ) : (
-            t('askPanel.copy')
-          )}
-        </button>
-        <button
-          type="button"
-          className="ask-glass-button ask-glass-button-primary"
-          onClick={insert}
-          disabled={inserting}
-          title={insertTitle}
-          aria-label={insertTitle}
-        >
-          {t('askPanel.insert')}
-        </button>
-      </>
+      <button
+        type="button"
+        className="ask-glass-button ask-glass-button-primary"
+        onClick={followUp}
+      >
+        <MessageCircle size={12} aria-hidden="true" />
+        {t('askPanel.askFollowUp')}
+      </button>
     )
   }
 

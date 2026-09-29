@@ -699,7 +699,7 @@ describe('Settings tab 切换', () => {
     expect(screen.queryByText('settings.askAnything')).toBeNull()
   })
 
-  it('Settings tabs list General, Speech, AI, Prompts and System only', () => {
+  it('Settings tabs list General, Speech, AI, Prompts, Search and System only', () => {
     renderSettings()
     const tabs = within(screen.getByRole('tablist', { name: 'settings.sections' }))
       .getAllByRole('tab')
@@ -709,6 +709,7 @@ describe('Settings tab 切换', () => {
       'settings.speechRecognition',
       'settings.aiPolish',
       'settings.prompts',
+      'settings.search',
       'settings.system',
     ])
     expect(screen.getByRole('tab', { name: 'settings.general' })).toHaveAttribute(

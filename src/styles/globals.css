@@ -2258,7 +2258,7 @@ body,
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: 180px;
+  max-width: 240px;
   height: 20px;
   padding: 0 7px 0 3px;
   border-radius: 999px;
@@ -2273,6 +2273,36 @@ body,
 }
 .ask-glass-source:hover {
   background: rgba(255, 255, 255, 0.14);
+}
+.ask-glass-source-title {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ask-glass-source-host {
+  color: rgba(255, 255, 255, 0.5);
+}
+/* Plan `ask-web-search`: a [n] citation in the answer, matching source chip n. */
+.ask-glass-cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  margin: 0 1px;
+  padding: 0 3px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: 2px;
+  cursor: pointer;
+}
+.ask-glass-cite:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 .ask-glass-source-number {
   display: inline-flex;
