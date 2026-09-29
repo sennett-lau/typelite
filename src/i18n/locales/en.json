@@ -44,7 +44,10 @@
     "send": "Ask",
     "liveBodySearchFailed": "This question needs up-to-date information, but the web search did not work. Check the search server in Settings.",
     "liveBodyNoResults": "This question needs up-to-date information, but the web search found nothing.",
-    "setUpWebSearch": "Set up web search"
+    "setUpWebSearch": "Set up web search",
+    "searchingWeb": "Searching the web…",
+    "followUpChip": "Follow-up: {{text}}",
+    "followUpHint": "Asking a follow-up to the last answer"
   },
   "askPanel": {
     "label": "Ask answer",
@@ -60,7 +63,11 @@
     "couldNotReplace": "This app didn't allow the replacement. The result is on your clipboard.",
     "tryReplacingAgain": "Try replacing again",
     "errorTitle": "Something went wrong",
-    "sources": "Sources"
+    "sources": "Sources",
+    "askFollowUp": "Ask follow-up",
+    "followUpLabel": "Follow-up",
+    "followUpFailed": "Couldn't start the follow-up. Try the Ask shortcut.",
+    "openSource": "Open source {{n}}"
   },
   "errors": {
     "stt_timeout": "The speech server did not answer within {{details}}. Check that it is running, or try a faster server.",
@@ -293,7 +300,9 @@
       "translate": "Translate",
       "translateSub": "Speak, and get it written in another language.",
       "ask": "Ask Anything",
-      "askSub": "Ask a question, or change selected text by voice."
+      "askSub": "Ask a question, or change selected text by voice.",
+      "webSearch": "Web search",
+      "webSearchSub": "Optional: lets Ask anything look up news, scores and schedules."
     },
     "layout": {
       "back": "Back",
@@ -553,7 +562,8 @@
     "polishStyleMinimalDetail": "Fix only",
     "polishStyleCleanDetail": "Default",
     "polishStyleStructuredDetail": "Lists",
-    "polishStyleProfessionalDetail": "Formal"
+    "polishStyleProfessionalDetail": "Formal",
+    "search": "Search"
   },
   "contextFamilies": {
     "email": "Email",
@@ -1114,6 +1124,7 @@
     "saved": "Saved. Ask searches live questions now.",
     "remove": "Turn off web search",
     "removed": "Web search is off.",
-    "removeKey": "Remove key"
+    "removeKey": "Remove key",
+    "optional": "Optional"
   }
 }

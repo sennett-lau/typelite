@@ -88,7 +88,6 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
 
   const runTest = () => {
     setTest({ status: 'testing' })
-    setMessage(null)
     testWebSearch(provider, address, keyArgument)
       .then(({ results, ms }) => setTest({ status: 'ok', results, ms }))
       .catch((error) => setTest({ status: 'error', message: errorText(error) }))
@@ -173,7 +172,8 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
             setTest({ status: 'idle' })
           }}
           placeholder={hasKey ? t('webSearch.keySaved') : t('webSearch.keyPlaceholder')}
-          className={fieldClass}
+          // The placeholder is a sentence, so it is in the text font; a typed key is not.
+          className={`${fieldClass} placeholder:font-sans placeholder:text-[12.5px]`}
         />
       </div>
       <p className="m-0 mt-2 text-[12px] text-text-secondary">
@@ -192,7 +192,7 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
             type="button"
             onClick={remove}
             disabled={busy}
-            className="link-button link-button-muted"
+            className="btn-secondary px-3.5 py-1.5 text-[13px] font-medium text-error"
           >
             {t('webSearch.remove')}
           </button>
@@ -208,7 +208,8 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
           </button>
         )}
         <span className="flex-1" />
-        <span role="status" className="min-w-0 break-words text-[12px]">
+        {/* The Test result and the Save message are separate lines, so one never hides the other. */}
+        <span role="status" className="flex min-w-0 flex-col items-end break-words text-[12px]">
           {test.status === 'testing' && (
             <span className="text-text-secondary">{t('speech.testing')}</span>
           )}
@@ -218,7 +219,7 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
             </span>
           )}
           {test.status === 'error' && <span className="text-error">{test.message}</span>}
-          {test.status !== 'testing' && test.status !== 'error' && message && (
+          {message && (
             <span className={message.kind === 'ok' ? 'text-text-secondary' : 'text-error'}>
               {message.text}
             </span>

@@ -44,7 +44,10 @@
     "send": "提问",
     "liveBodySearchFailed": "这个问题需要最新信息，但网络搜索失败了。请在设置中检查搜索服务器。",
     "liveBodyNoResults": "这个问题需要最新信息，但网络搜索没有找到结果。",
-    "setUpWebSearch": "设置网络搜索"
+    "setUpWebSearch": "设置网络搜索",
+    "searchingWeb": "正在搜索网络…",
+    "followUpChip": "追问：{{text}}",
+    "followUpHint": "针对上一个回答追问"
   },
   "askPanel": {
     "label": "问答回答",
@@ -60,7 +63,11 @@
     "couldNotReplace": "此应用不允许替换，结果已在剪贴板上。",
     "tryReplacingAgain": "再次尝试替换",
     "errorTitle": "出了点问题",
-    "sources": "来源"
+    "sources": "来源",
+    "askFollowUp": "追问",
+    "followUpLabel": "追问",
+    "followUpFailed": "无法开始追问，请使用问答快捷键。",
+    "openSource": "打开来源 {{n}}"
   },
   "errors": {
     "stt_timeout": "语音服务在 {{details}} 内没有响应。请确认服务正在运行，或换用更快的服务。",
@@ -293,7 +300,9 @@
       "translate": "翻译",
       "translateSub": "说话，用另一种语言写出来。",
       "ask": "Ask Anything",
-      "askSub": "提一个问题，或用语音修改选中的文字。"
+      "askSub": "提一个问题，或用语音修改选中的文字。",
+      "webSearch": "网络搜索",
+      "webSearchSub": "可选：让问答查询新闻、比分和赛程。"
     },
     "layout": {
       "back": "返回",
@@ -553,7 +562,8 @@
     "polishStyleMinimalDetail": "只做修正",
     "polishStyleCleanDetail": "默认",
     "polishStyleStructuredDetail": "列表",
-    "polishStyleProfessionalDetail": "正式"
+    "polishStyleProfessionalDetail": "正式",
+    "search": "搜索"
   },
   "contextFamilies": {
     "email": "邮件",
@@ -1114,6 +1124,7 @@
     "saved": "已保存。问答现在会搜索实时问题。",
     "remove": "关闭网络搜索",
     "removed": "网络搜索已关闭。",
-    "removeKey": "移除密钥"
+    "removeKey": "移除密钥",
+    "optional": "可选"
   }
 }
