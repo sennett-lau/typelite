@@ -26,6 +26,7 @@ pub mod stt;
 pub mod timing;
 pub mod tray;
 pub mod voice_intent;
+pub mod web_search;
 
 pub use hotkey::{default_ask_shortcut, default_shortcut, parse_hotkey};
 pub use tray::{refresh_tray, TrayHandle};
@@ -1446,6 +1447,11 @@ pub fn run() {
             commands::ask::abort_ask_dictation,
             commands::ask::take_pending_ask_message,
             commands::ask::answer_ask_anyway,
+            commands::ask::open_ask_source,
+            commands::web_search::get_web_search_status,
+            commands::web_search::save_web_search,
+            commands::web_search::remove_web_search,
+            commands::web_search::test_web_search,
             ask_panel::close_ask_panel,
             ask_panel::resize_ask_panel,
             ask_panel::copy_ask_text,

@@ -14,3 +14,4 @@ pub mod preset_share;
 pub mod speech_setup;
 pub mod stt;
 pub mod translation;
+pub mod web_search;
