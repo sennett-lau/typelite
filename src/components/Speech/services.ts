@@ -23,6 +23,7 @@ import { recordAiResult, recordSpeechResult } from '../../lib/connectionStatus'
 import { MODEL_SIZE_BYTES, type SetupTextNamespace } from '../../lib/speechSetup'
 import {
   SPEECH_SERVICES_GUIDE_URL,
+  isElevenLabsAddress,
   isQwenCloudAddress,
   withServerKind,
 } from '../../lib/speechTypes'
@@ -113,7 +114,12 @@ export const SPEECH_SERVICE: EngineService = {
   }),
   sameConnection: (a, b) => sameSpeechConnection(a as SpeechPreset, b as SpeechPreset),
   resolve: (preset) => withServerKind(preset as SpeechPreset),
-  addressNote: (baseUrl) => (isQwenCloudAddress(baseUrl) ? 'speech.qwenCloudNote' : null),
+  addressNote: (baseUrl) =>
+    isQwenCloudAddress(baseUrl)
+      ? 'speech.qwenCloudNote'
+      : isElevenLabsAddress(baseUrl)
+        ? 'speech.elevenLabsNote'
+        : null,
   test: (preset, apiKey) => testSpeechPreset(preset as SpeechPreset, apiKey),
   recordResult: (ok) => recordSpeechResult(ok),
   store: useSpeechSetupStore,

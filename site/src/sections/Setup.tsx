@@ -58,7 +58,7 @@ const SERVERS = [
   'llama.cpp server',
   'vLLM',
 ]
-const CLOUD = ['OpenAI', 'Groq', 'OpenRouter', 'Qwen Cloud']
+const CLOUD = ['OpenAI', 'Groq', 'OpenRouter', 'Qwen Cloud', 'ElevenLabs']
 
 export function Setup() {
   return (
@@ -187,7 +187,7 @@ export function Setup() {
             <h3>Your server, or your own key.</h3>
             <p>
               Prefer a GPU computer on your network, or a cloud key? Typelite talks to any{' '}
-              <b>OpenAI-compatible</b> speech or chat server, and to Qwen Cloud’s speech API.
+              <b>OpenAI-compatible</b> speech or chat server, and to the Qwen Cloud and ElevenLabs speech APIs.
             </p>
             <div className="dl">
               <span className="chip-group-label">On your network</span>

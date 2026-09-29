@@ -390,6 +390,39 @@ describe('SttPane', () => {
       )
     })
 
+    it('an ElevenLabs address tests and saves as ElevenLabs (plan `elevenlabs-speech`)', async () => {
+      vi.mocked(tauri.testSpeechPreset).mockResolvedValue(900)
+      render(<SttPane />)
+      fireEvent.change(screen.getByLabelText('Saved presets'), { target: { value: '__add__' } })
+
+      fireEvent.change(screen.getByLabelText('Address'), {
+        target: { value: 'https://api.elevenlabs.io' },
+      })
+      fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'scribe_v2' } })
+      fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'el-key' } })
+      expect(screen.getByText(/ElevenLabs: sent to ElevenLabs’ own/)).toBeInTheDocument()
+      expect(screen.getByLabelText('Name')).toHaveValue('api.elevenlabs.io')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+      expect(await screen.findByText('Works · 900 ms')).toBeInTheDocument()
+      expect(tauri.testSpeechPreset).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'elevenlabs', base_url: 'https://api.elevenlabs.io' }),
+        'el-key',
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+      await waitFor(() =>
+        expect(
+          config().speech_presets.find((p) => p.id === config().active_speech_preset_id),
+        ).toMatchObject({
+          kind: 'elevenlabs',
+          model: 'scribe_v2',
+          verified_at: expect.any(Number),
+        }),
+      )
+      expect(JSON.stringify(config())).not.toContain('el-key')
+    })
+
     it('deletes the selected preset after a second click and moves to the next one', async () => {
       render(<SttPane />)
 
