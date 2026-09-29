@@ -4,9 +4,21 @@ Ask anything answers most questions from the AI model alone. Questions about new
 schedules, prices or anything recent need the web. With a search server set up, Ask searches
 for such a question, answers from the top results and shows the pages it used as numbered links.
 
-Web search is **off** until you add your own search server. Typelite ships no search service.
-When Ask needs live information, your question goes to the search server you entered, and that
-server passes it on to the search engines it uses. Other questions never leave your AI service.
+Web search is **off** until you set it up. Typelite uses
+[SearXNG](https://github.com/searxng/searxng), a free, open-source search engine that asks
+several search engines at once. There are two ways to get one:
+
+- **Built-in (recommended):** Settings → Search → Built-in → **Set up**. Typelite downloads
+  SearXNG with its own copy of Python (about 230 MB, from GitHub) and runs it on this Mac only,
+  while Typelite is open. Nothing else to install. **Check for updates** brings SearXNG up to
+  date; **Remove** deletes it.
+- **Your own SearXNG:** run it yourself (below), for example to share one server between
+  computers, and enter its address.
+
+When Ask needs live information, your question goes to SearXNG, which passes it on to the search
+engines it uses. Other questions never leave your AI service.
+
+The rest of this guide is for **Your own SearXNG**.
 
 | | |
 |---|---|
@@ -69,7 +81,7 @@ You should see JSON that starts with `{"query": "weather"`. An HTML page that sa
 ## Set it up in Typelite
 
 1. Open **Settings → Search** (or the **Web search** step during setup, which you can skip).
-2. Choose **SearXNG**, enter the address (`http://127.0.0.1:8888`) and press **Test**. Test
+2. Choose **Your own SearXNG**, enter the address (`http://127.0.0.1:8888`) and press **Test**. Test
    searches one fixed word, never your own words, and shows how many results came back.
 3. Press **Save**.
 

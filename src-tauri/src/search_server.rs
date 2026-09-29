@@ -1004,6 +1004,12 @@ mod tests {
         let started = Instant::now();
         let installed = server.install(&client, &progress).await.expect("setup");
         println!("set up {} in {:.0?}", installed.commit, started.elapsed());
+        let du = std::process::Command::new("du")
+            .args(["-sm"])
+            .arg(&root)
+            .output()
+            .unwrap();
+        println!("on disk: {}", String::from_utf8_lossy(&du.stdout).trim());
         assert!(server.status().running);
         let base = server.ensure_running(&client).await.unwrap();
         let config = crate::web_search::WebSearchConfig {

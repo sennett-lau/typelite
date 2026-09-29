@@ -17,10 +17,11 @@ import { useAppStore } from '../../stores/appStore'
 export const WEB_SEARCH_GUIDE_URL =
   'https://github.com/sennett-lau/typelite/blob/main/docs/guides/web-search.md'
 
+/** A provider with an address the user runs (not off, not Built-in). */
+type OwnProvider = Exclude<SearchProviderKind, 'none' | 'builtin'>
+
 /** The providers the form offers. Plan `ask-web-search`: SearXNG first; more can slot in. */
-const PROVIDERS: { id: Exclude<SearchProviderKind, 'none'>; label: string }[] = [
-  { id: 'searxng', label: 'SearXNG' },
-]
+const PROVIDERS: { id: OwnProvider; label: string }[] = [{ id: 'searxng', label: 'SearXNG' }]
 
 const SEARCH_OFF = { provider: 'none', base_url: '' } as const
 
@@ -39,14 +40,19 @@ function errorText(error: unknown): string {
  * questions. Used in Settings → AI polish and in onboarding's AI step. Saves on its own (not
  * through the Save bar): the address goes to the settings file, the optional key to the Keychain.
  */
-export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }) {
+export function WebSearchForm({
+  idPrefix = 'web-search',
+  fixedProvider = false,
+}: {
+  idPrefix?: string
+  /** Plan `searxng-setup`: the provider is chosen by the cards above; hide the menu. */
+  fixedProvider?: boolean
+}) {
   const { t } = useTranslation()
   const saved = useAppStore((s) => s.config.web_search) ?? SEARCH_OFF
   const applyPersistedConfigPatch = useAppStore((s) => s.applyPersistedConfigPatch)
-  const [provider, setProvider] = useState<Exclude<SearchProviderKind, 'none'>>(
-    saved.provider === 'none' ? 'searxng' : saved.provider,
-  )
-  const [address, setAddress] = useState(saved.base_url)
+  const [provider, setProvider] = useState<OwnProvider>('searxng')
+  const [address, setAddress] = useState(saved.provider === 'searxng' ? saved.base_url : '')
   const [apiKey, setApiKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [test, setTest] = useState<TestState>({ status: 'idle' })
@@ -63,7 +69,7 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
       .then((status) => {
         if (cancelled || statusFromAction.current) return
         setHasKey(status.hasKey)
-        if (status.config.provider !== 'none') {
+        if (status.config.provider === 'searxng') {
           setProvider(status.config.provider)
           setAddress(status.config.base_url)
         }
@@ -74,7 +80,8 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
     }
   }, [])
 
-  const configured = saved.provider !== 'none' && saved.base_url.trim() !== ''
+  // Only your own server counts here; Built-in has its own card (plan `searxng-setup`).
+  const configured = saved.provider === 'searxng' && saved.base_url.trim() !== ''
   const complete = address.trim() !== ''
   // An empty key field keeps the stored key; typing replaces it.
   const keyArgument = apiKey.trim() === '' ? undefined : apiKey
@@ -134,22 +141,26 @@ export function WebSearchForm({ idPrefix = 'web-search' }: { idPrefix?: string }
   return (
     <div data-testid="web-search-form">
       <div className="form-grid">
-        <label htmlFor={id('provider')}>{t('webSearch.provider')}</label>
-        <select
-          id={id('provider')}
-          value={provider}
-          onChange={(event) => {
-            setProvider(event.target.value as Exclude<SearchProviderKind, 'none'>)
-            setTest({ status: 'idle' })
-          }}
-          className="field text-[12.5px]"
-        >
-          {PROVIDERS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        {!fixedProvider && (
+          <>
+            <label htmlFor={id('provider')}>{t('webSearch.provider')}</label>
+            <select
+              id={id('provider')}
+              value={provider}
+              onChange={(event) => {
+                setProvider(event.target.value as OwnProvider)
+                setTest({ status: 'idle' })
+              }}
+              className="field text-[12.5px]"
+            >
+              {PROVIDERS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <label htmlFor={id('address')}>{t('speech.address')}</label>
         <input
           id={id('address')}
