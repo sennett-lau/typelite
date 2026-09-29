@@ -719,7 +719,8 @@ export async function openAskSource(url: string): Promise<void> {
 
 // Plan `ask-web-search`: the search provider for Ask's live questions.
 
-export type SearchProviderKind = 'none' | 'searxng'
+/** `builtin`: plan `searxng-setup`, the SearXNG Typelite sets up and runs on this Mac. */
+export type SearchProviderKind = 'none' | 'searxng' | 'builtin'
 
 export interface WebSearchConfig {
   provider: SearchProviderKind
@@ -756,6 +757,68 @@ export async function testWebSearch(
   apiKey?: string,
 ): Promise<{ results: number; ms: number }> {
   return invoke('test_web_search', { provider, baseUrl, apiKey: apiKey ?? null })
+}
+
+// Plan `searxng-setup`: the Built-in search provider.
+
+/** Progress of a Built-in search setup or update. */
+export const BUILTIN_SEARCH_PROGRESS_EVENT = 'search:setup_progress'
+
+export type BuiltinSearchStep =
+  | 'downloadingUv'
+  | 'installingPython'
+  | 'downloadingSearxng'
+  | 'installingLibraries'
+  | 'starting'
+  | 'done'
+
+export interface BuiltinSearchProgress {
+  step: BuiltinSearchStep
+  /** Bytes so far and in all, for download steps. */
+  done: number | null
+  total: number | null
+}
+
+export interface BuiltinSearchInstalled {
+  commit: string
+  /** The SearXNG commit's date (ISO 8601), shown as its version. */
+  commitDate: string
+  installedAt: number
+}
+
+export interface BuiltinSearchStatus {
+  installed: BuiltinSearchInstalled | null
+  running: boolean
+  port: number | null
+  busy: boolean
+}
+
+export interface BuiltinSearchUpdateCheck {
+  latestCommit: string
+  latestDate: string
+  updateAvailable: boolean
+}
+
+export async function builtinSearchStatus(): Promise<BuiltinSearchStatus> {
+  return invoke('builtin_search_status')
+}
+
+/** Downloads and starts SearXNG; progress arrives as `BUILTIN_SEARCH_PROGRESS_EVENT`. */
+export async function installBuiltinSearch(): Promise<BuiltinSearchStatus> {
+  return invoke('install_builtin_search')
+}
+
+export async function checkBuiltinSearchUpdate(): Promise<BuiltinSearchUpdateCheck> {
+  return invoke('check_builtin_search_update')
+}
+
+export async function updateBuiltinSearch(): Promise<BuiltinSearchStatus> {
+  return invoke('update_builtin_search')
+}
+
+/** Stops it and deletes the downloaded files. */
+export async function removeBuiltinSearch(): Promise<BuiltinSearchStatus> {
+  return invoke('remove_builtin_search')
 }
 
 /**

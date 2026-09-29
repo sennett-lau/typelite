@@ -35,7 +35,10 @@ pub enum SearchProviderKind {
     /// Search is off (the default).
     #[default]
     None,
+    /// Your own SearXNG, at `base_url`.
     Searxng,
+    /// Plan `searxng-setup`: the SearXNG Typelite sets up and runs on this Mac.
+    Builtin,
 }
 
 impl SearchProviderKind {
@@ -43,6 +46,7 @@ impl SearchProviderKind {
         match self {
             Self::None => "none",
             Self::Searxng => "searxng",
+            Self::Builtin => "builtin",
         }
     }
 }
@@ -58,16 +62,42 @@ pub struct WebSearchConfig {
 }
 
 impl WebSearchConfig {
-    /// True when Ask may search: a provider is chosen and it has an address.
+    /// True when Ask may search: your own SearXNG with an address, or Built-in once set up.
     pub fn is_configured(&self) -> bool {
-        self.provider != SearchProviderKind::None && !self.base_url.trim().is_empty()
+        match self.provider {
+            SearchProviderKind::None => false,
+            SearchProviderKind::Searxng => !self.base_url.trim().is_empty(),
+            SearchProviderKind::Builtin => crate::search_server::server().is_installed(),
+        }
     }
 
     pub fn normalize(&mut self) {
         self.base_url = self.base_url.trim().to_string();
-        if self.provider == SearchProviderKind::None {
+        if matches!(
+            self.provider,
+            SearchProviderKind::None | SearchProviderKind::Builtin
+        ) {
             self.base_url.clear();
         }
+    }
+
+    /// The SearXNG to ask: this config, or for Built-in the running server's address (started
+    /// when needed).
+    pub async fn resolved(&self, client: &reqwest::Client) -> Result<WebSearchConfig, SearchError> {
+        if self.provider != SearchProviderKind::Builtin {
+            return Ok(self.clone());
+        }
+        let base_url = crate::search_server::server()
+            .ensure_running(client)
+            .await
+            .map_err(|error| {
+                tracing::warn!("Built-in search: not available: {error}");
+                SearchError::Unreachable
+            })?;
+        Ok(WebSearchConfig {
+            provider: SearchProviderKind::Searxng,
+            base_url,
+        })
     }
 }
 
@@ -355,7 +385,8 @@ pub async fn search(
     api_key: &str,
     query: &str,
 ) -> Result<SearchOutcome, SearchError> {
-    search_with_timeout(client, config, api_key, query, SEARCH_TIMEOUT).await
+    let config = config.resolved(client).await?;
+    search_with_timeout(client, &config, api_key, query, SEARCH_TIMEOUT).await
 }
 
 /// Settings → Test: one general search for a fixed word, so the user's own words never leave
@@ -369,6 +400,7 @@ pub async fn test_provider(
         return Err(SearchError::BadAddress);
     }
     let started = Instant::now();
+    let config = &config.resolved(client).await?;
     let results = searxng_category(
         client,
         &config.base_url,

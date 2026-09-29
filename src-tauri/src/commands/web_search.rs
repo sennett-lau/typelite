@@ -34,7 +34,8 @@ fn ensure_main_window(window: &Window) -> Result<(), String> {
 }
 
 fn stored_key(provider: SearchProviderKind) -> String {
-    if provider == SearchProviderKind::None {
+    // Built-in needs no key; only your own SearXNG may sit behind a proxy that wants one.
+    if provider != SearchProviderKind::Searxng {
         return String::new();
     }
     SystemCredentialVault
@@ -53,7 +54,7 @@ fn validated_config(
         provider,
         base_url: base_url.trim().to_string(),
     };
-    if provider != SearchProviderKind::None {
+    if provider == SearchProviderKind::Searxng {
         web_search::search_endpoint(&config.base_url).map_err(|error| error.user_message())?;
     }
     config.normalize();
