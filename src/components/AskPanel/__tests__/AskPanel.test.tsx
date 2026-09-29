@@ -45,6 +45,7 @@ vi.mock('../../../lib/tauri', () => ({
   ASK_PANEL_CLOSED_EVENT: 'ask:panel_closed',
   closeAskPanel: vi.fn(),
   resizeAskPanel: vi.fn(),
+  askPanelLimits: vi.fn(() => Promise.resolve({ maxWidth: 1008, maxHeight: 443 })),
   copyAskText: vi.fn(),
   insertAskText: vi.fn(),
   answerAskAnyway: vi.fn(),
@@ -469,16 +470,17 @@ describe('AskPanel', () => {
                 number: 1,
                 title: 'Next race moved',
                 url: 'https://www.example.com/f1/next',
+                snippet: 'The Grand Prix moves to Sepang.',
               },
             ],
           }),
         ),
       )
 
-      const sources = await screen.findByTestId('ask-panel-sources')
+      fireEvent.click(await screen.findByTestId('ask-panel-sources-summary'))
+      const sources = screen.getByTestId('ask-panel-sources')
       expect(sources.textContent).toContain('Sources')
-      const link = screen.getByRole('button', { name: /example\.com/ })
-      fireEvent.click(link)
+      fireEvent.click(screen.getByRole('button', { name: 'Open source 1' }))
       expect(openAskSource).toHaveBeenCalledWith('https://www.example.com/f1/next')
       expect(screen.queryByText('May be out of date — no web search was used')).toBeNull()
     })

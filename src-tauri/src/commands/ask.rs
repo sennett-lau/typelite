@@ -2211,6 +2211,7 @@ mod tests {
             number: 1,
             title: "F1 Calendar".to_string(),
             url: "https://www.espn.com/f1/schedule".to_string(),
+            snippet: String::new(),
         }];
         let result = AskDictationResult::new(
             "where is the next F1 Grand Prix".to_string(),
@@ -2244,6 +2245,7 @@ mod tests {
                 number: 1,
                 title: "Next race moved".to_string(),
                 url: "https://news.example/moved".to_string(),
+                snippet: String::new(),
             }],
         }
     }

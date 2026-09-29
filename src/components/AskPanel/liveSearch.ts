@@ -1,4 +1,4 @@
-import type { LiveSearchState } from '../../lib/tauri'
+import type { AskPanelLimits, LiveSearchState } from '../../lib/tauri'
 
 /** Plan `ask-web-search`: the live-question body text for why the web was not used. */
 export function liveBodyKey(liveSearch: LiveSearchState | null | undefined): string {
@@ -33,4 +33,28 @@ export function answerSegments(text: string, numbers: number[]): (string | numbe
   rest += text.slice(last)
   if (rest) segments.push(rest)
   return segments
+}
+
+/** The panel's width for a short answer, in points (`PANEL_WIDTH` in ask_panel.rs). */
+export const PANEL_WIDTH = 420
+/** Plan `ask-web-search`: the sources column's width when it is open. */
+export const SOURCES_COLUMN_WIDTH = 288
+/** Before the app has sent the limits (and in tests): a modest cap. */
+export const FALLBACK_LIMITS: AskPanelLimits = {
+  maxWidth: PANEL_WIDTH + SOURCES_COLUMN_WIDTH,
+  maxHeight: 440,
+}
+/** An answer longer than this (or with this many lines) widens the panel to its limit. */
+const LONG_ANSWER_CHARS = 360
+const LONG_ANSWER_LINES = 5
+
+/** Plan `ask-web-search`: long answers get the wide panel; short ones keep 420 pt. */
+export function isLongAnswer(text: string): boolean {
+  return text.length > LONG_ANSWER_CHARS || text.split('\n').length >= LONG_ANSWER_LINES
+}
+
+/** The panel's width: 420 pt (plus the open sources column), or the limit for a long answer. */
+export function panelWidth(long: boolean, sourcesOpen: boolean, limits: AskPanelLimits): number {
+  const wanted = long ? limits.maxWidth : PANEL_WIDTH + (sourcesOpen ? SOURCES_COLUMN_WIDTH : 0)
+  return Math.min(wanted, limits.maxWidth)
 }

@@ -11,7 +11,7 @@ export function WebSearchStep({ onSkip }: { onSkip: () => void }) {
   const { t } = useTranslation()
   return (
     <div data-testid="onboarding-web-search">
-      <div className="setup-card">
+      <div className="setup-card setup-card-fit">
         <div className="flex items-start gap-3">
           <div className="setup-card-icon" aria-hidden="true">
             <Globe size={18} />

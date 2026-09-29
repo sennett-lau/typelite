@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../../i18n'
 import { AskAnswerPanel, type AskPanelContent } from '../AskAnswerPanel'
+import { isLongAnswer, panelWidth } from '../liveSearch'
 import { copyAskText, insertAskText, openAskSource, startAskFollowUp } from '../../../lib/tauri'
 import type { AskDictationResult } from '../../../lib/tauri'
 
@@ -119,7 +120,7 @@ describe('AskAnswerPanel', () => {
     expect(screen.getByRole('dialog')).toBeDefined()
   })
 
-  it('shows citations as small links and sources as title + domain chips', () => {
+  it('shows sources in a column: summary, citation, open and copy link', async () => {
     renderPanel(
       result({
         question: 'latest tech news today',
@@ -129,23 +130,55 @@ describe('AskAnswerPanel', () => {
             number: 1,
             title: 'Reuters Technology News',
             url: 'https://www.reuters.com/technology/',
+            snippet: 'Chip makers rally.',
           },
-          { number: 2, title: 'The Verge', url: 'https://www.theverge.com/' },
-          { number: 3, title: 'WIRED', url: 'https://www.wired.com/' },
+          { number: 2, title: 'The Verge', url: 'https://www.theverge.com/', snippet: '' },
+          { number: 3, title: 'WIRED', url: 'https://www.wired.com/', snippet: 'A new phone.' },
         ],
       }),
     )
 
     const answer = screen.getByTestId('ask-panel-answer')
     expect(answer.textContent).toBe('Chips are up 1. A new phone 23. Not a source [9].')
-    fireEvent.click(screen.getByRole('button', { name: 'Open source 2' }))
-    expect(openAskSource).toHaveBeenCalledWith('https://www.theverge.com/')
+    // Closed at first: only the summary in the footer.
+    expect(screen.queryByTestId('ask-panel-sources')).toBeNull()
+    expect(screen.getByTestId('ask-panel-sources-summary').textContent).toContain('3 sources')
 
-    const chips = screen.getByTestId('ask-panel-sources')
-    expect(chips.textContent).toContain('Reuters Technology News')
-    expect(chips.textContent).toContain('reuters.com')
-    fireEvent.click(screen.getByRole('button', { name: /WIRED/ }))
-    expect(openAskSource).toHaveBeenLastCalledWith('https://www.wired.com/')
+    // A citation opens the column on its source, without opening the page.
+    fireEvent.click(screen.getByRole('button', { name: 'Show source 2' }))
+    const column = screen.getByTestId('ask-panel-sources')
+    expect(column.textContent).toContain('Reuters Technology News')
+    expect(column.textContent).toContain('reuters.com')
+    expect(column.textContent).toContain('Chip makers rally.')
+    expect(screen.getByTestId('ask-source-2').className).toContain('is-highlighted')
+    expect(openAskSource).not.toHaveBeenCalled()
+
+    // Open and Copy link go through the app.
+    fireEvent.click(screen.getByRole('button', { name: 'Open source 3' }))
+    expect(openAskSource).toHaveBeenCalledWith('https://www.wired.com/')
+    vi.mocked(copyAskText).mockResolvedValue(undefined)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link of source 1' }))
+    expect(copyAskText).toHaveBeenCalledWith('https://www.reuters.com/technology/')
+    await waitFor(() => expect(screen.getByTestId('ask-source-1').textContent).toContain('Copied'))
+
+    // A click anywhere on a card opens it too; › hides the column.
+    fireEvent.click(screen.getByText('The Verge'))
+    expect(openAskSource).toHaveBeenLastCalledWith('https://www.theverge.com/')
+    fireEvent.click(screen.getByRole('button', { name: 'Hide sources' }))
+    expect(screen.queryByTestId('ask-panel-sources')).toBeNull()
+  })
+
+  it('keeps a short answer at 420 pt and widens a long one to the limit', () => {
+    const limits = { maxWidth: 1008, maxHeight: 443 }
+    expect(panelWidth(false, false, limits)).toBe(420)
+    expect(panelWidth(false, true, limits)).toBe(708)
+    expect(panelWidth(true, false, limits)).toBe(1008)
+    expect(panelWidth(true, true, limits)).toBe(1008)
+    // A narrow screen never gets more than its limit.
+    expect(panelWidth(false, true, { maxWidth: 500, maxHeight: 300 })).toBe(500)
+    expect(isLongAnswer('Short.')).toBe(false)
+    expect(isLongAnswer('x'.repeat(400))).toBe(true)
+    expect(isLongAnswer('a\nb\nc\nd\ne')).toBe(true)
   })
 
   it('offers a retry when the app did not allow the replacement', async () => {
