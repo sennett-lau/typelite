@@ -1448,6 +1448,7 @@ pub fn run() {
             commands::ask::take_pending_ask_message,
             commands::ask::answer_ask_anyway,
             commands::ask::open_ask_source,
+            commands::ask::start_ask_follow_up,
             commands::web_search::get_web_search_status,
             commands::web_search::save_web_search,
             commands::web_search::remove_web_search,
