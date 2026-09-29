@@ -1241,9 +1241,15 @@ pub fn run() {
             // macOS: a black-on-transparent "template image" (from
             // icons/source/typelite-tray.svg). macOS then tints it itself, so it reads
             // correctly on light and dark menu bars. Other platforms keep the app icon.
-            #[cfg(target_os = "macos")]
+            // The development build adds a dot (icons/dev/tray.svg), since a template image
+            // has no colour to tell the two apps apart.
+            #[cfg(all(target_os = "macos", not(feature = "dev-build")))]
             let tray_builder = TrayIconBuilder::new()
                 .icon(tauri::include_image!("icons/tray-template.png"))
+                .icon_as_template(true);
+            #[cfg(all(target_os = "macos", feature = "dev-build"))]
+            let tray_builder = TrayIconBuilder::new()
+                .icon(tauri::include_image!("icons/dev/tray-template.png"))
                 .icon_as_template(true);
             #[cfg(not(target_os = "macos"))]
             let tray_builder = TrayIconBuilder::new().icon(
