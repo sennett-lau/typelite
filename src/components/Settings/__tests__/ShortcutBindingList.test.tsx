@@ -130,6 +130,50 @@ describe('ShortcutBindingList (macOS native capture)', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  it('records one field at a time: a second field stops the first before it starts', async () => {
+    const order: string[] = []
+    vi.mocked(tauri.startShortcutCapture).mockImplementation(async () => {
+      order.push('start')
+    })
+    vi.mocked(tauri.stopShortcutCapture).mockImplementation(async () => {
+      order.push('stop')
+    })
+    const onDictate = vi.fn()
+    const onTranslate = vi.fn()
+    render(
+      <>
+        <ShortcutBindingList
+          role="dictation"
+          label="Dictate"
+          bindings={[ctrlSlash]}
+          otherBindings={[]}
+          required
+          onChange={onDictate}
+        />
+        <ShortcutBindingList
+          role="translate"
+          label="Translate"
+          bindings={[f8]}
+          otherBindings={[]}
+          required
+          onChange={onTranslate}
+        />
+      </>,
+    )
+
+    const [addDictate, addTranslate] = screen.getAllByRole('button', { name: 'Add shortcut' })
+    fireEvent.click(addDictate)
+    await waitFor(() => expect(order).toEqual(['start']))
+    fireEvent.click(addTranslate)
+    await waitFor(() => expect(order).toEqual(['start', 'stop', 'start']))
+
+    // Only the second field is recording now.
+    expect(screen.getAllByRole('button', { name: 'Press keys…' })).toHaveLength(1)
+    emitCapture(['F9'], true)
+    await waitFor(() => expect(onTranslate).toHaveBeenCalled())
+    expect(onDictate).not.toHaveBeenCalled()
+  })
+
   it('shows held keys live and saves the chord when all keys are released', async () => {
     const onChange = vi.fn()
     render(
