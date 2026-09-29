@@ -85,6 +85,21 @@ pub fn build_qwen_cloud_config(
     })
 }
 
+/// Builds the ElevenLabs uploader settings for an `elevenlabs` preset (plan `elevenlabs-speech`).
+pub fn build_elevenlabs_config(
+    preset: &SpeechPreset,
+) -> Result<super::elevenlabs::ElevenLabsConfig, String> {
+    let model = preset.model.trim();
+    if model.is_empty() {
+        return Err("Model is required for the speech preset".to_string());
+    }
+    Ok(super::elevenlabs::ElevenLabsConfig {
+        provider_name: preset.name.clone(),
+        endpoint: super::elevenlabs::speech_to_text_endpoint(&preset.base_url)?,
+        model: model.to_string(),
+    })
+}
+
 /// Builds the uploader settings for a speech preset.
 pub fn build_whisper_config(preset: &SpeechPreset) -> Result<WhisperCompatConfig, String> {
     if preset.is_builtin_whisper() {
@@ -92,6 +107,9 @@ pub fn build_whisper_config(preset: &SpeechPreset) -> Result<WhisperCompatConfig
     }
     if preset.is_qwen_cloud() {
         return Err("This preset uses the Qwen Cloud API".to_string());
+    }
+    if preset.is_elevenlabs() {
+        return Err("This preset uses the ElevenLabs API".to_string());
     }
     let model = preset.model.trim();
     if model.is_empty() {

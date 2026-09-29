@@ -2,6 +2,7 @@ pub mod builtin;
 pub mod capabilities;
 pub mod chinese_script;
 pub mod config;
+pub mod elevenlabs;
 pub mod hallucination;
 pub mod hardware;
 pub mod models;
@@ -91,7 +92,8 @@ pub fn normalize_detected_language(raw: &str) -> Option<String> {
 
 /// Creates the provider for a speech preset: whisper.cpp in the app for built-in presets
 /// (plan `quick-speech-setup`), Qwen Cloud's own API for `qwen_cloud` presets (plan
-/// `qwen-cloud-speech`), otherwise an OpenAI-compatible transcription upload.
+/// `qwen-cloud-speech`), ElevenLabs Scribe for `elevenlabs` presets (plan `elevenlabs-speech`),
+/// otherwise an OpenAI-compatible transcription upload.
 pub fn provider_for_preset(
     preset: &crate::storage::SpeechPreset,
     client: Option<reqwest::Client>,
@@ -104,6 +106,12 @@ pub fn provider_for_preset(
     if preset.is_qwen_cloud() {
         return Ok(Box::new(qwen_cloud::QwenCloudProvider::new(
             config::build_qwen_cloud_config(preset)?,
+            client,
+        )));
+    }
+    if preset.is_elevenlabs() {
+        return Ok(Box::new(elevenlabs::ElevenLabsProvider::new(
+            config::build_elevenlabs_config(preset)?,
             client,
         )));
     }
@@ -181,6 +189,19 @@ mod tests {
         );
         let provider = provider_for_preset(&preset, None).unwrap();
         assert_eq!(provider.name(), "Qwen Cloud");
+        assert!(config::build_whisper_config(&preset).is_err());
+    }
+
+    #[test]
+    fn elevenlabs_presets_get_their_own_provider() {
+        let preset = crate::storage::SpeechPreset::elevenlabs(
+            "el",
+            "ElevenLabs",
+            elevenlabs::DEFAULT_BASE_URL,
+            elevenlabs::DEFAULT_MODEL,
+        );
+        let provider = provider_for_preset(&preset, None).unwrap();
+        assert_eq!(provider.name(), "ElevenLabs");
         assert!(config::build_whisper_config(&preset).is_err());
     }
 

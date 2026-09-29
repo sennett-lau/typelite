@@ -607,6 +607,10 @@ pub enum SpeechProviderKind {
     /// Upload to Qwen Cloud's native multimodal endpoint with the user's key (plan
     /// `qwen-cloud-speech`).
     QwenCloud,
+    /// Upload to ElevenLabs' own speech-to-text endpoint (Scribe) with the user's key (plan
+    /// `elevenlabs-speech`).
+    #[serde(rename = "elevenlabs")]
+    ElevenLabs,
 }
 
 /// A saved speech-to-text setup. Usually an OpenAI-compatible
@@ -694,6 +698,20 @@ impl SpeechPreset {
     /// True when the preset uploads to Qwen Cloud's native endpoint (plan `qwen-cloud-speech`).
     pub fn is_qwen_cloud(&self) -> bool {
         self.kind == SpeechProviderKind::QwenCloud
+    }
+
+    /// An ElevenLabs preset made by the user (plan `elevenlabs-speech`).
+    pub fn elevenlabs(id: &str, name: &str, base_url: &str, model: &str) -> Self {
+        Self {
+            kind: SpeechProviderKind::ElevenLabs,
+            ..Self::server(id, name, base_url, model)
+        }
+    }
+
+    /// True when the preset uploads to ElevenLabs' speech-to-text endpoint (plan
+    /// `elevenlabs-speech`).
+    pub fn is_elevenlabs(&self) -> bool {
+        self.kind == SpeechProviderKind::ElevenLabs
     }
 
     /// The speech templates of a new config.
@@ -3026,6 +3044,22 @@ mod tests {
             crate::stt::qwen_cloud::DEFAULT_BASE_URL,
             crate::stt::qwen_cloud::DEFAULT_MODEL,
         )
+    }
+
+    #[test]
+    fn elevenlabs_kind_round_trips() {
+        let preset = SpeechPreset::elevenlabs(
+            "el",
+            "ElevenLabs",
+            crate::stt::elevenlabs::DEFAULT_BASE_URL,
+            crate::stt::elevenlabs::DEFAULT_MODEL,
+        );
+        assert!(preset.is_elevenlabs());
+        assert!(!preset.is_qwen_cloud());
+        let value = serde_json::to_value(&preset).unwrap();
+        assert_eq!(value["kind"], "elevenlabs");
+        let back: SpeechPreset = serde_json::from_value(value).unwrap();
+        assert_eq!(back.kind, SpeechProviderKind::ElevenLabs);
     }
 
     #[test]
