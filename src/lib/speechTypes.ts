@@ -69,6 +69,16 @@ export function isQwenCloudAddress(baseUrl: string): boolean {
 }
 
 /**
+ * Plan `elevenlabs-speech`: ElevenLabs' API hosts (`api.elevenlabs.io`, and regional hosts such
+ * as `api.eu.residency.elevenlabs.io`). Scribe does not speak the OpenAI transcription API, so a
+ * preset with one of these addresses uses the `elevenlabs` kind.
+ */
+export function isElevenLabsAddress(baseUrl: string): boolean {
+  const host = addressHostname(baseUrl).toLowerCase()
+  return host === 'elevenlabs.io' || host.endsWith('.elevenlabs.io')
+}
+
+/**
  * The address Qwen shows next to a key ends in `/compatible-mode/v1`; its speech model only
  * works on the native `/api/v1`, so that part is rewritten.
  */
@@ -77,14 +87,17 @@ function qwenNativeAddress(baseUrl: string): string {
 }
 
 /**
- * The preset as it is tested and saved: the kind follows from the address (Qwen's own API or an
- * OpenAI-compatible service), and a Qwen compatible-mode address becomes the native one.
+ * The preset as it is tested and saved: the kind follows from the address (Qwen's own API,
+ * ElevenLabs, or an OpenAI-compatible service), and a Qwen compatible-mode address becomes the native one.
  * Built-in presets are returned unchanged.
  */
 export function withServerKind(preset: SpeechPreset): SpeechPreset {
   if (isBuiltinSpeech(preset)) return preset
   if (isQwenCloudAddress(preset.base_url)) {
     return { ...preset, kind: 'qwen_cloud', base_url: qwenNativeAddress(preset.base_url) }
+  }
+  if (isElevenLabsAddress(preset.base_url)) {
+    return { ...preset, kind: 'elevenlabs' }
   }
   return { ...preset, kind: 'openai_compatible' }
 }

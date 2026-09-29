@@ -916,7 +916,7 @@
   },
   "whatsNew": {
     "builtin": "First release. Built-in speech recognition and AI polish: set up in one click, and your voice and text stay on your Mac.",
-    "ownServer": "Or use your own server or API key: any OpenAI-compatible speech or chat service, or Qwen Cloud.",
+    "ownServer": "Or use your own server or API key: any OpenAI-compatible speech or chat service, Qwen Cloud or ElevenLabs.",
     "qwen3Asr": "Qwen3-ASR on llama.cpp as a speech server, with Chinese written in the characters of your language (for example Hong Kong Traditional for Cantonese).",
     "shortcuts": "Dictate, Translate and Ask anything, each on its own shortcut; record a shortcut by pressing the keys.",
     "translationLanguages": "Up to three translation languages, with a Switch language key while you translate.",
@@ -1021,6 +1021,7 @@
     "apiKeyPlaceholder": "Optional",
     "name": "Name",
     "namePlaceholder": "Filled in for you",
+    "elevenLabsNote": "ElevenLabs: sent to ElevenLabs’ own speech-to-text API (Scribe) with your key.",
     "qwenCloudNote": "Qwen Cloud: sent to Qwen’s own speech API. Recordings up to 4 min 50 s.",
     "test": "Test",
     "testing": "Testing…",
