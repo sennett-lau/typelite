@@ -13,7 +13,7 @@ says how to apply them.
    project link, where it runs, cost, whether it needs a key, an example address and model, and
    whether it was tested in Typelite. Do not add a service nobody has tested with the current app.
 2. **Check it fits an existing connection.** Speech: Built-in, OpenAI-compatible
-   (`POST <address>/audio/transcriptions`) or Qwen Cloud. AI polish: Built-in or
+   (`POST <address>/audio/transcriptions`), Qwen Cloud or ElevenLabs. AI polish: Built-in or
    OpenAI-compatible (`POST <address>/chat/completions`). If it needs its own protocol, stop: that
    is a [new connection](../../../CONTRIBUTING.md#new-connections) and needs a plan.
 3. **Add the row** to the Services table in `docs/guides/<step>/README.md`, in the column format,

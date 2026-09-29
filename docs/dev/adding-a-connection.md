@@ -8,6 +8,7 @@ in the config:
 | Speech | `openai_compatible` (default) | `stt/whisper_compat.rs` | Uploads a WAV to `POST <address>/audio/transcriptions`. |
 | Speech | `builtin` | `stt/builtin.rs` | Runs whisper.cpp in the app with a downloaded model. |
 | Speech | `qwen_cloud` | `stt/qwen_cloud.rs` | Sends base64 audio to Qwen's native multimodal endpoint. |
+| Speech | `elevenlabs` | `stt/elevenlabs.rs` | Uploads a WAV to ElevenLabs' `POST /v1/speech-to-text` with the `xi-api-key` header. |
 | AI | `openai_compatible` (default) | `llm/openai.rs`, `llm/protocol.rs` | `POST <address>/chat/completions`. |
 | AI | `builtin` | `llm/builtin.rs` | Starts `llama-server` and then talks to it like an OpenAI-compatible server. |
 

@@ -113,6 +113,7 @@ export const SPEECH_SERVICE: EngineService = {
   }),
   sameConnection: (a, b) => sameSpeechConnection(a as SpeechPreset, b as SpeechPreset),
   resolve: (preset) => withServerKind(preset as SpeechPreset),
+  // ElevenLabs gets a longer tip with links instead (`ElevenLabsTip`, plan `elevenlabs-speech`).
   addressNote: (baseUrl) => (isQwenCloudAddress(baseUrl) ? 'speech.qwenCloudNote' : null),
   test: (preset, apiKey) => testSpeechPreset(preset as SpeechPreset, apiKey),
   recordResult: (ok) => recordSpeechResult(ok),

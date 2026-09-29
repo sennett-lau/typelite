@@ -77,6 +77,13 @@ pub async fn test_speech_preset(
         crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;
         return Ok(elapsed);
     }
+    if preset.is_elevenlabs() {
+        // Plan `elevenlabs-speech`: ElevenLabs' own API with the `xi-api-key` header.
+        let cfg = stt::config::build_elevenlabs_config(&preset)?;
+        let elapsed = stt::elevenlabs::check_connection(&client, &cfg, &api_key).await?;
+        crate::commands::config::record_speech_test_passed(&app, &state, &preset).await;
+        return Ok(elapsed);
+    }
     let cfg = stt::config::build_whisper_config(&preset)?;
     let form = silent_test_form(&preset, &cfg.model)?;
 
