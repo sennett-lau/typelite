@@ -118,7 +118,7 @@ fn request_accessibility_permission_prompt() -> bool {
 /// Delay before capturing selected text to ensure hotkey modifiers are released.
 const SELECTED_TEXT_CAPTURE_DELAY_MS: u64 = 60;
 /// Interval for polling audio volume during recording.
-const VOLUME_POLL_INTERVAL_MS: u64 = 30;
+pub(crate) const VOLUME_POLL_INTERVAL_MS: u64 = 30;
 /// Timeout for STT finalization after recording stops.
 const STT_FINALIZE_TIMEOUT_SECS: u64 = 120;
 
