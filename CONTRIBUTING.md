@@ -71,8 +71,8 @@ It is a separate app, so it never touches the release app's data:
 The development build starts with a fresh setup and no keys; copy a preset over with the share buttons on its Settings card
 (export it in one app, import it in the other). Both apps listen for the same shortcuts, so **quit the release app
 (or give one of them other shortcuts) while you test**. Drive it without the keyboard with
-`"/Applications/Typelite Dev.app/Contents/MacOS/typelite" toggle`. The menu bar tooltip says
-"Typelite Dev". Its icon is the Typelite icon in amber with a DEV tag (`src-tauri/icons/dev/`, drawn
+`"/Applications/Typelite Dev.app/Contents/MacOS/typelite" toggle`. The menu bar icon has a dot in its
+corner and its tooltip says "Typelite Dev". Its icon is the Typelite icon in amber with a DEV tag (`src-tauri/icons/dev/`, drawn
 from `app-icon.svg` there).
 
 The build uses the Cargo feature `dev-build` (log folder, Keychain service, tooltip) and
