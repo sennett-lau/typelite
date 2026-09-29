@@ -2,81 +2,105 @@
 
 Ask anything answers most questions from the AI model alone. Questions about news, scores,
 schedules, prices or anything recent need the web. With a search server set up, Ask searches
-for such a question, answers from the top results and shows the pages it used as links under
-the answer.
+for such a question, answers from the top results and shows the pages it used as numbered links.
 
-Web search is off until you add your own search server. Typelite ships no search service and
-never sends your question anywhere else. When Ask needs live information, your question goes to
-the search server you entered, and that server passes it on to the search engines it uses.
+Web search is **off** until you add your own search server. Typelite ships no search service.
+When Ask needs live information, your question goes to the search server you entered, and that
+server passes it on to the search engines it uses. Other questions never leave your AI service.
 
-## SearXNG
+| | |
+|---|---|
+| Provider | [SearXNG](https://github.com/searxng/searxng), free and open source, self-hosted |
+| Runs | On your computer or network |
+| Cost | Free |
+| API key | No |
+| Address (example) | `http://127.0.0.1:8888` |
 
-[SearXNG](https://github.com/searxng/searxng) is a free, open-source metasearch engine that you
-run yourself. It asks several search engines at once and needs no API key.
+## Run SearXNG
 
-Run it with Docker, on this computer only:
+SearXNG is a metasearch engine: it asks several search engines at once and returns their
+results. Typelite reads its JSON answer, which is off in SearXNG's default settings, so you give
+it a small settings file.
 
-```sh
-mkdir -p ~/searxng
-cat > ~/searxng/settings.yml <<'EOF'
+### 1. Write the settings file
+
+Save this as `~/searxng/settings.yml`:
+
+```yaml
 use_default_settings: true
 server:
+  # Any long random string; make one with: openssl rand -hex 32
   secret_key: "change-me-to-a-long-random-string"
   limiter: false
 search:
+  # Typelite needs json; the default is html only.
   formats: [html, json]
-EOF
-docker run -d --name searxng --restart unless-stopped \
-  -p 127.0.0.1:8888:8080 -v ~/searxng:/etc/searxng searxng/searxng:latest
 ```
 
-Use address `http://127.0.0.1:8888`, no key.
+### 2. Start it with Docker
 
-- **JSON must be on.** Typelite reads SearXNG's JSON answer (`/search?q=…&format=json`). The
-  default settings allow only HTML, and SearXNG then answers `403 Forbidden`; Typelite's Test says
-  so. The line `formats: [html, json]` above turns JSON on. Restart SearXNG after you change
-  `settings.yml` (`docker restart searxng`).
-- **Keep it private.** `-p 127.0.0.1:8888:8080` makes it reachable from this computer only. To use
-  one SearXNG from several computers, publish the port on your network or a VPN such as Tailscale,
-  and do not open it to the internet: with the limiter off, anyone who reaches it can use it.
-- Replace the `secret_key` with your own random string (`openssl rand -hex 32`).
-- Without Docker, SearXNG also installs from its repository with Python; see the
+```sh
+docker run -d --name searxng --restart unless-stopped \
+  -p 127.0.0.1:8888:8080 \
+  -v ~/searxng:/etc/searxng \
+  searxng/searxng:latest
+```
+
+`-p 127.0.0.1:8888:8080` makes it reachable from this computer only. After you change
+`settings.yml`, restart it with `docker restart searxng`.
+
+### 3. Check it
+
+```sh
+curl 'http://127.0.0.1:8888/search?q=weather&format=json' | head -c 300
+```
+
+You should see JSON that starts with `{"query": "weather"`. An HTML page that says
+`403 Forbidden` means JSON is still off (see [Troubleshooting](#troubleshooting)).
+
+### Other ways to run it
+
+- **Without Docker:** SearXNG installs from its repository with Python; see the
   [SearXNG installation docs](https://docs.searxng.org/admin/installation.html).
+- **For several computers:** publish the port on your network or a VPN such as Tailscale, and
+  use that computer's address. Do not open it to the internet: with the limiter off, anyone who
+  reaches it can use it.
 
 ## Set it up in Typelite
 
-1. Open **Settings → AI polish → Web search for Ask** (or, during setup, **Web search for Ask
-   (optional)** under the AI step).
-2. Choose **SearXNG**, enter the address and press **Test**. It searches one fixed word, never
-   your own words, and shows how many results came back.
-3. Press **Save**. The **Key** field is optional: SearXNG needs none, but a SearXNG behind a proxy
-   that wants a token gets it as `Authorization: Bearer <key>`. The key is kept in the macOS
-   Keychain.
+1. Open **Settings → Search** (or the **Web search** step during setup, which you can skip).
+2. Choose **SearXNG**, enter the address (`http://127.0.0.1:8888`) and press **Test**. Test
+   searches one fixed word, never your own words, and shows how many results came back.
+3. Press **Save**.
 
-To change the address, edit it and press **Save** again. **Turn off web search** removes the
-address and the key.
+The **Key** field is optional. SearXNG needs none; a SearXNG behind a proxy that wants a token
+gets it as `Authorization: Bearer <key>`. The key is kept in the macOS Keychain. **Remove key**
+deletes it, and **Turn off web search** removes the address and the key.
 
 ## How Ask uses it
 
-- Ask first decides whether a question needs live information (the same check as before). Only
-  then does it search; other questions never leave your AI service.
-- It searches SearXNG's general and news categories at the same time, takes the top two news
-  results and then the top general ones, five in all, and waits at most 4 seconds.
+- Ask first decides whether a question needs live information. Only then does it search.
+- While it searches, the pill says **Searching the web…**, then **Thinking** while the AI writes
+  the answer.
+- It searches SearXNG's general and news categories at the same time and keeps five results (the
+  top two news results first), waiting at most 4 seconds.
 - The results go to your AI polish service with the instruction to answer only from them and to
-  cite them as `[1]`, `[2]`. The cited pages appear as numbered links under the answer; a click
-  opens the page in your browser.
+  cite them as `[1]`, `[2]`. **N sources** under the answer opens a column beside it with a card
+  per page (site, title and a short snippet). Hover a card for **Open**, which opens the page in
+  your browser, and **Copy link**. A citation in the answer opens the column on its page.
+- **Ask follow-up** under an answer records a new question that carries the last question, answer
+  and sources, so "and the one after that?" works.
 - Search results are text from web pages. Typelite gives them to the AI marked as untrusted data,
   not instructions.
-- When the search fails or finds nothing, the Ask panel says so and offers **Answer anyway**,
-  which answers from the model alone and notes that the answer may be out of date.
 - The log records how many results came back and how long each step took, never the question or
   the results.
 
-## Trouble
+## Troubleshooting
 
-| What you see | What to do |
-|---|---|
-| Test: "The server refused JSON" | Add `json` to `search.formats` in `settings.yml` and restart SearXNG. |
-| Test: "Could not reach the server" | Check that SearXNG runs (`docker ps`) and the address and port. |
-| Ask: "the web search did not work" | The same checks. The search engines SearXNG asks can also block it for a while (a CAPTCHA); it then uses the others. |
-| Answers cite the wrong page or mix up details | Small models make mistakes with search results too. Open the source links to check, or use a larger AI polish model. |
+| What you see | Why | What to do |
+|---|---|---|
+| Test: "The server refused JSON" (HTTP 403) | JSON output is off in SearXNG. | Add `json` to `search.formats` in `settings.yml` and run `docker restart searxng`. |
+| Test: "Could not reach the server" | SearXNG is not running, or the address or port is wrong. | Check `docker ps` and the address. |
+| Answers get worse, or SearXNG's log shows `CAPTCHA` or `suspended` | A search engine is blocking SearXNG for a while. | Nothing to do: SearXNG keeps using the other engines. If it lasts, turn that engine off in SearXNG's preferences. |
+| Ask: "the web search found nothing" | No engine returned results for the question. | Ask again with more detail, or press **Answer anyway**. |
+| An answer mixes up details | Small AI models make mistakes with search results too. | Open the source links to check, or use a larger AI polish model. |

@@ -644,6 +644,14 @@ export interface AskSource {
   number: number
   title: string
   url: string
+  /** The search result's snippet, shown on the source's card. */
+  snippet: string
+}
+
+/** Plan `ask-web-search`: the largest Ask panel on the current screen, in points. */
+export interface AskPanelLimits {
+  maxWidth: number
+  maxHeight: number
 }
 
 export type LiveSearchState = 'notConfigured' | 'failed' | 'noResults'
@@ -768,8 +776,13 @@ export async function closeAskPanel(): Promise<void> {
 }
 
 /** Reports the panel's height; the window keeps its bottom edge above the pill. */
-export async function resizeAskPanel(height: number): Promise<void> {
-  return invoke('resize_ask_panel', { height })
+export async function resizeAskPanel(width: number, height: number): Promise<void> {
+  return invoke('resize_ask_panel', { width, height })
+}
+
+/** Plan `ask-web-search`: ⅔ of the screen's work area wide and ½ of it tall (null when closed). */
+export async function askPanelLimits(): Promise<AskPanelLimits | null> {
+  return invoke('ask_panel_limits')
 }
 
 /** Puts `text` on the clipboard (the panel is never focused, so the browser clipboard is not used). */

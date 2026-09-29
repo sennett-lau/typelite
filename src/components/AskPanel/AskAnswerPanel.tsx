@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AlertTriangle, Check, Loader2, MessageCircle, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  ExternalLink,
+  Link2,
+  Loader2,
+  MessageCircle,
+  X,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   copyAskText,
@@ -8,8 +17,14 @@ import {
   openSettingsPane,
   startAskFollowUp,
 } from '../../lib/tauri'
-import type { AskDictationResult, AskSource } from '../../lib/tauri'
-import { answerSegments, liveBodyKey } from './liveSearch'
+import type { AskDictationResult, AskPanelLimits, AskSource } from '../../lib/tauri'
+import {
+  FALLBACK_LIMITS,
+  answerSegments,
+  isLongAnswer,
+  liveBodyKey,
+  panelWidth,
+} from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
 
 /** What the panel shows: an Ask result, or an error message. */
@@ -25,6 +40,8 @@ interface AskAnswerPanelProps {
   onAnswerAnyway: () => void
   /** True while the "Answer anyway" request runs. */
   answering?: boolean
+  /** Plan `ask-web-search`: the largest panel on this screen (from the app). */
+  limits?: AskPanelLimits | null
 }
 
 /** The host name of a link, without `www.`, for a compact source chip. */
@@ -36,43 +53,191 @@ function sourceHost(url: string): string {
   }
 }
 
+/** How long "Opened ✓" and "Copied ✓" stay on a source card. */
+const CONFIRM_MS = 1500
+
 function openSource(url: string) {
   openAskSource(url).catch(() => {})
 }
 
-/**
- * Plan `ask-web-search`: the web pages an answer came from, numbered as the answer cites them:
- * the page title (cut short) and its domain. A click opens the page in the browser (through the
- * app: the panel never takes focus).
- */
-export function AskSources({ sources }: { sources: AskSource[] }) {
-  const { t } = useTranslation()
-  if (sources.length === 0) return null
+/** A letter mark for a site: its first letter on a colour taken from its name. Typelite shows
+ * no site icons, because loading one would contact the site. */
+function SiteMark({ url }: { url: string }) {
+  const host = sourceHost(url)
+  let hash = 0
+  for (const char of host) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   return (
-    <div className="ask-glass-sources" data-testid="ask-panel-sources">
-      <span className="ask-glass-sources-label">{t('askPanel.sources')}</span>
-      {sources.map((source) => (
-        <button
-          key={source.url}
-          type="button"
-          className="ask-glass-source"
-          title={`${source.title}\n${source.url}`}
-          onClick={() => openSource(source.url)}
-        >
-          <span className="ask-glass-source-number">{source.number}</span>
-          <span className="ask-glass-source-title">{source.title}</span>
-          <span className="ask-glass-source-host">{sourceHost(source.url)}</span>
-        </button>
-      ))}
-    </div>
+    <span
+      className="ask-site-mark"
+      style={{ background: `hsl(${hash % 360} 55% 42%)` }}
+      aria-hidden="true"
+    >
+      {host.charAt(0).toUpperCase()}
+    </span>
   )
 }
 
 /**
- * Plan `ask-web-search`: the answer text with each `[n]` citation as a small numbered link that
- * opens the same page as source chip n.
+ * Plan `ask-web-search`: "3 sources" in the footer, with a mark per site. Opens and closes the
+ * sources column.
  */
-export function AnswerText({ text, sources }: { text: string; sources: AskSource[] }) {
+export function AskSourcesSummary({
+  sources,
+  open,
+  onToggle,
+}: {
+  sources: AskSource[]
+  open: boolean
+  onToggle: () => void
+}) {
+  const { t } = useTranslation()
+  if (sources.length === 0) return null
+  return (
+    <button
+      type="button"
+      className="ask-sources-summary"
+      aria-expanded={open}
+      onClick={onToggle}
+      data-testid="ask-panel-sources-summary"
+    >
+      <span className="ask-sources-stack">
+        {sources.map((source) => (
+          <SiteMark key={source.url} url={source.url} />
+        ))}
+      </span>
+      {t('askPanel.sourcesCount', { count: sources.length })}
+    </button>
+  )
+}
+
+/**
+ * Plan `ask-web-search`: the sources column on the right, full height. One card per source:
+ * site, citation number, title and snippet. Hover shows Open and Copy link; a click on the card
+ * opens the page. Both go through the app (the panel never takes focus).
+ */
+export function AskSourcesColumn({
+  sources,
+  highlighted,
+  onHide,
+}: {
+  sources: AskSource[]
+  highlighted: number | null
+  onHide: () => void
+}) {
+  const { t } = useTranslation()
+  const [confirmed, setConfirmed] = useState<{ number: number; action: 'open' | 'copy' } | null>(
+    null,
+  )
+  useEffect(() => {
+    if (!confirmed) return
+    const timer = setTimeout(() => setConfirmed(null), CONFIRM_MS)
+    return () => clearTimeout(timer)
+  }, [confirmed])
+
+  const open = (source: AskSource) => {
+    openSource(source.url)
+    setConfirmed({ number: source.number, action: 'open' })
+  }
+  const copyLink = (source: AskSource) => {
+    copyAskText(source.url)
+      .then(() => setConfirmed({ number: source.number, action: 'copy' }))
+      .catch(() => {})
+  }
+
+  return (
+    <aside className="ask-sources-column" data-testid="ask-panel-sources">
+      <div className="ask-sources-head">
+        <span>{t('askPanel.sources')}</span>
+        <button
+          type="button"
+          className="ask-glass-close"
+          onClick={onHide}
+          aria-label={t('askPanel.hideSources')}
+          title={t('askPanel.hideSources')}
+        >
+          <ChevronRight size={13} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="ask-sources-list">
+        {sources.map((source) => {
+          const done = confirmed?.number === source.number ? confirmed.action : null
+          return (
+            <div
+              key={source.url}
+              className={`ask-source-card${highlighted === source.number ? ' is-highlighted' : ''}${done ? ' is-confirming' : ''}`}
+              data-testid={`ask-source-${source.number}`}
+              onClick={() => open(source)}
+            >
+              <span className="ask-source-site">
+                <SiteMark url={source.url} />
+                <span className="ask-source-host">{sourceHost(source.url)}</span>
+                <span className="ask-source-number">{source.number}</span>
+              </span>
+              <span className="ask-source-title">{source.title}</span>
+              {source.snippet && <span className="ask-source-snippet">{source.snippet}</span>}
+              <span className="ask-source-actions">
+                <button
+                  type="button"
+                  className={`ask-source-action${done === 'open' ? ' is-done' : ''}`}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    open(source)
+                  }}
+                  aria-label={t('askPanel.openSource', { n: source.number })}
+                >
+                  {done === 'open' ? (
+                    <>
+                      {t('askPanel.opened')} <Check size={11} aria-hidden="true" />
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink size={11} aria-hidden="true" /> {t('askPanel.open')}
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`ask-source-action${done === 'copy' ? ' is-done' : ''}`}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    copyLink(source)
+                  }}
+                  aria-label={t('askPanel.copySourceLink', { n: source.number })}
+                >
+                  {done === 'copy' ? (
+                    <>
+                      {t('askPanel.linkCopied')} <Check size={11} aria-hidden="true" />
+                    </>
+                  ) : (
+                    <>
+                      <Link2 size={11} aria-hidden="true" /> {t('askPanel.copyLink')}
+                    </>
+                  )}
+                </button>
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </aside>
+  )
+}
+
+/**
+ * Plan `ask-web-search`: the answer text with each `[n]` citation as a small numbered button.
+ * Clicking it shows source n in the sources column; hovering it highlights that card.
+ */
+export function AnswerText({
+  text,
+  sources,
+  onCite,
+  onHover,
+}: {
+  text: string
+  sources: AskSource[]
+  onCite: (n: number) => void
+  onHover: (n: number | null) => void
+}) {
   const { t } = useTranslation()
   if (sources.length === 0) return <>{text}</>
   const byNumber = new Map(sources.map((source) => [source.number, source]))
@@ -86,9 +251,11 @@ export function AnswerText({ text, sources }: { text: string; sources: AskSource
             key={index}
             type="button"
             className="ask-glass-cite"
-            title={`${source.title}\n${source.url}`}
-            aria-label={t('askPanel.openSource', { n: segment })}
-            onClick={() => openSource(source.url)}
+            title={`${source.title}\n${sourceHost(source.url)}`}
+            aria-label={t('askPanel.showSource', { n: segment })}
+            onClick={() => onCite(segment)}
+            onMouseEnter={() => onHover(segment)}
+            onMouseLeave={() => onHover(null)}
           >
             {segment}
           </button>
@@ -110,6 +277,7 @@ export function AskAnswerPanel({
   onClose,
   onAnswerAnyway,
   answering = false,
+  limits,
 }: AskAnswerPanelProps) {
   const { t } = useTranslation()
   const [inserting, setInserting] = useState(false)
@@ -120,11 +288,24 @@ export function AskAnswerPanel({
   const output = result?.output ?? null
   const text = result?.answer ?? ''
   const couldNotReplace = output === 'copiedFallback'
+  const sources = result?.sources ?? []
+  const errorMessage = content.kind === 'error' ? content.message : null
+  // Plan `ask-web-search`: the sources column, and the source a citation points at.
+  const [sourcesOpen, setSourcesOpen] = useState(false)
+  const [highlighted, setHighlighted] = useState<number | null>(null)
 
   useEffect(() => {
     setInsertFailed(false)
     setFollowUpFailed(false)
-  }, [content])
+    setSourcesOpen(false)
+    setHighlighted(null)
+    // The parent builds a new `content` object on each render; reset only for a new message.
+  }, [result, errorMessage])
+
+  const showSource = useCallback((n: number) => {
+    setSourcesOpen(true)
+    setHighlighted(n)
+  }, [])
 
   // Only the couldn't-replace result has a copy button, and its text is already on the
   // clipboard; pressing it copies again.
@@ -233,9 +414,8 @@ export function AskAnswerPanel({
     body = (
       <>
         <div className="ask-glass-answer" data-testid="ask-panel-answer">
-          <AnswerText text={text} sources={result?.sources ?? []} />
+          <AnswerText text={text} sources={sources} onCite={showSource} onHover={setHighlighted} />
         </div>
-        <AskSources sources={result?.sources ?? []} />
         {result?.mayBeOutOfDate && (
           <p className="ask-glass-note text-white/55">{t('ask.outOfDateNote')}</p>
         )}
@@ -246,7 +426,7 @@ export function AskAnswerPanel({
         )}
       </>
     )
-    // Plan `ask-web-search`: an answer offers only Ask follow-up (no Copy or Insert).
+    // Plan `ask-web-search`: an answer offers its sources and Ask follow-up (no Copy or Insert).
     actions = (
       <button
         type="button"
@@ -259,39 +439,69 @@ export function AskAnswerPanel({
     )
   }
 
+  const panelLimits = limits ?? FALLBACK_LIMITS
+  const showColumn = sourcesOpen && sources.length > 0
+  const width = panelWidth(isLongAnswer(text), showColumn, panelLimits)
+
   return (
     <section
       role="dialog"
       aria-label={t('askPanel.label')}
       data-testid="ask-floating-note"
       className="ask-glass"
+      style={{ width, maxHeight: panelLimits.maxHeight }}
     >
-      <div className="flex items-center gap-2 pt-2.5 pr-3 pl-3.5">
-        <span className="ask-glass-question" data-testid="ask-panel-question">
-          {question}
-        </span>
-        <button
-          type="button"
-          className="ask-glass-close"
-          onClick={onClose}
-          aria-label={t('askPanel.close')}
-          title={t('askPanel.close')}
-        >
-          <X size={12} aria-hidden="true" />
-        </button>
+      {/* Plan `ask-web-search`: the pill's aurora behind the glass. */}
+      <div className="ask-glass-aurora" aria-hidden="true">
+        <div className="ask-glass-blob ask-glass-blob-a" />
+        <div className="ask-glass-blob ask-glass-blob-b" />
       </div>
-      {body}
-      {insertFailed && (
-        <p className="ask-glass-note mt-1" role="status">
-          {t('askPanel.insertFailed')}
-        </p>
+      <div className="ask-glass-main">
+        <div className="flex items-center gap-2 pt-2.5 pr-2 pl-3.5">
+          <span className="ask-glass-question" data-testid="ask-panel-question">
+            {question}
+          </span>
+          <button
+            type="button"
+            className="ask-glass-close"
+            onClick={onClose}
+            aria-label={t('askPanel.close')}
+            title={t('askPanel.close')}
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        </div>
+        {body}
+        {insertFailed && (
+          <p className="ask-glass-note mt-1" role="status">
+            {t('askPanel.insertFailed')}
+          </p>
+        )}
+        <div className="flex items-center gap-1.5 pt-2 pr-2.5 pb-2.5 pl-3.5">
+          <AskSourcesSummary
+            sources={sources}
+            open={showColumn}
+            onToggle={() => {
+              setSourcesOpen(!showColumn)
+              setHighlighted(null)
+            }}
+          />
+          <span className="ask-glass-hint">
+            <KeyCap name="Escape" className="" /> {t('askPanel.escToClose')}
+          </span>
+          {actions}
+        </div>
+      </div>
+      {showColumn && (
+        <AskSourcesColumn
+          sources={sources}
+          highlighted={highlighted}
+          onHide={() => {
+            setSourcesOpen(false)
+            setHighlighted(null)
+          }}
+        />
       )}
-      <div className="flex items-center gap-1.5 pt-2 pr-2.5 pb-2.5 pl-3.5">
-        <span className="ask-glass-hint">
-          <KeyCap name="Escape" className="" /> {t('askPanel.escToClose')}
-        </span>
-        {actions}
-      </div>
     </section>
   )
 }

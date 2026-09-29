@@ -446,6 +446,8 @@ pub struct AnswerSource {
     pub number: usize,
     pub title: String,
     pub url: String,
+    /// The search result's snippet (plain text, already capped), shown on the source's card.
+    pub snippet: String,
 }
 
 /// The sources shown under an answer: the cited ones, or every result when the answer cites
@@ -467,6 +469,7 @@ pub fn answer_sources(answer: &str, results: &[SearchResult]) -> Vec<AnswerSourc
                 number,
                 title: result.title.clone(),
                 url: result.url.clone(),
+                snippet: result.snippet.clone(),
             }
         })
         .collect()

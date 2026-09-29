@@ -6,13 +6,14 @@ import {
   ASK_PANEL_CLOSED_EVENT,
   abortAskDictation,
   answerAskAnyway,
+  askPanelLimits,
   closeAskPanel,
   resizeAskPanel,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
 } from '../../lib/tauri'
-import type { AskDictationResult, AskDictationStartResult } from '../../lib/tauri'
+import type { AskDictationResult, AskDictationStartResult, AskPanelLimits } from '../../lib/tauri'
 import { NeedsLiveInfo } from './NeedsLiveInfo'
 import { AskAnswerPanel, type AskPanelContent } from './AskAnswerPanel'
 
@@ -405,17 +406,35 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   wasShown.current = panelShown
   const panelKey = openCount.current
 
-  // Report the panel's height, so the window fits it and keeps its bottom edge above the pill.
+  // Plan `ask-web-search`: the largest panel on this screen, asked for each time it opens.
+  const [limits, setLimits] = useState<AskPanelLimits | null>(null)
+  useEffect(() => {
+    if (embedded || !panelShown) return
+    let live = true
+    Promise.resolve(askPanelLimits())
+      .then((value) => {
+        if (live && value) setLimits(value)
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [embedded, panelShown, panelKey])
+
+  // Report the panel's size, so the window fits it, stays centred on the pill and keeps its
+  // bottom edge above it.
   useLayoutEffect(() => {
     if (embedded || !panelShown) return
     const element = panelRef.current
     if (!element) return
-    let reported = 0
+    let reported = ''
     const report = () => {
-      const height = Math.ceil(element.getBoundingClientRect().height)
-      if (height <= 0 || height === reported) return
-      reported = height
-      void Promise.resolve(resizeAskPanel(height)).catch(() => {})
+      const box = element.getBoundingClientRect()
+      const width = Math.ceil(box.width)
+      const height = Math.ceil(box.height)
+      if (width <= 0 || height <= 0 || `${width}x${height}` === reported) return
+      reported = `${width}x${height}`
+      void Promise.resolve(resizeAskPanel(width, height)).catch(() => {})
     }
     report()
     if (typeof ResizeObserver === 'undefined') return
@@ -437,6 +456,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
               onClose={() => dismissStandalone(true)}
               onAnswerAnyway={answerAnyway}
               answering={answeringAnyway}
+              limits={limits}
             />
           </div>
         )}
