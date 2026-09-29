@@ -212,7 +212,7 @@ mod context_prompt_contract_tests {
     fn thought_aware_policy_preserves_uncertain_and_intentional_content() {
         let prompt = prompt_for(&context(ContextFamily::General, None));
         assert!(prompt.contains("intentional repetition"));
-        assert!(prompt.contains("explicit correction"));
+        assert!(prompt.contains("always marks a correction"));
         assert!(prompt.contains("keep the original order"));
         assert!(prompt.contains("uncertain names"));
         assert!(prompt.contains("Do not search"));
