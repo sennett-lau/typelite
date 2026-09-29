@@ -1021,7 +1021,12 @@
     "apiKeyPlaceholder": "Optional",
     "name": "Name",
     "namePlaceholder": "Filled in for you",
-    "elevenLabsNote": "ElevenLabs: sent to ElevenLabs’ own speech-to-text API (Scribe) with your key.",
+    "elevenLabsTip": {
+      "text": "ElevenLabs: your recording is sent to ElevenLabs’ speech-to-text API (Scribe) with your key. Create the key with the Speech to Text permission.",
+      "getKey": "Get an API key",
+      "docs": "Speech to text docs",
+      "pricing": "Pricing"
+    },
     "qwenCloudNote": "Qwen Cloud: sent to Qwen’s own speech API. Recordings up to 4 min 50 s.",
     "test": "Test",
     "testing": "Testing…",
@@ -1038,7 +1043,7 @@
       },
       "server": {
         "title": "Your server or API key",
-        "detail": "OpenAI, Groq, a whisper.cpp server…"
+        "detail": "OpenAI, Groq, ElevenLabs, a whisper.cpp server…"
       }
     },
     "languageGroup": "Language",

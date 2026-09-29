@@ -7,8 +7,12 @@ How the ElevenLabs connection fits the app. Back to [index.md](index.md).
 - `isElevenLabsAddress` (`src/lib/speechTypes.ts`) is true for `elevenlabs.io` and any
   `*.elevenlabs.io` host. `withServerKind` then sets `kind: "elevenlabs"` on Test and Save;
   another address sets `openai_compatible` again.
-- The form shows one line under the fields for such an address (`speech.elevenLabsNote`, English
-  and Chinese). The preset is named after its host, like any other.
+- Under the Name field, above Test and Save, the form shows a tip for such an address
+  (`ElevenLabsTip`, `speech.elevenLabsTip.*` in English and Chinese): the audio goes to ElevenLabs
+  with the user's key, the key needs the Speech to Text permission, and links (opened in the
+  browser) to get a key, the speech-to-text docs and the pricing. Settings and onboarding share
+  the form, so both show it. The "Your server or API key" card names ElevenLabs. The preset is
+  named after its host, like any other.
 - The key is typed in the same API key field and stored in the Keychain under the preset id
   (`stt` namespace), exactly like other speech keys. Changing it clears the preset's "tested"
   mark until the next Test.
