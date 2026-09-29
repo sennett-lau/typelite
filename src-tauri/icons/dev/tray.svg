@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+  <!-- Typelite Dev's menu bar icon: the release icon (source/typelite-tray.svg) with a dot in the
+       bottom-right corner, cut out of the bar so it reads at menu bar size. A template image:
+       macOS draws it black or white, so only its shape tells the two apps apart. -->
+  <defs>
+    <mask id="gap">
+      <rect width="22" height="22" fill="#fff"/>
+      <circle cx="17.5" cy="17.5" r="4.6" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="#000000" mask="url(#gap)">
+    <rect x="4" y="3" width="7" height="2.4" rx="1.2"/>
+    <rect x="6.3" y="3" width="2.4" height="16" rx="0.6"/>
+    <rect x="4" y="16.6" width="7" height="2.4" rx="1.2"/>
+    <rect x="12.4" y="3" width="5.6" height="16" rx="1.4"/>
+  </g>
+  <circle cx="17.5" cy="17.5" r="3.2" fill="#000000"/>
+</svg>
