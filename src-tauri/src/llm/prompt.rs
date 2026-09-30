@@ -13,7 +13,7 @@ You are a voice-to-text assistant. Transform raw speech transcription into clean
 Rules:
 1. PUNCTUATION: Add appropriate punctuation (commas, periods, colons, question marks) where the speech pauses or clauses naturally end. This is the most important rule — raw transcription has no punctuation. The end of the whole output follows rule 7.
 2. CLEANUP: Remove filler words (um, uh, 嗯, 那个, 就是说, like, you know), false starts, and repetitions.
-   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, no, actually Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase, also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "the first thing, sorry, the third thing" → "the third thing", "two servers I mean three servers" → "three servers". These markers always mean a correction.
+   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, no, actually Y", "X, oh no, Y", "X. Oh no! Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase, also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "the first thing, sorry, the third thing" → "the third thing", "two servers I mean three servers" → "three servers", "lunch at one. Oh no! Let's do it at two." → "lunch at two". These markers always mean a correction.
    SPELLED WORDS: When the speaker spells a word letter by letter, write the word once with exactly that spelling and drop the spelled letters, wherever they are in the sentence: "email Bovy B-O-V-E-Y" → "email Bovey", "send it to Kristen, K-R-I-S-T-E-N." → "send it to Kristen." The letters may have dashes or spaces ("P R I Y A"), follow "spelled" or "that's", or run across a whole name: split them to match the spoken words ("Maya Chen M-A-Y-A-C-H-E-N" → "Maya Chen"). The spelled letters win over the heard word: "Jaxon Wu, J-A-C-K-S-O-N W-O-O" → "Jackson Woo". Never output the letters or "spelled".
 3. LISTS: When the user enumerates items (signaled by words like 第一/第二, 首先/然后/最后, 一是/二是, first/second/third, etc.), format as a numbered list. CRITICAL: each list item MUST be on its own line.
 4. PARAGRAPHS: When the speech covers multiple distinct topics, separate them with a blank line. Do NOT split a single flowing thought into multiple paragraphs.
@@ -104,7 +104,7 @@ const SELECTED_TEXT_ADDON: &str = "\nSELECTED TEXT MODE: The user has selected e
 const THOUGHT_AWARE_RULES: &str = r#"Disfluency:
 - Remove filler sounds only when they carry no meaning. Preserve meaningful discourse markers.
 - Remove accidental repetition, but preserve intentional repetition used for emphasis.
-- Resolve a false start when the replacement is unambiguous. An explicit marker (no wait, sorry, I mean, scratch that, 不對, 唔係) always marks a correction: discard the replaced part and the marker, and keep the correction.
+- Resolve a false start when the replacement is unambiguous. An explicit marker (no wait, oh no, sorry, I mean, scratch that, 不對, 唔係) always marks a correction: discard the replaced part and the marker, and keep the correction.
 - A late correction applies only to the fact it clearly replaces. "Actually" on its own is ordinary content and must remain; "no, actually" or "no wait" before a replacement is a correction.
 - Omit a side note only when the speaker explicitly retracts or excludes it. Keep ordinary parenthetical content.
 - Preserve explicit ordering cues. When order is uncertain, keep the original order.
@@ -1078,6 +1078,16 @@ mod tests {
         );
     }
 
+    /// "Oh no" is an explicit correction marker, however the speech server punctuates it (the
+    /// onboarding "Change your mind" line).
+    #[test]
+    fn prompt_treats_oh_no_as_a_correction() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+        assert!(prompt.contains("\"X. Oh no! Y\""));
+        assert!(prompt.contains("\"lunch at one. Oh no! Let's do it at two.\" → \"lunch at two\""));
+        assert!(prompt.contains("no wait, oh no, sorry"));
+    }
+
     /// Code words: file names, extensions and unknown short words stay one token, and a
     /// spoken "dot" becomes the dot.
     #[test]
@@ -1125,7 +1135,7 @@ mod tests {
         ));
         assert!(prompt.contains("Input: \"第二步，sorry，第四步係測試\"\nOutput: 第四步係測試"));
         assert!(prompt.contains(
-            "An explicit marker (no wait, sorry, I mean, scratch that, 不對, 唔係) always marks a correction"
+            "An explicit marker (no wait, oh no, sorry, I mean, scratch that, 不對, 唔係) always marks a correction"
         ));
         assert!(!prompt.contains("Treat disfluency conservatively"));
     }
