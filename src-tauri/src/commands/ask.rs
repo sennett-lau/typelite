@@ -917,6 +917,7 @@ async fn check_live_question(
                 live,
                 reason,
                 source: crate::llm::live_question::LiveCheckSource::KeywordsAfterError,
+                query: None,
             }
         }
     };
@@ -980,21 +981,19 @@ fn web_search_key(config: &storage::AppConfig) -> String {
 
 /// Plan `ask-web-search`: searches the web for a live question and answers from the results,
 /// with sources. Logs counts and timings only.
+/// `query` is what the web is searched for (the live check's query, or the question itself);
+/// the answer is still written for `question`.
 async fn answer_from_web(
     app: &tauri::AppHandle,
     config: &storage::AppConfig,
     client: &reqwest::Client,
     question: &str,
+    query: &str,
 ) -> Result<WebAnswer, WebAnswerError> {
     // The pill shows "Searching the web…" while the search runs, then "Thinking" again.
     let _ = app.emit(ASK_STAGE_EVENT, "searching");
-    let outcome = crate::web_search::search(
-        client,
-        &config.web_search,
-        &web_search_key(config),
-        question,
-    )
-    .await;
+    let outcome =
+        crate::web_search::search(client, &config.web_search, &web_search_key(config), query).await;
     let _ = app.emit(ASK_STAGE_EVENT, "thinking");
     // The sidebar's Search dot (plan `searxng-setup`): whether a real search worked.
     let _ = app.emit(SEARCH_RESULT_EVENT, outcome.is_ok());
@@ -1030,16 +1029,20 @@ async fn answer_from_web(
     let mut answer = send_ask_chat(client, &config, &api_key, &body)
         .await
         .map_err(WebAnswerError::Ai)?;
-    // A small model sometimes copies the results back instead of answering: ask once more,
-    // and never show the raw results as an answer.
+    // A small model sometimes copies the results back instead of answering: ask once more with
+    // a plainer instruction, and never show the raw results as an answer.
     if crate::web_search::echoes_results(&answer) {
         tracing::warn!("Ask web answer: the AI copied the search results; asking again");
+        let body = crate::web_search::answer_only_body(&body);
         answer = send_ask_chat(client, &config, &api_key, &body)
             .await
             .map_err(WebAnswerError::Ai)?;
         if crate::web_search::echoes_results(&answer) {
             tracing::warn!("Ask web answer: the AI copied the search results again");
-            return Err(WebAnswerError::Search(LiveSearchState::NoResults));
+            return Err(WebAnswerError::Ai(
+                "The AI copied the search results instead of answering. Please ask again."
+                    .to_string(),
+            ));
         }
     }
     let sources = crate::web_search::answer_sources(&answer, &outcome.results);
@@ -1646,7 +1649,8 @@ pub async fn stop_ask_dictation(
             if check.live {
                 // Plan `ask-web-search`: with a search provider, answer from the web.
                 let live_search = if config.web_search.is_configured() {
-                    match answer_from_web(&app, &config, &client, &question).await {
+                    let query = check.query.as_deref().unwrap_or(&question);
+                    match answer_from_web(&app, &config, &client, &question, query).await {
                         Ok(web) => {
                             ai_elapsed = Some(ai_started.elapsed());
                             return Ok(AskDictationResult::new(

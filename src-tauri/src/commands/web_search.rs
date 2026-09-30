@@ -153,7 +153,11 @@ pub async fn test_web_search(
     ensure_main_window(&window)?;
     let config = validated_config(provider, &base_url)?;
     if !config.is_configured() {
-        return Err(web_search::SearchError::BadAddress.user_message());
+        return Err(if provider == SearchProviderKind::Builtin {
+            "Built-in search is not set up yet.".to_string()
+        } else {
+            web_search::SearchError::BadAddress.user_message()
+        });
     }
     let key = api_key.unwrap_or_else(|| stored_key(provider));
     match web_search::test_provider(&client, &config, &key).await {

@@ -32,13 +32,15 @@ pub const CREDENTIAL_NAMESPACE: &str = "search";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchProviderKind {
-    /// Search is off (the default).
-    #[default]
-    None,
     /// Your own SearXNG, at `base_url`.
     Searxng,
     /// Plan `searxng-setup`: the SearXNG Typelite sets up and runs on this Mac.
     Builtin,
+    /// Search is off (the default). A provider this version does not know (settings.json from a
+    /// newer Typelite) reads as off, instead of failing the whole settings file.
+    #[default]
+    #[serde(other)]
+    None,
 }
 
 impl SearchProviderKind {
@@ -442,13 +444,29 @@ pub fn answer_messages(question: &str, results: &[SearchResult], today: &str) ->
 }
 
 /// True when the AI copied the search results back instead of answering (a small model
-/// sometimes does): the answer holds the block's tag or a result's `URL:` / `Date:` lines.
+/// sometimes does): the answer holds the block's tag or a result's `URL: http…` line. A
+/// `Date:` line alone is not enough; an answer may well give a date that way.
 pub fn echoes_results(answer: &str) -> bool {
     answer.contains("search_results>")
-        || answer.lines().any(|line| {
-            let line = line.trim_start();
-            line.starts_with("URL: ") || line.starts_with("Date: ")
-        })
+        || answer
+            .lines()
+            .any(|line| line.trim_start().starts_with("URL: http"))
+}
+
+/// The same chat body with a plainer instruction added, for a second try after the AI copied
+/// the results back (the same request again would give the same reply).
+pub fn answer_only_body(body: &Value) -> Value {
+    let mut body = body.clone();
+    if let Some(content) = body
+        .pointer("/messages/0/content")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+    {
+        body["messages"][0]["content"] = Value::String(format!(
+            "{content} Write only the answer, in your own words. Never copy the results, their numbers, URL lines or Date lines."
+        ));
+    }
+    body
 }
 
 /// The result numbers an answer cites (`[1]`, `[2][3]`, `[1, 4]`), in order, each once, only
@@ -602,11 +620,24 @@ mod tests {
     ]}"#;
 
     #[test]
+    fn the_second_try_adds_a_plainer_instruction_to_the_system_message() {
+        let body = json!({ "messages": [{ "role": "system", "content": "Answer." }, { "role": "user", "content": "Q" }] });
+        let again = answer_only_body(&body);
+        let content = again["messages"][0]["content"].as_str().unwrap();
+        assert!(content.starts_with("Answer. "));
+        assert!(content.contains("Never copy the results"));
+        assert_eq!(again["messages"][1]["content"], "Q");
+    }
+
+    #[test]
     fn an_answer_that_copies_the_results_is_an_echo() {
         let echo = "<search_results>\n[1] Race\nURL: https://a.example\nDate: unknown\nText";
         assert!(echoes_results(echo));
         assert!(echoes_results("[1] Race\nURL: https://a.example"));
         assert!(!echoes_results("The next race is on 5 October [1]."));
+        assert!(!echoes_results(
+            "Date: 5 October [1].\nPlace: Singapore [1]."
+        ));
     }
 
     #[test]

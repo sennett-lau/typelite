@@ -68,6 +68,10 @@ impl SearchPaths {
     pub fn log(&self) -> PathBuf {
         self.root.join("searxng.log")
     }
+    /// The running server's process id, so a Typelite that crashed can stop it next time.
+    pub fn pid(&self) -> PathBuf {
+        self.root.join("searxng.pid")
+    }
 }
 
 fn short_commit(commit: &str) -> &str {
@@ -118,7 +122,7 @@ pub enum SetupStep {
     Done,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetupProgress {
     pub step: SetupStep,
@@ -136,6 +140,8 @@ pub struct BuiltinSearchStatus {
     pub port: Option<u16>,
     /// A setup or update is in progress.
     pub busy: bool,
+    /// The last progress step while busy, for a page opened after the setup started.
+    pub progress: Option<SetupProgress>,
 }
 
 /// The latest SearXNG commit, for Check for updates.
@@ -147,13 +153,32 @@ pub struct UpdateCheck {
     pub update_available: bool,
 }
 
-/// SearXNG's settings: this Mac only, JSON on, no limiter (it is not a public server).
+/// The search engines SearXNG asks. Its defaults (DuckDuckGo, Brave, Qwant, Google CSE, …)
+/// answer a home connection with CAPTCHAs and "too many requests", so the general category
+/// came back empty; these answer. Bing's web results are unrelated pages, so it is news only.
+pub const ENGINES: &[&str] = &[
+    "google",
+    "yahoo",
+    "startpage",
+    "wikipedia",
+    "bing news",
+    "google news",
+];
+
+/// SearXNG's settings: this Mac only, JSON on, no limiter (it is not a public server), and
+/// only `ENGINES` (`keep_only` drops the rest; the list below turns them on).
 pub fn settings_yaml(port: u16, secret_key: &str) -> String {
+    let keep_only = ENGINES.join(", ");
+    let enabled: String = ENGINES
+        .iter()
+        .map(|engine| format!("  - name: {engine}\n    disabled: false\n"))
+        .collect();
     format!(
         "# Written by Typelite (plan `searxng-setup`). Changes are replaced on the next setup.\n\
-         use_default_settings: true\n\
+         use_default_settings:\n  engines:\n    keep_only: [{keep_only}]\n\
          server:\n  bind_address: \"127.0.0.1\"\n  port: {port}\n  secret_key: \"{secret_key}\"\n  limiter: false\n  image_proxy: false\n\
-         search:\n  formats: [html, json]\n"
+         search:\n  formats: [html, json]\n\
+         engines:\n{enabled}"
     )
 }
 
@@ -188,6 +213,27 @@ pub fn free_port(preferred: u16) -> u16 {
         .and_then(|listener| listener.local_addr())
         .map(|addr| addr.port())
         .unwrap_or(preferred)
+}
+
+/// Stops a SearXNG a crashed Typelite left behind (its id is in `pid_file`). Only a process
+/// that really runs `searx.webapp` is stopped.
+fn stop_stale_server(pid_file: &Path) {
+    let Ok(text) = std::fs::read_to_string(pid_file) else {
+        return;
+    };
+    let _ = std::fs::remove_file(pid_file);
+    let Ok(pid) = text.trim().parse::<u32>() else {
+        return;
+    };
+    let args = Command::new("ps")
+        .args(["-p", &pid.to_string(), "-o", "args="])
+        .output()
+        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
+        .unwrap_or_default();
+    if args.contains("searx.webapp") {
+        tracing::info!("Built-in search: stopping a SearXNG left from an earlier run (pid {pid})");
+        let _ = Command::new("kill").arg(pid.to_string()).status();
+    }
 }
 
 fn new_secret() -> String {
@@ -332,6 +378,8 @@ struct Running {
     child: Child,
     port: u16,
     commit: String,
+    /// `/healthz` has answered, so the server takes searches.
+    ready: bool,
 }
 
 /// Manages the Built-in SearXNG: setup, update, remove, and its process.
@@ -339,7 +387,10 @@ pub struct SearchServer {
     paths: Mutex<Option<SearchPaths>>,
     running: Mutex<Option<Running>>,
     busy: AtomicBool,
-    /// Serialises starts, so two searches do not start two servers.
+    /// The last progress step of the running setup or update (see `BuiltinSearchStatus`).
+    last_progress: Mutex<Option<SetupProgress>>,
+    /// Serialises starts, setups, updates and removals, so two searches do not start two
+    /// servers and a search never restarts the server an update or removal is replacing.
     start_lock: tokio::sync::Mutex<()>,
 }
 
@@ -350,6 +401,7 @@ pub fn server() -> &'static SearchServer {
         paths: Mutex::new(None),
         running: Mutex::new(None),
         busy: AtomicBool::new(false),
+        last_progress: Mutex::new(None),
         start_lock: tokio::sync::Mutex::new(()),
     })
 }
@@ -365,7 +417,14 @@ impl Drop for BusyGuard<'_> {
 impl SearchServer {
     /// Called at startup with `<app data>/search`.
     pub fn set_root(&self, root: PathBuf) {
-        *self.paths.lock().unwrap_or_else(|e| e.into_inner()) = Some(SearchPaths::new(root));
+        let paths = SearchPaths::new(root);
+        stop_stale_server(&paths.pid());
+        *self.paths.lock().unwrap_or_else(|e| e.into_inner()) = Some(paths);
+    }
+
+    /// Remembers a progress step, so `status` can show it to a page opened later.
+    pub fn note_progress(&self, progress: SetupProgress) {
+        *self.last_progress.lock().unwrap_or_else(|e| e.into_inner()) = Some(progress);
     }
 
     fn paths(&self) -> Result<SearchPaths, String> {
@@ -384,6 +443,7 @@ impl SearchServer {
         if self.busy.swap(true, Ordering::SeqCst) {
             return Err("A setup or update is already running.".to_string());
         }
+        *self.last_progress.lock().unwrap_or_else(|e| e.into_inner()) = None;
         Ok(BusyGuard(&self.busy))
     }
 
@@ -397,11 +457,20 @@ impl SearchServer {
         if !alive {
             *running = None;
         }
+        let busy = self.busy.load(Ordering::SeqCst);
         BuiltinSearchStatus {
             installed: installed.map(InstalledInfo::from),
             running: alive,
             port: running.as_ref().map(|server| server.port),
-            busy: self.busy.load(Ordering::SeqCst),
+            busy,
+            progress: if busy {
+                self.last_progress
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .clone()
+            } else {
+                None
+            },
         }
     }
 
@@ -409,14 +478,38 @@ impl SearchServer {
     pub async fn ensure_running(&self, client: &reqwest::Client) -> Result<String, String> {
         let _start = self.start_lock.lock().await;
         let status = self.status();
-        if let (true, Some(port)) = (status.running, status.port) {
-            return Ok(base_url(port));
-        }
-        let paths = self.paths()?;
-        let installed = read_installed(&paths).ok_or("Built-in search is not set up")?;
-        let port = self.start(&paths, &installed)?;
+        let port = match (status.running, status.port) {
+            // Started by an earlier call that was cancelled (Escape) before it answered.
+            (true, Some(port)) if !self.is_ready() => port,
+            (true, Some(port)) => return Ok(base_url(port)),
+            _ => {
+                let paths = self.paths()?;
+                let installed = read_installed(&paths).ok_or("Built-in search is not set up")?;
+                self.start(&paths, &installed)?
+            }
+        };
         wait_until_ready(client, port, START_TIMEOUT).await?;
+        self.mark_ready();
         Ok(base_url(port))
+    }
+
+    fn is_ready(&self) -> bool {
+        self.running
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+            .is_some_and(|server| server.ready)
+    }
+
+    fn mark_ready(&self) {
+        if let Some(server) = self
+            .running
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_mut()
+        {
+            server.ready = true;
+        }
     }
 
     /// Starts `installed` on a free port (writing settings.yml). Returns the port.
@@ -444,10 +537,12 @@ impl SearchServer {
             short_commit(&installed.commit),
             child.id()
         );
+        let _ = std::fs::write(paths.pid(), child.id().to_string());
         *self.running.lock().unwrap_or_else(|e| e.into_inner()) = Some(Running {
             child,
             port,
             commit: installed.commit.clone(),
+            ready: false,
         });
         Ok(port)
     }
@@ -462,6 +557,9 @@ impl SearchServer {
         {
             let _ = server.child.kill();
             let _ = server.child.wait();
+            if let Ok(paths) = self.paths() {
+                let _ = std::fs::remove_file(paths.pid());
+            }
             tracing::info!(
                 "Built-in search: SearXNG {} stopped",
                 short_commit(&server.commit)
@@ -475,6 +573,7 @@ impl SearchServer {
         client: &reqwest::Client,
         progress: &(dyn Fn(SetupProgress) + Send + Sync),
     ) -> Result<Installed, String> {
+        let _start = self.start_lock.lock().await;
         let _busy = self.begin()?;
         let paths = self.paths()?;
         std::fs::create_dir_all(&paths.root).map_err(|e| format!("create search folder: {e}"))?;
@@ -485,7 +584,7 @@ impl SearchServer {
             let paths = paths.clone();
             blocking(move || {
                 run(
-                    uv_command(&paths).args(["python", "install", PYTHON_VERSION]),
+                    uv_command(&paths).args(["python", "install", "--no-bin", PYTHON_VERSION]),
                     "install Python",
                 )
             })
@@ -542,6 +641,7 @@ impl SearchServer {
         let Some(old) = read_installed(&paths) else {
             return self.install(client, progress).await;
         };
+        let _start = self.start_lock.lock().await;
         let _busy = self.begin()?;
         let (commit, commit_date) = latest_commit(client).await?;
         if commit == old.commit {
@@ -581,14 +681,20 @@ impl SearchServer {
     }
 
     /// Stops the server and deletes everything under `search/`.
-    pub fn remove(&self) -> Result<(), String> {
+    pub async fn remove(&self) -> Result<(), String> {
+        let _start = self.start_lock.lock().await;
         let _busy = self.begin()?;
         self.stop();
         let paths = self.paths()?;
-        if paths.root.exists() {
-            std::fs::remove_dir_all(&paths.root)
-                .map_err(|e| format!("remove search folder: {e}"))?;
-        }
+        // A few hundred MB of files: off the main thread, so Settings keeps drawing.
+        blocking(move || {
+            if paths.root.exists() {
+                std::fs::remove_dir_all(&paths.root)
+                    .map_err(|e| format!("remove search folder: {e}"))?;
+            }
+            Ok(())
+        })
+        .await?;
         tracing::info!("Built-in search: removed");
         Ok(())
     }
@@ -640,7 +746,13 @@ async fn ensure_uv(
     progress: &(dyn Fn(SetupProgress) + Send + Sync),
 ) -> Result<(), String> {
     if paths.uv().exists() {
-        return Ok(());
+        // A download or unpack that stopped half way leaves a uv that does not run.
+        let runs = run(Command::new(paths.uv()).arg("--version"), "run uv").is_ok();
+        if runs {
+            return Ok(());
+        }
+        tracing::warn!("Built-in search: the saved uv does not run; downloading it again");
+        let _ = std::fs::remove_file(paths.uv());
     }
     progress(step(SetupStep::DownloadingUv));
     let asset = uv_asset();
@@ -806,6 +918,7 @@ fn remove_old_installs(paths: &SearchPaths, keep: &str, _old: Option<&Installed>
 fn emitter(app: &tauri::AppHandle) -> impl Fn(SetupProgress) + Send + Sync {
     let app = app.clone();
     move |progress| {
+        server().note_progress(progress.clone());
         let _ = app.emit(SETUP_EVENT, progress);
     }
 }
@@ -866,8 +979,8 @@ pub async fn update_builtin_search(
 }
 
 #[tauri::command]
-pub fn remove_builtin_search() -> Result<BuiltinSearchStatus, String> {
-    server().remove()?;
+pub async fn remove_builtin_search() -> Result<BuiltinSearchStatus, String> {
+    server().remove().await?;
     Ok(server().status())
 }
 
@@ -883,7 +996,10 @@ mod tests {
         assert!(yaml.contains("secret_key: \"abc123\""));
         assert!(yaml.contains("limiter: false"));
         assert!(yaml.contains("formats: [html, json]"));
-        assert!(yaml.contains("use_default_settings: true"));
+        assert!(yaml
+            .contains("keep_only: [google, yahoo, startpage, wikipedia, bing news, google news]"));
+        assert!(yaml.contains("  - name: google news\n    disabled: false\n"));
+        assert!(!yaml.contains("duckduckgo"));
     }
 
     #[test]
@@ -990,6 +1106,7 @@ mod tests {
             paths: Mutex::new(Some(SearchPaths::new(root.clone()))),
             running: Mutex::new(None),
             busy: AtomicBool::new(false),
+            last_progress: Mutex::new(None),
             start_lock: tokio::sync::Mutex::new(()),
         };
         let client = reqwest::Client::new();
@@ -1023,7 +1140,7 @@ mod tests {
         let check = server.check_update(&client).await.unwrap();
         assert!(!check.update_available, "{check:?}");
         server.update(&client, &progress).await.expect("update");
-        server.remove().unwrap();
+        server.remove().await.unwrap();
         assert!(!root.exists());
         assert!(!server.status().running);
     }

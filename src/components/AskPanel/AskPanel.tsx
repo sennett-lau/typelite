@@ -16,6 +16,7 @@ import {
 import type { AskDictationResult, AskDictationStartResult, AskPanelLimits } from '../../lib/tauri'
 import { NeedsLiveInfo } from './NeedsLiveInfo'
 import { AskAnswerPanel, type AskPanelContent } from './AskAnswerPanel'
+import { FALLBACK_LIMITS } from './liveSearch'
 
 interface AskPanelProps {
   embedded?: boolean
@@ -411,20 +412,24 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   useEffect(() => {
     if (embedded || !panelShown) return
     let live = true
+    setLimits(null)
     Promise.resolve(askPanelLimits())
       .then((value) => {
-        if (live && value) setLimits(value)
+        if (live) setLimits(value ?? FALLBACK_LIMITS)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (live) setLimits(FALLBACK_LIMITS)
+      })
     return () => {
       live = false
     }
   }, [embedded, panelShown, panelKey])
 
   // Report the panel's size, so the window fits it, stays centred on the pill and keeps its
-  // bottom edge above it.
+  // bottom edge above it. The first report waits for the limits: a long answer laid out with
+  // the fallback width and then the real one would move the window twice.
   useLayoutEffect(() => {
-    if (embedded || !panelShown) return
+    if (embedded || !panelShown || limits === null) return
     const element = panelRef.current
     if (!element) return
     let reported = ''
@@ -441,7 +446,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
     const observer = new ResizeObserver(report)
     observer.observe(element)
     return () => observer.disconnect()
-  }, [embedded, panelShown, panelKey])
+  }, [embedded, panelShown, panelKey, limits])
 
   if (!embedded) {
     return (
