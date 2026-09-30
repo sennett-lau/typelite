@@ -919,6 +919,8 @@
     "polishRequests": "AI polish writes down a request you dictate (\"write an email in Japanese…\") instead of carrying it out or switching language.",
     "polishCodeWords": "AI polish keeps file names, commands and short code words whole: \"dot gitignore\" becomes .gitignore.",
     "polishSpelledNames": "AI polish writes a name you spell out letter by letter once, with that spelling, and drops the letters.",
+    "installWindow": "The installer shows the usual window: large icons and an arrow to drag Typelite to Applications.",
+    "tutorialClose": "The setup tutorial's close button sits beside the window buttons and is easier to see.",
     "builtin": "First release. Built-in speech recognition and AI polish: set up in one click, and your voice and text stay on your Mac.",
     "ownServer": "Or use your own server or API key: any OpenAI-compatible speech or chat service, or Qwen Cloud.",
     "qwen3Asr": "Qwen3-ASR on llama.cpp as a speech server, with Chinese written in the characters of your language (for example Hong Kong Traditional for Cantonese).",
