@@ -447,6 +447,8 @@ export interface AppConfig {
   show_in_dock: boolean
   /** Mute the default output device while recording (Settings → General → Audio). */
   mute_output_while_recording: boolean
+  /** Plan `auto-update`: check for, download and offer updates by itself (on by default). */
+  auto_update: boolean
   /** Version of the built-in preset templates in this config (backend migration marker). */
   builtin_presets_version: number
   /** The three-shortcut tour (onboarding Dictate, Translate, Ask steps) was finished. */
@@ -1280,6 +1282,7 @@ const defaultConfig: AppConfig = {
   input_device: '',
   show_in_dock: true,
   mute_output_while_recording: false,
+  auto_update: true,
   builtin_presets_version: 1,
   shortcut_tour_completed: false,
   shortcut_tour_prompt_dismissed: false,

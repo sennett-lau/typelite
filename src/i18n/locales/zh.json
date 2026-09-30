@@ -1093,5 +1093,25 @@
         "needs_disk_space": "可用空间不足，无法使用较大的模型。"
       }
     }
+  },
+  "updates": {
+    "group": "更新",
+    "auto": "自动更新",
+    "autoHint": "Typelite 启动时以及每 6 小时在 GitHub 上检查新版本，在后台下载，然后请你重新启动。只会请求版本文件，不会发送任何关于你或你所说内容的信息。",
+    "version": "Typelite {{version}}",
+    "check": "检查更新",
+    "checking": "正在检查更新…",
+    "upToDate": "你已在使用最新版本。",
+    "availableTitle": "Typelite {{version}} 已可用。",
+    "availableBody": "更新以获得最新的修复和功能。",
+    "update": "更新",
+    "downloadingTitle": "正在下载 Typelite {{version}}…",
+    "downloading": "请稍候。",
+    "downloadingPercent": "{{percent}}%",
+    "readyTitle": "Typelite {{version}} 已准备好。",
+    "readyBody": "重新启动即可使用。如果更新后某个快捷键失效，请在“隐私与安全性”→“辅助功能”中把 Typelite 关闭后再打开。",
+    "restart": "重新启动以更新",
+    "failed": "更新没有完成：{{message}}",
+    "disabled": "开发版本不会自行更新。"
   }
 }
