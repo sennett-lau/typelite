@@ -45,9 +45,7 @@
     "liveBodySearchFailed": "This question needs up-to-date information, but the web search did not work. Check the search server in Settings.",
     "liveBodyNoResults": "This question needs up-to-date information, but the web search found nothing.",
     "setUpWebSearch": "Set up web search",
-    "searchingWeb": "Searching the web…",
-    "followUpChip": "Follow-up: {{text}}",
-    "followUpHint": "Asking a follow-up to the last answer"
+    "searchingWeb": "Searching the web…"
   },
   "askPanel": {
     "label": "Ask answer",
@@ -73,9 +71,6 @@
     "copyLink": "Copy link",
     "linkCopied": "Copied",
     "copySourceLink": "Copy link of source {{n}}",
-    "askFollowUp": "Ask follow-up",
-    "followUpLabel": "Follow-up",
-    "followUpFailed": "Couldn't start the follow-up. Try the Ask shortcut.",
     "openSource": "Open source {{n}}"
   },
   "errors": {

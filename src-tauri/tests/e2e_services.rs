@@ -1162,7 +1162,7 @@ async fn ask_answers_a_live_question_from_searxng_results() {
     let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
     let body = llm::protocol::build_chat_body(
         &config.model,
-        web_search::answer_messages(question, &outcome.results, &today, None),
+        web_search::answer_messages(question, &outcome.results, &today),
         220,
         0.2,
         false,

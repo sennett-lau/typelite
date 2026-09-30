@@ -635,8 +635,6 @@ export interface AskDictationResult {
   sources?: AskSource[]
   /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
   liveSearch?: LiveSearchState | null
-  /** Plan `ask-web-search`: the answer to an "Ask follow-up". */
-  followUp?: boolean
 }
 
 /** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */
@@ -697,20 +695,9 @@ export async function takePendingAskMessage(): Promise<PendingAskMessage | null>
   return invoke('take_pending_ask_message')
 }
 
-/**
- * Plan `ask-web-search`: records a follow-up question that carries the answer on screen (question,
- * answer, sources) as context.
- */
-export async function startAskFollowUp(): Promise<void> {
-  return invoke('start_ask_follow_up')
-}
-
 /** Plan `ask-web-search`: the thinking pill's stage, `"searching"` or `"thinking"`. */
 export const ASK_STAGE_EVENT = 'ask:stage'
 export type AskStage = 'searching' | 'thinking'
-
-/** Plan `ask-web-search`: the start of the question a follow-up recording continues, or null. */
-export const ASK_FOLLOW_UP_EVENT = 'ask:follow_up'
 
 /** Plan `ask-web-search`: opens one of the answer's source links in the browser. */
 export async function openAskSource(url: string): Promise<void> {

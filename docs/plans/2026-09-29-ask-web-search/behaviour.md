@@ -26,7 +26,7 @@ open question ──> live check (AI, keyword fallback)
 
 | State | Body | Buttons |
 |---|---|---|
-| Web answer | The answer with `[n]` markers. The footer shows "N sources" with a letter mark per site; it opens the sources column (below). | N sources, Ask follow-up |
+| Web answer | The answer with `[n]` markers. The footer shows "N sources" with a letter mark per site; it opens the sources column (below). | N sources |
 | Live, no provider | "This question needs up-to-date information from the web. Web search is not set up; you can add a search server in Settings." | Set up web search (opens Settings → AI polish, closes the panel), Answer anyway |
 | Live, search failed | "… but the web search did not work. Check the search server in Settings." | Answer anyway |
 | Live, no results | "… but the web search found nothing." | Answer anyway |

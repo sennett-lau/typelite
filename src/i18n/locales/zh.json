@@ -45,9 +45,7 @@
     "liveBodySearchFailed": "这个问题需要最新信息，但网络搜索失败了。请在设置中检查搜索服务器。",
     "liveBodyNoResults": "这个问题需要最新信息，但网络搜索没有找到结果。",
     "setUpWebSearch": "设置网络搜索",
-    "searchingWeb": "正在搜索网络…",
-    "followUpChip": "追问：{{text}}",
-    "followUpHint": "针对上一个回答追问"
+    "searchingWeb": "正在搜索网络…"
   },
   "askPanel": {
     "label": "问答回答",
@@ -73,9 +71,6 @@
     "copyLink": "复制链接",
     "linkCopied": "已复制",
     "copySourceLink": "复制来源 {{n}} 的链接",
-    "askFollowUp": "追问",
-    "followUpLabel": "追问",
-    "followUpFailed": "无法开始追问，请使用问答快捷键。",
     "openSource": "打开来源 {{n}}"
   },
   "errors": {

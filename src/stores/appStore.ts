@@ -505,9 +505,6 @@ interface AppState {
   /** Plan `ask-web-search`: what the Ask thinking pill says (searching the web, or thinking). */
   askStage: 'searching' | 'thinking'
   setAskStage: (stage: 'searching' | 'thinking') => void
-  /** Plan `ask-web-search`: the start of the earlier question an Ask follow-up continues. */
-  askFollowUpPreview: string | null
-  setAskFollowUpPreview: (preview: string | null) => void
 
   // Recording
   audioVolume: number
@@ -1311,8 +1308,6 @@ export const useAppStore = create<AppState>((set) => ({
   setAskSelectionPreview: (askSelectionPreview) => set({ askSelectionPreview }),
   askStage: 'thinking',
   setAskStage: (askStage) => set({ askStage }),
-  askFollowUpPreview: null,
-  setAskFollowUpPreview: (askFollowUpPreview) => set({ askFollowUpPreview }),
 
   audioVolume: 0,
   setAudioVolume: (audioVolume) => set({ audioVolume }),

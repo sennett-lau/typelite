@@ -100,8 +100,6 @@ deletes it, and **Turn off web search** removes the address and the key.
   cite them as `[1]`, `[2]`. **N sources** under the answer opens a column beside it with a card
   per page (site, title and a short snippet). Hover a card for **Open**, which opens the page in
   your browser, and **Copy link**. A citation in the answer opens the column on its page.
-- **Ask follow-up** under an answer records a new question that carries the last question, answer
-  and sources, so "and the one after that?" works.
 - Search results are text from web pages. Typelite gives them to the AI marked as untrusted data,
   not instructions.
 - The log records how many results came back and how long each step took, never the question or

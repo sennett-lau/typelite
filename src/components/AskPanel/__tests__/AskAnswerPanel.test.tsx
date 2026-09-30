@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../../i18n'
 import { AskAnswerPanel, type AskPanelContent } from '../AskAnswerPanel'
 import { isLongAnswer, panelWidth } from '../liveSearch'
-import { copyAskText, insertAskText, openAskSource, startAskFollowUp } from '../../../lib/tauri'
+import { copyAskText, insertAskText, openAskSource } from '../../../lib/tauri'
 import type { AskDictationResult } from '../../../lib/tauri'
 
 vi.mock('../../../lib/tauri', () => ({
@@ -11,7 +11,6 @@ vi.mock('../../../lib/tauri', () => ({
   insertAskText: vi.fn(),
   openAskSource: vi.fn(() => Promise.resolve()),
   openSettingsPane: vi.fn(() => Promise.resolve()),
-  startAskFollowUp: vi.fn(),
 }))
 
 function result(overrides: Partial<AskDictationResult> = {}): AskPanelContent {
@@ -52,7 +51,6 @@ beforeEach(async () => {
   await i18n.changeLanguage('en')
   vi.mocked(copyAskText).mockResolvedValue(undefined)
   vi.mocked(insertAskText).mockResolvedValue(undefined)
-  vi.mocked(startAskFollowUp).mockResolvedValue(undefined)
 })
 
 afterEach(() => {
@@ -63,7 +61,7 @@ afterEach(() => {
 
 // Plan `ask-panel-above-pill`: one glass panel for every Ask outcome.
 describe('AskAnswerPanel', () => {
-  it('shows the question, the answer, the Esc hint and Ask follow-up, no Copy or Insert', () => {
+  it('shows the question, the answer, and the Esc hint, no action button', () => {
     renderPanel(result())
 
     const panel = screen.getByRole('dialog', { name: 'Ask answer' })
@@ -80,44 +78,18 @@ describe('AskAnswerPanel', () => {
     expect(esc.querySelector('[aria-hidden="true"]')?.textContent).toBe('esc')
     expect(esc.querySelector('.sr-only')?.textContent).toBe('Escape')
     expect(screen.getByText('to close')).toBeDefined()
-    // Plan `ask-web-search`: answers offer only Ask follow-up.
-    expect(screen.getByRole('button', { name: 'Ask follow-up' })).toBeDefined()
+    // Plan `ask-web-search`: an answer has no action button.
     expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Insert at the cursor' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Close (Esc)' })).toBeDefined()
   })
 
-  it('marks a question about the highlight, and a follow-up', () => {
+  it('marks a question about the highlight', () => {
     renderPanel(result({ usedSelectedText: true }))
     expect(screen.getByTestId('ask-panel-question').textContent).toBe(
       'About the highlight · What does idempotent mean here?',
     )
     expect(screen.queryByRole('button', { name: 'Replace the highlight' })).toBeNull()
-    cleanup()
-
-    renderPanel(result({ question: 'and after that?', followUp: true }))
-    expect(screen.getByTestId('ask-panel-question').textContent).toBe('Follow-up · and after that?')
-  })
-
-  it('Ask follow-up starts a follow-up recording through the app', async () => {
-    renderPanel(result())
-
-    fireEvent.click(screen.getByRole('button', { name: 'Ask follow-up' }))
-
-    await waitFor(() => expect(startAskFollowUp).toHaveBeenCalledTimes(1))
-    expect(screen.queryByRole('status')).toBeNull()
-  })
-
-  it('says so when the follow-up cannot start', async () => {
-    vi.mocked(startAskFollowUp).mockRejectedValue(new Error('busy'))
-    renderPanel(result())
-
-    fireEvent.click(screen.getByRole('button', { name: 'Ask follow-up' }))
-
-    expect((await screen.findByRole('status')).textContent).toBe(
-      "Couldn't start the follow-up. Try the Ask shortcut.",
-    )
-    expect(screen.getByRole('dialog')).toBeDefined()
   })
 
   it('shows sources in a column: summary, citation, open and copy link', async () => {
@@ -272,7 +244,6 @@ describe('AskAnswerPanel', () => {
     expect(screen.getByTestId('ask-panel-question').textContent).toBe(
       '关于选中文本 · What does idempotent mean here?',
     )
-    expect(screen.getByRole('button', { name: '追问' })).toBeDefined()
     expect(screen.getByText('关闭')).toBeDefined()
   })
 })

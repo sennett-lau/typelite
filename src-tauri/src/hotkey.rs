@@ -900,8 +900,8 @@ fn hotkey_role_for_shortcut(handle: &tauri::AppHandle, shortcut: &Shortcut) -> H
 }
 
 fn show_ask_result_window(handle: &tauri::AppHandle, result: &commands::ask::AskDictationResult) {
-    // The shared path also keeps the exchange for Ask follow-up and the answer's source links
-    // (plan `ask-web-search`); a shortcut-driven answer skipped both before.
+    // The shared path also keeps the answer's source links (plan `ask-web-search`), so the
+    // panel can open them; a shortcut-driven answer skipped that before.
     if let Err(error) = commands::ask::show_answer_window(handle, result.clone()) {
         tracing::error!("Failed to show Ask result window: {}", error);
     }

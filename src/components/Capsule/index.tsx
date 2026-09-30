@@ -200,7 +200,6 @@ export function Capsule() {
   const setTypingNudge = useAppStore((s) => s.setTypingNudge)
   const quietFade = useAppStore((s) => s.quietFade)
   const askSelectionPreview = useAppStore((s) => s.askSelectionPreview)
-  const askFollowUpPreview = useAppStore((s) => s.askFollowUpPreview)
   const lastInsertStatus = useAppStore((s) => s.lastInsertResult?.status ?? null)
   const { stopRecording, isRecording } = useRecording()
   const reducedMotion = useReducedMotion()
@@ -424,10 +423,7 @@ export function Capsule() {
             {capsuleState === 'outputting' && <CapsulePasting />}
             {capsuleState === 'done' && <CapsuleDone replaced={replacedSelection} />}
             {capsuleState === 'ask_recording' && (
-              <CapsuleAskRecording
-                selectionPreview={askSelectionPreview}
-                followUpPreview={askFollowUpPreview}
-              />
+              <CapsuleAskRecording selectionPreview={askSelectionPreview} />
             )}
             {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
             {capsuleState === 'error' && (

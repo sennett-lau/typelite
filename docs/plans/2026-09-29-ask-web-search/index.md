@@ -66,6 +66,8 @@ This plan replaces the "Later: web search" section and the "no web search" non-g
   live-question check already decides.
 - **Reading the result pages**: slower (seconds per page) and a bigger prompt; snippets were
   enough in the experiment.
+- **Ask follow-up** (a new question that carries the last answer as context, with a Follow-up
+  chip in the pill): Ask follow-up was built and removed (buggy capsule flow); may return later.
 
 ## Open questions
 

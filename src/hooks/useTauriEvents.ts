@@ -29,7 +29,6 @@ import {
 import { useSpeechSetupStore } from '../stores/speechSetupStore'
 import { useAiSetupStore } from '../stores/aiSetupStore'
 import {
-  ASK_FOLLOW_UP_EVENT,
   ASK_SELECTION_PREVIEW_EVENT,
   ASK_STAGE_EVENT,
   type AskStage,
@@ -161,12 +160,9 @@ export function useTauriEvents() {
     addListener<string | null>(ASK_SELECTION_PREVIEW_EVENT, (preview) =>
       useAppStore.getState().setAskSelectionPreview(preview ?? null),
     )
-    // Plan `ask-web-search`: "Searching the web…" while Ask searches, and the Follow-up chip.
+    // Plan `ask-web-search`: "Searching the web…" while Ask searches.
     addListener<AskStage>(ASK_STAGE_EVENT, (stage) =>
       useAppStore.getState().setAskStage(stage === 'searching' ? 'searching' : 'thinking'),
-    )
-    addListener<string | null>(ASK_FOLLOW_UP_EVENT, (preview) =>
-      useAppStore.getState().setAskFollowUpPreview(preview ?? null),
     )
     addListener<string>('pipeline:target_app', setTargetApp)
     addListener<InsertResult>('pipeline:insert_result', (result) => {
