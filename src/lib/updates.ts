@@ -16,12 +16,15 @@ export function useUpdateStatus(): [UpdateStatus, (status: UpdateStatus) => void
   useEffect(() => {
     let live = true
     let unlisten: (() => void) | undefined
-    Promise.resolve()
-      .then(() => updateStatus())
-      .then((next) => {
-        if (live && next && !newer.current) setStatusState(next)
-      })
-      .catch(() => {})
+    const load = () =>
+      Promise.resolve()
+        .then(() => updateStatus())
+        .then((next) => {
+          if (live && next && !newer.current) setStatusState(next)
+        })
+        .catch(() => {})
+    // Listen first, then load: a status sent between the load and the listener would be lost
+    // (the check that runs 20 s after start, say).
     import('@tauri-apps/api/event')
       .then(({ listen }) =>
         listen<UpdateStatus>(UPDATE_STATUS_EVENT, (event) => {
@@ -33,6 +36,7 @@ export function useUpdateStatus(): [UpdateStatus, (status: UpdateStatus) => void
         else stop()
       })
       .catch(() => {})
+      .then(load)
     return () => {
       live = false
       unlisten?.()
