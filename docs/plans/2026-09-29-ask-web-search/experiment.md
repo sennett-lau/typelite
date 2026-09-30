@@ -75,11 +75,11 @@ correctly from it. Back to [index](index.md).
 
 "What's the next F1 match?" sometimes answered with the race that had finished two days earlier:
 the answer prompt said "prefer the most recent result", and the newest pages are reports on the
-last race. Probed with Built-in SearXNG and Qwen 3.5 4B, 10 runs per question:
+last race. Probed with Built-in SearXNG and Qwen 3.5 4B ("What's the next F1 match?" and "When is the next Formula 1 race?"; the first prompt 5 runs each, the others 10):
 
 | Prompt | Right event (next weekend) | Invented dates |
 |---|---|---|
-| Before ("prefer the most recent result", date as `Wednesday, 2026-09-30`) | 9/10 and 10/10 | some wrong venue |
+| Before ("prefer the most recent result", date as `Wednesday, 2026-09-30`) | 4/5 and 5/5 | a wrong venue now and then |
 | Long date rules, date and time in ISO form | 5/10 and 10/10 | many (the model copied the ISO form) |
 | Short rule, date written out ("Wednesday 30 September 2026"), repeated beside the question, date "copied as the result writes it" | **10/10 and 10/10** | none |
 
