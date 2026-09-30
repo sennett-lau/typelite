@@ -915,6 +915,10 @@
     "failed": "无法开始录制快捷键：{{error}}"
   },
   "whatsNew": {
+    "polishCorrections": "你中途改口时，AI 润色只保留你真正想说的内容（例如“一点，哦不，两点”“第一样，不对，第三样”）。",
+    "polishRequests": "你口述的请求（例如“用日语写一封邮件……”）会被照写下来，AI 润色不会去执行它，也不会切换语言。",
+    "polishCodeWords": "AI 润色会保留完整的文件名、命令和简短的代码词：“dot gitignore”会写成 .gitignore。",
+    "polishSpelledNames": "你逐个字母拼出的名字，AI 润色会按这个拼写写一次，并去掉那些字母。",
     "builtin": "首个正式版本。内置语音识别和 AI 润色：一键设置，你的语音和文字都留在你的 Mac 上。",
     "ownServer": "也可以使用你自己的服务器或 API 密钥：任何兼容 OpenAI 的语音或聊天服务、Qwen Cloud 或 ElevenLabs。",
     "qwen3Asr": "支持以 llama.cpp 运行的 Qwen3-ASR 语音服务器，中文会按你的语言写成对应的字（例如粤语写成香港繁体）。",
