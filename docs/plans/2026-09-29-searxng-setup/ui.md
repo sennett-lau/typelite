@@ -19,3 +19,10 @@ is agreed.
 | Ready | Installed version and date, Running / Starts when needed, Test, Check for updates, Remove |
 | Update available | The new version's date and an Update button |
 | Failed | The step that failed and why; Try again |
+
+## Sidebar status
+
+A third line under Speech and AI: **Search · Built-in**, **Search · <host>** (your own SearXNG) or
+**Search · Off**. Its dot is green after a working Test or Ask search with the provider in use,
+red after a failure, and grey before either or while search is off. As with the other two, the
+app never polls; a result counts only for the provider and address that gave it.

@@ -44,7 +44,7 @@ install keeps running.
   `settings.yml`, the working directory in the install folder.
 - `settings.yml`: `use_default_settings: true`, `bind_address: 127.0.0.1`, the chosen port, a
   random `secret_key` made at setup, `limiter: false`, `formats: [html, json]`.
-- The port: 8888 when free, else a free port picked at start; written into `settings.yml`.
+- The port: 13721 when free (8888 is the usual SearXNG port, so a hand-run SearXNG does not clash), else a free port picked at start; written into `settings.yml`.
 - Started lazily by the first web search (a search waits up to 10 s for it to answer) and at
   launch when Built-in is the chosen provider. Stopped on `RunEvent::Exit`. A crashed server is
   started again by the next search.

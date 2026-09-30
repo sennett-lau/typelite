@@ -12,6 +12,7 @@ import {
 } from '../../lib/tauri'
 import { formatTestTime } from '../../lib/speechTypes'
 import { useAppStore } from '../../stores/appStore'
+import { recordSearchTest } from '../../lib/connectionStatus'
 
 /** The web search guide on GitHub, opened by "How to run SearXNG". */
 export const WEB_SEARCH_GUIDE_URL =
@@ -95,9 +96,16 @@ export function WebSearchForm({
 
   const runTest = () => {
     setTest({ status: 'testing' })
+    const key = `searxng:${address.trim()}`
     testWebSearch(provider, address, keyArgument)
-      .then(({ results, ms }) => setTest({ status: 'ok', results, ms }))
-      .catch((error) => setTest({ status: 'error', message: errorText(error) }))
+      .then(({ results, ms }) => {
+        setTest({ status: 'ok', results, ms })
+        recordSearchTest(key, true)
+      })
+      .catch((error) => {
+        setTest({ status: 'error', message: errorText(error) })
+        recordSearchTest(key, false)
+      })
   }
 
   const save = () => {
