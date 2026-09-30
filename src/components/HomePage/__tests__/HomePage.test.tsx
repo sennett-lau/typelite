@@ -318,13 +318,16 @@ describe('HomePage', () => {
     )
     const first = within(releases[0]).getAllByRole('listitem')
     expect(first).toHaveLength(WHATS_NEW[0].changeKeys.length)
-    expect(first[first.length - 1]).toHaveTextContent('No history')
+    expect(first[0]).toHaveTextContent('correct yourself')
+    const last = within(releases[releases.length - 1]).getAllByRole('listitem')
+    expect(last[last.length - 1]).toHaveTextContent('No history')
   })
 })
 
 describe("What's New data", () => {
-  it('starts with the 1.0.0 release and has text for every change in both languages', () => {
-    expect(WHATS_NEW[0].version).toBe('1.0.0')
+  it('lists releases newest first, from 1.0.0, with text for every change in both languages', () => {
+    expect(WHATS_NEW[0].version).toBe('1.0.1')
+    expect(WHATS_NEW[WHATS_NEW.length - 1].version).toBe('1.0.0')
     const lookup = (messages: Record<string, unknown>, key: string) =>
       (messages.whatsNew as Record<string, string>)[key]
     for (const entry of WHATS_NEW) {
