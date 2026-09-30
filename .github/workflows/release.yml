@@ -61,9 +61,15 @@ jobs:
       - name: Build llama-server (Built-in AI)
         run: npm run build:llama-server
 
-      # Same as `npm run build:app`, plus a DMG.
-      - name: Build the app and DMG
-        run: npx tauri build --bundles app,dmg --config src-tauri/tauri.bundle.conf.json
+      # Same as `npm run build:app`.
+      - name: Build the app
+        run: npx tauri build --bundles app --config src-tauri/tauri.bundle.conf.json
+
+      # The installer DMG with the drag-to-Applications window. Tauri's own DMG step lays out
+      # the window through Finder, which it skips on CI (and which times out without a
+      # logged-in Finder), so dmgbuild writes the layout itself (scripts/dmg-settings.py).
+      - name: Build the DMG
+        run: bash scripts/build-dmg.sh "$PWD/src-tauri/target/release/bundle/macos/Typelite.app" "$PWD/src-tauri/target/release/bundle/Typelite.dmg"
 
       - name: Package and checksum
         id: package
@@ -71,7 +77,7 @@ jobs:
           VERSION='${{ steps.version.outputs.version }}'
           BUNDLE=src-tauri/target/release/bundle
           mkdir -p dist-release
-          cp "$BUNDLE"/dmg/*.dmg "dist-release/Typelite_${VERSION}_aarch64.dmg"
+          cp "$BUNDLE/Typelite.dmg" "dist-release/Typelite_${VERSION}_aarch64.dmg"
           # ditto keeps the bundle's symlinks and signature intact.
           ditto -c -k --keepParent "$BUNDLE/macos/Typelite.app" "dist-release/Typelite_${VERSION}_aarch64.zip"
           codesign --verify --deep --strict --verbose=2 "$BUNDLE/macos/Typelite.app"
