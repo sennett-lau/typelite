@@ -34,7 +34,7 @@ Status: done — 2026-09-25
 | Streaming insertion checks focus once before it starts and does not stream when there is no text field; the final result takes the normal check | Streaming cannot be taken back once typed. |
 | A changed target app keeps its copy-to-clipboard fallback; copy-only output never checks | Those results are already on the clipboard, nothing is lost. |
 | The pill is 300 pt for a short result and 360 pt for a longer one (CJK characters and the language tag count) | Short results do not leave an empty gap. |
-| The pill keeps its left edge, as every other state does, so it grows to the right | Moving the window while resizing it is two steps and would jump for a frame. |
+| ~~The pill keeps its left edge, as every other state does, so it grows to the right~~ Since 2026-09-30 the pill keeps its **centre**: every state is centred on the screen, with the Ask panel above it | A wide pill (Translate, Copy) sat off centre. Size and position now change in one step (`set_capsule_frame`), so centring no longer jumps for a frame. |
 | The window grows before the pill animates larger and shrinks only after it animated smaller; it hides after the hide animation | The native window must never clip the pill mid-animation. |
 | While hiding, the pill keeps what it last showed (for example "Done" or the Copy pill) | It slides away as it was instead of shrinking to a dot. |
 | The countdown ring still drains with reduced motion | It is information, not decoration. |
