@@ -441,6 +441,16 @@ pub fn answer_messages(question: &str, results: &[SearchResult], today: &str) ->
     ]
 }
 
+/// True when the AI copied the search results back instead of answering (a small model
+/// sometimes does): the answer holds the block's tag or a result's `URL:` / `Date:` lines.
+pub fn echoes_results(answer: &str) -> bool {
+    answer.contains("search_results>")
+        || answer.lines().any(|line| {
+            let line = line.trim_start();
+            line.starts_with("URL: ") || line.starts_with("Date: ")
+        })
+}
+
 /// The result numbers an answer cites (`[1]`, `[2][3]`, `[1, 4]`), in order, each once, only
 /// those that exist.
 pub fn cited_numbers(answer: &str, result_count: usize) -> Vec<usize> {
@@ -590,6 +600,14 @@ mod tests {
         {"title":"Shared","url":"https://example.com/shared","content":"both lists"},
         {"title":"Old news","url":"https://news.example/old","content":"2022"}
     ]}"#;
+
+    #[test]
+    fn an_answer_that_copies_the_results_is_an_echo() {
+        let echo = "<search_results>\n[1] Race\nURL: https://a.example\nDate: unknown\nText";
+        assert!(echoes_results(echo));
+        assert!(echoes_results("[1] Race\nURL: https://a.example"));
+        assert!(!echoes_results("The next race is on 5 October [1]."));
+    }
 
     #[test]
     fn endpoint_accepts_the_address_with_or_without_search() {

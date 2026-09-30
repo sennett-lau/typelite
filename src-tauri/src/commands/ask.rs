@@ -1027,9 +1027,21 @@ async fn answer_from_web(
     // into its answer and then gets dates wrong.
     let today = chrono::Local::now().format("%A %-d %B %Y").to_string();
     let body = build_web_answer_body(&config, question, &outcome.results, &today);
-    let answer = send_ask_chat(client, &config, &api_key, &body)
+    let mut answer = send_ask_chat(client, &config, &api_key, &body)
         .await
         .map_err(WebAnswerError::Ai)?;
+    // A small model sometimes copies the results back instead of answering: ask once more,
+    // and never show the raw results as an answer.
+    if crate::web_search::echoes_results(&answer) {
+        tracing::warn!("Ask web answer: the AI copied the search results; asking again");
+        answer = send_ask_chat(client, &config, &api_key, &body)
+            .await
+            .map_err(WebAnswerError::Ai)?;
+        if crate::web_search::echoes_results(&answer) {
+            tracing::warn!("Ask web answer: the AI copied the search results again");
+            return Err(WebAnswerError::Search(LiveSearchState::NoResults));
+        }
+    }
     let sources = crate::web_search::answer_sources(&answer, &outcome.results);
     tracing::info!(
         "Ask web answer: {} sources ({} ms)",
