@@ -478,7 +478,7 @@ mod tests {
 
         let patch = config_patch_between(&previous, &next);
 
-        assert_eq!(patch["hotkeys"]["dictation_bindings"][0]["primary"], "F13");
+        assert_eq!(patch["hotkeys"]["dictationBindings"][0]["primary"], "F13");
         assert!(config_patch_between(&next, &next.clone())
             .as_object()
             .unwrap()
