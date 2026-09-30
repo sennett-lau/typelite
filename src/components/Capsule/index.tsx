@@ -361,9 +361,11 @@ export function Capsule() {
       onContextMenu={handleContextMenu}
     >
       {/* Persistent outer shell — the dark glass pill. Its width, height and corners animate
-          with CSS (`.pill` in globals.css); hiding slides it down and fades it (`.pill-gone`). */}
+          with CSS (`.pill` in globals.css); hiding slides it down and fades it (`.pill-gone`).
+          It is centred in the window (left 50%, then back by half its own width), so while its
+          width animates it grows on both sides, as the window does. */}
       <div
-        className={`pill absolute left-3 rounded-full pointer-events-auto shrink-0 ${
+        className={`pill absolute left-1/2 -translate-x-1/2 rounded-full pointer-events-auto shrink-0 ${
           capsuleState === 'error' ? 'pill-error' : ''
         } ${capsuleState === 'nudge' ? 'pill-nudge' : ''} ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
         style={{ ...capsuleShellSize, borderRadius: capsuleShellSize.height / 2 }}
