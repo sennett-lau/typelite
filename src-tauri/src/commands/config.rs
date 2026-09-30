@@ -33,6 +33,12 @@ fn config_patch_between(previous: &storage::AppConfig, next: &storage::AppConfig
     if previous.show_in_dock != next.show_in_dock {
         patch.insert("show_in_dock".to_string(), json!(next.show_in_dock));
     }
+    // The pill window loads the config once at start; without these, a translation language
+    // added or changed in Settings showed no name in the Translate pill until a restart.
+    if previous.translation != next.translation || previous.target_lang != next.target_lang {
+        patch.insert("translation".to_string(), json!(next.translation));
+        patch.insert("target_lang".to_string(), json!(next.target_lang));
+    }
     Value::Object(patch)
 }
 
@@ -436,6 +442,25 @@ mod tests {
         let patch = config_patch_between(&previous, &next);
 
         assert_eq!(patch["ui_language"], "zh");
+    }
+
+    #[test]
+    fn config_patch_includes_translation_language_changes() {
+        let previous = storage::AppConfig::default();
+        let mut next = previous.clone();
+        next.translation.targets = vec!["zh-Hant-HK".to_string()];
+        next.translation.active_target = "zh-Hant-HK".to_string();
+        next.target_lang = "zh-Hant-HK".to_string();
+
+        let patch = config_patch_between(&previous, &next);
+
+        assert_eq!(patch["translation"]["targets"][0], "zh-Hant-HK");
+        assert_eq!(patch["translation"]["active_target"], "zh-Hant-HK");
+        assert_eq!(patch["target_lang"], "zh-Hant-HK");
+        assert!(config_patch_between(&next, &next.clone())
+            .as_object()
+            .unwrap()
+            .is_empty());
     }
 
     #[test]
