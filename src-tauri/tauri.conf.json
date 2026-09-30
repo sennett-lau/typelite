@@ -74,7 +74,12 @@
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
     }
   },
-  "plugins": {},
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE0MkI4QzUwMDVCNEVGQ0MKUldUTTc3UUZVSXdyRkd3TzV1d2VWZnk1ejVvYmVEZHo1aCtvTnEzb3FMMUFmdGYrSkZYbzB6SXYK",
+      "endpoints": ["https://github.com/sennett-lau/typelite/releases/latest/download/latest.json"]
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

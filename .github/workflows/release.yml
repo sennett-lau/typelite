@@ -61,9 +61,19 @@ jobs:
       - name: Build llama-server (Built-in AI)
         run: npm run build:llama-server
 
-      # Same as `npm run build:app`.
+      # As `npm run build:app`, plus the signed update package (plan `auto-update`):
+      # tauri.release.conf.json turns on createUpdaterArtifacts, which writes
+      # Typelite.app.tar.gz and its .sig, signed with the updater key.
       - name: Build the app
-        run: npx tauri build --bundles app --config src-tauri/tauri.bundle.conf.json
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" ]]; then
+            echo "::error::The TAURI_SIGNING_PRIVATE_KEY secret is missing (docs/releasing.md, Updates)."
+            exit 1
+          fi
+          npx tauri build --bundles app --config src-tauri/tauri.release.conf.json
 
       # The installer DMG with the drag-to-Applications window. Tauri's own DMG step lays out
       # the window through Finder, which it skips on CI (and which times out without a
@@ -81,8 +91,15 @@ jobs:
           # ditto keeps the bundle's symlinks and signature intact.
           ditto -c -k --keepParent "$BUNDLE/macos/Typelite.app" "dist-release/Typelite_${VERSION}_aarch64.zip"
           codesign --verify --deep --strict --verbose=2 "$BUNDLE/macos/Typelite.app"
+          # Plan `auto-update`: the signed update package and latest.json, which points at it.
+          PACKAGE="Typelite_${VERSION}_aarch64.app.tar.gz"
+          cp "$BUNDLE/macos/Typelite.app.tar.gz" "dist-release/$PACKAGE"
+          cp "$BUNDLE/macos/Typelite.app.tar.gz.sig" "dist-release/$PACKAGE.sig"
+          node scripts/updater-manifest.mjs "$VERSION" "dist-release/$PACKAGE.sig" \
+            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/$PACKAGE" \
+            > dist-release/latest.json
           cd dist-release
-          shasum -a 256 *.dmg *.zip > SHA256SUMS.txt
+          shasum -a 256 *.dmg *.zip *.app.tar.gz > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Release notes
@@ -107,4 +124,4 @@ jobs:
             --verify-tag \
             --title "Typelite ${{ steps.version.outputs.version }}" \
             --notes-file notes.md \
-            ./*.dmg ./*.zip SHA256SUMS.txt
+            ./*.dmg ./*.zip ./*.app.tar.gz ./*.app.tar.gz.sig latest.json SHA256SUMS.txt

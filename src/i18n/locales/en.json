@@ -1093,5 +1093,25 @@
         "needs_disk_space": "Not enough free space for the larger model."
       }
     }
+  },
+  "updates": {
+    "group": "Updates",
+    "auto": "Update automatically",
+    "autoHint": "Checks GitHub for a new version when Typelite starts and every 6 hours, downloads it in the background, and asks you to restart. Only the version file is requested; nothing about you or what you say is sent.",
+    "version": "Typelite {{version}}",
+    "check": "Check for updates",
+    "checking": "Checking for updates…",
+    "upToDate": "You have the newest version.",
+    "availableTitle": "Typelite {{version}} is available.",
+    "availableBody": "Update to get the latest fixes and features.",
+    "update": "Update",
+    "downloadingTitle": "Downloading Typelite {{version}}…",
+    "downloading": "This takes a moment.",
+    "downloadingPercent": "{{percent}}%",
+    "readyTitle": "Typelite {{version}} is ready.",
+    "readyBody": "Restart to start using it. If a shortcut stops working after the update, turn Typelite off and on again in Privacy & Security → Accessibility.",
+    "restart": "Restart to update",
+    "failed": "The update did not work: {{message}}",
+    "disabled": "The development build does not update itself."
   }
 }
