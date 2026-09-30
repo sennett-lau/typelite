@@ -452,8 +452,12 @@ export function Capsule() {
           menu centred on it would run off the screen. */}
       {contextMenuOpen && contextMenuReady && (
         <div
-          className="absolute left-2"
-          style={{ bottom: `calc(50% - ${capsuleShellSize.height / 2}px)` }}
+          className="absolute"
+          style={{
+            // 4 pt left of the centred shell's left edge, as it was beside the left-anchored pill.
+            left: `calc(50% - ${capsuleShellSize.width / 2 + 4}px)`,
+            bottom: `calc(50% - ${capsuleShellSize.height / 2}px)`,
+          }}
         >
           <CapsuleContextMenu onClose={handleCloseMenu} />
         </div>

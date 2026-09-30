@@ -113,11 +113,12 @@ describe('getSizeForState', () => {
     // Fixed parts 140 + slack 8, the name after an 8 pt gap, the dots (5 pt, 4 apart) likewise.
     expect(translate(48, 0)).toEqual(size(204))
     expect(translate(48, 2)).toEqual(size(226))
-    expect(translate(48, 3)).toEqual(size(235))
+    expect(translate(48, 3)).toEqual(size(236))
+    // Odd widths round up to even, so the centred pill sits on whole points.
     // Fractional widths round up, so the text is never cut by a pixel.
     expect(translate(47.2, 0)).toEqual(size(204))
     // A long name is capped at 180 pt (it scrolls inside that).
-    expect(translate(300, 3)).toEqual(size(367))
+    expect(translate(300, 3)).toEqual(size(368))
     expect(translate(180, 0)).toEqual(size(336))
     // No language chosen: no name, the Dictate size.
     expect(translate(null, 0)).toEqual(size(160))

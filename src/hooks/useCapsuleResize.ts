@@ -58,6 +58,9 @@ export function translateRecordingSize({ nameWidth, dots }: TranslatePillMetrics
   let width = RECORDING_FIXED_WIDTH + TRANSLATE_SLACK
   if (nameWidth !== null) width += Math.min(Math.ceil(nameWidth), NAME_MAX_WIDTH) + 8
   if (dots > 0) width += dots * LANGUAGE_DOT + (dots - 1) * LANGUAGE_DOT_GAP + 8
+  // An even width keeps the centred pill on whole points (half a point is one physical pixel
+  // sideways on a Retina screen, each time the name changes).
+  width += width % 2
   return { width: Math.max(DICTATION_RECORDING_SIZE.width, width), height: PILL_HEIGHT }
 }
 /**
