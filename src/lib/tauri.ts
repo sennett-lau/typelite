@@ -935,3 +935,16 @@ export async function startShortcutCapture(): Promise<void> {
 export async function stopShortcutCapture(): Promise<void> {
   return invoke('stop_shortcut_capture')
 }
+
+/**
+ * The pill's window: position and size in one step, in logical points (`set_capsule_frame`), so
+ * it never shows at the new size in the old place for a frame.
+ */
+export async function setCapsuleFrame(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  return invoke('set_capsule_frame', { x, y, width, height })
+}

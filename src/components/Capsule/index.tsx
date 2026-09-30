@@ -356,7 +356,7 @@ export function Capsule() {
   return (
     <div
       ref={rootRef}
-      className="w-full h-full flex items-center justify-start relative"
+      className="w-full h-full flex items-center justify-center relative"
       style={{ background: 'transparent' }}
       onContextMenu={handleContextMenu}
     >
