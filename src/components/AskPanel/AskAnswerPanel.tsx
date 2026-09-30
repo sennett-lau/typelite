@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Check, ChevronRight, ExternalLink, Link2, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
@@ -37,6 +37,9 @@ function sourceHost(url: string): string {
     return url
   }
 }
+
+/** The sources column's slide-out (`ask-sources-out` in globals.css). */
+const SOURCES_SLIDE_OUT_MS = 180
 
 /** How long "Opened ✓" and "Copied ✓" stay on a source card. */
 const CONFIRM_MS = 1500
@@ -104,10 +107,13 @@ export function AskSourcesColumn({
   sources,
   highlighted,
   onHide,
+  closing = false,
 }: {
   sources: AskSource[]
   highlighted: number | null
   onHide: () => void
+  /** Sliding out; the panel keeps its width until it is gone. */
+  closing?: boolean
 }) {
   const { t } = useTranslation()
   const [confirmed, setConfirmed] = useState<{ number: number; action: 'open' | 'copy' } | null>(
@@ -130,7 +136,11 @@ export function AskSourcesColumn({
   }
 
   return (
-    <aside className="ask-sources-column" data-testid="ask-panel-sources">
+    <aside
+      className={`ask-sources-column${closing ? ' is-closing' : ''}`}
+      data-testid="ask-panel-sources"
+      data-closing={closing || undefined}
+    >
       <div className="ask-sources-head">
         <span>{t('askPanel.sources')}</span>
         <button
@@ -277,18 +287,47 @@ export function AskAnswerPanel({
   // Plan `ask-web-search`: the sources column, and the source a citation points at.
   const [sourcesOpen, setSourcesOpen] = useState(false)
   const [highlighted, setHighlighted] = useState<number | null>(null)
+  // The column slides out before it goes, so the panel shrinks only afterwards.
+  const [sourcesClosing, setSourcesClosing] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stopClosing = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = null
+    setSourcesClosing(false)
+  }, [])
+  const hideSources = useCallback(() => {
+    setSourcesOpen(false)
+    setHighlighted(null)
+    setSourcesClosing(true)
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null
+      setSourcesClosing(false)
+    }, SOURCES_SLIDE_OUT_MS)
+  }, [])
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     setInsertFailed(false)
     setSourcesOpen(false)
+    stopClosing()
     setHighlighted(null)
     // The parent builds a new `content` object on each render; reset only for a new message.
-  }, [result, errorMessage])
+  }, [result, errorMessage, stopClosing])
 
-  const showSource = useCallback((n: number) => {
-    setSourcesOpen(true)
-    setHighlighted(n)
-  }, [])
+  const showSource = useCallback(
+    (n: number) => {
+      stopClosing()
+      setSourcesOpen(true)
+      setHighlighted(n)
+    },
+    [stopClosing],
+  )
 
   // Only the couldn't-replace result has a copy button, and its text is already on the
   // clipboard; pressing it copies again.
@@ -401,7 +440,8 @@ export function AskAnswerPanel({
 
   const panelLimits = limits ?? FALLBACK_LIMITS
   const showColumn = sourcesOpen && sources.length > 0
-  const width = panelWidth(isLongAnswer(text), showColumn, panelLimits)
+  const columnShown = (showColumn || sourcesClosing) && sources.length > 0
+  const width = panelWidth(isLongAnswer(text), columnShown, panelLimits)
 
   return (
     <section
@@ -442,8 +482,13 @@ export function AskAnswerPanel({
             sources={sources}
             open={showColumn}
             onToggle={() => {
-              setSourcesOpen(!showColumn)
-              setHighlighted(null)
+              if (showColumn) {
+                hideSources()
+              } else {
+                stopClosing()
+                setSourcesOpen(true)
+                setHighlighted(null)
+              }
             }}
           />
           <span className="ask-glass-hint">
@@ -452,14 +497,12 @@ export function AskAnswerPanel({
           {actions}
         </div>
       </div>
-      {showColumn && (
+      {columnShown && (
         <AskSourcesColumn
           sources={sources}
           highlighted={highlighted}
-          onHide={() => {
-            setSourcesOpen(false)
-            setHighlighted(null)
-          }}
+          onHide={hideSources}
+          closing={!showColumn}
         />
       )}
     </section>
