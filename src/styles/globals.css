@@ -586,6 +586,32 @@ body,
     outline-offset: 1px;
   }
 
+  /* Onboarding's ✕: centred on the window buttons' line (`trafficLightPosition` y 24 puts their
+     centre about 29 pt from the top), with their 18 pt inset from the edge, visible in both
+     themes. */
+  .onboarding-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border: none;
+    border-radius: 9999px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .onboarding-close:hover {
+    background: color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+    color: var(--color-text-primary);
+  }
+  .onboarding-close:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
   /* Small square icon button. */
   .btn-icon {
     display: grid;
