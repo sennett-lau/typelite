@@ -443,10 +443,8 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const translateNameWidth = translatePill.nameWidth
   const translateDots = translatePill.dots
   const copyOffer = useAppStore((s) => s.copyOffer)
-  // The highlight chip or the Follow-up chip (plan `ask-web-search`) both need the wider pill.
-  const askWithSelection = useAppStore(
-    (s) => s.askSelectionPreview !== null || s.askFollowUpPreview !== null,
-  )
+  // The highlight chip needs the wider pill.
+  const askWithSelection = useAppStore((s) => s.askSelectionPreview !== null)
   const typingNudge = useAppStore((s) => s.typingNudge)
   const quietFade = useAppStore((s) => s.quietFade)
   const anchor = useRef<CapsuleAnchor | null>(null)

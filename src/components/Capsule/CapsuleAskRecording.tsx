@@ -9,17 +9,9 @@ interface CapsuleAskRecordingProps {
    * "About …" chip; null without a highlight.
    */
   selectionPreview?: string | null
-  /**
-   * Plan `ask-web-search`: the start of the earlier question this follow-up continues, shown as a
-   * "Follow-up" chip; null for a new question.
-   */
-  followUpPreview?: string | null
 }
 
-export function CapsuleAskRecording({
-  selectionPreview = null,
-  followUpPreview = null,
-}: CapsuleAskRecordingProps) {
+export function CapsuleAskRecording({ selectionPreview = null }: CapsuleAskRecordingProps) {
   const { t } = useTranslation()
 
   const handleCancel = async (event: React.MouseEvent) => {
@@ -47,15 +39,6 @@ export function CapsuleAskRecording({
           data-testid="ask-selection-chip"
         >
           {t('ask.aboutSelection', { text: selectionPreview })}
-        </span>
-      )}
-      {followUpPreview && !selectionPreview && (
-        <span
-          className="max-w-[150px] shrink truncate rounded-full bg-white/15 px-2 py-0.5 text-[10.5px] leading-[14px] text-white/90"
-          title={t('ask.followUpHint')}
-          data-testid="ask-follow-up-chip"
-        >
-          {t('ask.followUpChip', { text: followUpPreview })}
         </span>
       )}
       <div className="flex-1" />

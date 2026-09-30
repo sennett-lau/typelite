@@ -1,7 +1,6 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CapsuleAskThinking } from '../CapsuleAskThinking'
-import { CapsuleAskRecording } from '../CapsuleAskRecording'
 import { useAppStore } from '../../../stores/appStore'
 import { answerSegments } from '../../AskPanel/liveSearch'
 
@@ -13,7 +12,7 @@ vi.mock('react-i18next', async () => {
 
 afterEach(() => {
   cleanup()
-  useAppStore.setState({ askStage: 'thinking', askFollowUpPreview: null })
+  useAppStore.setState({ askStage: 'thinking' })
 })
 
 // Plan `ask-web-search`.
@@ -26,19 +25,6 @@ describe('Ask pill while searching and following up', () => {
     act(() => useAppStore.setState({ askStage: 'thinking' }))
     expect(screen.getByText('Thinking')).toBeDefined()
     expect(screen.queryByText('Searching the web…')).toBeNull()
-  })
-
-  it('shows a Follow-up chip with the start of the earlier question', () => {
-    render(<CapsuleAskRecording followUpPreview="where is the next…" />)
-    expect(screen.getByTestId('ask-follow-up-chip').textContent).toBe(
-      'Follow-up: where is the next…',
-    )
-  })
-
-  it('a highlight chip wins over the follow-up chip', () => {
-    render(<CapsuleAskRecording selectionPreview="Hello" followUpPreview="where" />)
-    expect(screen.getByTestId('ask-selection-chip')).toBeDefined()
-    expect(screen.queryByTestId('ask-follow-up-chip')).toBeNull()
   })
 })
 

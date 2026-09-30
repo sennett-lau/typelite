@@ -1,22 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  AlertTriangle,
-  Check,
-  ChevronRight,
-  ExternalLink,
-  Link2,
-  Loader2,
-  MessageCircle,
-  X,
-} from 'lucide-react'
+import { AlertTriangle, Check, ChevronRight, ExternalLink, Link2, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import {
-  copyAskText,
-  insertAskText,
-  openAskSource,
-  openSettingsPane,
-  startAskFollowUp,
-} from '../../lib/tauri'
+import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
 import type { AskDictationResult, AskPanelLimits, AskSource } from '../../lib/tauri'
 import {
   FALLBACK_LIMITS,
@@ -267,7 +252,7 @@ export function AnswerText({
 
 /**
  * Plan `ask-panel-above-pill`: the Ask panel above the pill (see `mock.html` in the plan). One
- * glass panel for every outcome: an answer (Ask follow-up, plan `ask-web-search`), an edit that
+ * glass panel for every outcome: an answer (with its sources, plan `ask-web-search`), an edit that
  * could not replace the highlight (Try replacing again, Copied ✓), a question that needs live
  * information (Answer anyway), a site search, and errors. The window never takes focus, so every
  * button goes through the app, not the browser.
@@ -282,7 +267,6 @@ export function AskAnswerPanel({
   const { t } = useTranslation()
   const [inserting, setInserting] = useState(false)
   const [insertFailed, setInsertFailed] = useState(false)
-  const [followUpFailed, setFollowUpFailed] = useState(false)
 
   const result = content.kind === 'result' ? content.result : null
   const output = result?.output ?? null
@@ -296,7 +280,6 @@ export function AskAnswerPanel({
 
   useEffect(() => {
     setInsertFailed(false)
-    setFollowUpFailed(false)
     setSourcesOpen(false)
     setHighlighted(null)
     // The parent builds a new `content` object on each render; reset only for a new message.
@@ -323,13 +306,6 @@ export function AskAnswerPanel({
       .finally(() => setInserting(false))
   }, [inserting, text])
 
-  // Plan `ask-web-search`: records a new question with this answer as its context. The
-  // recording closes the panel; the pill shows a Follow-up chip.
-  const followUp = useCallback(() => {
-    setFollowUpFailed(false)
-    startAskFollowUp().catch(() => setFollowUpFailed(true))
-  }, [])
-
   const aboutHighlight = Boolean(result?.usedSelectedText) && output !== 'needsLiveInfo'
   const question =
     content.kind === 'error' ? (
@@ -340,7 +316,6 @@ export function AskAnswerPanel({
     ) : (
       <>
         {aboutHighlight && `${t('askPanel.aboutHighlight')} · `}
-        {result?.followUp && `${t('askPanel.followUpLabel')} · `}
         <b>{content.result.question}</b>
       </>
     )
@@ -419,24 +394,9 @@ export function AskAnswerPanel({
         {result?.mayBeOutOfDate && (
           <p className="ask-glass-note text-white/55">{t('ask.outOfDateNote')}</p>
         )}
-        {followUpFailed && (
-          <p className="ask-glass-note mt-1" role="status">
-            {t('askPanel.followUpFailed')}
-          </p>
-        )}
       </>
     )
-    // Plan `ask-web-search`: an answer offers its sources and Ask follow-up (no Copy or Insert).
-    actions = (
-      <button
-        type="button"
-        className="ask-glass-button ask-glass-button-primary"
-        onClick={followUp}
-      >
-        <MessageCircle size={12} aria-hidden="true" />
-        {t('askPanel.askFollowUp')}
-      </button>
-    )
+    // Plan `ask-web-search`: an answer offers only its sources (no Copy, Insert or other button).
   }
 
   const panelLimits = limits ?? FALLBACK_LIMITS
