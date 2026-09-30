@@ -115,6 +115,11 @@ pub fn focused_text_length() -> Option<i64> {
 /// Whether typed text landed: `Some(false)` only when the length was readable both times, text
 /// was typed, and the length did not change. `None` when it cannot be told (then Typelite
 /// assumes it landed, as before).
+///
+/// A field that still holds one or two characters after many were typed is a code editor's
+/// hidden input, not the document: Monaco (VS Code, Cursor) keeps only the character before
+/// the caret in it, Ace a two-character placeholder. Their length never changes, so they say
+/// nothing about the document; `None` there, or every dictation into VS Code offered Copy.
 pub fn typed_text_landed(
     before: Option<i64>,
     after: Option<i64>,
@@ -124,7 +129,14 @@ pub fn typed_text_landed(
     if typed_chars == 0 {
         return None;
     }
-    Some(after != before)
+    if after != before {
+        return Some(true);
+    }
+    let editor_proxy = (1..=2).contains(&after) && typed_chars > after as usize;
+    if editor_proxy {
+        return None;
+    }
+    Some(false)
 }
 
 /// Asks Accessibility about the focused element and decides. Takes a few milliseconds (each
@@ -369,6 +381,26 @@ mod tests {
             typed_text_landed(Some(10), Some(10), 23),
             Some(false),
             "nothing arrived"
+        );
+        assert_eq!(
+            typed_text_landed(Some(0), Some(0), 23),
+            Some(false),
+            "an empty field stayed empty"
+        );
+        assert_eq!(
+            typed_text_landed(Some(1), Some(1), 23),
+            None,
+            "an editor's hidden input keeps the character before the caret"
+        );
+        assert_eq!(
+            typed_text_landed(Some(2), Some(2), 23),
+            None,
+            "a two-character placeholder input"
+        );
+        assert_eq!(
+            typed_text_landed(Some(2), Some(2), 2),
+            Some(false),
+            "two characters typed into a two-character field that did not change"
         );
         assert_eq!(
             typed_text_landed(None, Some(10), 23),
