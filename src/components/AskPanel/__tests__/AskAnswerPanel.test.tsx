@@ -136,8 +136,10 @@ describe('AskAnswerPanel', () => {
     // A click anywhere on a card opens it too; › hides the column.
     fireEvent.click(screen.getByText('The Verge'))
     expect(openAskSource).toHaveBeenLastCalledWith('https://www.theverge.com/')
+    // › slides the column out first, then it goes (and the panel shrinks).
     fireEvent.click(screen.getByRole('button', { name: 'Hide sources' }))
-    expect(screen.queryByTestId('ask-panel-sources')).toBeNull()
+    expect(screen.getByTestId('ask-panel-sources')).toHaveAttribute('data-closing', 'true')
+    await waitFor(() => expect(screen.queryByTestId('ask-panel-sources')).toBeNull())
   })
 
   it('keeps a short answer at 420 pt and widens a long one to the limit', () => {

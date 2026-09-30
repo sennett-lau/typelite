@@ -2449,6 +2449,32 @@ body,
   flex-direction: column;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.2);
+  /* Slides in from the panel's right edge (and out again, `.is-closing`). */
+  animation: ask-sources-in 0.24s cubic-bezier(0.2, 0, 0, 1) both;
+}
+.ask-sources-column.is-closing {
+  pointer-events: none;
+  animation: ask-sources-out 0.18s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes ask-sources-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ask-sources-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
 }
 .ask-sources-head {
   display: flex;
@@ -2664,6 +2690,13 @@ body,
   }
   .ask-glass-blob {
     animation: none;
+  }
+  .ask-sources-column,
+  .ask-sources-column.is-closing {
+    animation-name: ask-glass-fade-in;
+  }
+  .ask-sources-column.is-closing {
+    animation-direction: reverse;
   }
 }
 
