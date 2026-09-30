@@ -778,6 +778,8 @@ export interface BuiltinSearchStatus {
   running: boolean
   port: number | null
   busy: boolean
+  /** The last step of a setup or update in progress (started on another page). */
+  progress: BuiltinSearchProgress | null
 }
 
 export interface BuiltinSearchUpdateCheck {

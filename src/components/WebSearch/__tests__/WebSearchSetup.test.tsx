@@ -47,7 +47,13 @@ vi.mock('react-i18next', async () => {
 const DEFAULT_CONFIG = useAppStore.getState().config
 const off = { provider: 'none' as const, base_url: '' }
 const builtin = { provider: 'builtin' as const, base_url: '' }
-const notSetUp: BuiltinSearchStatus = { installed: null, running: false, port: null, busy: false }
+const notSetUp: BuiltinSearchStatus = {
+  installed: null,
+  running: false,
+  port: null,
+  busy: false,
+  progress: null,
+}
 const ready: BuiltinSearchStatus = {
   installed: {
     commit: '4e2c1ea7f468c9d1b16206e9d4079999a2eb0627',
@@ -57,6 +63,7 @@ const ready: BuiltinSearchStatus = {
   running: true,
   port: 8888,
   busy: false,
+  progress: null,
 }
 
 function setSaved(webSearch: typeof off | typeof builtin) {

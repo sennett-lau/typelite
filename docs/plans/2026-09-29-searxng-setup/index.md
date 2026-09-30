@@ -19,7 +19,8 @@ Status: building — 2026-09-29
 
 - Shipping SearXNG inside the app bundle.
 - Sharing the built-in server with other computers (use "Your own SearXNG" for that).
-- Editing SearXNG's engines or preferences from Typelite.
+- Editing SearXNG's engines or preferences from Typelite (the engine list is Typelite's,
+  see the decisions).
 
 ## Key decisions
 
@@ -30,6 +31,7 @@ Status: building — 2026-09-29
 | uv comes from its GitHub release, checked against the release's published SHA-256 | A known file, verified before it runs. |
 | SearXNG comes from a specific commit of its `master` branch (the latest when set up), recorded as the installed version | SearXNG has no releases; a commit id makes "installed" and "update available" exact. |
 | The server listens on `127.0.0.1` on a free port, with JSON on and the limiter off | Only this Mac can reach it; the limiter is for public servers. |
+| Typelite writes SearXNG's engine list: Google, Yahoo, Startpage and Wikipedia for pages, Bing News and Google News for news (`keep_only`, 2026-09-30) | SearXNG's default engines (DuckDuckGo, Brave, Qwant, Google CSE, …) answer a home connection with CAPTCHAs and "too many requests", so the general category came back empty and only news pages reached the answer. Bing's web results were unrelated pages, so it stays for news only. |
 | Typelite starts it when Ask first needs it (or at launch when Built-in is chosen) and stops it at quit, like the built-in AI server | No background service outside the app; the same lifecycle the user knows from Built-in AI. |
 | An update installs the new commit into a new folder and switches only when it works | A failed update never breaks working search. |
 

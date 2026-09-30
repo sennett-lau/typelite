@@ -40,6 +40,8 @@ This plan replaces the "Later: web search" section and the "no web search" non-g
 | Settings are `{provider, base_url}` in the settings file and an optional key in the Keychain (namespace `search`) | Same split as the speech and AI presets; room for keyed providers. |
 | The optional key goes out as `Authorization: Bearer` | Covers a SearXNG behind a token proxy; keyed providers will map it their way. |
 | Search only after the live-question check says live | Timeless questions never reach the search server. |
+| The live check also writes the search query; the question is searched only when it gives none (2026-09-30) | A spoken question searched as transcribed ("下场F one系几时") finds unrelated pages; a few keywords in the question's language, with names written the usual way (F1), find the schedule. One request, no extra wait. |
+| An answer that copies the results back is asked once more with a plainer instruction, then reported as an AI error (2026-09-30) | A small model sometimes echoes the `<search_results>` block; the raw block must never show as an answer, and "no results" would be untrue. |
 | Search the general and news categories in parallel; two news results first, then general, five in all | The experiment: general finds schedules, news finds what changed this week; either alone got one of three wrong. |
 | 4 s timeout per request, one failing category is fine | Ask must stay quick; SearXNG itself waits on slow engines. |
 | Snippets capped at 400 characters, titles at 160, HTML removed, only http(s) links | Small prompt for a small model; nothing odd reaches the panel. |

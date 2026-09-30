@@ -211,6 +211,8 @@ function BuiltinCard({ onboarding }: { onboarding: boolean }) {
 
   const running = working !== null || busyElsewhere
   if (running) {
+    // A setup started on another page: its last step comes with the status until an event.
+    const shown = progress ?? status?.progress ?? null
     return (
       <div className="search-setup-card" data-testid="builtin-search-card" data-state="working">
         <div className="flex items-center gap-2">
@@ -225,11 +227,11 @@ function BuiltinCard({ onboarding }: { onboarding: boolean }) {
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(progressShare(progress) * 100)}
+          aria-valuenow={Math.round(progressShare(shown) * 100)}
         >
-          <i style={{ width: `${Math.round(progressShare(progress) * 100)}%` }} />
+          <i style={{ width: `${Math.round(progressShare(shown) * 100)}%` }} />
         </div>
-        <SetupSteps progress={progress} />
+        <SetupSteps progress={shown} />
         <p className="m-0 text-[12px] text-text-secondary">
           {onboarding ? t('webSearch.settingUpGoOn') : t('webSearch.settingUpLeave')}
         </p>
@@ -353,7 +355,7 @@ function BuiltinCard({ onboarding }: { onboarding: boolean }) {
             onClick={() => chooseBuiltin().catch((reason) => setError(errorText(reason)))}
             className="btn-accent px-3.5 py-1.5 text-[13px] font-medium"
           >
-            {t('webSearch.chooseBuiltin')}
+            {t('webSearch.useBuiltin')}
           </button>
         </div>
       )}
