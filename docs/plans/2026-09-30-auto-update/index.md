@@ -32,7 +32,10 @@ Status: building — 2026-09-30
 | Automatic mode checks 20 s after start and then every 6 hours, downloads in the background, then waits for the user to restart | Never interrupts a dictation, and never slows the launch. |
 | With it off, Check for updates only checks; Update downloads and installs | The user decides when to download. |
 | The update status lives in Rust (`updates.rs`) and reaches every window through `update:status` | Home and Settings show the same thing, and a download continues when the page changes. |
-| The development build has no updater (`dev-build` feature) | A release update would replace Typelite Dev with Typelite. |
+| The development build has no updater (`dev-build` feature), and neither has a binary outside a release `.app` (a debug build, `tauri dev`) | A release update would replace Typelite Dev with Typelite; for `target/debug/typelite` the plugin would replace the whole `target/debug` folder with the release app. |
+| An automatic check only offers the update when the app's folder needs an administrator to write (a standard account with Typelite in /Applications) | The plugin would otherwise ask for the password in a dialog with no context, every launch. Update, pressed by the user, still goes that way. |
+| A download is given up after 15 minutes | The Mac sleeping or a network change could leave the status on Downloading, and the busy lock closed, until a restart. |
+| Restart to update goes through the normal exit (`request_restart`) | The exit handler frees the speech model and stops the built-in AI and search servers; a plain `restart` from a command skips it, and GGML aborts at exit with a model loaded. |
 | A patch for an older line is published with **Set as the latest release** off | `releases/latest` must stay on the newest line, or its users would be offered nothing newer. The updater only installs a higher version, so an older one never downgrades anyone. |
 
 ## Parts

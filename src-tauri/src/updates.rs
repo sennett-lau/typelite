@@ -27,6 +27,44 @@ const FIRST_CHECK_DELAY: Duration = Duration::from_secs(20);
 /// Then it checks this often while Typelite runs.
 #[cfg_attr(feature = "dev-build", allow(dead_code))]
 const CHECK_INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
+/// A download that takes longer than this (the Mac slept, the network went away) is given up,
+/// so the next check can run; otherwise the status would stay Downloading until a restart.
+#[cfg_attr(feature = "dev-build", allow(dead_code))]
+const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(15 * 60);
+
+/// Whether this program can update itself: a release build inside a `.app` bundle. A debug
+/// build or `tauri dev` runs `target/debug/typelite`, and the updater would replace that
+/// folder with the release app.
+pub fn self_updatable() -> bool {
+    if cfg!(feature = "dev-build") || cfg!(debug_assertions) {
+        return false;
+    }
+    std::env::current_exe()
+        .map(|exe| exe.to_string_lossy().contains("/Contents/MacOS/"))
+        .unwrap_or(false)
+}
+
+/// Whether the app bundle can be replaced without an administrator password: its folder
+/// (`/Applications`, say) lets this user write. Otherwise the plugin would ask for the
+/// password in a dialog with no context, so an automatic check only offers the update.
+#[cfg_attr(feature = "dev-build", allow(dead_code))]
+fn bundle_replaceable() -> bool {
+    let Ok(exe) = std::env::current_exe() else {
+        return false;
+    };
+    // <folder>/Typelite.app/Contents/MacOS/typelite
+    let Some(folder) = exe.ancestors().nth(4) else {
+        return false;
+    };
+    let probe = folder.join(".typelite-update-check");
+    let writable = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&probe)
+        .is_ok();
+    let _ = std::fs::remove_file(&probe);
+    writable
+}
 
 /// What Home and Settings show about updates.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -75,7 +113,7 @@ pub struct UpdateState {
 
 impl UpdateState {
     pub fn status(&self) -> UpdateStatus {
-        if cfg!(feature = "dev-build") {
+        if !self_updatable() {
             return UpdateStatus::Disabled;
         }
         self.status
@@ -152,7 +190,10 @@ mod imp {
         let version = update.version.clone();
         let notes = update.body.clone().unwrap_or_default();
         tracing::info!("Updates: {version} is available");
-        if !install {
+        if !install || !bundle_replaceable() {
+            if install {
+                tracing::info!("Updates: the app's folder needs an administrator; offering it");
+            }
             let status = UpdateStatus::Available { version, notes };
             state.set(app, status.clone());
             return status;
@@ -180,25 +221,30 @@ mod imp {
         let progress_version = version.clone();
         let mut downloaded: u64 = 0;
         let mut last_sent = std::time::Instant::now();
-        let result = update
-            .download_and_install(
-                move |chunk, total| {
-                    downloaded += chunk as u64;
-                    if last_sent.elapsed() > Duration::from_millis(250) {
-                        last_sent = std::time::Instant::now();
-                        progress_app.state::<UpdateState>().set(
-                            &progress_app,
-                            UpdateStatus::Downloading {
-                                version: progress_version.clone(),
-                                downloaded,
-                                total,
-                            },
-                        );
-                    }
-                },
-                || {},
-            )
-            .await;
+        let download = update.download_and_install(
+            move |chunk, total| {
+                downloaded += chunk as u64;
+                if last_sent.elapsed() > Duration::from_millis(250) {
+                    last_sent = std::time::Instant::now();
+                    progress_app.state::<UpdateState>().set(
+                        &progress_app,
+                        UpdateStatus::Downloading {
+                            version: progress_version.clone(),
+                            downloaded,
+                            total,
+                        },
+                    );
+                }
+            },
+            || {},
+        );
+        let result = match tokio::time::timeout(DOWNLOAD_TIMEOUT, download).await {
+            Ok(result) => result.map_err(|error| error.to_string()),
+            Err(_) => Err(format!(
+                "the download did not finish within {} minutes",
+                DOWNLOAD_TIMEOUT.as_secs() / 60
+            )),
+        };
         let status = match result {
             Ok(()) => {
                 tracing::info!("Updates: {version} installed; restart to use it");
@@ -206,9 +252,7 @@ mod imp {
             }
             Err(error) => {
                 tracing::warn!("Updates: install of {version} failed: {error}");
-                UpdateStatus::Failed {
-                    message: error.to_string(),
-                }
+                UpdateStatus::Failed { message: error }
             }
         };
         state.set(app, status.clone());
@@ -243,6 +287,10 @@ mod imp {
 /// updates off stops them without a restart.
 pub fn start(app: &tauri::AppHandle) {
     app.manage(UpdateState::default());
+    if !self_updatable() {
+        tracing::info!("Updates: off (not a release app bundle)");
+        return;
+    }
     #[cfg(not(feature = "dev-build"))]
     {
         let app = app.clone();
@@ -281,6 +329,9 @@ pub async fn check_for_update(
     }
     #[cfg(not(feature = "dev-build"))]
     {
+        if !self_updatable() {
+            return Ok(UpdateStatus::Disabled);
+        }
         let install = config.load().await.map(|c| c.auto_update).unwrap_or(true);
         Ok(imp::check(&app, install).await)
     }
@@ -296,15 +347,21 @@ pub async fn install_update(app: tauri::AppHandle) -> Result<UpdateStatus, Strin
     }
     #[cfg(not(feature = "dev-build"))]
     {
+        if !self_updatable() {
+            return Ok(UpdateStatus::Disabled);
+        }
         Ok(imp::install(&app).await)
     }
 }
 
-/// Home → Restart to update: starts the installed version.
+/// Home → Restart to update: starts the installed version. `request_restart` goes through the
+/// normal exit (`RunEvent::Exit` in lib.rs: the speech model is freed, the built-in AI and
+/// search servers stop); `restart` from a command would skip that and abort in GGML's
+/// exit-time cleanup with a model loaded.
 #[tauri::command]
 pub fn restart_to_update(app: tauri::AppHandle) {
     tracing::info!("Updates: restarting into the new version");
-    app.restart();
+    app.request_restart();
 }
 
 #[cfg(test)]
@@ -350,5 +407,13 @@ mod tests {
     fn the_first_check_waits_and_then_repeats_every_six_hours() {
         assert_eq!(FIRST_CHECK_DELAY, Duration::from_secs(20));
         assert_eq!(CHECK_INTERVAL, Duration::from_secs(21_600));
+        assert_eq!(DOWNLOAD_TIMEOUT, Duration::from_secs(900));
+    }
+
+    #[test]
+    fn a_test_binary_never_updates_itself() {
+        // `cargo test` runs target/debug/deps/…, not a .app bundle.
+        assert!(!self_updatable());
+        assert_eq!(UpdateState::default().status(), UpdateStatus::Disabled);
     }
 }
