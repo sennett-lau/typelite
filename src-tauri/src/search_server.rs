@@ -26,7 +26,7 @@ use tauri::{Emitter, Manager};
 /// Progress events while setting up or updating (`SetupProgress`).
 pub const SETUP_EVENT: &str = "search:setup_progress";
 /// The port SearXNG gets when it is free.
-pub const PREFERRED_PORT: u16 = 8888;
+pub const PREFERRED_PORT: u16 = 13721;
 /// How long a search waits for a server that is starting.
 pub const START_TIMEOUT: Duration = Duration::from_secs(15);
 /// The Python version uv installs for SearXNG (it needs 3.11 or newer).

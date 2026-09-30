@@ -33,6 +33,9 @@ pub const ASK_NO_SPEECH_ERROR: &str = "ask_no_speech";
 /// Plan `ask-panel-above-pill`: event with the start of the highlighted text (or `null`) that
 /// the Ask pill shows as a chip while it listens.
 pub const ASK_SELECTION_PREVIEW_EVENT: &str = "ask:selection_preview";
+/// Plan `searxng-setup`: after each real web search, whether it worked (the sidebar's dot).
+pub const SEARCH_RESULT_EVENT: &str = "search:result";
+
 /// Plan `ask-web-search`: what the thinking pill shows, `"searching"` or `"thinking"`.
 pub const ASK_STAGE_EVENT: &str = "ask:stage";
 /// Plan `ask-web-search`: the start of the earlier question a follow-up recording continues, for
@@ -1143,6 +1146,8 @@ async fn answer_from_web(
     )
     .await;
     let _ = app.emit(ASK_STAGE_EVENT, "thinking");
+    // The sidebar's Search dot (plan `searxng-setup`): whether a real search worked.
+    let _ = app.emit(SEARCH_RESULT_EVENT, outcome.is_ok());
     let outcome = match outcome {
         Ok(outcome) => outcome,
         Err(error) => {

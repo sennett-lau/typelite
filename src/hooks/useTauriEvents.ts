@@ -20,7 +20,12 @@ import {
   type PipelineErrorPayload,
 } from '../lib/capsuleError'
 import { applyVerificationEvent, type PresetVerificationEvent } from '../lib/readiness'
-import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/connectionStatus'
+import {
+  endpointForError,
+  recordAiResult,
+  recordSpeechResult,
+  recordSearchResult,
+} from '../lib/connectionStatus'
 import { useSpeechSetupStore } from '../stores/speechSetupStore'
 import { useAiSetupStore } from '../stores/aiSetupStore'
 import {
@@ -104,6 +109,8 @@ export function useTauriEvents() {
     }
 
     addListener<number>('audio:volume', setAudioVolume)
+    // Plan `searxng-setup`: the sidebar's Search dot follows real searches.
+    addListener<boolean>('search:result', recordSearchResult)
     addListener<string>('stt:partial', setPartialTranscript)
     addListener<string>('stt:final', setFinalTranscript)
     addListener<string>('llm:chunk', appendPolishedChunk)

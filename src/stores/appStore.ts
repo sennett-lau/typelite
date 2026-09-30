@@ -599,6 +599,9 @@ interface AppState {
   setSpeechHealth: (health: EndpointHealth | null) => void
   aiHealth: EndpointHealth | null
   setAiHealth: (health: EndpointHealth | null) => void
+  /** Plan `searxng-setup`: the search provider's last Test or search; `presetId` is its key. */
+  searchHealth: EndpointHealth | null
+  setSearchHealth: (health: EndpointHealth | null) => void
 
   // LLM model list cache (persists across tab switches)
 
@@ -1390,6 +1393,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSpeechHealth: (speechHealth) => set({ speechHealth }),
   aiHealth: null,
   setAiHealth: (aiHealth) => set({ aiHealth }),
+  searchHealth: null,
+  setSearchHealth: (searchHealth) => set({ searchHealth }),
 
   pipelineError: null,
   pipelineErrorAction: null,

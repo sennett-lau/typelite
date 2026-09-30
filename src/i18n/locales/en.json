@@ -958,7 +958,9 @@
     "ai": "AI",
     "ok": "Working",
     "error": "The last test or request failed",
-    "unknown": "Not checked yet"
+    "unknown": "Not checked yet",
+    "search": "Search",
+    "off": "Off"
   },
   "tour": {
     "title": "Speech and AI are ready. Try the three shortcuts now?",

@@ -18,6 +18,7 @@ import {
 } from '../../lib/tauri'
 import { formatTestTime } from '../../lib/speechTypes'
 import { useAppStore } from '../../stores/appStore'
+import { recordSearchTest } from '../../lib/connectionStatus'
 import { WebSearchForm } from './WebSearchForm'
 import { STEPS, progressShare, versionLabel } from './builtinSearch'
 
@@ -171,8 +172,14 @@ function BuiltinCard({ onboarding }: { onboarding: boolean }) {
   const runTest = () => {
     setTest({ status: 'testing' })
     testWebSearch('builtin', '')
-      .then(({ results, ms }) => setTest({ status: 'ok', results, ms }))
-      .catch((reason) => setTest({ status: 'error', message: errorText(reason) }))
+      .then(({ results, ms }) => {
+        setTest({ status: 'ok', results, ms })
+        recordSearchTest('builtin', true)
+      })
+      .catch((reason) => {
+        setTest({ status: 'error', message: errorText(reason) })
+        recordSearchTest('builtin', false)
+      })
       .finally(refresh)
   }
 
