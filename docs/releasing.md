@@ -78,36 +78,58 @@ a download with:
 shasum -a 256 -c SHA256SUMS.txt
 ```
 
-## Unsigned builds
+## Signing
 
-There is no Apple Developer ID yet. The app is signed **ad hoc** (`APPLE_SIGNING_IDENTITY=-`),
-which seals the bundle but is not trusted by Gatekeeper, and it is not notarised. So:
+The app is signed with the project's own certificate, **Typelite Signing**: a self-signed
+code-signing certificate, not an Apple one. It exists for one reason: macOS ties a permission
+grant (Accessibility, Microphone) to the app's *signer*. An ad-hoc signed build carries no
+signer, only its own hash, so every build and every update silently lost the grant (System
+Settings still showed it on, but the shortcuts were dead). With one certificate on every build
+the grant survives updates and rebuilds.
 
-- macOS blocks the first launch of a downloaded copy. Users right-click the app and choose
-  **Open** (on macOS 15 and later: System Settings → Privacy & Security → **Open Anyway**), or run
-  `xattr -dr com.apple.quarantine /Applications/Typelite.app`. The release notes and the README
-  say so.
-- Tauri signs with the hardened runtime on, even ad hoc, using `src-tauri/Entitlements.plist`.
-  A local `npm run build:app` is not signed this way, so try a release build (the dry run) before
-  the first tag: dictate, paste, and Built-in speech and AI.
-- Every build has a new code signature, so after an update macOS may silently ignore the old
-  Accessibility grant. Remove Typelite from System Settings → Privacy & Security → Accessibility
-  and add it again.
+What it does not do: Gatekeeper does not trust it, and the app is not notarised. So macOS still
+blocks the first launch of a downloaded copy: users right-click the app and choose **Open** (on
+macOS 15 and later: System Settings → Privacy & Security → **Open Anyway**), or run
+`xattr -dr com.apple.quarantine /Applications/Typelite.app`. The release notes and the README
+say so.
 
-## Later: signing and notarisation
+How it is set up:
 
-With an Apple Developer account, the workflow can sign and notarise. Tauri reads these from the
+- The certificate (a `.p12` with a random password) lives on the maintainer's Mac in
+  `~/.tauri/typelite-signing/` next to the updater key, and in the repository secrets
+  `APPLE_CERTIFICATE` (base64 of the `.p12`) and `APPLE_CERTIFICATE_PASSWORD`. **Back that
+  folder up** with `~/.tauri/typelite-updater.key`: a new certificate means every user loses the
+  grant once more, and a lost updater key means no more automatic updates for installed copies.
+- The workflow imports the `.p12` into its own keychain, marks it trusted for code signing, and
+  builds with `APPLE_SIGNING_IDENTITY: 'Typelite Signing'`. Tauri signs with the hardened
+  runtime and `src-tauri/Entitlements.plist`, as before.
+- A local `npm run build:app` or `npm run build:dev-app` signs with the same certificate when
+  it is in the login keychain (`scripts/signing-identity.sh`), else ad hoc as before. The first
+  signed Dev build needs one last `tccutil reset Accessibility dev.typelite.mac.dev`; after
+  that, none.
+- The certificate was made with `openssl req -x509 … -addext extendedKeyUsage=codeSigning` and
+  exported with `openssl pkcs12 -export … -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES
+  -macalg sha1` (macOS refuses OpenSSL 3's default packaging), then imported with
+  `security import … -T /usr/bin/codesign` and trusted with
+  `security add-trusted-cert -r trustRoot -p codeSign`. It is valid until 2036.
+- Copies installed from a release signed ad hoc (1.0.0, 1.0.1) lose the grant one final time
+  when they update to the first signed release; the What's New of that release must say so.
+
+## Later: notarisation
+
+With an Apple Developer account, the workflow can sign with a **Developer ID Application**
+certificate and notarise, which removes the first-launch warning. Tauri reads these from the
 environment, so the steps are:
 
-1. Export the **Developer ID Application** certificate as a `.p12` and store it, base64-encoded,
-   as the repository secrets `APPLE_CERTIFICATE` and `APPLE_CERTIFICATE_PASSWORD`.
-2. Replace `APPLE_SIGNING_IDENTITY: '-'` with the certificate's name (for example
-   `Developer ID Application: Name (TEAMID)`), stored as a secret.
-3. For notarisation, add either `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password) and
+1. Export the Developer ID certificate as a `.p12` and store it, base64-encoded, in the same two
+   secrets, and change `APPLE_SIGNING_IDENTITY` to its name (for example
+   `Developer ID Application: Name (TEAMID)`); the import step then needs no trust command.
+2. For notarisation, add either `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password) and
    `APPLE_TEAM_ID`, or an App Store Connect API key (`APPLE_API_KEY`, `APPLE_API_ISSUER`,
    `APPLE_API_KEY_PATH`). Tauri then notarises and staples the app during the build.
-4. Test the signed build (microphone, paste, Built-in speech and AI) and add any missing
+3. Test the signed build (microphone, paste, Built-in speech and AI) and add any missing
    entitlement to `src-tauri/Entitlements.plist`. Then remove the unsigned-app steps from the
    README and the release notes.
 
-A signed build keeps the same signature across updates, so the Accessibility grant survives.
+Changing the signer loses every user's Accessibility grant once, so do it with a release whose
+What's New says so.

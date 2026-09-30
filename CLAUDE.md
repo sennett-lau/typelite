@@ -109,7 +109,10 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
   macOS silently ignores the old Accessibility grant (it still shows "on"). Check the grant's
   requirement with `sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db"` plus `csreq`,
   and compare it with `codesign -dr -`. Fix with `tccutil reset Accessibility <bundle-id>` and
-  grant again, or sign every build with one stable self-signed certificate.
+  grant again. Since 2026-09-30 every build is signed with one self-signed certificate,
+  "Typelite Signing" (`scripts/signing-identity.sh`, docs/releasing.md → Signing), so the
+  grant survives rebuilds and updates; the reset is only needed when the certificate is not
+  in the keychain.
 - An event tap created before Accessibility is granted fails, so the app must restart after the
   grant (or retry until it succeeds).
 - Starting the app from a terminal makes TCC check the terminal's permissions. Start it with
