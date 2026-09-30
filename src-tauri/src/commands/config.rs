@@ -39,6 +39,10 @@ fn config_patch_between(previous: &storage::AppConfig, next: &storage::AppConfig
         patch.insert("translation".to_string(), json!(next.translation));
         patch.insert("target_lang".to_string(), json!(next.target_lang));
     }
+    // The typing nudge names the Dictate key; a key changed in Settings showed the old name.
+    if previous.hotkeys != next.hotkeys {
+        patch.insert("hotkeys".to_string(), json!(next.hotkeys));
+    }
     Value::Object(patch)
 }
 
@@ -457,6 +461,24 @@ mod tests {
         assert_eq!(patch["translation"]["targets"][0], "zh-Hant-HK");
         assert_eq!(patch["translation"]["active_target"], "zh-Hant-HK");
         assert_eq!(patch["target_lang"], "zh-Hant-HK");
+        assert!(config_patch_between(&next, &next.clone())
+            .as_object()
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn config_patch_includes_hotkey_changes() {
+        let previous = storage::AppConfig::default();
+        let mut next = previous.clone();
+        next.hotkeys.dictation_bindings = vec![storage::ShortcutBinding {
+            primary: "F13".to_string(),
+            modifiers: vec![],
+        }];
+
+        let patch = config_patch_between(&previous, &next);
+
+        assert_eq!(patch["hotkeys"]["dictation_bindings"][0]["primary"], "F13");
         assert!(config_patch_between(&next, &next.clone())
             .as_object()
             .unwrap()
