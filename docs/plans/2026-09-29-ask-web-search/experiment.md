@@ -70,3 +70,18 @@ correctly from it. Back to [index](index.md).
   links let the user check.
 - No empty result sets for these questions; an empty set is handled (the panel says the search
   found nothing).
+
+## "Next" questions and today's date (2026-09-30)
+
+"What's the next F1 match?" sometimes answered with the race that had finished two days earlier:
+the answer prompt said "prefer the most recent result", and the newest pages are reports on the
+last race. Probed with Built-in SearXNG and Qwen 3.5 4B, 10 runs per question:
+
+| Prompt | Right event (next weekend) | Invented dates |
+|---|---|---|
+| Before ("prefer the most recent result", date as `Wednesday, 2026-09-30`) | 9/10 and 10/10 | some wrong venue |
+| Long date rules, date and time in ISO form | 5/10 and 10/10 | many (the model copied the ISO form) |
+| Short rule, date written out ("Wednesday 30 September 2026"), repeated beside the question, date "copied as the result writes it" | **10/10 and 10/10** | none |
+
+Kept the last. The date in words matters: with an ISO date the 4B model writes ISO dates of its
+own and gets them wrong. A garbled calendar snippet can still leave the date out of the answer.

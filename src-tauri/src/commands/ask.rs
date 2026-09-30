@@ -1023,7 +1023,9 @@ async fn answer_from_web(
             "Configure an AI provider in Settings to use Ask.".to_string(),
         ));
     }
-    let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
+    // Written out ("Wednesday 30 September 2026"): a small model copies an ISO date's format
+    // into its answer and then gets dates wrong.
+    let today = chrono::Local::now().format("%A %-d %B %Y").to_string();
     let body = build_web_answer_body(&config, question, &outcome.results, &today);
     let answer = send_ask_chat(client, &config, &api_key, &body)
         .await
