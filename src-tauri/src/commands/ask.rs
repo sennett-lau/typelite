@@ -989,11 +989,28 @@ async fn answer_from_web(
     client: &reqwest::Client,
     question: &str,
     query: &str,
+    reason: &str,
 ) -> Result<WebAnswer, WebAnswerError> {
     // The pill shows "Searching the web…" while the search runs, then "Thinking" again.
     let _ = app.emit(ASK_STAGE_EVENT, "searching");
-    let outcome =
-        crate::web_search::search(client, &config.web_search, &web_search_key(config), query).await;
+    let local_date = chrono::Local::now().date_naive();
+    let upcoming =
+        reason == "schedule" && crate::web_search::schedule::is_upcoming_question(question);
+    let focus = if upcoming {
+        crate::web_search::SearchFocus::Upcoming(local_date)
+    } else if reason == "news" {
+        crate::web_search::SearchFocus::News
+    } else {
+        crate::web_search::SearchFocus::General
+    };
+    let outcome = crate::web_search::search(
+        client,
+        &config.web_search,
+        &web_search_key(config),
+        query,
+        focus,
+    )
+    .await;
     let _ = app.emit(ASK_STAGE_EVENT, "thinking");
     // The sidebar's Search dot (plan `searxng-setup`): whether a real search worked.
     let _ = app.emit(SEARCH_RESULT_EVENT, outcome.is_ok());
@@ -1024,7 +1041,39 @@ async fn answer_from_web(
     }
     // Written out ("Wednesday 30 September 2026"): a small model copies an ISO date's format
     // into its answer and then gets dates wrong.
-    let today = chrono::Local::now().format("%A %-d %B %Y").to_string();
+    let today = local_date.format("%A %-d %B %Y").to_string();
+    // For upcoming schedules, copy evidence first. Dates and the final answer are checked
+    // and rendered by the app; a small model otherwise invents race dates from page metadata.
+    if upcoming {
+        let preset = config.active_ai_preset();
+        let body = crate::llm::protocol::build_chat_body(
+            &preset.model,
+            crate::web_search::schedule::messages(question, &outcome.results),
+            640,
+            0.0,
+            false,
+            &preset.extra_request_fields,
+        );
+        let extraction = send_ask_chat(client, &config, &api_key, &body)
+            .await
+            .map_err(WebAnswerError::Ai)?;
+        let (answer, why) = crate::web_search::schedule::answer_with_rejections(
+            &extraction,
+            &outcome.results,
+            local_date,
+        );
+        let Some(answer) = answer else {
+            tracing::info!("Ask web answer: no supported upcoming event ({why:?})");
+            return Err(WebAnswerError::Search(LiveSearchState::NoResults));
+        };
+        let sources = crate::web_search::answer_sources(&answer, &outcome.results);
+        tracing::info!(
+            "Ask web answer: {} sources ({} ms)",
+            sources.len(),
+            started.elapsed().as_millis()
+        );
+        return Ok(WebAnswer { answer, sources });
+    }
     let body = build_web_answer_body(&config, question, &outcome.results, &today);
     let mut answer = send_ask_chat(client, &config, &api_key, &body)
         .await
@@ -1650,7 +1699,9 @@ pub async fn stop_ask_dictation(
                 // Plan `ask-web-search`: with a search provider, answer from the web.
                 let live_search = if config.web_search.is_configured() {
                     let query = check.query.as_deref().unwrap_or(&question);
-                    match answer_from_web(&app, &config, &client, &question, query).await {
+                    match answer_from_web(&app, &config, &client, &question, query, check.reason)
+                        .await
+                    {
                         Ok(web) => {
                             ai_elapsed = Some(ai_started.elapsed());
                             return Ok(AskDictationResult::new(
@@ -2109,7 +2160,7 @@ mod tests {
         let user = body["messages"][1]["content"].as_str().unwrap();
         assert!(user.contains("Today is Tuesday, 2026-09-29."));
         assert!(user.contains(
-            "<search_results>\n[1] Next race\nURL: https://news.example/moved\nDate: 2026-09-26"
+            "<search_results>\n[1] Next race\nURL: https://news.example/moved\nPage published (not an event date): 2026-09-26"
         ));
     }
 
