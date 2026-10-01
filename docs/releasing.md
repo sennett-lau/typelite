@@ -63,6 +63,22 @@ The release notes come from What's New for that version
 If the build fails, fix it on `main`, delete the tag (`git push --delete origin vX.Y.Z` and
 `git tag -d vX.Y.Z`) and any draft it left, then tag again.
 
+## Updates
+
+Installed copies update themselves from GitHub Releases (plan `auto-update`). The workflow signs
+the update package with Tauri's updater key and uploads it with `latest.json`; the app reads
+`https://github.com/sennett-lau/typelite/releases/latest/download/latest.json`.
+
+- **The key.** The public key is in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). The
+  private key is the repository secret `TAURI_SIGNING_PRIVATE_KEY` (and
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, empty when the key has no password). The maintainer keeps a
+  copy offline; without it no update can ever be signed again, and a new key means users must
+  install the next version by hand once. The workflow stops when the secret is missing.
+- **Publishing a patch for an older line** (for example 1.0.4 after 1.1.0): untick **Set as the
+  latest release**, so `releases/latest` stays on the newest line.
+- A local `npm run build:app` builds no update package; `tauri.release.conf.json`, used only by the
+  workflow, turns it on.
+
 ## Dry run
 
 Actions → **Release** → **Run workflow** builds the same files from the chosen branch without a

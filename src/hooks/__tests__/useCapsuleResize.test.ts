@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ASK_SEARCHING_PILL_SIZE,
   capsuleAnchorForMonitor,
   capsuleOrigin,
   copyPillSize,
@@ -551,6 +552,14 @@ describe('Ask pill with a highlight', () => {
         true,
       ),
     ).toEqual(ASK_RECORDING_WITH_SELECTION_SIZE)
+  })
+
+  it('widens the thinking pill while Ask searches the web (plan ask-web-search)', () => {
+    const thinking = getPillSize('ask_thinking', 'ask', false, NO_TRANSLATE_LANGUAGE)
+    const searching = getPillSize('ask_searching', 'ask', false, NO_TRANSLATE_LANGUAGE)
+    expect(searching).toEqual(ASK_SEARCHING_PILL_SIZE)
+    expect(searching.width).toBeGreaterThan(thinking.width)
+    expect(searching.height).toBe(thinking.height)
   })
 
   it('does not change the thinking pill', () => {

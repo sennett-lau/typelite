@@ -66,7 +66,7 @@ describe('ShortcutTourPrompt', () => {
     const state = useAppStore.getState()
     expect(state.onboardingCompleted).toBe(false)
     expect(state.onboardingTour).toBe(true)
-    expect(state.onboardingStep).toBe(4)
+    expect(state.onboardingStep).toBe(5)
     expect(state.config.shortcut_tour_prompt_dismissed).toBe(true)
   })
 

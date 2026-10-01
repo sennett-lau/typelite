@@ -9,12 +9,13 @@ import {
 import type { CapsuleErrorKey } from './capsuleError'
 
 /**
- * Connection status for the sidebar: one dot for speech, one for AI. The dots only show the
+ * Connection status for the sidebar: one dot each for speech, AI and web search. The dots only show the
  * last known result — from a Test button or from a real dictation — and the app never polls
  * the servers to find out.
  */
 
-export type EndpointState = 'ok' | 'error' | 'unknown'
+/** `off`: plan `searxng-setup`, web search is not set up. */
+export type EndpointState = 'ok' | 'error' | 'unknown' | 'off'
 
 export function activeSpeechPreset(config: AppConfig) {
   const presets = config.speech_presets?.length ? config.speech_presets : [BUILTIN_SPEECH_PRESET]
@@ -60,4 +61,34 @@ export function recordSpeechResult(ok: boolean) {
 export function recordAiResult(ok: boolean) {
   const { config, setAiHealth } = useAppStore.getState()
   setAiHealth({ presetId: activeAiPreset(config).id, ok })
+}
+
+/**
+ * Plan `searxng-setup`: the search provider in use, as the key its health is stored under (the
+ * result of a Test or a search counts only for the provider and address that gave it), or null
+ * when web search is off.
+ */
+export function activeSearchKey(config: AppConfig): string | null {
+  const search = config.web_search
+  if (!search || search.provider === 'none') return null
+  if (search.provider === 'builtin') return 'builtin'
+  return search.base_url.trim() ? `searxng:${search.base_url.trim()}` : null
+}
+
+/** The sidebar's Search dot: off, or the last result for the provider in use. */
+export function searchState(config: AppConfig, health: EndpointHealth | null): EndpointState {
+  const key = activeSearchKey(config)
+  return key === null ? 'off' : endpointState(health, key)
+}
+
+/** Records a Test's result under the provider and address it tested (`activeSearchKey` form). */
+export function recordSearchTest(key: string, ok: boolean) {
+  useAppStore.getState().setSearchHealth({ presetId: key, ok })
+}
+
+/** Records a real search's result for the provider in use. */
+export function recordSearchResult(ok: boolean) {
+  const { config, setSearchHealth } = useAppStore.getState()
+  const key = activeSearchKey(config)
+  if (key !== null) setSearchHealth({ presetId: key, ok })
 }

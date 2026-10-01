@@ -12,16 +12,18 @@ use serde_json::{json, Value};
 use super::LlmConfig;
 
 /// How long the classification request may take before the keyword list decides.
-pub const CLASSIFY_TIMEOUT: Duration = Duration::from_secs(2);
-/// Enough for `{"live": false, "reason": "none"}` and nothing more.
-const CLASSIFY_MAX_TOKENS: u32 = 24;
+pub const CLASSIFY_TIMEOUT: Duration = Duration::from_secs(3);
+/// Enough for `{"live": true, "reason": "schedule", "query": "…"}` with a short query.
+const CLASSIFY_MAX_TOKENS: u32 = 80;
+/// A search query longer than this is not a query; the question is searched instead.
+const MAX_QUERY_CHARS: usize = 120;
 
 /// Why a question is (or is not) live. Only these words are logged, never the question.
 const REASONS: &[&str] = &[
     "news", "time", "price", "weather", "score", "schedule", "release", "other", "none",
 ];
 
-const CLASSIFIER_PROMPT: &str = "You decide whether a question needs live information. A question is live when a correct answer depends on facts that change often or may be newer than your training data: news and current events; anything about today, now, this week, the latest or current state; prices, stock and exchange rates; weather; sports scores and results; schedules, opening hours and timetables; recent releases, versions or announcements. Timeless facts, definitions, history, science, maths, how-to and writing help are not live. Reply with JSON only, no other text: {\"live\": true or false, \"reason\": one of \"news\", \"time\", \"price\", \"weather\", \"score\", \"schedule\", \"release\", \"other\", \"none\"}.";
+const CLASSIFIER_PROMPT: &str = "You decide whether a question needs live information. A question is live when a correct answer depends on facts that change often or may be newer than your training data: news and current events; anything about today, now, this week, the latest or current state; prices, stock and exchange rates; weather; sports scores and results; schedules, opening hours and timetables; recent releases, versions or announcements. Timeless facts, definitions, history, science, maths, how-to and writing help are not live. Reply with JSON only, no other text: {\"live\": true or false, \"reason\": one of \"news\", \"time\", \"price\", \"weather\", \"score\", \"schedule\", \"release\", \"other\", \"none\", \"query\": for a live question, a short web search query (a few keywords, in the question's language, names and abbreviations written the usual way, for example F1 or iPhone; the question was spoken, so fix what was misheard), else \"\"}.";
 
 /// Who made the decision.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -43,12 +45,15 @@ impl LiveCheckSource {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LiveCheck {
     pub live: bool,
     /// One of `REASONS`.
     pub reason: &'static str,
     pub source: LiveCheckSource,
+    /// Plan `ask-web-search`: the AI's search query for a live question (a spoken question
+    /// searched as it was transcribed finds little). Never logged.
+    pub query: Option<String>,
 }
 
 /// The chat request body for the classification, with the preset's extra fields.
@@ -64,6 +69,21 @@ pub fn build_classifier_body(config: &LlmConfig, question: &str) -> Value {
         false,
         &config.extra_request_fields,
     )
+}
+
+/// The classifier's search query, when it gave a usable one: one line, not empty, not long.
+pub fn parse_classifier_query(text: &str) -> Option<String> {
+    let trimmed = text.trim();
+    let (start, end) = (trimmed.find('{')?, trimmed.rfind('}')?);
+    if start >= end {
+        return None;
+    }
+    let value = serde_json::from_str::<Value>(&trimmed[start..=end]).ok()?;
+    let query = value.get("query")?.as_str()?.trim();
+    let usable = !query.is_empty()
+        && query.chars().count() <= MAX_QUERY_CHARS
+        && !query.contains(['\n', '\r']);
+    usable.then(|| query.to_string())
 }
 
 fn known_reason(value: &str) -> &'static str {
@@ -241,6 +261,7 @@ fn keyword_decision(question: &str, source: LiveCheckSource) -> LiveCheck {
         live,
         reason,
         source,
+        query: None,
     }
 }
 
@@ -249,7 +270,7 @@ async fn ask_classifier(
     config: &LlmConfig,
     question: &str,
     timeout: Duration,
-) -> Result<(bool, &'static str), String> {
+) -> Result<(bool, &'static str, Option<String>), String> {
     let url = super::protocol::chat_endpoint(&config.base_url)?;
     let request = client
         .post(url)
@@ -265,8 +286,15 @@ async fn ask_classifier(
         return Err(format!("status {}", status.as_u16()));
     }
     let body: Value = response.json().await.map_err(|error| error.to_string())?;
-    parse_classifier_reply(&super::protocol::response_text(&body))
-        .ok_or_else(|| "unreadable reply".to_string())
+    let text = super::protocol::response_text(&body);
+    let (live, reason) =
+        parse_classifier_reply(&text).ok_or_else(|| "unreadable reply".to_string())?;
+    let query = if live {
+        parse_classifier_query(&text)
+    } else {
+        None
+    };
+    Ok((live, reason, query))
 }
 
 /// Decides whether `question` needs live information, within `timeout`.
@@ -277,10 +305,11 @@ pub async fn classify_with_timeout(
     timeout: Duration,
 ) -> LiveCheck {
     match tokio::time::timeout(timeout, ask_classifier(client, config, question, timeout)).await {
-        Ok(Ok((live, reason))) => LiveCheck {
+        Ok(Ok((live, reason, query))) => LiveCheck {
             live,
             reason,
             source: LiveCheckSource::Ai,
+            query,
         },
         Ok(Err(error)) => {
             // The error never contains the question: it is a status or a transport message.
@@ -363,6 +392,28 @@ mod tests {
         assert_eq!(parse_classifier_reply("I think so"), None);
         assert_eq!(parse_classifier_reply(""), None);
         assert_eq!(parse_classifier_reply(r#"{"reason": "news"}"#), None);
+    }
+
+    #[test]
+    fn classifier_query_is_taken_only_when_short_and_on_one_line() {
+        assert_eq!(
+            parse_classifier_query(
+                r#"{"live": true, "reason": "schedule", "query": " F1 下一站 日期 "}"#
+            ),
+            Some("F1 下一站 日期".to_string())
+        );
+        assert_eq!(
+            parse_classifier_query(r#"{"live": false, "reason": "none", "query": ""}"#),
+            None
+        );
+        assert_eq!(
+            parse_classifier_query(r#"{"live": true, "reason": "news"}"#),
+            None
+        );
+        assert_eq!(parse_classifier_query("{\"query\": \"two\nlines\"}"), None);
+        let long = format!("{{\"query\": \"{}\"}}", "x".repeat(121));
+        assert_eq!(parse_classifier_query(&long), None);
+        assert_eq!(parse_classifier_query("live"), None);
     }
 
     #[test]

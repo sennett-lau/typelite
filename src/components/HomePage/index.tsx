@@ -13,6 +13,7 @@ import { Group } from '../ui/Group'
 import { KeyCaps } from '../ui/KeyCap'
 import { startShortcutTour, useShortcutTourAvailable } from '../../lib/shortcutTour'
 import { FinishSetup } from './FinishSetup'
+import { UpdateBar } from './UpdateBar'
 import { SpeedBoard } from './SpeedBoard'
 
 type SettingsPane = 'general' | 'stt' | 'llm'
@@ -257,6 +258,7 @@ export function HomePage() {
       title={<h1 className="page-title text-[26px] text-balance">{t('home.headline')}</h1>}
       subtitle={t('home.subtitle')}
     >
+      <UpdateBar />
       <FinishSetup />
       <ShortcutTiles />
       <TourLink />

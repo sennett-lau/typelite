@@ -7,7 +7,8 @@ Back to [index](index.md).
 - Onboarding → Speech recognition: a **Quick setup (recommended)** card above the preset editor
   when speech is not ready: "Download a speech model (574 MB) and run it on this Mac. No other
   software needed." Buttons: **Set up** and a link **Smaller and faster model (190 MB)**.
-- Home → Finish setup card for speech: the same **Set up** button.
+- Home → Finish setup card for speech: ~~the same **Set up** button~~ since 2026-09-30 its
+  **Set up** opens Settings → Speech, where the card above is (a download from Home surprised).
 - Settings → Speech: the same card when no built-in model is installed; otherwise a "Built-in
   models" group listing installed models with size and **Delete**.
 

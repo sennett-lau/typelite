@@ -1,13 +1,16 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../../i18n'
 import { AskAnswerPanel, type AskPanelContent } from '../AskAnswerPanel'
-import { copyAskText, insertAskText } from '../../../lib/tauri'
+import { isLongAnswer, panelWidth } from '../liveSearch'
+import { copyAskText, insertAskText, openAskSource } from '../../../lib/tauri'
 import type { AskDictationResult } from '../../../lib/tauri'
 
 vi.mock('../../../lib/tauri', () => ({
   copyAskText: vi.fn(),
   insertAskText: vi.fn(),
+  openAskSource: vi.fn(() => Promise.resolve()),
+  openSettingsPane: vi.fn(() => Promise.resolve()),
 }))
 
 function result(overrides: Partial<AskDictationResult> = {}): AskPanelContent {
@@ -58,7 +61,7 @@ afterEach(() => {
 
 // Plan `ask-panel-above-pill`: one glass panel for every Ask outcome.
 describe('AskAnswerPanel', () => {
-  it('shows the question, the answer, the Esc hint, Copy and Insert', () => {
+  it('shows the question, the answer, and the Esc hint, no action button', () => {
     renderPanel(result())
 
     const panel = screen.getByRole('dialog', { name: 'Ask answer' })
@@ -75,61 +78,81 @@ describe('AskAnswerPanel', () => {
     expect(esc.querySelector('[aria-hidden="true"]')?.textContent).toBe('esc')
     expect(esc.querySelector('.sr-only')?.textContent).toBe('Escape')
     expect(screen.getByText('to close')).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Insert at the cursor' }).textContent).toBe('Insert')
+    // Plan `ask-web-search`: an answer has no action button.
+    expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Insert at the cursor' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Close (Esc)' })).toBeDefined()
   })
 
-  it('marks a question about the highlight, and Insert replaces it', () => {
+  it('marks a question about the highlight', () => {
     renderPanel(result({ usedSelectedText: true }))
-
     expect(screen.getByTestId('ask-panel-question').textContent).toBe(
       'About the highlight · What does idempotent mean here?',
     )
-    expect(screen.getByRole('button', { name: 'Replace the highlight' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Replace the highlight' })).toBeNull()
   })
 
-  it('copies through the app and shows Copied for a moment', async () => {
-    vi.useFakeTimers()
-    renderPanel(result())
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
-    })
-
-    expect(copyAskText).toHaveBeenCalledWith(
-      'Sending the same request twice has the same effect as sending it once.',
+  it('shows sources in a column: summary, citation, open and copy link', async () => {
+    renderPanel(
+      result({
+        question: 'latest tech news today',
+        answer: 'Chips are up [1]. A new phone [2][3]. Not a source [9].',
+        sources: [
+          {
+            number: 1,
+            title: 'Reuters Technology News',
+            url: 'https://www.reuters.com/technology/',
+            snippet: 'Chip makers rally.',
+          },
+          { number: 2, title: 'The Verge', url: 'https://www.theverge.com/', snippet: '' },
+          { number: 3, title: 'WIRED', url: 'https://www.wired.com/', snippet: 'A new phone.' },
+        ],
+      }),
     )
-    expect(screen.getByRole('button', { name: 'Copied' })).toBeDefined()
-    await act(async () => {
-      vi.advanceTimersByTime(1600)
-    })
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined()
+
+    const answer = screen.getByTestId('ask-panel-answer')
+    expect(answer.textContent).toBe('Chips are up 1. A new phone 23. Not a source [9].')
+    // Closed at first: only the summary in the footer.
+    expect(screen.queryByTestId('ask-panel-sources')).toBeNull()
+    expect(screen.getByTestId('ask-panel-sources-summary').textContent).toContain('3 sources')
+
+    // A citation opens the column on its source, without opening the page.
+    fireEvent.click(screen.getByRole('button', { name: 'Show source 2' }))
+    const column = screen.getByTestId('ask-panel-sources')
+    expect(column.textContent).toContain('Reuters Technology News')
+    expect(column.textContent).toContain('reuters.com')
+    expect(column.textContent).toContain('Chip makers rally.')
+    expect(screen.getByTestId('ask-source-2').className).toContain('is-highlighted')
+    expect(openAskSource).not.toHaveBeenCalled()
+
+    // Open and Copy link go through the app.
+    fireEvent.click(screen.getByRole('button', { name: 'Open source 3' }))
+    expect(openAskSource).toHaveBeenCalledWith('https://www.wired.com/')
+    vi.mocked(copyAskText).mockResolvedValue(undefined)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link of source 1' }))
+    expect(copyAskText).toHaveBeenCalledWith('https://www.reuters.com/technology/')
+    await waitFor(() => expect(screen.getByTestId('ask-source-1').textContent).toContain('Copied'))
+
+    // A click anywhere on a card opens it too; › hides the column.
+    fireEvent.click(screen.getByText('The Verge'))
+    expect(openAskSource).toHaveBeenLastCalledWith('https://www.theverge.com/')
+    // › slides the column out first, then it goes (and the panel shrinks).
+    fireEvent.click(screen.getByRole('button', { name: 'Hide sources' }))
+    expect(screen.getByTestId('ask-panel-sources')).toHaveAttribute('data-closing', 'true')
+    await waitFor(() => expect(screen.queryByTestId('ask-panel-sources')).toBeNull())
   })
 
-  it('inserts through the app', async () => {
-    renderPanel(result({ usedSelectedText: true }))
-
-    fireEvent.click(screen.getByRole('button', { name: 'Replace the highlight' }))
-
-    await waitFor(() =>
-      expect(insertAskText).toHaveBeenCalledWith(
-        'Sending the same request twice has the same effect as sending it once.',
-      ),
-    )
-    expect(screen.queryByRole('status')).toBeNull()
-  })
-
-  it('says so and stays open when the insert fails', async () => {
-    vi.mocked(insertAskText).mockRejectedValue(new Error('no'))
-    renderPanel(result())
-
-    fireEvent.click(screen.getByRole('button', { name: 'Insert at the cursor' }))
-
-    expect((await screen.findByRole('status')).textContent).toBe(
-      "Couldn't insert here. Use Copy instead.",
-    )
-    expect(screen.getByRole('dialog')).toBeDefined()
+  it('keeps a short answer at 420 pt and widens a long one to the limit', () => {
+    const limits = { maxWidth: 1008, maxHeight: 443 }
+    expect(panelWidth(false, false, limits)).toBe(420)
+    expect(panelWidth(false, true, limits)).toBe(708)
+    expect(panelWidth(true, false, limits)).toBe(1008)
+    expect(panelWidth(true, true, limits)).toBe(1008)
+    // A narrow screen never gets more than its limit.
+    expect(panelWidth(false, true, { maxWidth: 500, maxHeight: 300 })).toBe(500)
+    expect(isLongAnswer('Short.')).toBe(false)
+    expect(isLongAnswer('x'.repeat(400))).toBe(true)
+    expect(isLongAnswer('a\nb\nc\nd\ne')).toBe(true)
   })
 
   it('offers a retry when the app did not allow the replacement', async () => {
@@ -223,8 +246,6 @@ describe('AskAnswerPanel', () => {
     expect(screen.getByTestId('ask-panel-question').textContent).toBe(
       '关于选中文本 · What does idempotent mean here?',
     )
-    expect(screen.getByRole('button', { name: '复制' })).toBeDefined()
-    expect(screen.getByRole('button', { name: '替换选中文本' }).textContent).toBe('插入')
     expect(screen.getByText('关闭')).toBeDefined()
   })
 })

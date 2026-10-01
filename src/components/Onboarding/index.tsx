@@ -14,6 +14,7 @@ import { WelcomeStep } from './WelcomeStep'
 import { MicrophoneStep } from './MicrophoneStep'
 import { SttSetupStep } from './SttSetupStep'
 import { LlmSetupStep } from './LlmSetupStep'
+import { WebSearchStep } from './WebSearchStep'
 import { ShortcutSetupPage } from './ShortcutSetupPage'
 import { ExercisePage } from './ExercisePage'
 import {
@@ -30,13 +31,15 @@ import { usePermissions } from './usePermissions'
 import { slideRight } from '../../lib/animations'
 
 /**
- * Welcome + permissions, microphone, speech, AI, then the shortcut pages (plan
+ * Welcome + permissions, microphone, speech, AI, web search (optional, plan `ask-web-search`), then the shortcut pages (plan
  * `tutorial-one-page`): per shortcut a setup page and one page per exercise.
  */
 export const TOTAL_STEPS = SHORTCUT_TOUR_FIRST_STEP + SHORTCUT_PAGES.length
 
-/** Step index of the AI step, the last step before the shortcut pages. */
+/** Step index of the AI step. */
 const AI_STEP = 3
+/** Plan `ask-web-search`: the optional web search step, the last step before the shortcut pages. */
+const WEB_SEARCH_STEP = 4
 
 /** The shortcut page shown at `step`, if it is one. */
 function shortcutPageAt(step: number): ShortcutPage | undefined {
@@ -108,6 +111,8 @@ export function Onboarding() {
         return speechReady
       case AI_STEP:
         return aiReady
+      case WEB_SEARCH_STEP:
+        return true // optional
       default:
         return false
     }
@@ -121,6 +126,7 @@ export function Onboarding() {
       subtitle: t('onboarding.steps.speechRecognitionSub'),
     },
     { title: t('onboarding.steps.aiPolish'), subtitle: t('onboarding.steps.aiPolishSub') },
+    { title: t('onboarding.steps.webSearch'), subtitle: t('onboarding.steps.webSearchSub') },
     ...SHORTCUT_PAGES.map((shortcutPage) =>
       shortcutPage.kind === 'setup'
         ? {
@@ -176,11 +182,11 @@ export function Onboarding() {
   }
 
   /**
-   * After the AI step (Next or Skip): the shortcut tutorials need both services, so they
+   * After the web search step (Next or Skip): the shortcut tutorials need both services, so they
    * follow only when both passed a Test. Otherwise onboarding ends here and Home shows what is
    * left to set up; the tour is offered once both work.
    */
-  const leaveAiStep = async () => {
+  const leaveSetupSteps = async () => {
     const { config } = useAppStore.getState()
     if (isSpeechReady(config) && isAiReady(config)) {
       await goTo(SHORTCUT_TOUR_FIRST_STEP)
@@ -192,8 +198,8 @@ export function Onboarding() {
   const handleNext = async () => {
     if (isLast) {
       await finish(true)
-    } else if (step === AI_STEP) {
-      await leaveAiStep()
+    } else if (step === WEB_SEARCH_STEP) {
+      await leaveSetupSteps()
     } else {
       await goTo(step + 1)
     }
@@ -254,7 +260,8 @@ export function Onboarding() {
           {step === 0 && <WelcomeStep permissions={permissions} onSkip={() => goTo(1)} />}
           {step === 1 && <MicrophoneStep />}
           {step === 2 && <SttSetupStep onSkip={() => goTo(AI_STEP)} />}
-          {step === AI_STEP && <LlmSetupStep onSkip={leaveAiStep} />}
+          {step === AI_STEP && <LlmSetupStep onSkip={() => goTo(WEB_SEARCH_STEP)} />}
+          {step === WEB_SEARCH_STEP && <WebSearchStep onSkip={leaveSetupSteps} />}
           {page?.kind === 'setup' && <ShortcutSetupPage role={page.role} />}
           {page?.kind === 'exercise' && (
             <ExercisePage
