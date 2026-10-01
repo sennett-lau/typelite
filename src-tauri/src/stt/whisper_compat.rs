@@ -340,12 +340,23 @@ impl WhisperCompatProvider {
                             .map(|(i, c)| i + c.len_utf8())
                             .unwrap_or(body.len());
                         let sanitized = &body[..truncate_at];
-                        tracing::error!(
-                            "{} HTTP {}: {}",
-                            self.provider_config.provider_name,
-                            status,
-                            sanitized
-                        );
+                        // A refused verbose_json is expected once per server (the caller asks
+                        // again with plain JSON), so it is not an error in the log.
+                        if verbose && matches!(status.as_u16(), 400 | 415 | 422) {
+                            tracing::debug!(
+                                "{} HTTP {} for verbose_json: {}",
+                                self.provider_config.provider_name,
+                                status,
+                                sanitized
+                            );
+                        } else {
+                            tracing::error!(
+                                "{} HTTP {}: {}",
+                                self.provider_config.provider_name,
+                                status,
+                                sanitized
+                            );
+                        }
                         return Err(AppError::Api {
                             status: status.as_u16(),
                             body: sanitized.to_string(),
