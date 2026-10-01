@@ -182,12 +182,20 @@ describe('Copy pill', () => {
 describe('Ask pill while searching the web', () => {
   afterEach(() => useAppStore.setState({ askStage: 'thinking' }))
 
-  it('widens the shell while Ask searches, then narrows for Thinking', () => {
-    useAppStore.setState({ pipelineState: 'ask_thinking', askStage: 'searching' })
+  it('widens the shell while Ask searches and keeps it wide for Thinking', () => {
+    useAppStore.setState({
+      pipelineState: 'ask_thinking',
+      askStage: 'thinking',
+      askSearched: false,
+    })
     render(<Capsule />)
+    expect(shell().style.width).toBe('140px')
+
+    act(() => useAppStore.getState().setAskStage('searching'))
     expect(shell().style.width).toBe('176px')
 
-    act(() => useAppStore.setState({ askStage: 'thinking' }))
-    expect(shell().style.width).toBe('140px')
+    // No shrink back once the search is done; the answer follows soon.
+    act(() => useAppStore.getState().setAskStage('thinking'))
+    expect(shell().style.width).toBe('176px')
   })
 })
