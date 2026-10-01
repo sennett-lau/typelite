@@ -26,6 +26,7 @@ pub mod storage;
 pub mod stt;
 pub mod timing;
 pub mod tray;
+pub mod updates;
 pub mod voice_intent;
 pub mod web_search;
 
@@ -1104,6 +1105,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         // Plan `preset-sharing`: the save and open dialogs of preset Export and Import (used from Rust only).
         .plugin(tauri_plugin_dialog::init())
+        // Plan `auto-update`: in-app updates from GitHub Releases.
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if let Some(action) = parse_cli_action(&args) {
                 dispatch_cli_action(app, action);
@@ -1205,6 +1208,8 @@ pub fn run() {
                 .unwrap_or_default();
                 search_server::init(&app_handle, &config);
             }
+            // Plan `auto-update`: the update status and the automatic checks.
+            updates::start(&app_handle);
             app.manage(commands::ask::AskDictationState::default());
             app.manage(ask_panel::AskPanelState::default());
             app.manage(commands::audio::MicMonitorState::default());
@@ -1469,6 +1474,10 @@ pub fn run() {
             ask_panel::close_ask_panel,
             ask_panel::resize_ask_panel,
             ask_panel::ask_panel_limits,
+            updates::update_status,
+            updates::check_for_update,
+            updates::install_update,
+            updates::restart_to_update,
             ask_panel::copy_ask_text,
             ask_panel::insert_ask_text,
             commands::audio::list_input_devices,

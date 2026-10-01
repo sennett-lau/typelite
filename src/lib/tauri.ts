@@ -1076,3 +1076,36 @@ export async function startShortcutCapture(): Promise<void> {
 export async function stopShortcutCapture(): Promise<void> {
   return invoke('stop_shortcut_capture')
 }
+
+// Plan `auto-update`: in-app updates from GitHub Releases.
+
+/** Sent to every window when the update status changes. */
+export const UPDATE_STATUS_EVENT = 'update:status'
+
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'upToDate'; checkedAt: number }
+  | { state: 'available'; version: string; notes: string }
+  | { state: 'downloading'; version: string; downloaded: number; total: number | null }
+  | { state: 'ready'; version: string; notes: string }
+  | { state: 'failed'; message: string }
+  | { state: 'disabled' }
+
+export async function updateStatus(): Promise<UpdateStatus> {
+  return invoke('update_status')
+}
+
+/** Checks now; with automatic updates on, a newer version is downloaded too. */
+export async function checkForUpdate(): Promise<UpdateStatus> {
+  return invoke('check_for_update')
+}
+
+/** Downloads and installs the newer version; it runs after `restartToUpdate`. */
+export async function installUpdate(): Promise<UpdateStatus> {
+  return invoke('install_update')
+}
+
+export async function restartToUpdate(): Promise<void> {
+  return invoke('restart_to_update')
+}
