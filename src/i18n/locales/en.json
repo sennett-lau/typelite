@@ -128,8 +128,7 @@
       "failed": "The last test failed",
       "speechImpact": "Dictate, Translate and Ask need it.",
       "aiImpact": "Dictate pastes the raw transcript; Translate and Ask need it.",
-      "setUp": "Set up",
-      "otherOptions": "Other options"
+      "setUp": "Set up"
     },
     "speedCompare": {
       "speaking": "Speaking",

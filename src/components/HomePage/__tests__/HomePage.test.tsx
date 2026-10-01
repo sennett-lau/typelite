@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { translate } from '../../../test-utils/i18nMock'
 import { useAppStore } from '../../../stores/appStore'
@@ -79,7 +79,6 @@ describe('HomePage', () => {
   describe('Finish setup card', () => {
     it('shows a row per service that is not ready, each opening its Settings tab', async () => {
       render(<HomePage />)
-      await waitFor(() => expect(useSpeechSetupStore.getState().hardware).not.toBeNull())
 
       const card = screen.getByRole('region', { name: 'Finish setup' })
       expect(within(card).getByTestId('finish-setup-speech')).toHaveTextContent('Not set up yet')
@@ -87,12 +86,10 @@ describe('HomePage', () => {
         'Dictate pastes the raw transcript',
       )
 
-      // Speech: "Set up" starts the Built-in setup here with the first offered model
-      // (plan `two-tab-speech`); "Other options" opens Settings.
+      // "Set up" opens Settings for each service; nothing downloads from Home.
+      expect(within(card).queryByRole('button', { name: 'Other options' })).toBeNull()
       fireEvent.click(within(card).getByRole('button', { name: 'Set up: Speech recognition' }))
-      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('large-v3-turbo')
-      expect(window.location.hash).toBe('')
-      fireEvent.click(within(card).getByRole('button', { name: 'Other options' }))
+      expect(tauri.startSpeechSetup).not.toHaveBeenCalled()
       expect(window.location.hash).toBe('#/settings?pane=stt')
       fireEvent.click(within(card).getByRole('button', { name: 'Set up: AI polish service' }))
       expect(window.location.hash).toBe('#/settings?pane=llm')
@@ -114,19 +111,9 @@ describe('HomePage', () => {
       expect(screen.getByText('Downloading 49%')).toBeInTheDocument()
       expect(screen.getByText('Best accuracy · 287 of 574 MB')).toBeInTheDocument()
       expect(screen.getByText('10 MB/s · about 29 s left')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Set up: Speech recognition' })).toBeDisabled()
 
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
       expect(tauri.cancelSpeechSetup).toHaveBeenCalled()
-    })
-
-    it('"Set up" picks the only model an Intel Mac is offered', async () => {
-      vi.mocked(tauri.getSpeechHardware).mockResolvedValue(hardware(['small']))
-      render(<HomePage />)
-      await waitFor(() => expect(useSpeechSetupStore.getState().hardware).not.toBeNull())
-
-      fireEvent.click(screen.getByRole('button', { name: 'Set up: Speech recognition' }))
-      expect(tauri.startSpeechSetup).toHaveBeenCalledWith('small')
     })
 
     it('shows only the missing service and says when its last test failed', () => {
