@@ -31,6 +31,8 @@ building a feature.
   service is used only when the user opts in with their own key (plan `qwen-cloud-speech`).
 - Must be reliable and safe: no telemetry, no cloud sign-in, audio stays on the user's machines
   unless they choose such a service.
+- Updates (plan `auto-update`): the update check fetches only `latest.json` from GitHub Releases
+  (on by default, off in Settings → System → Updates) and sends nothing about the user.
 - "No history" is about content: Typelite never stores what the user said (audio, transcripts,
   answers, pasted text). It does keep run timings for Insights on Home: durations, sizes, preset
   ids/models, mode, outcome and language, the last 200 runs in `run-timings.json` in the app data

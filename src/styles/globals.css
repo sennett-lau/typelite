@@ -612,6 +612,29 @@ body,
     outline-offset: 2px;
   }
 
+  /* Plan `auto-update`: Home's bar when a new version is waiting. */
+  .update-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    border-radius: 11px;
+    background: var(--color-accent-light);
+    box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--color-accent) 35%, transparent);
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .update-bar-icon {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    flex: none;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    color: var(--color-bg-elevated);
+  }
+
   /* Small square icon button. */
   .btn-icon {
     display: grid;
