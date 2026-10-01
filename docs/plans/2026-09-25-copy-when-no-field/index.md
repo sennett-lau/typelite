@@ -38,6 +38,7 @@ Status: done — 2026-09-25
 | The window grows before the pill animates larger and shrinks only after it animated smaller; it hides after the hide animation | The native window must never clip the pill mid-animation. |
 | While hiding, the pill keeps what it last showed (for example "Done" or the Copy pill) | It slides away as it was instead of shrinking to a dot. |
 | The countdown ring still drains with reduced motion | It is information, not decoration. |
+| Typed (streamed) output checks that it landed: the focused field's length (`AXNumberOfCharacters`, else a string `AXValue`) is read before typing and after it (again after 250 ms if unchanged); readable both times and unchanged means the keys went nowhere, and the result goes to the Copy pill | Keystrokes report success wherever they go, so the focus check before typing cannot catch a field that does not take them; an unreadable length keeps the old behaviour, so apps without Accessibility values never get a false offer. A field that still holds one or two characters after many were typed is a code editor's hidden input (Monaco keeps the character before the caret, Ace a placeholder), which says nothing about the document, so it counts as unreadable (2026-09-30). |
 
 ## Parts
 

@@ -177,3 +177,17 @@ describe('Copy pill', () => {
     expect(useAppStore.getState().copyOffer).toBeNull()
   })
 })
+
+// Plan `ask-web-search`: the shell takes the wider searching pill, as the window does.
+describe('Ask pill while searching the web', () => {
+  afterEach(() => useAppStore.setState({ askStage: 'thinking' }))
+
+  it('widens the shell while Ask searches, then narrows for Thinking', () => {
+    useAppStore.setState({ pipelineState: 'ask_thinking', askStage: 'searching' })
+    render(<Capsule />)
+    expect(shell().style.width).toBe('176px')
+
+    act(() => useAppStore.setState({ askStage: 'thinking' }))
+    expect(shell().style.width).toBe('140px')
+  })
+})

@@ -1,7 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
-import { clearRunTimings, resetSpeedStats } from '../../lib/tauri'
+import {
+  checkForUpdate,
+  clearRunTimings,
+  installUpdate,
+  resetSpeedStats,
+  restartToUpdate,
+} from '../../lib/tauri'
+import { downloadPercent, useUpdateStatus } from '../../lib/updates'
 import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
 
@@ -80,6 +87,80 @@ function ResetSpeedStatsRow() {
 }
 
 /**
+ * Plan `auto-update`: this version, Check for updates, and what the last check found (with
+ * Update or Restart to update when a new version is waiting).
+ */
+function UpdateCheckRow() {
+  const { t } = useTranslation()
+  const [status, setStatus] = useUpdateStatus()
+  const [version, setVersion] = useState('')
+  useEffect(() => {
+    import('@tauri-apps/api/app')
+      .then(({ getVersion }) => getVersion())
+      .then(setVersion)
+      .catch(() => {})
+  }, [])
+
+  const run = (action: () => Promise<typeof status>) => {
+    action()
+      .then((next) => {
+        if (next) setStatus(next)
+      })
+      .catch((error) => setStatus({ state: 'failed', message: String(error) }))
+  }
+  const busy = status.state === 'checking' || status.state === 'downloading'
+  const percent = downloadPercent(status)
+
+  let line: string | null = null
+  if (status.state === 'checking') line = t('updates.checking')
+  if (status.state === 'upToDate') line = t('updates.upToDate')
+  if (status.state === 'available') line = t('updates.availableTitle', { version: status.version })
+  if (status.state === 'downloading')
+    line =
+      percent === null
+        ? t('updates.downloadingTitle', { version: status.version })
+        : `${t('updates.downloadingTitle', { version: status.version })} ${t('updates.downloadingPercent', { percent })}`
+  if (status.state === 'ready') line = t('updates.readyTitle', { version: status.version })
+  if (status.state === 'failed') line = t('updates.failed', { message: status.message })
+  if (status.state === 'disabled') line = t('updates.disabled')
+
+  return (
+    <Row
+      label={t('updates.version', { version: version || '…' })}
+      help={line ?? undefined}
+      testId="update-check-row"
+    >
+      {status.state === 'available' && (
+        <button type="button" className="btn-accent" onClick={() => run(installUpdate)}>
+          {t('updates.update')}
+        </button>
+      )}
+      {status.state === 'ready' && (
+        <button
+          type="button"
+          className="btn-accent"
+          onClick={() => {
+            restartToUpdate().catch(() => {})
+          }}
+        >
+          {t('updates.restart')}
+        </button>
+      )}
+      {status.state !== 'ready' && status.state !== 'available' && (
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => run(checkForUpdate)}
+          disabled={busy || status.state === 'disabled'}
+        >
+          {t('updates.check')}
+        </button>
+      )}
+    </Row>
+  )
+}
+
+/**
  * Settings → System: how Typelite sits in macOS. "Launch at login" is applied through the
  * autostart plugin when the settings are saved; "Show in Dock" switches the macOS activation
  * policy (see `apply_dock_visibility` in `src-tauri/src/lib.rs`).
@@ -108,6 +189,18 @@ export function SystemPane() {
             hideLabel
           />
         </Row>
+      </Group>
+      {/* Plan `auto-update`. */}
+      <Group label={t('updates.group')}>
+        <Row label={t('updates.auto')} help={t('updates.autoHint')}>
+          <Toggle
+            checked={config.auto_update ?? true}
+            onChange={(checked) => updateConfig({ auto_update: checked })}
+            label={t('updates.auto')}
+            hideLabel
+          />
+        </Row>
+        <UpdateCheckRow />
       </Group>
       <Group label={t('settings.systemInsights')}>
         {/* Plan `typing-speed-and-nudge`: typing speed for the speed row at the top of Insights. */}

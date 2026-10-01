@@ -35,13 +35,17 @@
     "routeDisabled": "This route is disabled",
     "searchOpened": "Opened {{provider}} search",
     "liveTitle": "Needs live information",
-    "liveBody": "This question needs up-to-date information from the web. Typelite can't look things up yet.",
+    "liveBody": "This question needs up-to-date information from the web. Web search is not set up; you can add a search server in Settings.",
     "answerAnyway": "Answer anyway",
     "close": "Close",
     "outOfDateNote": "May be out of date — no web search was used",
     "aboutSelection": "About “{{text}}”",
     "aboutSelectionHint": "Asking about the highlighted text",
-    "send": "Ask"
+    "send": "Ask",
+    "liveBodySearchFailed": "This question needs up-to-date information, but the web search did not work. Check the search server in Settings.",
+    "liveBodyNoResults": "This question needs up-to-date information, but the web search found nothing.",
+    "setUpWebSearch": "Set up web search",
+    "searchingWeb": "Searching the web…"
   },
   "askPanel": {
     "label": "Ask answer",
@@ -56,7 +60,18 @@
     "insertFailed": "Couldn't insert here. Use Copy instead.",
     "couldNotReplace": "This app didn't allow the replacement. The result is on your clipboard.",
     "tryReplacingAgain": "Try replacing again",
-    "errorTitle": "Something went wrong"
+    "errorTitle": "Something went wrong",
+    "sources": "Sources",
+    "sourcesCount_one": "{{count}} source",
+    "sourcesCount_other": "{{count}} sources",
+    "hideSources": "Hide sources",
+    "showSource": "Show source {{n}}",
+    "open": "Open",
+    "opened": "Opened",
+    "copyLink": "Copy link",
+    "linkCopied": "Copied",
+    "copySourceLink": "Copy link of source {{n}}",
+    "openSource": "Open source {{n}}"
   },
   "errors": {
     "stt_timeout": "The speech server did not answer within {{details}}. Check that it is running, or try a faster server.",
@@ -113,8 +128,7 @@
       "failed": "The last test failed",
       "speechImpact": "Dictate, Translate and Ask need it.",
       "aiImpact": "Dictate pastes the raw transcript; Translate and Ask need it.",
-      "setUp": "Set up",
-      "otherOptions": "Other options"
+      "setUp": "Set up"
     },
     "speedCompare": {
       "speaking": "Speaking",
@@ -289,7 +303,9 @@
       "translate": "Translate",
       "translateSub": "Speak, and get it written in another language.",
       "ask": "Ask Anything",
-      "askSub": "Ask a question, or change selected text by voice."
+      "askSub": "Ask a question, or change selected text by voice.",
+      "webSearch": "Web search",
+      "webSearchSub": "Optional: lets Ask anything look up news, scores and schedules."
     },
     "layout": {
       "back": "Back",
@@ -549,7 +565,8 @@
     "polishStyleMinimalDetail": "Fix only",
     "polishStyleCleanDetail": "Default",
     "polishStyleStructuredDetail": "Lists",
-    "polishStyleProfessionalDetail": "Formal"
+    "polishStyleProfessionalDetail": "Formal",
+    "search": "Search"
   },
   "contextFamilies": {
     "email": "Email",
@@ -935,7 +952,9 @@
     "ai": "AI",
     "ok": "Working",
     "error": "The last test or request failed",
-    "unknown": "Not checked yet"
+    "unknown": "Not checked yet",
+    "search": "Search",
+    "off": "Off"
   },
   "tour": {
     "title": "Speech and AI are ready. Try the three shortcuts now?",
@@ -1093,5 +1112,88 @@
         "needs_disk_space": "Not enough free space for the larger model."
       }
     }
+  },
+  "webSearch": {
+    "group": "Web search for Ask",
+    "title": "Search provider",
+    "help": "Ask anything looks up questions about news, scores, schedules or prices on the web. Off until you set it up.",
+    "onboardingTitle": "Web search for Ask (optional)",
+    "provider": "Provider",
+    "key": "Key",
+    "keyPlaceholder": "Optional. SearXNG needs none",
+    "keySaved": "Saved in the Keychain. Type to replace",
+    "privacy": "Your question is sent to this server when Ask needs live information.",
+    "howToRun": "How to run SearXNG",
+    "works": "Works: {{count}} results in {{time}}",
+    "save": "Save",
+    "saved": "Saved. Ask searches live questions now.",
+    "remove": "Turn off web search",
+    "removed": "Web search is off.",
+    "removeKey": "Remove key",
+    "optional": "Optional",
+    "uses": "Search uses",
+    "builtin": "Built-in",
+    "builtinDetail": "Typelite sets up SearXNG on this Mac",
+    "recommended": "Recommended",
+    "own": "Your own SearXNG",
+    "ownDetail": "An address on your network, and an optional key",
+    "setupTitle": "Set up SearXNG on this Mac",
+    "setupBody": "Typelite downloads SearXNG, a free search engine that asks several search engines at once, with its own copy of Python. About 230 MB, from GitHub. It runs only on this Mac and only while Typelite is open.",
+    "setupLicence": "SearXNG is separate open-source software (AGPL), downloaded when you press Set up.",
+    "setup": "Set up",
+    "settingUp": "Setting up SearXNG…",
+    "settingUpTime": "about a minute",
+    "settingUpLeave": "You can leave this page; it finishes in the background.",
+    "settingUpGoOn": "You can go on; it finishes in the background.",
+    "stepDownloadingUv": "Download uv (the installer)",
+    "stepInstallingPython": "Install Python",
+    "stepDownloadingSearxng": "Download SearXNG",
+    "stepInstallingLibraries": "Install its libraries",
+    "stepStarting": "Start and test",
+    "downloadedOf": "{{done}} of {{total}} MB",
+    "failedTitle": "Setup did not finish",
+    "failed": "Failed",
+    "failedKept": "Nothing is left half-installed.",
+    "tryAgain": "Try again",
+    "readyTitle": "SearXNG on this Mac",
+    "running": "Running",
+    "startsWhenNeeded": "Starts when needed",
+    "version": "Version",
+    "address": "Address",
+    "thisMacOnly": "this Mac only",
+    "lastTest": "Last test",
+    "checkUpdates": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "Up to date.",
+    "updateAvailable": "Update available",
+    "updateWhy": "Search engines change often; updates keep results coming.",
+    "update": "Update",
+    "updating": "Updating SearXNG…",
+    "removeBuiltin": "Remove…",
+    "removeConfirm": "Remove SearXNG? This frees about 230 MB and turns web search off.",
+    "removeYes": "Remove",
+    "cancel": "Cancel",
+    "useBuiltin": "Use Built-in",
+    "builtinSelected": "Ask searches with Built-in now."
+  },
+  "updates": {
+    "group": "Updates",
+    "auto": "Update automatically",
+    "autoHint": "Checks GitHub for a new version when Typelite starts and every 6 hours, downloads it in the background, and asks you to restart. Only the version file is requested; nothing about you or what you say is sent.",
+    "version": "Typelite {{version}}",
+    "check": "Check for updates",
+    "checking": "Checking for updates…",
+    "upToDate": "You have the newest version.",
+    "availableTitle": "Typelite {{version}} is available.",
+    "availableBody": "Update to get the latest fixes and features.",
+    "update": "Update",
+    "downloadingTitle": "Downloading Typelite {{version}}…",
+    "downloading": "This takes a moment.",
+    "downloadingPercent": "{{percent}}%",
+    "readyTitle": "Typelite {{version}} is ready.",
+    "readyBody": "Restart to start using it. If a shortcut stops working after the update, turn Typelite off and on again in Privacy & Security → Accessibility.",
+    "restart": "Restart to update",
+    "failed": "The update did not work: {{message}}",
+    "disabled": "The development build does not update itself."
   }
 }

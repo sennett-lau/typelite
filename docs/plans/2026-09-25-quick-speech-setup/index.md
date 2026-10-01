@@ -26,7 +26,7 @@ Status: agreed — 2026-09-25
 | Default model `large-v3-turbo` quantised (about 574 MB); offer "Smaller and faster" `small` (about 190 MB) | Best accuracy by default, with a lighter choice for slower Macs or disks. |
 | Models live in `~/Library/Application Support/dev.typelite.mac/models/` | App data, removed with the app's data; visible in Settings with a delete button. |
 | The model loads on first use and unloads after 10 minutes idle | Keeps memory low when the user is not dictating. |
-| Quick setup is offered wherever speech is not ready: onboarding Speech step, Home "Finish setup" card, Settings → Speech | The same one button everywhere. |
+| Quick setup is offered wherever speech is not ready: onboarding Speech step, ~~Home "Finish setup" card~~, Settings → Speech (since 2026-09-30 Home's Set up opens Settings → Speech instead of downloading) | The same one button everywhere; from Home a download without the model choice surprised. |
 | After setup, a built-in preset "Built-in (this Mac)" is created, selected and marked ready after an automatic test | No extra steps. |
 
 ## Parts

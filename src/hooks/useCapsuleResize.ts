@@ -69,6 +69,11 @@ export function translateRecordingSize({ nameWidth, dots }: TranslatePillMetrics
  */
 export const WORKING_PILL_SIZE: CapsuleSize = { width: 140, height: PILL_HEIGHT }
 /**
+ * Plan `ask-web-search`: Ask's "Searching the web…" is longer than the other working labels
+ * ("Transcribing", "Thinking"), so the pill is wider while Ask searches.
+ */
+export const ASK_SEARCHING_PILL_SIZE: CapsuleSize = { width: 176, height: PILL_HEIGHT }
+/**
  * Plan `quiet-no-speech`: the calm fade after a run that heard no speech. No content, a little
  * narrower than the working pill it follows.
  */
@@ -157,6 +162,8 @@ export function getPillSize(
     case 'ask_thinking':
     case 'done':
       return WORKING_PILL_SIZE
+    case 'ask_searching':
+      return ASK_SEARCHING_PILL_SIZE
     default:
       return IDLE_SIZE
   }
@@ -381,7 +388,8 @@ export function capsuleOrigin(anchor: CapsuleAnchor, windowWidth: number, window
 }
 
 export function getSizeForState(
-  state: PipelineState,
+  /** A pipeline state, or `ask_searching` (Ask thinking while it searches the web). */
+  state: PipelineState | 'ask_searching',
   expanded: boolean,
   hasError: boolean,
   contextMenuOpen: boolean,
@@ -449,7 +457,12 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const translateNameWidth = translatePill.nameWidth
   const translateDots = translatePill.dots
   const copyOffer = useAppStore((s) => s.copyOffer)
+  // The highlight chip needs the wider pill.
   const askWithSelection = useAppStore((s) => s.askSelectionPreview !== null)
+  // Only for the size: Ask's thinking state while it searches the web has the wider pill.
+  const askSearching = useAppStore((s) => s.askStage === 'searching')
+  const sizeState =
+    pipelineState === 'ask_thinking' && askSearching ? 'ask_searching' : pipelineState
   const typingNudge = useAppStore((s) => s.typingNudge)
   const quietFade = useAppStore((s) => s.quietFade)
   const anchor = useRef<CapsuleAnchor | null>(null)
@@ -479,7 +492,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
 
   useEffect(() => {
     const size = getSizeForState(
-      pipelineState,
+      sizeState,
       capsuleExpanded,
       hasError,
       contextMenuOpen,
@@ -597,6 +610,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
     doneFlash,
     copyOffer,
     askWithSelection,
+    sizeState,
     typingNudge,
     quietFade,
     shouldShow,
@@ -659,7 +673,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   }, [shouldShow, fadeTarget])
 
   return getSizeForState(
-    pipelineState,
+    sizeState,
     capsuleExpanded,
     hasError,
     contextMenuOpen,

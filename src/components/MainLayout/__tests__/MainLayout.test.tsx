@@ -153,11 +153,48 @@ describe('MainLayout', () => {
     expect(status).toHaveTextContent(`status.speech · ${speech.name}`)
     expect(status).toHaveTextContent(`status.ai · ${ai.name}`)
     const dots = status.querySelectorAll('.status-dot')
-    expect(Array.from(dots).map((dot) => dot.getAttribute('data-state'))).toEqual(['ok', 'unknown'])
+    expect(Array.from(dots).map((dot) => dot.getAttribute('data-state'))).toEqual([
+      'ok',
+      'unknown',
+      'off',
+    ])
 
     act(() => {
       useAppStore.setState({ aiHealth: { presetId: ai.id, ok: false } })
     })
     expect(status.querySelectorAll('.status-dot')[1]).toHaveAttribute('data-state', 'error')
+  })
+
+  it('shows web search as a third line: Off, then Built-in with its last result', () => {
+    useAppStore.setState(useAppStore.getInitialState())
+    render(
+      <MainLayout>
+        <div>content</div>
+      </MainLayout>,
+    )
+    const status = screen.getByTestId('connection-status')
+    expect(status).toHaveTextContent('status.search · status.off')
+
+    const { config } = useAppStore.getState()
+    act(() => {
+      useAppStore.setState({
+        config: { ...config, web_search: { provider: 'builtin', base_url: '' } },
+        searchHealth: { presetId: 'builtin', ok: true },
+      })
+    })
+    expect(status).toHaveTextContent('status.search · webSearch.builtin')
+    expect(status.querySelectorAll('.status-dot')[2]).toHaveAttribute('data-state', 'ok')
+
+    // A result for another server does not colour the dot of the one in use.
+    act(() => {
+      useAppStore.setState({
+        config: {
+          ...config,
+          web_search: { provider: 'searxng', base_url: 'http://10.0.0.2:8888' },
+        },
+      })
+    })
+    expect(status).toHaveTextContent('status.search · 10.0.0.2:8888')
+    expect(status.querySelectorAll('.status-dot')[2]).toHaveAttribute('data-state', 'unknown')
   })
 })

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { MAX_TRANSLATION_TARGETS, canonicalTranslationCode } from '../lib/constants'
 import { compactKeyLabel, fullKeyLabel } from '../lib/keyLabels'
+import type { WebSearchConfig } from '../lib/tauri'
 
 export type PipelineState =
   | 'idle'
@@ -447,6 +448,8 @@ export interface AppConfig {
   show_in_dock: boolean
   /** Mute the default output device while recording (Settings → General → Audio). */
   mute_output_while_recording: boolean
+  /** Plan `auto-update`: check for, download and offer updates by itself (on by default). */
+  auto_update: boolean
   /** Version of the built-in preset templates in this config (backend migration marker). */
   builtin_presets_version: number
   /** The three-shortcut tour (onboarding Dictate, Translate, Ask steps) was finished. */
@@ -458,6 +461,11 @@ export interface AppConfig {
    * typing nudge. Which keys are pressed is never stored.
    */
   measure_typing_speed: boolean
+  /**
+   * Plan `ask-web-search`: the search provider Ask uses for live questions. Saved by its own
+   * section (Settings -> AI polish), not the Save bar.
+   */
+  web_search: WebSearchConfig
 }
 
 /** A Settings pane a setup message can open. */
@@ -496,6 +504,9 @@ interface AppState {
    */
   askSelectionPreview: string | null
   setAskSelectionPreview: (preview: string | null) => void
+  /** Plan `ask-web-search`: what the Ask thinking pill says (searching the web, or thinking). */
+  askStage: 'searching' | 'thinking'
+  setAskStage: (stage: 'searching' | 'thinking') => void
 
   // Recording
   audioVolume: number
@@ -587,6 +598,9 @@ interface AppState {
   setSpeechHealth: (health: EndpointHealth | null) => void
   aiHealth: EndpointHealth | null
   setAiHealth: (health: EndpointHealth | null) => void
+  /** Plan `searxng-setup`: the search provider's last Test or search; `presetId` is its key. */
+  searchHealth: EndpointHealth | null
+  setSearchHealth: (health: EndpointHealth | null) => void
 
   // LLM model list cache (persists across tab switches)
 
@@ -1218,7 +1232,7 @@ function syncHotkeyConfig(previous: AppConfig, partial: Partial<AppConfig>): App
 }
 
 /** Onboarding step index of the Dictate tutorial, the first step of the shortcut tour. */
-export const SHORTCUT_TOUR_FIRST_STEP = 4
+export const SHORTCUT_TOUR_FIRST_STEP = 5
 
 const defaultConfig: AppConfig = {
   speech_presets: BUILTIN_SPEECH_PRESETS.map((preset) => ({ ...preset })),
@@ -1280,10 +1294,12 @@ const defaultConfig: AppConfig = {
   input_device: '',
   show_in_dock: true,
   mute_output_while_recording: false,
+  auto_update: true,
   builtin_presets_version: 1,
   shortcut_tour_completed: false,
   shortcut_tour_prompt_dismissed: false,
   measure_typing_speed: true,
+  web_search: { provider: 'none', base_url: '' },
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -1293,6 +1309,8 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveVoiceMode: (activeVoiceMode) => set({ activeVoiceMode }),
   askSelectionPreview: null,
   setAskSelectionPreview: (askSelectionPreview) => set({ askSelectionPreview }),
+  askStage: 'thinking',
+  setAskStage: (askStage) => set({ askStage }),
 
   audioVolume: 0,
   setAudioVolume: (audioVolume) => set({ audioVolume }),
@@ -1373,6 +1391,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSpeechHealth: (speechHealth) => set({ speechHealth }),
   aiHealth: null,
   setAiHealth: (aiHealth) => set({ aiHealth }),
+  searchHealth: null,
+  setSearchHealth: (searchHealth) => set({ searchHealth }),
 
   pipelineError: null,
   pipelineErrorAction: null,
