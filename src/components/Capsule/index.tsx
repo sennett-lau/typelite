@@ -33,12 +33,13 @@ const DONE_FLASH_MS = 500
  */
 export const QUIET_MS = 620
 /**
- * Plan `copy-when-no-field` content cross-fade: the old content fades out while the new one fades
- * in.
+ * Plan `copy-when-no-field` content change: the old content fades out, then the new one fades in.
+ * They never overlap: both sit in the same place, so two labels fading at once ("Pasting" over
+ * "Done") read as a smudge.
  */
 const EASE = [0.2, 0, 0, 1] as const
-const CONTENT_ENTER = { duration: 0.22, delay: 0.06, ease: EASE }
-const CONTENT_EXIT = { duration: 0.14, ease: 'easeIn' as const }
+const CONTENT_EXIT = { duration: 0.1, ease: 'easeIn' as const }
+const CONTENT_ENTER = { duration: 0.2, delay: CONTENT_EXIT.duration, ease: EASE }
 /** The aurora light fades in quickly and out slowly instead of cutting. */
 const AURORA_FADE_IN = { duration: 0.15, ease: 'easeOut' as const }
 const AURORA_FADE_OUT = { duration: 0.3, ease: 'easeOut' as const }
@@ -213,7 +214,8 @@ export function Capsule() {
   const doneFlash = useDoneFlash(pipelineState, hasError)
   useQuietFadeTimer(quietFade)
   useCapsuleResize(doneFlash, rootRef)
-  const askSearching = useAppStore((s) => s.askStage === 'searching')
+  const askSearching = useAppStore((s) => s.askSearched)
+  const askSearchingNow = useAppStore((s) => s.askStage === 'searching')
 
   const liveState = getCapsuleState(
     pipelineState,
@@ -364,12 +366,14 @@ export function Capsule() {
     >
       {/* Persistent outer shell — the dark glass pill. Its width, height and corners animate
           with CSS (`.pill` in globals.css); hiding slides it down and fades it (`.pill-gone`).
-          It is centred in the window (left 50%, then back by half its own width), so while its
-          width animates it grows on both sides, as the window does. */}
+          The root's flex layout centres it, so while its width animates it grows on both sides,
+          as the window does. Not `left: 50%` plus `translate(-50%)`: WebKit keeps that
+          percentage from the start of the animation, so the pill grew to the right and then
+          snapped back to the centre. */}
       <div
-        className={`pill absolute left-1/2 -translate-x-1/2 rounded-full pointer-events-auto shrink-0 ${
+        className={`pill rounded-full pointer-events-auto shrink-0 ${
           capsuleState === 'error' ? 'pill-error' : ''
-        } ${capsuleState === 'nudge' ? 'pill-nudge' : ''} ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
+        } ${capsuleState === 'nudge' ? 'pill-nudge' : ''} ${capsuleState === 'quiet' ? 'pill-quiet' : ''} ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
         style={{ ...capsuleShellSize, borderRadius: capsuleShellSize.height / 2 }}
         data-testid="capsule-shell"
         data-visible={visible}
@@ -405,7 +409,11 @@ export function Capsule() {
         </AnimatePresence>
         <AnimatePresence mode="sync" initial={false}>
           <motion.div
-            key={capsuleState}
+            key={
+              // Plan `ask-web-search`: "Thinking" and "Searching the web…" cross-fade like
+              // any other change; swapping the label in place cut it short for a frame.
+              capsuleState === 'ask_thinking' && askSearchingNow ? 'ask_searching' : capsuleState
+            }
             className="absolute inset-0"
             initial={reducedMotion ? { opacity: 0 } : { opacity: 0, filter: 'blur(3px)', y: 2 }}
             animate={{
@@ -429,7 +437,7 @@ export function Capsule() {
             {capsuleState === 'ask_recording' && (
               <CapsuleAskRecording selectionPreview={askSelectionPreview} />
             )}
-            {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
+            {capsuleState === 'ask_thinking' && <CapsuleAskThinking searching={askSearchingNow} />}
             {capsuleState === 'error' && (
               <CapsuleError
                 message={shown.current.error}

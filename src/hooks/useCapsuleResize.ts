@@ -126,6 +126,10 @@ export function copyPillSize(offer: CopyOffer | null): CapsuleSize {
  */
 export const PILL_RESIZE_MS = 280
 export const PILL_HIDE_MS = 220
+/** The calm fade's slower shrink (`.pill-quiet` in globals.css, plan `quiet-no-speech`). */
+export const PILL_QUIET_RESIZE_MS = 400
+/** The window outlasts the hide animation by a frame or two, so its last frame is not cut. */
+const PILL_HIDE_MARGIN_MS = 40
 
 /**
  * The pill's own size (without the context menu or window padding) for a capsule state.
@@ -243,7 +247,20 @@ export function getCapsuleFocusable(): boolean {
 export const PILL_BOTTOM_GAP = 16
 /** Transparent room the capsule window adds around the pill on each side. */
 export const CAPSULE_WINDOW_PADDING = 12
+/**
+ * The capsule window keeps one width for every pill state (the widest pill, the nudge, plus its
+ * padding); only the pill inside it changes width. Resizing the window as the pill changed made
+ * macOS show one frame of the old picture at the new window position, so the whole pill jumped
+ * sideways by half the change (recorded: 10 pt when Ask's pill narrowed for "Thinking", 18 pt
+ * when it widened for "Searching the web…"). The empty part of the window is transparent; it
+ * takes clicks only while the pill shows.
+ */
+export const CAPSULE_WINDOW_WIDTH = NUDGE_PILL_SIZE.width + 2 * CAPSULE_WINDOW_PADDING
 
+/** The capsule window's width for a pill (or menu) of `contentWidth`. */
+export function capsuleWindowWidth(contentWidth: number): number {
+  return Math.max(CAPSULE_WINDOW_WIDTH, contentWidth + 2 * CAPSULE_WINDOW_PADDING)
+}
 interface MonitorGeometry {
   position: { x: number; y: number }
   size: { width: number; height: number }
@@ -460,7 +477,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   // The highlight chip needs the wider pill.
   const askWithSelection = useAppStore((s) => s.askSelectionPreview !== null)
   // Only for the size: Ask's thinking state while it searches the web has the wider pill.
-  const askSearching = useAppStore((s) => s.askStage === 'searching')
+  const askSearching = useAppStore((s) => s.askSearched)
   const sizeState =
     pipelineState === 'ask_thinking' && askSearching ? 'ask_searching' : pipelineState
   const typingNudge = useAppStore((s) => s.typingNudge)
@@ -505,7 +522,7 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       typingNudge,
       quietFade,
     )
-    const windowWidth = size.width + 2 * CAPSULE_WINDOW_PADDING
+    const windowWidth = capsuleWindowWidth(size.width)
     const windowHeight = size.height + 2 * CAPSULE_WINDOW_PADDING
     const myGeneration = ++generation.current
     wake.current()
@@ -568,18 +585,25 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
         }
       }
 
-      // Hiding: keep the window while the pill slides down and fades out.
-      if (!shouldShow && visible.current && !(await pause(PILL_HIDE_MS))) return
+      // Hiding: keep the window while the pill slides down and fades out, then hide it before
+      // it shrinks to the idle size. Shrinking a still-visible window cut the fading pill.
+      if (!shouldShow) {
+        if (visible.current && !(await pause(PILL_HIDE_MS + PILL_HIDE_MARGIN_MS))) return
+        await win.hide().catch(() => {})
+        visible.current = false
+        await applySize(windowWidth, windowHeight)
+        return
+      }
 
       // Shrinking while visible: grow what grows now, shrink the rest after the pill animated.
       const next = { width: windowWidth, height: windowHeight }
       const first =
-        shouldShow && visible.current && !appearing && !prefersReducedMotion()
+        visible.current && !appearing && !prefersReducedMotion()
           ? growFirstSize(windowSizeNow.current, next)
           : null
       if (first) {
         await applySize(first.width, first.height)
-        if (!(await pause(PILL_RESIZE_MS))) return
+        if (!(await pause(quietFade ? PILL_QUIET_RESIZE_MS : PILL_RESIZE_MS))) return
       }
       await applySize(windowWidth, windowHeight)
 
@@ -588,12 +612,8 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
         setContextMenuReady(true)
       }
 
-      if (shouldShow) {
-        await win.show().catch(() => {})
-      } else {
-        await win.hide().catch(() => {})
-      }
-      visible.current = shouldShow
+      await win.show().catch(() => {})
+      visible.current = true
     }
 
     // Serialize window updates; overlapping async resizes interleave setSize/setPosition.

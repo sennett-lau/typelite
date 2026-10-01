@@ -43,7 +43,7 @@
     "aboutSelectionHint": "Asking about the highlighted text",
     "send": "Ask",
     "liveBodySearchFailed": "This question needs up-to-date information, but the web search did not work. Check the search server in Settings.",
-    "liveBodyNoResults": "This question needs up-to-date information, but the web search found nothing.",
+    "liveBodyNoResults": "This question needs up-to-date information, but the search results did not contain enough information to answer.",
     "setUpWebSearch": "Set up web search",
     "searchingWeb": "Searching the web…"
   },

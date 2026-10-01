@@ -360,11 +360,7 @@ fn current_anchor(
 /// new size in the old place (it is centred on the pill, so that would be a sideways jump
 /// each time the sources column opens or closes). Same as `set_capsule_frame` in lib.rs.
 fn apply_frame(window: &tauri::WebviewWindow, frame: LogicalRect) {
-    let target = window.clone();
-    let _ = window.run_on_main_thread(move || {
-        let _ = target.set_size(tauri::LogicalSize::new(frame.width, frame.height));
-        let _ = target.set_position(tauri::LogicalPosition::new(frame.x, frame.y));
-    });
+    crate::overlay_window::set_frame(&window, frame.x, frame.y, frame.width, frame.height);
 }
 
 /// Places the Ask window above the pill and shows it without taking focus from the frontmost

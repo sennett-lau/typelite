@@ -15,11 +15,20 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+pub mod schedule;
+
+#[derive(Clone, Copy)]
+pub enum SearchFocus {
+    General,
+    News,
+    Upcoming(chrono::NaiveDate),
+}
+
 /// How long one search request may take.
 pub const SEARCH_TIMEOUT: Duration = Duration::from_secs(4);
 /// Results given to the AI (and shown as sources).
 pub const MAX_RESULTS: usize = 5;
-/// How many of those come from the news category, when it has any.
+/// How many results are reserved for news when the question is about news.
 const NEWS_RESULTS: usize = 2;
 /// Characters of a result's snippet given to the AI.
 pub const MAX_SNIPPET_CHARS: usize = 400;
@@ -272,18 +281,33 @@ pub fn parse_searxng(body: &Value) -> Result<Vec<SearchResult>, SearchError> {
     Ok(results)
 }
 
-/// Plan `ask-web-search` (experiment): the general category finds schedules and official
-/// pages; the news category finds what changed this week (a moved race, today's headlines).
-/// The top news results go first, then general ones, without duplicates, `MAX_RESULTS` at most.
-pub fn merge_results(news: Vec<SearchResult>, general: Vec<SearchResult>) -> Vec<SearchResult> {
-    let mut merged: Vec<SearchResult> = news.into_iter().take(NEWS_RESULTS).collect();
-    for result in general {
-        if merged.len() >= MAX_RESULTS {
-            break;
-        }
+/// Schedules, prices and weather need general results first; only news questions reserve
+/// the first slots for headlines. Either category fills gaps when the other has few results.
+pub fn merge_results(
+    news: Vec<SearchResult>,
+    general: Vec<SearchResult>,
+    focus: SearchFocus,
+) -> Vec<SearchResult> {
+    let split = if matches!(focus, SearchFocus::News) {
+        NEWS_RESULTS.min(news.len())
+    } else {
+        0
+    };
+    let mut news = news.into_iter();
+    let first: Vec<_> = news.by_ref().take(split).collect();
+    let mut merged: Vec<SearchResult> = Vec::new();
+    for result in first.into_iter().chain(general).chain(news) {
         if !merged.iter().any(|kept| kept.url == result.url) {
             merged.push(result);
         }
+    }
+    if let SearchFocus::Upcoming(today) = focus {
+        // Search often ranks an undated calendar landing page above the event's actual
+        // schedule. Rank the whole returned list before capping the AI's five snippets.
+        merged.sort_by_cached_key(|result| {
+            let date = schedule::first_future_date(result, today);
+            (date.is_none(), date)
+        });
     }
     merged.truncate(MAX_RESULTS);
     merged
@@ -351,6 +375,7 @@ pub async fn search_with_timeout(
     config: &WebSearchConfig,
     api_key: &str,
     query: &str,
+    focus: SearchFocus,
     timeout: Duration,
 ) -> Result<SearchOutcome, SearchError> {
     if !config.is_configured() {
@@ -363,14 +388,14 @@ pub async fn search_with_timeout(
         searxng_category(client, base_url, api_key, query, "news", timeout),
     );
     let results = match (general, news) {
-        (Ok(general), Ok(news)) => merge_results(news, general),
+        (Ok(general), Ok(news)) => merge_results(news, general, focus),
         (Ok(general), Err(error)) => {
             tracing::info!("Web search: news category failed ({})", error.code());
-            merge_results(Vec::new(), general)
+            merge_results(Vec::new(), general, focus)
         }
         (Err(error), Ok(news)) => {
             tracing::info!("Web search: general category failed ({})", error.code());
-            news.into_iter().take(MAX_RESULTS).collect()
+            merge_results(news, Vec::new(), focus)
         }
         (Err(error), Err(_)) => return Err(error),
     };
@@ -386,9 +411,10 @@ pub async fn search(
     config: &WebSearchConfig,
     api_key: &str,
     query: &str,
+    focus: SearchFocus,
 ) -> Result<SearchOutcome, SearchError> {
     let config = config.resolved(client).await?;
-    search_with_timeout(client, &config, api_key, query, SEARCH_TIMEOUT).await
+    search_with_timeout(client, &config, api_key, query, focus, SEARCH_TIMEOUT).await
 }
 
 /// Settings → Test: one general search for a fixed word, so the user's own words never leave
@@ -425,11 +451,11 @@ pub fn answer_messages(question: &str, results: &[SearchResult], today: &str) ->
         // `<` and `>` are removed so a result cannot close the block.
         let clean = |text: &str| text.replace(['<', '>'], " ");
         blocks.push(format!(
-            "[{}] {}\nURL: {}\nDate: {}\n{}",
+            "[{}] {}\nURL: {}\nPage published (not an event date): {}\nSnippet: {}",
             index + 1,
             clean(&result.title),
             clean(&result.url),
-            result.published_date.as_deref().unwrap_or("unknown"),
+            clean(result.published_date.as_deref().unwrap_or("unknown")),
             clean(&result.snippet),
         ));
     }
@@ -706,7 +732,7 @@ mod tests {
     fn merge_puts_two_news_results_first_then_general_without_duplicates() {
         let news = vec![result(1), result(2), result(3)];
         let general = vec![result(2), result(4), result(5), result(6), result(7)];
-        let merged = merge_results(news, general);
+        let merged = merge_results(news, general, SearchFocus::News);
         let urls: Vec<&str> = merged.iter().map(|r| r.url.as_str()).collect();
         assert_eq!(
             urls,
@@ -718,7 +744,10 @@ mod tests {
                 "https://example.com/6"
             ]
         );
-        assert_eq!(merge_results(Vec::new(), vec![result(1)]).len(), 1);
+        assert_eq!(
+            merge_results(Vec::new(), vec![result(1)], SearchFocus::General).len(),
+            1
+        );
     }
 
     #[test]
@@ -744,8 +773,46 @@ mod tests {
         assert!(user.contains("Question (asked today, Tuesday 29 September 2026):"));
         assert_eq!(user.matches("<search_results>").count(), 1);
         assert_eq!(user.matches("</search_results>").count(), 1);
-        assert!(user.contains("[1] Title 1\nURL: https://example.com/1\nDate: unknown"));
+        assert!(user.contains(
+            "[1] Title 1\nURL: https://example.com/1\nPage published (not an event date): unknown"
+        ));
         assert!(user.trim_end().ends_with("where is the next F1 race"));
+    }
+
+    #[test]
+    fn schedules_keep_general_results_first_and_news_fill_empty_slots() {
+        let merged = merge_results(
+            vec![result(1), result(2)],
+            vec![result(2), result(3)],
+            SearchFocus::General,
+        );
+        assert_eq!(merged, vec![result(2), result(3), result(1)]);
+        let news = (1..=5).map(result).collect::<Vec<_>>();
+        assert_eq!(
+            merge_results(news.clone(), Vec::new(), SearchFocus::General),
+            news
+        );
+        let general = (6..=10).map(result).collect::<Vec<_>>();
+        assert_eq!(
+            merge_results(vec![result(1)], general.clone(), SearchFocus::General),
+            general
+        );
+    }
+
+    #[test]
+    fn upcoming_search_ranks_dates_before_discarding_lower_results() {
+        let mut general = (1..=7).map(result).collect::<Vec<_>>();
+        general[0].snippet = "Oct 1, 2004 · A race calendar for 2026".into();
+        general[5].snippet = "Other GP October 11, 2026".into();
+        general[6].snippet = "Next GP 2026年10月2日至4日".into();
+        let merged = merge_results(
+            Vec::new(),
+            general,
+            SearchFocus::Upcoming(chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap()),
+        );
+        assert_eq!(merged.len(), MAX_RESULTS);
+        assert_eq!(merged[0].url, "https://example.com/7");
+        assert_eq!(merged[1].url, "https://example.com/6");
     }
 
     #[test]
@@ -797,9 +864,15 @@ mod tests {
     async fn search_merges_both_categories_and_sends_the_optional_key() {
         let (base, seen) = fake_searxng((200, GENERAL), (200, NEWS)).await;
         let client = reqwest::Client::new();
-        let outcome = search(&client, &searxng(&base), "secret-token", "next f1 race")
-            .await
-            .unwrap();
+        let outcome = search(
+            &client,
+            &searxng(&base),
+            "secret-token",
+            "next f1 race",
+            SearchFocus::News,
+        )
+        .await
+        .unwrap();
         let urls: Vec<&str> = outcome.results.iter().map(|r| r.url.as_str()).collect();
         assert_eq!(
             urls,
@@ -807,7 +880,8 @@ mod tests {
                 "https://news.example/moved",
                 "https://example.com/shared",
                 "https://www.espn.com/f1/schedule",
-                "https://www.formula1.com/en/racing/2026"
+                "https://www.formula1.com/en/racing/2026",
+                "https://news.example/old"
             ]
         );
         let seen = seen.lock().unwrap();
@@ -821,7 +895,9 @@ mod tests {
     async fn search_without_a_key_sends_no_authorization() {
         let (base, seen) = fake_searxng((200, GENERAL), (200, NEWS)).await;
         let client = reqwest::Client::new();
-        search(&client, &searxng(&base), "", "q").await.unwrap();
+        search(&client, &searxng(&base), "", "q", SearchFocus::General)
+            .await
+            .unwrap();
         assert!(seen
             .lock()
             .unwrap()
@@ -833,7 +909,9 @@ mod tests {
     async fn one_failing_category_still_gives_results() {
         let (base, _) = fake_searxng((200, GENERAL), (500, "oops")).await;
         let client = reqwest::Client::new();
-        let outcome = search(&client, &searxng(&base), "", "q").await.unwrap();
+        let outcome = search(&client, &searxng(&base), "", "q", SearchFocus::General)
+            .await
+            .unwrap();
         assert_eq!(outcome.results.len(), 3);
         assert_eq!(outcome.results[0].url, "https://www.espn.com/f1/schedule");
     }
@@ -842,7 +920,9 @@ mod tests {
     async fn json_turned_off_is_reported_clearly() {
         let (base, _) = fake_searxng((403, "Forbidden"), (403, "Forbidden")).await;
         let client = reqwest::Client::new();
-        let error = search(&client, &searxng(&base), "", "q").await.unwrap_err();
+        let error = search(&client, &searxng(&base), "", "q", SearchFocus::General)
+            .await
+            .unwrap_err();
         assert_eq!(error, SearchError::JsonDisabled);
         assert!(error.user_message().contains("formats"));
         let error = test_provider(&client, &searxng(&base), "")
@@ -856,20 +936,34 @@ mod tests {
         let (base, _) = fake_searxng((200, "<html>hi</html>"), (200, "<html>hi</html>")).await;
         let client = reqwest::Client::new();
         assert_eq!(
-            search(&client, &searxng(&base), "", "q").await.unwrap_err(),
+            search(&client, &searxng(&base), "", "q", SearchFocus::General)
+                .await
+                .unwrap_err(),
             SearchError::NotJson
         );
         // Port 9 (discard) on localhost is closed.
         assert_eq!(
-            search(&client, &searxng("http://127.0.0.1:9"), "", "q")
-                .await
-                .unwrap_err(),
+            search(
+                &client,
+                &searxng("http://127.0.0.1:9"),
+                "",
+                "q",
+                SearchFocus::General
+            )
+            .await
+            .unwrap_err(),
             SearchError::Unreachable
         );
         assert_eq!(
-            search(&client, &WebSearchConfig::default(), "", "q")
-                .await
-                .unwrap_err(),
+            search(
+                &client,
+                &WebSearchConfig::default(),
+                "",
+                "q",
+                SearchFocus::General
+            )
+            .await
+            .unwrap_err(),
             SearchError::BadAddress
         );
     }
@@ -890,6 +984,7 @@ mod tests {
             &searxng(&base),
             "",
             "q",
+            SearchFocus::General,
             Duration::from_millis(200),
         )
         .await

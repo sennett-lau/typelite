@@ -1160,9 +1160,15 @@ async fn ask_answers_a_live_question_from_searxng_results() {
     };
     let client = reqwest::Client::new();
     let question = "where is the next F1 Grand Prix";
-    let outcome = web_search::search(&client, &search_config, "", question)
-        .await
-        .expect("SearXNG search");
+    let outcome = web_search::search(
+        &client,
+        &search_config,
+        "",
+        question,
+        web_search::SearchFocus::General,
+    )
+    .await
+    .expect("SearXNG search");
     println!(
         "search: {} results in {:?}",
         outcome.results.len(),
@@ -1208,4 +1214,99 @@ async fn ask_answers_a_live_question_from_searxng_results() {
         !web_search::cited_numbers(&answer, outcome.results.len()).is_empty(),
         "the answer should cite a result"
     );
+}
+
+async fn schedule_answer(
+    config: &LlmConfig,
+    question: &str,
+    results: &[typelite_lib::web_search::SearchResult],
+    today: chrono::NaiveDate,
+) -> Option<String> {
+    use typelite_lib::web_search::schedule;
+    let client = reqwest::Client::new();
+    let body = llm::protocol::build_chat_body(
+        &config.model,
+        schedule::messages(question, results),
+        640,
+        0.0,
+        false,
+        &config.extra_request_fields,
+    );
+    let request = client
+        .post(llm::protocol::chat_endpoint(&config.base_url).unwrap())
+        .json(&body)
+        .timeout(Duration::from_secs(60));
+    let response: serde_json::Value = llm::protocol::apply_auth_headers(request, &config.api_key)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    schedule::answer(&llm::protocol::response_text(&response), results, today)
+}
+
+/// Regression for the reported F1 answer: old dates and undated calendars cannot become a
+/// next race, even when the model invents facts. These are synthetic fixtures, not a calendar.
+#[tokio::test]
+#[ignore = "needs the configured AI server"]
+async fn ask_upcoming_schedule_requires_supported_future_date() {
+    use typelite_lib::web_search::SearchResult;
+    let config = ai_config();
+    let today = chrono::NaiveDate::from_ymd_opt(2026, 10, 1).unwrap();
+    let mut result = SearchResult {
+        title: "F1 Schedule 2026".into(),
+        url: "https://example.com/calendar".into(),
+        snippet: "Oct 1, 2004 · Belgian Grand Prix 2026 calendar available.".into(),
+        published_date: Some("2026-10-01".into()),
+    };
+    assert_eq!(
+        schedule_answer(&config, "幾時下場F1?", &[result.clone()], today).await,
+        None
+    );
+    result.snippet =
+        "意大利站 2026年9月19日。新加坡站 2026年10月11日。馬來西亞站 2026年10月2日至4日。".into();
+    assert_eq!(
+        schedule_answer(&config, "幾時下場F1?", &[result], today)
+            .await
+            .as_deref(),
+        Some("馬來西亞站 — 2026年10月2日至4日 [1]")
+    );
+}
+
+#[tokio::test]
+#[ignore = "needs a running SearXNG and AI server"]
+async fn ask_upcoming_schedule_from_live_search() {
+    use typelite_lib::web_search::{self, SearchProviderKind, WebSearchConfig};
+    let Ok(base_url) = std::env::var("TYPELITE_E2E_SEARXNG_URL") else {
+        println!("TYPELITE_E2E_SEARXNG_URL is not set; skipping");
+        return;
+    };
+    let search_config = WebSearchConfig {
+        provider: SearchProviderKind::Searxng,
+        base_url,
+    };
+    let config = ai_config();
+    let client = reqwest::Client::new();
+    let today = chrono::Local::now().date_naive();
+    for question in ["幾時下場F1?", "When is the next F1 race?"] {
+        let check = llm::live_question::classify(&client, &config, question).await;
+        assert!(check.live);
+        assert_eq!(check.reason, "schedule");
+        let query = check.query.expect("classifier supplies search keywords");
+        println!("query: {query}");
+        let outcome = web_search::search(
+            &client,
+            &search_config,
+            "",
+            &query,
+            web_search::SearchFocus::Upcoming(today),
+        )
+        .await
+        .unwrap();
+        let answer = schedule_answer(&config, question, &outcome.results, today)
+            .await
+            .expect("search supplied a supported upcoming event");
+        println!("{question}: {answer}");
+    }
 }

@@ -45,7 +45,10 @@ Answer anyway keeps its note "May be out of date — no web search was used".
 ### Sources column
 
 Layout: the column runs the full height of the panel on its right, with its own "Sources" header
-and a › that hides it. The question, the answer and the footer stay in the left column, because
+and a › that hides it. The shell and source rail expand or collapse together over 320 ms; source content fades in
+within the rail. The answer keeps its height and sources scroll within it. Reduced motion
+skips the movement, and reopening while closing reverses the transition. A clicked citation
+scrolls its source into view. The question, the answer and the footer stay in the left column, because
 the footer's buttons act on the answer (the pattern of ChatGPT's and Perplexity's source panels).
 
 | Part | Behaviour |
