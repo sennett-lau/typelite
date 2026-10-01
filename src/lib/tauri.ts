@@ -631,7 +631,28 @@ export interface AskDictationResult {
   fallbackReason: VoiceExecutionFallbackReason | null
   /** Answered with "Answer anyway" for a live question: may be out of date. */
   mayBeOutOfDate: boolean
+  /** Plan `ask-web-search`: the web pages a live answer came from (empty without a search). */
+  sources?: AskSource[]
+  /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
+  liveSearch?: LiveSearchState | null
 }
+
+/** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */
+export interface AskSource {
+  number: number
+  title: string
+  url: string
+  /** The search result's snippet, shown on the source's card. */
+  snippet: string
+}
+
+/** Plan `ask-web-search`: the largest Ask panel on the current screen, in points. */
+export interface AskPanelLimits {
+  maxWidth: number
+  maxHeight: number
+}
+
+export type LiveSearchState = 'notConfigured' | 'failed' | 'noResults'
 
 export interface AskDictationStartResult {
   usedSelectedText: boolean
@@ -674,6 +695,121 @@ export async function takePendingAskMessage(): Promise<PendingAskMessage | null>
   return invoke('take_pending_ask_message')
 }
 
+/** Plan `ask-web-search`: the thinking pill's stage, `"searching"` or `"thinking"`. */
+export const ASK_STAGE_EVENT = 'ask:stage'
+export type AskStage = 'searching' | 'thinking'
+
+/** Plan `ask-web-search`: opens one of the answer's source links in the browser. */
+export async function openAskSource(url: string): Promise<void> {
+  return invoke('open_ask_source', { url })
+}
+
+// Plan `ask-web-search`: the search provider for Ask's live questions.
+
+/** `builtin`: plan `searxng-setup`, the SearXNG Typelite sets up and runs on this Mac. */
+export type SearchProviderKind = 'none' | 'searxng' | 'builtin'
+
+export interface WebSearchConfig {
+  provider: SearchProviderKind
+  base_url: string
+}
+
+export interface WebSearchStatus {
+  config: WebSearchConfig
+  /** A key is stored for the provider (never the key itself). */
+  hasKey: boolean
+}
+
+export async function getWebSearchStatus(): Promise<WebSearchStatus> {
+  return invoke('get_web_search_status')
+}
+
+/** `apiKey`: undefined keeps the stored key, '' removes it, anything else replaces it. */
+export async function saveWebSearch(
+  provider: SearchProviderKind,
+  baseUrl: string,
+  apiKey?: string,
+): Promise<WebSearchStatus> {
+  return invoke('save_web_search', { provider, baseUrl, apiKey: apiKey ?? null })
+}
+
+export async function removeWebSearch(): Promise<WebSearchStatus> {
+  return invoke('remove_web_search')
+}
+
+/** One search for a fixed word; resolves with the result count and time, rejects with a message. */
+export async function testWebSearch(
+  provider: SearchProviderKind,
+  baseUrl: string,
+  apiKey?: string,
+): Promise<{ results: number; ms: number }> {
+  return invoke('test_web_search', { provider, baseUrl, apiKey: apiKey ?? null })
+}
+
+// Plan `searxng-setup`: the Built-in search provider.
+
+/** Progress of a Built-in search setup or update. */
+export const BUILTIN_SEARCH_PROGRESS_EVENT = 'search:setup_progress'
+
+export type BuiltinSearchStep =
+  | 'downloadingUv'
+  | 'installingPython'
+  | 'downloadingSearxng'
+  | 'installingLibraries'
+  | 'starting'
+  | 'done'
+
+export interface BuiltinSearchProgress {
+  step: BuiltinSearchStep
+  /** Bytes so far and in all, for download steps. */
+  done: number | null
+  total: number | null
+}
+
+export interface BuiltinSearchInstalled {
+  commit: string
+  /** The SearXNG commit's date (ISO 8601), shown as its version. */
+  commitDate: string
+  installedAt: number
+}
+
+export interface BuiltinSearchStatus {
+  installed: BuiltinSearchInstalled | null
+  running: boolean
+  port: number | null
+  busy: boolean
+  /** The last step of a setup or update in progress (started on another page). */
+  progress: BuiltinSearchProgress | null
+}
+
+export interface BuiltinSearchUpdateCheck {
+  latestCommit: string
+  latestDate: string
+  updateAvailable: boolean
+}
+
+export async function builtinSearchStatus(): Promise<BuiltinSearchStatus> {
+  return invoke('builtin_search_status')
+}
+
+/** Downloads and starts SearXNG; progress arrives as `BUILTIN_SEARCH_PROGRESS_EVENT`. */
+export async function installBuiltinSearch(): Promise<BuiltinSearchStatus> {
+  return invoke('install_builtin_search')
+}
+
+export async function checkBuiltinSearchUpdate(): Promise<BuiltinSearchUpdateCheck> {
+  return invoke('check_builtin_search_update')
+}
+
+export async function updateBuiltinSearch(): Promise<BuiltinSearchStatus> {
+  return invoke('update_builtin_search')
+}
+
+/** Stops it and deletes the downloaded files. */
+export async function removeBuiltinSearch(): Promise<BuiltinSearchStatus> {
+  return invoke('remove_builtin_search')
+}
+
 /**
  * Plan `ask-translate-and-live-questions`: answer a live question from the model's own knowledge.
  */
@@ -692,8 +828,13 @@ export async function closeAskPanel(): Promise<void> {
 }
 
 /** Reports the panel's height; the window keeps its bottom edge above the pill. */
-export async function resizeAskPanel(height: number): Promise<void> {
-  return invoke('resize_ask_panel', { height })
+export async function resizeAskPanel(width: number, height: number): Promise<void> {
+  return invoke('resize_ask_panel', { width, height })
+}
+
+/** Plan `ask-web-search`: ⅔ of the screen's work area wide and ½ of it tall (null when closed). */
+export async function askPanelLimits(): Promise<AskPanelLimits | null> {
+  return invoke('ask_panel_limits')
 }
 
 /** Puts `text` on the clipboard (the panel is never focused, so the browser clipboard is not used). */
@@ -866,7 +1007,7 @@ export async function setShortcutTourState(state: {
 }
 
 /** Shows the main window on a Settings pane (the capsule's "Set up" button). */
-export async function openSettingsPane(pane: 'stt' | 'llm'): Promise<void> {
+export async function openSettingsPane(pane: 'stt' | 'llm' | 'search'): Promise<void> {
   return invoke('open_settings_pane', { pane })
 }
 

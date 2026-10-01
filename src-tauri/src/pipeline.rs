@@ -118,7 +118,7 @@ fn request_accessibility_permission_prompt() -> bool {
 /// Delay before capturing selected text to ensure hotkey modifiers are released.
 const SELECTED_TEXT_CAPTURE_DELAY_MS: u64 = 60;
 /// Interval for polling audio volume during recording.
-const VOLUME_POLL_INTERVAL_MS: u64 = 30;
+pub(crate) const VOLUME_POLL_INTERVAL_MS: u64 = 30;
 /// Plan `copy-when-no-field`: how long to wait before a second look at a field that seemed not
 /// to change after typing.
 const TYPED_TEXT_RECHECK_MS: u64 = 250;

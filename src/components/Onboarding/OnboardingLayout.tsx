@@ -50,15 +50,17 @@ export function OnboardingLayout({
       <div className="drag-strip" data-tauri-drag-region aria-hidden="true" />
 
       <div className="content-surface flex min-h-0 flex-1 flex-col border-l-0">
-        {/* Close button, above the drag strip so it stays clickable. */}
-        <div className="relative z-50 flex h-9 flex-none items-center justify-end px-3">
+        {/* Close button, above the drag strip so it stays clickable, on the same line as the
+            window buttons (`trafficLightPosition` y 24 in tauri.conf.json). */}
+        <div className="relative z-50 h-9 flex-none">
           <button
             type="button"
             onClick={handleClose}
-            className="btn-icon"
+            className="onboarding-close"
             aria-label={t('onboarding.layout.close')}
+            title={t('onboarding.layout.close')}
           >
-            <X size={14} />
+            <X size={14} strokeWidth={2.25} />
           </button>
         </div>
 

@@ -30,6 +30,7 @@ text.
 | [AI polish](ai-polish/README.md) | Connections (Built-in, OpenAI-compatible), services, turning off thinking. |
 | [Choosing models](models/README.md) | Which speech and polish models to use, by hardware. |
 | [Languages](languages/README.md) | Language guides (which models for your language, such as Cantonese), translation languages, per-language instructions, recognition, language presets. |
+| [Web search for Ask](web-search.md) | Let Ask anything answer live questions (news, scores, schedules) with your own SearXNG server. |
 | [Sharing presets](sharing-presets.md) | Export and import your speech and AI presets. |
 | [Benchmarks](benchmarks/README.md) | How fast AI polish and speech recognition are on real setups, with the data and script to measure yours. |
 

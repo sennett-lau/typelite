@@ -6,6 +6,9 @@ itself is deferred; this plan leaves a clear place for it.
 
 Status: agreed — 2026-09-25
 
+Superseded by `ask-web-search` for web search (the "Later: web search" section and the
+non-goal below).
+
 ## Goals
 
 - Highlight text anywhere, then translate it in place into a chosen language, never a silent

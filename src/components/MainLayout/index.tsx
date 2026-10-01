@@ -6,6 +6,7 @@ import {
   activeAiPreset,
   activeSpeechPreset,
   endpointState,
+  searchState,
   type EndpointState,
 } from '../../lib/connectionStatus'
 import appIcon from '../../assets/typelite-icon.png'
@@ -68,15 +69,31 @@ function StatusLine({ label, state }: { label: string; state: EndpointState }) {
   )
 }
 
+/** Plan `searxng-setup`: "Built-in", your SearXNG's host, or "Off". */
+function searchName(
+  search: { provider: string; base_url: string } | undefined,
+  t: (key: string) => string,
+): string {
+  if (!search || search.provider === 'none') return t('status.off')
+  if (search.provider === 'builtin') return t('webSearch.builtin')
+  try {
+    return new URL(search.base_url).host || search.base_url
+  } catch {
+    return search.base_url || t('status.off')
+  }
+}
+
 /**
- * Speech and AI status: the active preset names, with a green dot after a working Test or
- * dictation, a red dot after a failure, and a grey dot until either has happened.
+ * Speech, AI and web search status: the active preset names, with a green dot after a working
+ * Test or run, a red dot after a failure, and a grey dot until either has happened (or, for
+ * search, while it is off).
  */
 function ConnectionStatus() {
   const { t } = useTranslation()
   const config = useAppStore((s) => s.config)
   const speechHealth = useAppStore((s) => s.speechHealth)
   const aiHealth = useAppStore((s) => s.aiHealth)
+  const searchHealth = useAppStore((s) => s.searchHealth)
   const speech = activeSpeechPreset(config)
   const ai = activeAiPreset(config)
 
@@ -94,6 +111,10 @@ function ConnectionStatus() {
       <StatusLine
         label={`${t('status.ai')} · ${ai.name || t('presets.unnamed')}`}
         state={endpointState(aiHealth, ai.id)}
+      />
+      <StatusLine
+        label={`${t('status.search')} · ${searchName(config.web_search, t)}`}
+        state={searchState(config, searchHealth)}
       />
     </div>
   )
