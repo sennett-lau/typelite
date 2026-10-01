@@ -114,11 +114,12 @@ describe('getSizeForState', () => {
     // Fixed parts 140 + slack 8, the name after an 8 pt gap, the dots (5 pt, 4 apart) likewise.
     expect(translate(48, 0)).toEqual(size(204))
     expect(translate(48, 2)).toEqual(size(226))
-    expect(translate(48, 3)).toEqual(size(235))
+    expect(translate(48, 3)).toEqual(size(236))
+    // Odd widths round up to even, so the centred pill sits on whole points.
     // Fractional widths round up, so the text is never cut by a pixel.
     expect(translate(47.2, 0)).toEqual(size(204))
     // A long name is capped at 180 pt (it scrolls inside that).
-    expect(translate(300, 3)).toEqual(size(367))
+    expect(translate(300, 3)).toEqual(size(368))
     expect(translate(180, 0)).toEqual(size(336))
     // No language chosen: no name, the Dictate size.
     expect(translate(null, 0)).toEqual(size(160))
@@ -391,18 +392,23 @@ describe('capsule placement', () => {
 
   it('anchors the capsule bottom-centre of the target monitor in logical points', () => {
     // No work area reported: the whole screen. The pill's bottom sits 16 pt above its edge.
-    const anchor = capsuleAnchorForMonitor(retina, 224)
-    expect(anchor).toEqual({ left: 644, centerY: 982 - 16 - 16 })
-    expect(capsuleOrigin(anchor, 56)).toEqual({ x: 644, y: 922 })
+    const anchor = capsuleAnchorForMonitor(retina)
+    expect(anchor).toEqual({ centerX: 756, centerY: 982 - 16 - 16 })
+    expect(capsuleOrigin(anchor, 224, 56)).toEqual({ x: 644, y: 922 })
 
-    const external = capsuleAnchorForMonitor(rightExternal, 224)
-    expect(capsuleOrigin(external, 56)).toEqual({ x: 1894, y: 2422 - 16 - 32 - 12 })
+    const external = capsuleAnchorForMonitor(rightExternal)
+    expect(capsuleOrigin(external, 224, 56)).toEqual({ x: 1894, y: 2422 - 16 - 32 - 12 })
   })
 
-  it('keeps the origin stable across repeated resizes', () => {
-    const anchor = capsuleAnchorForMonitor(retina, 56)
-    const sizes = [56, 56, 56, 114, 56, 56]
-    const origins = sizes.map((height) => capsuleOrigin(anchor, height))
+  it('keeps the pill centred on the screen whatever its width', () => {
+    const anchor = capsuleAnchorForMonitor(retina)
+    // Idle, a working pill, a wide Translate pill, the Copy pill: every centre is the screen's.
+    for (const width of [64, 164, 280, 384]) {
+      const origin = capsuleOrigin(anchor, width, 56)
+      expect(origin.x + width / 2).toBe(756)
+    }
+    const heights = [56, 56, 56, 114, 56, 56]
+    const origins = heights.map((height) => capsuleOrigin(anchor, 164, height))
     expect(new Set(origins.map((origin) => origin.x)).size).toBe(1)
     expect(origins.every((origin) => Number.isFinite(origin.y) && origin.y < 982)).toBe(true)
   })
@@ -425,9 +431,9 @@ describe('capsule placement on the work area', () => {
   it('sits just above a Dock at the bottom', () => {
     const area = monitorWorkAreaRect(dockBottom)
     expect(area).toEqual({ x: 0, y: 25, width: 1512, height: 887 })
-    const anchor = capsuleAnchorForMonitor(dockBottom, 184)
+    const anchor = capsuleAnchorForMonitor(dockBottom)
     expect(pillBottom(anchor)).toBe(912 - PILL_BOTTOM_GAP)
-    expect(anchor.left).toBe(756 - 92)
+    expect(anchor.centerX).toBe(756)
   })
 
   it('sits near the bottom edge without a Dock, with an auto-hidden Dock and in full screen', () => {
@@ -439,9 +445,9 @@ describe('capsule placement on the work area', () => {
     }
     const fullScreen = { ...retina, workArea: { position: { x: 0, y: 0 }, size: retina.size } }
     for (const monitor of [noDock, fullScreen, retina]) {
-      const anchor = capsuleAnchorForMonitor(monitor, 184)
+      const anchor = capsuleAnchorForMonitor(monitor)
       expect(pillBottom(anchor)).toBe(982 - PILL_BOTTOM_GAP)
-      expect(anchor.left).toBe(756 - 92)
+      expect(anchor.centerX).toBe(756)
     }
   })
 
@@ -451,16 +457,16 @@ describe('capsule placement on the work area', () => {
       ...retina,
       workArea: { position: { x: 140, y: 50 }, size: { width: 3024 - 140, height: 1914 } },
     }
-    const left = capsuleAnchorForMonitor(dockLeft, 184)
-    expect(left.left).toBe(Math.round(70 + 721 - 92))
+    const left = capsuleAnchorForMonitor(dockLeft)
+    expect(left.centerX).toBe(Math.round(70 + 721))
     expect(pillBottom(left)).toBe(982 - PILL_BOTTOM_GAP)
 
     const dockRight = {
       ...retina,
       workArea: { position: { x: 0, y: 50 }, size: { width: 3024 - 140, height: 1914 } },
     }
-    const right = capsuleAnchorForMonitor(dockRight, 184)
-    expect(right.left).toBe(Math.round(721 - 92))
+    const right = capsuleAnchorForMonitor(dockRight)
+    expect(right.centerX).toBe(Math.round(721))
     expect(pillBottom(right)).toBe(982 - PILL_BOTTOM_GAP)
   })
 
@@ -471,12 +477,12 @@ describe('capsule placement on the work area', () => {
       workArea: { position: { x: 726, y: 982 + 25 }, size: { width: 2560, height: 1440 - 25 } },
     }
     expect(monitorWorkAreaRect(external)).toEqual({ x: 726, y: 1007, width: 2560, height: 1415 })
-    const onExternal = capsuleAnchorForMonitor(external, 184)
+    const onExternal = capsuleAnchorForMonitor(external)
     expect(pillBottom(onExternal)).toBe(2422 - PILL_BOTTOM_GAP)
-    expect(onExternal.left).toBe(726 + 1280 - 92)
+    expect(onExternal.centerX).toBe(726 + 1280)
 
     // The same Dock-at-the-bottom work area on the 2x Retina lands in points, not pixels.
-    expect(pillBottom(capsuleAnchorForMonitor(dockBottom, 184))).toBe(896)
+    expect(pillBottom(capsuleAnchorForMonitor(dockBottom))).toBe(896)
   })
 })
 
@@ -513,11 +519,11 @@ describe('pill follows the cursor screen', () => {
   })
 
   it('re-anchors bottom-centre of the new monitor with the original window size', () => {
-    const moved = capsuleAnchorForMonitor(rightExternal, 174)
+    const moved = capsuleAnchorForMonitor(rightExternal)
     // Right external: logical x 726..3286, y 982..2422. The pill's bottom is 16 pt above the
     // bottom edge; the window adds 12 pt of padding below it.
-    expect(moved.left).toBe(Math.round(726 + 1280 - 87))
-    expect(capsuleOrigin(moved, 56).y).toBe(2422 - 16 - 32 - 12)
+    expect(moved.centerX).toBe(Math.round(726 + 1280))
+    expect(capsuleOrigin(moved, 174, 56)).toEqual({ x: 726 + 1280 - 87, y: 2422 - 16 - 32 - 12 })
   })
 })
 

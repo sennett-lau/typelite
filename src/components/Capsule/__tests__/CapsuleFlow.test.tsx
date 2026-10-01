@@ -345,7 +345,7 @@ describe('Capsule flow states', () => {
     const shell = () => container.querySelector('.pill') as HTMLElement
 
     // 'English' (about 48 pt in tests) and three dots.
-    expect(shell().style.width).toBe('235px')
+    expect(shell().style.width).toBe('236px')
     expect(shell().style.height).toBe('32px')
 
     useAppStore.setState({ activeVoiceMode: 'dictate' })

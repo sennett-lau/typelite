@@ -358,14 +358,16 @@ export function Capsule() {
   return (
     <div
       ref={rootRef}
-      className="w-full h-full flex items-center justify-start relative"
+      className="w-full h-full flex items-center justify-center relative"
       style={{ background: 'transparent' }}
       onContextMenu={handleContextMenu}
     >
       {/* Persistent outer shell — the dark glass pill. Its width, height and corners animate
-          with CSS (`.pill` in globals.css); hiding slides it down and fades it (`.pill-gone`). */}
+          with CSS (`.pill` in globals.css); hiding slides it down and fades it (`.pill-gone`).
+          It is centred in the window (left 50%, then back by half its own width), so while its
+          width animates it grows on both sides, as the window does. */}
       <div
-        className={`pill absolute left-3 rounded-full pointer-events-auto shrink-0 ${
+        className={`pill absolute left-1/2 -translate-x-1/2 rounded-full pointer-events-auto shrink-0 ${
           capsuleState === 'error' ? 'pill-error' : ''
         } ${capsuleState === 'nudge' ? 'pill-nudge' : ''} ${visible ? '' : 'pill-gone'} ${appearing ? 'pill-size-instant' : ''}`}
         style={{ ...capsuleShellSize, borderRadius: capsuleShellSize.height / 2 }}
@@ -452,8 +454,12 @@ export function Capsule() {
           menu centred on it would run off the screen. */}
       {contextMenuOpen && contextMenuReady && (
         <div
-          className="absolute left-2"
-          style={{ bottom: `calc(50% - ${capsuleShellSize.height / 2}px)` }}
+          className="absolute"
+          style={{
+            // 4 pt left of the centred shell's left edge, as it was beside the left-anchored pill.
+            left: `calc(50% - ${capsuleShellSize.width / 2 + 4}px)`,
+            bottom: `calc(50% - ${capsuleShellSize.height / 2}px)`,
+          }}
         >
           <CapsuleContextMenu onClose={handleCloseMenu} />
         </div>

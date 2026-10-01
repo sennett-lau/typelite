@@ -289,6 +289,19 @@ pub fn ensure_ask_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::Webv
 }
 
 /// Shows the Ask panel above the pill without taking focus (plan `ask-panel-above-pill`).
+/// The pill's window moves and resizes in one step (logical points). Called from the capsule
+/// page: two separate calls from the page arrive one after the other, and macOS can draw the
+/// window at its new size in the old place in between, so a centred pill would jump sideways.
+/// Both run in the same turn of the main thread here, before macOS draws again.
+#[tauri::command]
+fn set_capsule_frame(window: tauri::WebviewWindow, x: f64, y: f64, width: f64, height: f64) {
+    let target = window.clone();
+    let _ = window.run_on_main_thread(move || {
+        let _ = target.set_size(tauri::LogicalSize::new(width, height));
+        let _ = target.set_position(tauri::LogicalPosition::new(x, y));
+    });
+}
+
 pub fn show_ask_popup_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWindow> {
     ask_panel::show(handle)
 }
@@ -1478,6 +1491,7 @@ pub fn run() {
             updates::check_for_update,
             updates::install_update,
             updates::restart_to_update,
+            set_capsule_frame,
             ask_panel::copy_ask_text,
             ask_panel::insert_ask_text,
             commands::audio::list_input_devices,
