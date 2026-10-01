@@ -932,6 +932,15 @@
     "failed": "无法开始录制快捷键：{{error}}"
   },
   "whatsNew": {
+    "webSearch": "随便问可以为需要最新信息的问题（新闻、比分、赛程、价格）用 SearXNG 搜索网络：Typelite 一键在你的 Mac 上安装它，也可以使用你自己的服务器。",
+    "askSources": "来自网络的回答会标注来源：在回答旁打开来源栏，查看每个网页，打开它或复制链接。",
+    "autoUpdate": "从 GitHub Releases 更新：Typelite 在后台下载新版本，并提示你重新启动。只会请求版本文件；可在「设置 → 系统」中关闭。",
+    "keepAccessibility": "从 1.1.0 起，每次更新后辅助功能权限都会保留。从 1.0 升级时，安装后需要再开启一次。",
+    "copyPill": "文字无法输入到前台应用时，胶囊会改为提供带“复制”按钮的结果。",
+    "translateLanguageLive": "在设置中添加的翻译语言会立即出现在翻译胶囊中，无需重新启动。",
+    "pillMotion": "胶囊和随便问面板保持居中，尺寸变化更平滑，不再跳动。",
+    "homeSetup": "主页上的“设置”会打开对应的设置页面。",
+    "shortcutRecording": "设置中一次只录制一个快捷键。",
     "polishCorrections": "你中途改口时，AI 润色只保留你真正想说的内容（例如“一点，哦不，两点”“第一样，不对，第三样”）。",
     "polishRequests": "你口述的请求（例如“用日语写一封邮件……”）会被照写下来，AI 润色不会去执行它，也不会切换语言。",
     "polishCodeWords": "AI 润色会保留完整的文件名、命令和简短的代码词：“dot gitignore”会写成 .gitignore。",
