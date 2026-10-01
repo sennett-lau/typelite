@@ -6,15 +6,17 @@ import {
   ASK_PANEL_CLOSED_EVENT,
   abortAskDictation,
   answerAskAnyway,
+  askPanelLimits,
   closeAskPanel,
   resizeAskPanel,
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
 } from '../../lib/tauri'
-import type { AskDictationResult, AskDictationStartResult } from '../../lib/tauri'
+import type { AskDictationResult, AskDictationStartResult, AskPanelLimits } from '../../lib/tauri'
 import { NeedsLiveInfo } from './NeedsLiveInfo'
 import { AskAnswerPanel, type AskPanelContent } from './AskAnswerPanel'
+import { FALLBACK_LIMITS } from './liveSearch'
 
 interface AskPanelProps {
   embedded?: boolean
@@ -286,6 +288,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
       onAnswerAnyway={answerAnyway}
       onClose={closeLiveInfo}
       answering={answeringAnyway}
+      liveSearch={result?.liveSearch}
     />
   ) : null
   const outOfDateNote =
@@ -404,24 +407,46 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
   wasShown.current = panelShown
   const panelKey = openCount.current
 
-  // Report the panel's height, so the window fits it and keeps its bottom edge above the pill.
-  useLayoutEffect(() => {
+  // Plan `ask-web-search`: the largest panel on this screen, asked for each time it opens.
+  const [limits, setLimits] = useState<AskPanelLimits | null>(null)
+  useEffect(() => {
     if (embedded || !panelShown) return
+    let live = true
+    setLimits(null)
+    Promise.resolve(askPanelLimits())
+      .then((value) => {
+        if (live) setLimits(value ?? FALLBACK_LIMITS)
+      })
+      .catch(() => {
+        if (live) setLimits(FALLBACK_LIMITS)
+      })
+    return () => {
+      live = false
+    }
+  }, [embedded, panelShown, panelKey])
+
+  // Report the panel's size, so the window fits it, stays centred on the pill and keeps its
+  // bottom edge above it. The first report waits for the limits: a long answer laid out with
+  // the fallback width and then the real one would move the window twice.
+  useLayoutEffect(() => {
+    if (embedded || !panelShown || limits === null) return
     const element = panelRef.current
     if (!element) return
-    let reported = 0
+    let reported = ''
     const report = () => {
-      const height = Math.ceil(element.getBoundingClientRect().height)
-      if (height <= 0 || height === reported) return
-      reported = height
-      void Promise.resolve(resizeAskPanel(height)).catch(() => {})
+      const box = element.getBoundingClientRect()
+      const width = Math.ceil(box.width)
+      const height = Math.ceil(box.height)
+      if (width <= 0 || height <= 0 || `${width}x${height}` === reported) return
+      reported = `${width}x${height}`
+      void Promise.resolve(resizeAskPanel(width, height)).catch(() => {})
     }
     report()
     if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(report)
     observer.observe(element)
     return () => observer.disconnect()
-  }, [embedded, panelShown, panelKey])
+  }, [embedded, panelShown, panelKey, limits])
 
   if (!embedded) {
     return (
@@ -436,6 +461,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
               onClose={() => dismissStandalone(true)}
               onAnswerAnyway={answerAnyway}
               answering={answeringAnyway}
+              limits={limits}
             />
           </div>
         )}

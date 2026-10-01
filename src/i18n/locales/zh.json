@@ -35,13 +35,17 @@
     "routeDisabled": "此功能路径已停用",
     "searchOpened": "已打开 {{provider}} 搜索",
     "liveTitle": "需要实时信息",
-    "liveBody": "这个问题需要来自网络的最新信息。Typelite 目前还不能联网查找。",
+    "liveBody": "这个问题需要网上的最新信息。尚未设置网络搜索；你可以在设置中添加搜索服务器。",
     "answerAnyway": "仍然回答",
     "close": "关闭",
     "outOfDateNote": "可能已过时——未使用网络搜索",
     "aboutSelection": "关于“{{text}}”",
     "aboutSelectionHint": "正在就选中文本提问",
-    "send": "提问"
+    "send": "提问",
+    "liveBodySearchFailed": "这个问题需要最新信息，但网络搜索失败了。请在设置中检查搜索服务器。",
+    "liveBodyNoResults": "这个问题需要最新信息，但网络搜索没有找到结果。",
+    "setUpWebSearch": "设置网络搜索",
+    "searchingWeb": "正在搜索网络…"
   },
   "askPanel": {
     "label": "问答回答",
@@ -56,7 +60,18 @@
     "insertFailed": "无法在此插入，请改用复制。",
     "couldNotReplace": "此应用不允许替换，结果已在剪贴板上。",
     "tryReplacingAgain": "再次尝试替换",
-    "errorTitle": "出了点问题"
+    "errorTitle": "出了点问题",
+    "sources": "来源",
+    "sourcesCount_one": "{{count}} 个来源",
+    "sourcesCount_other": "{{count}} 个来源",
+    "hideSources": "隐藏来源",
+    "showSource": "显示来源 {{n}}",
+    "open": "打开",
+    "opened": "已打开",
+    "copyLink": "复制链接",
+    "linkCopied": "已复制",
+    "copySourceLink": "复制来源 {{n}} 的链接",
+    "openSource": "打开来源 {{n}}"
   },
   "errors": {
     "stt_timeout": "语音服务在 {{details}} 内没有响应。请确认服务正在运行，或换用更快的服务。",
@@ -113,8 +128,7 @@
       "failed": "上次测试失败",
       "speechImpact": "听写、翻译和随便问都需要它。",
       "aiImpact": "听写会粘贴原始转写；翻译和随便问需要它。",
-      "setUp": "去设置",
-      "otherOptions": "其他方式"
+      "setUp": "去设置"
     },
     "speedCompare": {
       "speaking": "说话",
@@ -289,7 +303,9 @@
       "translate": "翻译",
       "translateSub": "说话，用另一种语言写出来。",
       "ask": "Ask Anything",
-      "askSub": "提一个问题，或用语音修改选中的文字。"
+      "askSub": "提一个问题，或用语音修改选中的文字。",
+      "webSearch": "网络搜索",
+      "webSearchSub": "可选：让问答查询新闻、比分和赛程。"
     },
     "layout": {
       "back": "返回",
@@ -549,7 +565,8 @@
     "polishStyleMinimalDetail": "只做修正",
     "polishStyleCleanDetail": "默认",
     "polishStyleStructuredDetail": "列表",
-    "polishStyleProfessionalDetail": "正式"
+    "polishStyleProfessionalDetail": "正式",
+    "search": "搜索"
   },
   "contextFamilies": {
     "email": "邮件",
@@ -935,7 +952,9 @@
     "ai": "AI",
     "ok": "正常",
     "error": "上次测试或请求失败",
-    "unknown": "尚未检查"
+    "unknown": "尚未检查",
+    "search": "搜索",
+    "off": "关闭"
   },
   "tour": {
     "title": "语音和 AI 已就绪。现在试试三个快捷键吗？",
@@ -1093,6 +1112,69 @@
         "needs_disk_space": "可用空间不足，无法使用较大的模型。"
       }
     }
+  },
+  "webSearch": {
+    "group": "问答的网络搜索",
+    "title": "搜索服务",
+    "help": "问答会在网上查询新闻、比分、赛程或价格等问题。设置之前不会启用。",
+    "onboardingTitle": "问答的网络搜索（可选）",
+    "provider": "服务",
+    "key": "密钥",
+    "keyPlaceholder": "可选。SearXNG 不需要",
+    "keySaved": "已保存在钥匙串中。输入可替换",
+    "privacy": "问答需要实时信息时，你的问题会发送到这个服务器。",
+    "howToRun": "如何运行 SearXNG",
+    "works": "可用：{{time}} 内 {{count}} 条结果",
+    "save": "保存",
+    "saved": "已保存。问答现在会搜索实时问题。",
+    "remove": "关闭网络搜索",
+    "removed": "网络搜索已关闭。",
+    "removeKey": "移除密钥",
+    "optional": "可选",
+    "uses": "搜索使用",
+    "builtin": "内置",
+    "builtinDetail": "Typelite 在这台 Mac 上设置 SearXNG",
+    "recommended": "推荐",
+    "own": "你自己的 SearXNG",
+    "ownDetail": "你网络上的地址，以及可选的密钥",
+    "setupTitle": "在这台 Mac 上设置 SearXNG",
+    "setupBody": "Typelite 会下载 SearXNG（一个同时查询多个搜索引擎的免费搜索引擎）以及它自己的 Python。约 230 MB，来自 GitHub。它只在这台 Mac 上、并且只在 Typelite 打开时运行。",
+    "setupLicence": "SearXNG 是独立的开源软件（AGPL），在你按下“设置”时才下载。",
+    "setup": "设置",
+    "settingUp": "正在设置 SearXNG…",
+    "settingUpTime": "约一分钟",
+    "settingUpLeave": "你可以离开此页面，它会在后台完成。",
+    "settingUpGoOn": "你可以继续，它会在后台完成。",
+    "stepDownloadingUv": "下载 uv（安装工具）",
+    "stepInstallingPython": "安装 Python",
+    "stepDownloadingSearxng": "下载 SearXNG",
+    "stepInstallingLibraries": "安装所需的库",
+    "stepStarting": "启动并测试",
+    "downloadedOf": "{{done}} / {{total}} MB",
+    "failedTitle": "设置未完成",
+    "failed": "失败",
+    "failedKept": "不会留下安装了一半的文件。",
+    "tryAgain": "重试",
+    "readyTitle": "这台 Mac 上的 SearXNG",
+    "running": "运行中",
+    "startsWhenNeeded": "需要时启动",
+    "version": "版本",
+    "address": "地址",
+    "thisMacOnly": "仅限这台 Mac",
+    "lastTest": "上次测试",
+    "checkUpdates": "检查更新",
+    "checking": "正在检查…",
+    "upToDate": "已是最新。",
+    "updateAvailable": "有可用更新",
+    "updateWhy": "搜索引擎经常变化，更新能让结果保持正常。",
+    "update": "更新",
+    "updating": "正在更新 SearXNG…",
+    "removeBuiltin": "移除…",
+    "removeConfirm": "移除 SearXNG？这会释放约 230 MB 并关闭网络搜索。",
+    "removeYes": "移除",
+    "cancel": "取消",
+    "useBuiltin": "使用内置",
+    "builtinSelected": "问答现在使用内置搜索。"
   },
   "updates": {
     "group": "更新",

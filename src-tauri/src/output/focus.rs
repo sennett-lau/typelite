@@ -104,6 +104,41 @@ pub fn decide_focus(info: Option<&FocusedElementInfo>) -> FocusDecision {
     FocusDecision::Unknown
 }
 
+/// The focused element's text length (characters), or `None` when Accessibility cannot tell
+/// (no element, no permission, or an app that exposes neither `AXNumberOfCharacters` nor a
+/// string `AXValue`). Plan `copy-when-no-field`: read before and after typing, to see whether
+/// the typed text landed.
+pub fn focused_text_length() -> Option<i64> {
+    platform::focused_text_length()
+}
+
+/// Whether typed text landed: `Some(false)` only when the length was readable both times, text
+/// was typed, and the length did not change. `None` when it cannot be told (then Typelite
+/// assumes it landed, as before).
+///
+/// A field that still holds one or two characters after many were typed is a code editor's
+/// hidden input, not the document: Monaco (VS Code, Cursor) keeps only the character before
+/// the caret in it, Ace a two-character placeholder. Their length never changes, so they say
+/// nothing about the document; `None` there, or every dictation into VS Code offered Copy.
+pub fn typed_text_landed(
+    before: Option<i64>,
+    after: Option<i64>,
+    typed_chars: usize,
+) -> Option<bool> {
+    let (before, after) = (before?, after?);
+    if typed_chars == 0 {
+        return None;
+    }
+    if after != before {
+        return Some(true);
+    }
+    let editor_proxy = (1..=2).contains(&after) && typed_chars > after as usize;
+    if editor_proxy {
+        return None;
+    }
+    Some(false)
+}
+
 /// Asks Accessibility about the focused element and decides. Takes a few milliseconds (each
 /// attribute is a message to the focused app, capped by a short timeout). Logs the decision
 /// with the role name only.
@@ -179,6 +214,13 @@ mod platform {
         ) -> Boolean;
         fn CFGetTypeID(cf: CFTypeRef) -> usize;
         fn CFStringGetTypeID() -> usize;
+        fn CFStringGetLength(string: CFStringRef) -> isize;
+        fn CFNumberGetTypeID() -> usize;
+        fn CFNumberGetValue(
+            number: CFTypeRef,
+            number_type: isize,
+            value_ptr: *mut c_void,
+        ) -> Boolean;
         fn CFRelease(cf: CFTypeRef);
     }
 
@@ -250,6 +292,39 @@ mod platform {
         error == AX_ERROR_SUCCESS && settable != 0
     }
 
+    /// `kCFNumberSInt64Type`.
+    const CF_NUMBER_SINT64: isize = 4;
+
+    /// The focused element's character count: `AXNumberOfCharacters`, else the length of a
+    /// string `AXValue` (in UTF-16 units; only a change matters). Never reads the text itself
+    /// into Typelite beyond its length.
+    pub(super) fn focused_text_length() -> Option<i64> {
+        let system = Owned::new(unsafe { AXUIElementCreateSystemWide() })?;
+        unsafe { AXUIElementSetMessagingTimeout(system.0, MESSAGING_TIMEOUT_SECONDS) };
+        let focused = copy_attribute(system.0, "AXFocusedUIElement")?;
+        unsafe { AXUIElementSetMessagingTimeout(focused.0, MESSAGING_TIMEOUT_SECONDS) };
+        if let Some(count) = copy_attribute(focused.0, "AXNumberOfCharacters") {
+            if unsafe { CFGetTypeID(count.0) == CFNumberGetTypeID() } {
+                let mut value: i64 = 0;
+                let ok = unsafe {
+                    CFNumberGetValue(
+                        count.0,
+                        CF_NUMBER_SINT64,
+                        &mut value as *mut i64 as *mut c_void,
+                    )
+                };
+                if ok != 0 {
+                    return Some(value);
+                }
+            }
+        }
+        let value = copy_attribute(focused.0, "AXValue")?;
+        if unsafe { CFGetTypeID(value.0) != CFStringGetTypeID() } {
+            return None;
+        }
+        Some(unsafe { CFStringGetLength(value.0) } as i64)
+    }
+
     /// Reads the focused element's role and flags, or `None` when no element is focused or
     /// Accessibility is not available (for example without the permission).
     pub(super) fn focused_element_info() -> Option<FocusedElementInfo> {
@@ -282,6 +357,10 @@ mod platform {
     pub(super) fn focused_element_info() -> Option<FocusedElementInfo> {
         None
     }
+
+    pub(super) fn focused_text_length() -> Option<i64> {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -293,6 +372,51 @@ mod tests {
             role: Some(role.to_string()),
             ..FocusedElementInfo::default()
         }
+    }
+
+    #[test]
+    fn typed_text_landed_only_when_the_length_is_known_and_changed() {
+        assert_eq!(typed_text_landed(Some(10), Some(33), 23), Some(true));
+        assert_eq!(
+            typed_text_landed(Some(10), Some(10), 23),
+            Some(false),
+            "nothing arrived"
+        );
+        assert_eq!(
+            typed_text_landed(Some(0), Some(0), 23),
+            Some(false),
+            "an empty field stayed empty"
+        );
+        assert_eq!(
+            typed_text_landed(Some(1), Some(1), 23),
+            None,
+            "an editor's hidden input keeps the character before the caret"
+        );
+        assert_eq!(
+            typed_text_landed(Some(2), Some(2), 23),
+            None,
+            "a two-character placeholder input"
+        );
+        assert_eq!(
+            typed_text_landed(Some(2), Some(2), 2),
+            Some(false),
+            "two characters typed into a two-character field that did not change"
+        );
+        assert_eq!(
+            typed_text_landed(None, Some(10), 23),
+            None,
+            "unreadable before"
+        );
+        assert_eq!(
+            typed_text_landed(Some(10), None, 23),
+            None,
+            "unreadable after"
+        );
+        assert_eq!(
+            typed_text_landed(Some(10), Some(10), 0),
+            None,
+            "nothing was typed"
+        );
     }
 
     #[test]

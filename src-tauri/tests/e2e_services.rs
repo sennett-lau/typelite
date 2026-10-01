@@ -26,6 +26,8 @@
 //!   the ElevenLabs Scribe tests (plan `elevenlabs-speech`); they are skipped without it.
 //!   `TYPELITE_E2E_ELEVENLABS_URL` and `TYPELITE_E2E_ELEVENLABS_MODEL` override the address and
 //!   model.
+//! - `TYPELITE_E2E_SEARXNG_URL`: a SearXNG address with JSON output on, for the Ask web search
+//!   test (plan `ask-web-search`); it is skipped without it.
 //!
 //! Speech tests synthesise their audio with macOS `say`, so they need macOS.
 
@@ -1138,4 +1140,72 @@ async fn elevenlabs_connection_test_passes_and_rejects_a_wrong_key() {
         .await
         .expect_err("a wrong key must fail");
     assert!(error.contains("401"), "unexpected error {error:?}");
+}
+
+/// Plan `ask-web-search`: a live question searched with a real SearXNG
+/// (`TYPELITE_E2E_SEARXNG_URL`, JSON format on), then answered from the results by the AI
+/// server. Skipped when the variable is not set.
+#[tokio::test]
+#[ignore = "needs a running SearXNG and AI server; see scripts/e2e.sh"]
+async fn ask_answers_a_live_question_from_searxng_results() {
+    use typelite_lib::web_search::{self, SearchProviderKind, WebSearchConfig};
+
+    let Ok(base_url) = std::env::var("TYPELITE_E2E_SEARXNG_URL") else {
+        println!("TYPELITE_E2E_SEARXNG_URL is not set; skipping");
+        return;
+    };
+    let search_config = WebSearchConfig {
+        provider: SearchProviderKind::Searxng,
+        base_url,
+    };
+    let client = reqwest::Client::new();
+    let question = "where is the next F1 Grand Prix";
+    let outcome = web_search::search(&client, &search_config, "", question)
+        .await
+        .expect("SearXNG search");
+    println!(
+        "search: {} results in {:?}",
+        outcome.results.len(),
+        outcome.elapsed
+    );
+    for result in &outcome.results {
+        println!("  - {} | {}", result.title, result.url);
+    }
+    assert!(!outcome.results.is_empty(), "SearXNG gave no results");
+    assert!(outcome.results.len() <= web_search::MAX_RESULTS);
+
+    let config = ai_config();
+    let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
+    let body = llm::protocol::build_chat_body(
+        &config.model,
+        web_search::answer_messages(question, &outcome.results, &today),
+        220,
+        0.2,
+        false,
+        &config.extra_request_fields,
+    );
+    let started = Instant::now();
+    let request = client
+        .post(llm::protocol::chat_endpoint(&config.base_url).unwrap())
+        .json(&body)
+        .timeout(Duration::from_secs(60));
+    let response: serde_json::Value = llm::protocol::apply_auth_headers(request, &config.api_key)
+        .send()
+        .await
+        .expect("AI request")
+        .json()
+        .await
+        .expect("AI JSON");
+    let answer = llm::protocol::response_text(&response);
+    let sources = web_search::answer_sources(&answer, &outcome.results);
+    println!("answer in {:?}: {answer}", started.elapsed());
+    println!(
+        "sources: {:?}",
+        sources.iter().map(|s| s.number).collect::<Vec<_>>()
+    );
+    assert!(!answer.trim().is_empty());
+    assert!(
+        !web_search::cited_numbers(&answer, outcome.results.len()).is_empty(),
+        "the answer should cite a result"
+    );
 }
