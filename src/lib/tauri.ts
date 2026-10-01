@@ -1109,3 +1109,16 @@ export async function installUpdate(): Promise<UpdateStatus> {
 export async function restartToUpdate(): Promise<void> {
   return invoke('restart_to_update')
 }
+
+/**
+ * The pill's window: position and size in one step, in logical points (`set_capsule_frame`), so
+ * it never shows at the new size in the old place for a frame.
+ */
+export async function setCapsuleFrame(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  return invoke('set_capsule_frame', { x, y, width, height })
+}

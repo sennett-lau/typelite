@@ -2,6 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { useAppStore, type CopyOffer, type PipelineState, type VoiceMode } from '../stores/appStore'
 import { NAME_MAX_WIDTH, useTranslatePill } from '../components/Capsule/translatePill'
 import { WAVEFORM_BARS } from '../lib/waveform'
+import { setCapsuleFrame } from '../lib/tauri'
 
 export interface CapsuleSize {
   width: number
@@ -57,6 +58,9 @@ export function translateRecordingSize({ nameWidth, dots }: TranslatePillMetrics
   let width = RECORDING_FIXED_WIDTH + TRANSLATE_SLACK
   if (nameWidth !== null) width += Math.min(Math.ceil(nameWidth), NAME_MAX_WIDTH) + 8
   if (dots > 0) width += dots * LANGUAGE_DOT + (dots - 1) * LANGUAGE_DOT_GAP + 8
+  // An even width keeps the centred pill on whole points (half a point is one physical pixel
+  // sideways on a Retina screen, each time the name changes).
+  width += width % 2
   return { width: Math.max(DICTATION_RECORDING_SIZE.width, width), height: PILL_HEIGHT }
 }
 /**
@@ -263,8 +267,9 @@ interface LogicalRect {
 }
 
 /** Left edge and vertical centre of the capsule window, in global logical points. */
+/** Where the pill sits on its screen: its centre, which stays fixed as it grows or shrinks. */
 export interface CapsuleAnchor {
-  left: number
+  centerX: number
   centerY: number
 }
 
@@ -366,19 +371,20 @@ function fadeTo(element: HTMLElement, opacity: number): Promise<void> {
  * screen's bottom edge, else near the screen's bottom). The vertical centre is the pill's, so
  * the window grows and shrinks around it.
  */
-export function capsuleAnchorForMonitor(
-  monitor: MonitorGeometry,
-  windowWidth: number,
-): CapsuleAnchor {
+export function capsuleAnchorForMonitor(monitor: MonitorGeometry): CapsuleAnchor {
   const area = monitorWorkAreaRect(monitor)
   return {
-    left: Math.round(area.x + area.width / 2 - windowWidth / 2),
+    centerX: Math.round(area.x + area.width / 2),
     centerY: Math.round(area.y + area.height - PILL_BOTTOM_GAP - PILL_HEIGHT / 2),
   }
 }
 
-export function capsuleOrigin(anchor: CapsuleAnchor, windowHeight: number) {
-  return { x: anchor.left, y: Math.round(anchor.centerY - windowHeight / 2) }
+/** The window's top-left for a window of this size, centred on the anchor. */
+export function capsuleOrigin(anchor: CapsuleAnchor, windowWidth: number, windowHeight: number) {
+  return {
+    x: Math.round(anchor.centerX - windowWidth / 2),
+    y: Math.round(anchor.centerY - windowHeight / 2),
+  }
 }
 
 export function getSizeForState(
@@ -460,9 +466,8 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
   const typingNudge = useAppStore((s) => s.typingNudge)
   const quietFade = useAppStore((s) => s.quietFade)
   const anchor = useRef<CapsuleAnchor | null>(null)
-  /** The monitor the pill is anchored to, and the window size the anchor was computed for. */
+  /** The monitor the pill is anchored to. */
   const anchorMonitor = useRef<string | null>(null)
-  const anchorSize = useRef<CapsuleSize>({ width: 0, height: 0 })
   const windowHeightNow = useRef(0)
   const windowSizeNow = useRef<CapsuleSize>({ width: 0, height: 0 })
   const visible = useRef(false)
@@ -541,21 +546,25 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
           primary ||
           monitors[0]
         if (target) {
-          anchor.current = capsuleAnchorForMonitor(target, windowWidth)
+          anchor.current = capsuleAnchorForMonitor(target)
           anchorMonitor.current = monitorKey(target)
-          anchorSize.current = { width: windowWidth, height: windowHeight }
         }
       }
 
       const applySize = async (width: number, height: number) => {
         windowHeightNow.current = height
         windowSizeNow.current = { width, height }
-        await win.setSize(new LogicalSize(width, height)).catch(() => {})
         if (anchor.current) {
-          // Left edge and vertical centre stay fixed. Content is padded 12px each side,
-          // so the mic icon never moves while the capsule grows or shrinks.
-          const origin = capsuleOrigin(anchor.current, height)
-          await win.setPosition(new LogicalPosition(origin.x, origin.y)).catch(() => {})
+          // The centre stays fixed, so every state is centred on the screen (and the Ask panel
+          // above it). Size and position change in one step (`set_capsule_frame`): two separate
+          // calls would show the window at the new size in the old place for a frame.
+          const origin = capsuleOrigin(anchor.current, width, height)
+          await setCapsuleFrame(origin.x, origin.y, width, height).catch(async () => {
+            await win.setSize(new LogicalSize(width, height)).catch(() => {})
+            await win.setPosition(new LogicalPosition(origin.x, origin.y)).catch(() => {})
+          })
+        } else {
+          await win.setSize(new LogicalSize(width, height)).catch(() => {})
         }
       }
 
@@ -637,9 +646,13 @@ export function useCapsuleResize(doneFlash = false, fadeTarget?: RefObject<HTMLE
       const element = fadeTarget?.current ?? null
       const fade = element !== null && !prefersReducedMotion()
       if (fade) await fadeTo(element, 0)
-      anchor.current = capsuleAnchorForMonitor(target, anchorSize.current.width)
+      anchor.current = capsuleAnchorForMonitor(target)
       anchorMonitor.current = monitorKey(target)
-      const origin = capsuleOrigin(anchor.current, windowHeightNow.current)
+      const origin = capsuleOrigin(
+        anchor.current,
+        windowSizeNow.current.width,
+        windowHeightNow.current,
+      )
       await getCurrentWindow()
         .setPosition(new LogicalPosition(origin.x, origin.y))
         .catch(() => {})

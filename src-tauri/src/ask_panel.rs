@@ -356,9 +356,15 @@ fn current_anchor(
     Some(anchor_on_screen(screen, state.last_pill_height()))
 }
 
+/// Size and position in one turn of the main thread, so macOS never draws the panel at its
+/// new size in the old place (it is centred on the pill, so that would be a sideways jump
+/// each time the sources column opens or closes). Same as `set_capsule_frame` in lib.rs.
 fn apply_frame(window: &tauri::WebviewWindow, frame: LogicalRect) {
-    let _ = window.set_size(tauri::LogicalSize::new(frame.width, frame.height));
-    let _ = window.set_position(tauri::LogicalPosition::new(frame.x, frame.y));
+    let target = window.clone();
+    let _ = window.run_on_main_thread(move || {
+        let _ = target.set_size(tauri::LogicalSize::new(frame.width, frame.height));
+        let _ = target.set_position(tauri::LogicalPosition::new(frame.x, frame.y));
+    });
 }
 
 /// Places the Ask window above the pill and shows it without taking focus from the frontmost
