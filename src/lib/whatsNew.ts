@@ -11,6 +11,17 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: '1.0.1',
+    changeKeys: [
+      'polishCorrections',
+      'polishRequests',
+      'polishCodeWords',
+      'polishSpelledNames',
+      'installWindow',
+      'tutorialClose',
+    ],
+  },
+  {
     version: '1.0.0',
     changeKeys: [
       'builtin',
