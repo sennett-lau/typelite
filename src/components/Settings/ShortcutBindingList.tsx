@@ -109,6 +109,13 @@ function IdleValue({
 }
 
 /** The recorder's button: the Settings field, or the large onboarding field. */
+/**
+ * Only one shortcut field records at a time. A field that starts recording first cancels the
+ * one already recording and waits until its capture has stopped, so that stop cannot land after
+ * the new capture started.
+ */
+let activeRecorder: { cancel: () => Promise<void> } | null = null
+
 function fieldClass(recording: boolean, large: boolean): string {
   if (large) return `keycap-field ${recording ? 'keycap-field-recording' : ''}`
   return `h-7 min-w-0 flex-1 rounded-[6px] border px-2.5 text-left font-mono text-[12px] transition-colors disabled:opacity-40 ${
@@ -129,6 +136,8 @@ export function HotkeyRecorder(props: HotkeyRecorderProps) {
 interface CaptureSession {
   active: boolean
   unlisten: UnlistenFn | null
+  /** This field's entry in `activeRecorder`. */
+  owner: { cancel: () => Promise<void> }
 }
 
 /**
@@ -158,22 +167,24 @@ function NativeHotkeyRecorder({
     latest.current = { onSaved, validateHotkey, onCancel, t }
   })
 
-  const endSession = useCallback(() => {
+  const endSession = useCallback((): Promise<void> => {
     const session = sessionRef.current
-    if (!session) return
+    if (!session) return Promise.resolve()
     sessionRef.current = null
     session.active = false
     session.unlisten?.()
+    if (activeRecorder === session.owner) activeRecorder = null
     setRecording(false)
     setLive([])
-    stopShortcutCapture().catch((stopError) => setError(String(stopError)))
+    return Promise.resolve(stopShortcutCapture()).catch((stopError) => setError(String(stopError)))
   }, [])
 
-  const cancel = useCallback(() => {
-    if (!sessionRef.current) return
-    endSession()
+  const cancel = useCallback((): Promise<void> => {
+    if (!sessionRef.current) return Promise.resolve()
+    const stopped = endSession()
     setError(null)
     latest.current.onCancel?.()
+    return stopped
   }, [endSession])
 
   const finish = useCallback(
@@ -202,12 +213,18 @@ function NativeHotkeyRecorder({
 
   const start = useCallback(async () => {
     if (disabled || sessionRef.current) return
-    const session: CaptureSession = { active: true, unlisten: null }
+    const owner = { cancel: () => cancel() }
+    const session: CaptureSession = { active: true, unlisten: null, owner }
     sessionRef.current = session
     setRecording(true)
     setLive([])
     setError(null)
+    const previous = activeRecorder
+    activeRecorder = owner
     try {
+      // Another field was recording: stop it before this one starts listening.
+      if (previous) await previous.cancel()
+      if (!session.active) return
       const unlisten = await listen<ShortcutCaptureEvent>(SHORTCUT_CAPTURE_EVENT, (event) => {
         if (!session.active) return
         const payload = event.payload
@@ -234,7 +251,12 @@ function NativeHotkeyRecorder({
     return () => window.removeEventListener('blur', cancel)
   }, [cancel, recording])
 
-  useEffect(() => endSession, [endSession])
+  useEffect(
+    () => () => {
+      void endSession()
+    },
+    [endSession],
+  )
 
   useEffect(() => {
     if (!autoStart || autoStarted.current) return
@@ -244,7 +266,7 @@ function NativeHotkeyRecorder({
 
   const handleClick = () => {
     if (disabled) return
-    if (recording) cancel()
+    if (recording) void cancel()
     else void start()
   }
 

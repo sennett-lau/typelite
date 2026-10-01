@@ -17,8 +17,15 @@ const CAPSULE_WINDOW_LABEL: &str = "capsule";
 /// Sent to the Ask window when the panel closes (Escape, a new run), so it drops its content.
 pub const PANEL_CLOSED_EVENT: &str = "ask:panel_closed";
 
-/// The panel's width, without the window's shadow padding.
+/// The panel's width for a short answer, without the window's shadow padding. A long answer
+/// or the open sources column make the page ask for more, up to `panel_limits`.
 pub const PANEL_WIDTH: f64 = 420.0;
+/// Plan `ask-web-search`: the panel may be at most this share of the work area's width…
+pub const MAX_WIDTH_SHARE: f64 = 2.0 / 3.0;
+/// …and this share of its height; past that the answer scrolls inside the panel.
+pub const MAX_HEIGHT_SHARE: f64 = 0.5;
+/// On a very short screen half its height is too little; the panel may still use this much.
+pub const MIN_MAX_HEIGHT: f64 = 240.0;
 /// Transparent room around the panel inside its window, for the shadow.
 pub const WINDOW_PADDING: f64 = 16.0;
 /// Space between the panel's bottom edge and the pill's top edge.
@@ -132,19 +139,49 @@ pub fn anchor_on_screen(screen: LogicalRect, pill_height: f64) -> PanelAnchor {
     }
 }
 
-/// The panel window's frame for a panel of `panel_height` (without padding): centred on the
-/// anchor, its bottom `GAP_ABOVE_PILL` above the pill, and kept `SCREEN_MARGIN` inside the
-/// screen. A panel taller than the screen is capped to it.
-pub fn panel_window_frame(anchor: &PanelAnchor, panel_height: f64) -> LogicalRect {
-    let screen = anchor.screen;
+/// Plan `ask-web-search`: the largest panel on a screen (a work area), without padding.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PanelLimits {
+    pub max_width: f64,
+    pub max_height: f64,
+}
+
+/// ⅔ of the work area's width and ½ of its height, never below the short-answer width (or
+/// `MIN_MAX_HEIGHT`) and never outside the screen's margins.
+pub fn panel_limits(screen: LogicalRect) -> PanelLimits {
+    let usable_width = (screen.width - 2.0 * SCREEN_MARGIN).max(1.0);
     let usable_height = (screen.height - 2.0 * SCREEN_MARGIN).max(1.0);
-    let panel_height = panel_height.max(1.0).min(usable_height);
+    PanelLimits {
+        max_width: (screen.width * MAX_WIDTH_SHARE)
+            .max(PANEL_WIDTH)
+            .min(usable_width)
+            .floor(),
+        max_height: (screen.height * MAX_HEIGHT_SHARE)
+            .max(MIN_MAX_HEIGHT)
+            .min(usable_height)
+            .floor(),
+    }
+}
+
+/// The panel window's frame for a panel of `panel_width` × `panel_height` (without padding):
+/// centred on the anchor, its bottom `GAP_ABOVE_PILL` above the pill, and kept `SCREEN_MARGIN`
+/// inside the screen. A panel larger than `panel_limits` is capped to them.
+pub fn panel_window_frame(
+    anchor: &PanelAnchor,
+    panel_width: f64,
+    panel_height: f64,
+) -> LogicalRect {
+    let screen = anchor.screen;
+    let limits = panel_limits(screen);
+    let panel_width = panel_width.max(1.0).min(limits.max_width);
+    let panel_height = panel_height.max(1.0).min(limits.max_height);
 
     // Horizontal: centred on the pill, then pushed inside the screen. A screen narrower than
     // the panel aligns it to the left margin.
     let min_x = screen.x + SCREEN_MARGIN;
-    let max_x = screen.right() - SCREEN_MARGIN - PANEL_WIDTH;
-    let panel_x = (anchor.centre_x - PANEL_WIDTH / 2.0).min(max_x).max(min_x);
+    let max_x = screen.right() - SCREEN_MARGIN - panel_width;
+    let panel_x = (anchor.centre_x - panel_width / 2.0).min(max_x).max(min_x);
 
     // Vertical: just above the pill, then pushed inside the screen.
     let min_y = screen.y + SCREEN_MARGIN;
@@ -156,12 +193,12 @@ pub fn panel_window_frame(anchor: &PanelAnchor, panel_height: f64) -> LogicalRec
     LogicalRect {
         x: (panel_x - WINDOW_PADDING).round(),
         y: (panel_y - WINDOW_PADDING).round(),
-        width: PANEL_WIDTH + 2.0 * WINDOW_PADDING,
+        width: (panel_width + 2.0 * WINDOW_PADDING).round(),
         height: (panel_height + 2.0 * WINDOW_PADDING).round(),
     }
 }
 
-/// Whether the panel is open, where it hangs, and how tall the page says it is.
+/// Whether the panel is open, where it hangs, and how large the page says it is.
 #[derive(Debug)]
 pub struct AskPanelState(Mutex<AskPanelInner>);
 
@@ -169,6 +206,7 @@ pub struct AskPanelState(Mutex<AskPanelInner>);
 struct AskPanelInner {
     open: bool,
     anchor: Option<PanelAnchor>,
+    panel_width: f64,
     panel_height: f64,
     /// The pill's height when it was last seen, for placing the panel without a visible pill.
     last_pill_height: f64,
@@ -179,6 +217,7 @@ impl Default for AskPanelState {
         Self(Mutex::new(AskPanelInner {
             open: false,
             anchor: None,
+            panel_width: PANEL_WIDTH,
             panel_height: DEFAULT_PANEL_HEIGHT,
             last_pill_height: DEFAULT_PILL_HEIGHT,
         }))
@@ -195,30 +234,38 @@ impl AskPanelState {
         self.lock().open
     }
 
-    /// Opens the panel at `anchor`. A panel that is already open keeps its height, so a new
-    /// message does not jump; a fresh one starts at the default height. Returns the frame, or
+    /// Opens the panel at `anchor`. A panel that is already open keeps its size, so a new
+    /// message does not jump; a fresh one starts at the default size. Returns the frame, or
     /// None without an anchor (no screen was found; the window then stays where it is).
     pub fn open(&self, anchor: Option<PanelAnchor>) -> Option<LogicalRect> {
         let mut inner = self.lock();
         if !inner.open {
+            inner.panel_width = PANEL_WIDTH;
             inner.panel_height = DEFAULT_PANEL_HEIGHT;
         }
         inner.open = true;
         inner.anchor = anchor;
-        anchor.map(|anchor| panel_window_frame(&anchor, inner.panel_height))
+        anchor.map(|anchor| panel_window_frame(&anchor, inner.panel_width, inner.panel_height))
     }
 
-    /// The page reported its height. Returns the new frame while the panel is open.
-    pub fn set_panel_height(&self, height: f64) -> Option<LogicalRect> {
+    /// The page reported its size. Returns the new frame while the panel is open.
+    pub fn set_panel_size(&self, width: f64, height: f64) -> Option<LogicalRect> {
         let mut inner = self.lock();
-        if !height.is_finite() || height <= 0.0 {
+        let valid = |v: f64| v.is_finite() && v > 0.0;
+        if !valid(width) || !valid(height) {
             return None;
         }
+        inner.panel_width = width;
         inner.panel_height = height;
         match (inner.open, inner.anchor) {
-            (true, Some(anchor)) => Some(panel_window_frame(&anchor, height)),
+            (true, Some(anchor)) => Some(panel_window_frame(&anchor, width, height)),
             _ => None,
         }
+    }
+
+    /// The largest panel on the screen the open panel hangs on.
+    pub fn limits(&self) -> Option<PanelLimits> {
+        self.lock().anchor.map(|anchor| panel_limits(anchor.screen))
     }
 
     /// Closes the panel. Returns true when it was open.
@@ -357,10 +404,18 @@ pub fn close_ask_panel(app: tauri::AppHandle) {
     close(&app);
 }
 
-/// The page reports the panel's height; the window keeps its bottom edge and grows upwards.
+/// Plan `ask-web-search`: the largest panel the page may lay out on the current screen, so a
+/// long answer can widen to it and scroll past its height.
 #[tauri::command]
-pub fn resize_ask_panel(app: tauri::AppHandle, height: f64) {
-    let Some(frame) = app.state::<AskPanelState>().set_panel_height(height) else {
+pub fn ask_panel_limits(app: tauri::AppHandle) -> Option<PanelLimits> {
+    app.state::<AskPanelState>().limits()
+}
+
+/// The page reports the panel's size; the window keeps its bottom edge, grows upwards and
+/// stays centred on the pill.
+#[tauri::command]
+pub fn resize_ask_panel(app: tauri::AppHandle, width: f64, height: f64) {
+    let Some(frame) = app.state::<AskPanelState>().set_panel_size(width, height) else {
         return;
     };
     if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
@@ -439,7 +494,7 @@ mod tests {
         let screen = rect(0.0, 0.0, 1512.0, 982.0);
         let pill = rect(681.0, 866.0, 150.0, 36.0);
         let anchor = anchor_above_pill(pill, &[screen]).expect("a screen holds the pill");
-        let panel = panel_of(panel_window_frame(&anchor, 200.0));
+        let panel = panel_of(panel_window_frame(&anchor, PANEL_WIDTH, 200.0));
 
         assert_eq!(panel.width, PANEL_WIDTH);
         assert_eq!(panel.height, 200.0);
@@ -466,30 +521,76 @@ mod tests {
             rect(1400.0, 866.0, 110.0, 36.0),
         ] {
             let anchor = anchor_above_pill(pill, &[screen]).unwrap();
-            let panel = panel_of(panel_window_frame(&anchor, 200.0));
+            let panel = panel_of(panel_window_frame(&anchor, PANEL_WIDTH, 200.0));
             assert!(panel.x >= screen.x + SCREEN_MARGIN, "{panel:?}");
             assert!(panel.right() <= screen.right() - SCREEN_MARGIN, "{panel:?}");
         }
         // Pill dragged to the top: the panel cannot go above the screen.
         let anchor = anchor_above_pill(rect(700.0, 20.0, 150.0, 36.0), &[screen]).unwrap();
-        let panel = panel_of(panel_window_frame(&anchor, 200.0));
+        let panel = panel_of(panel_window_frame(&anchor, PANEL_WIDTH, 200.0));
         assert_eq!(panel.y, screen.y + SCREEN_MARGIN);
     }
 
     #[test]
     fn a_panel_taller_than_the_screen_is_capped_to_it() {
-        let screen = rect(0.0, 0.0, 800.0, 300.0);
+        let screen = rect(0.0, 0.0, 800.0, 200.0);
         let anchor = anchor_on_screen(screen, 36.0);
-        let panel = panel_of(panel_window_frame(&anchor, 1_000.0));
+        let panel = panel_of(panel_window_frame(&anchor, PANEL_WIDTH, 1_000.0));
         assert_eq!(panel.y, SCREEN_MARGIN);
-        assert_eq!(panel.height, 300.0 - 2.0 * SCREEN_MARGIN);
+        assert_eq!(panel.height, 200.0 - 2.0 * SCREEN_MARGIN);
+    }
+
+    #[test]
+    fn a_large_panel_is_capped_to_two_thirds_of_the_width_and_half_the_height() {
+        let screen = rect(0.0, 25.0, 1512.0, 887.0);
+        let limits = panel_limits(screen);
+        assert_eq!(
+            limits,
+            PanelLimits {
+                max_width: 1008.0,
+                max_height: 443.0
+            }
+        );
+        let anchor = anchor_on_screen(screen, 32.0);
+        let panel = panel_of(panel_window_frame(&anchor, 5_000.0, 5_000.0));
+        assert_eq!(panel.width, 1008.0);
+        assert_eq!(panel.height, 443.0);
+        // Still centred on the pill and just above it.
+        assert_eq!(panel.x + panel.width / 2.0, anchor.centre_x);
+        assert_eq!(panel.bottom(), anchor.pill_top - GAP_ABOVE_PILL);
+    }
+
+    #[test]
+    fn limits_never_go_below_the_short_panel_or_outside_the_screen() {
+        // Narrow: ⅔ of 500 is below 420, so 420; the margins still win on a 400 pt screen.
+        assert_eq!(
+            panel_limits(rect(0.0, 0.0, 500.0, 900.0)).max_width,
+            PANEL_WIDTH
+        );
+        assert_eq!(panel_limits(rect(0.0, 0.0, 400.0, 900.0)).max_width, 384.0);
+        // Short: half of 300 is below the floor, so the floor.
+        assert_eq!(
+            panel_limits(rect(0.0, 0.0, 1000.0, 300.0)).max_height,
+            MIN_MAX_HEIGHT
+        );
+    }
+
+    #[test]
+    fn a_wider_panel_keeps_its_centre_and_bottom_edge() {
+        let state = AskPanelState::default();
+        let anchor = anchor_on_screen(rect(0.0, 0.0, 1512.0, 982.0), 36.0);
+        let first = state.open(Some(anchor)).unwrap();
+        let wide = state.set_panel_size(708.0, DEFAULT_PANEL_HEIGHT).unwrap();
+        assert_eq!(first.bottom(), wide.bottom());
+        assert_eq!(first.x + first.width / 2.0, wide.x + wide.width / 2.0);
+        assert_eq!(state.limits().unwrap().max_width, 1008.0);
     }
 
     #[test]
     fn a_narrow_screen_aligns_the_panel_to_its_left_margin() {
         let screen = rect(100.0, 0.0, 400.0, 800.0);
         let anchor = anchor_on_screen(screen, 36.0);
-        let panel = panel_of(panel_window_frame(&anchor, 120.0));
+        let panel = panel_of(panel_window_frame(&anchor, PANEL_WIDTH, 120.0));
         assert_eq!(panel.x, screen.x + SCREEN_MARGIN);
     }
 
@@ -506,7 +607,7 @@ mod tests {
         let pill = pill_frame_in_capsule(capsule);
         let anchor = anchor_above_pill(pill, &[retina, external]).unwrap();
         assert_eq!(anchor.screen, external);
-        let panel = panel_of(panel_window_frame(&anchor, 150.0));
+        let panel = panel_of(panel_window_frame(&anchor, PANEL_WIDTH, 150.0));
         assert!(panel.x >= external.x + SCREEN_MARGIN);
         assert!(panel.right() <= external.right() - SCREEN_MARGIN);
         assert_eq!(panel.bottom(), pill.y - GAP_ABOVE_PILL);
@@ -548,7 +649,7 @@ mod tests {
 
         let above_dock = anchor_on_screen(with_dock, 32.0);
         assert_eq!(above_dock.pill_top + 32.0, 912.0 - PILL_BOTTOM_GAP);
-        let panel = panel_of(panel_window_frame(&above_dock, 150.0));
+        let panel = panel_of(panel_window_frame(&above_dock, PANEL_WIDTH, 150.0));
         assert_eq!(panel.bottom(), above_dock.pill_top - GAP_ABOVE_PILL);
 
         let near_edge = anchor_on_screen(without_dock, 32.0);
@@ -561,7 +662,9 @@ mod tests {
         let state = AskPanelState::default();
         let anchor = anchor_on_screen(rect(0.0, 0.0, 1512.0, 982.0), 36.0);
         let first = state.open(Some(anchor)).unwrap();
-        let taller = state.set_panel_height(260.0).expect("the panel is open");
+        let taller = state
+            .set_panel_size(PANEL_WIDTH, 260.0)
+            .expect("the panel is open");
         assert_eq!(first.bottom(), taller.bottom());
         assert!(taller.y < first.y);
         assert_eq!(first.x, taller.x);
@@ -572,7 +675,11 @@ mod tests {
         let state = AskPanelState::default();
         assert!(!state.is_open());
         assert!(!state.close(), "closing a closed panel reports nothing");
-        assert_eq!(state.set_panel_height(200.0), None, "closed: no resize");
+        assert_eq!(
+            state.set_panel_size(PANEL_WIDTH, 200.0),
+            None,
+            "closed: no resize"
+        );
 
         state.open(Some(anchor_on_screen(rect(0.0, 0.0, 1512.0, 982.0), 36.0)));
         assert!(state.is_open());
@@ -586,7 +693,7 @@ mod tests {
         let state = AskPanelState::default();
         let anchor = anchor_on_screen(rect(0.0, 0.0, 1512.0, 982.0), 36.0);
         state.open(Some(anchor));
-        state.set_panel_height(300.0);
+        state.set_panel_size(PANEL_WIDTH, 300.0);
         let reopened_while_open = state.open(Some(anchor)).unwrap();
         assert_eq!(
             reopened_while_open.height,
@@ -603,14 +710,15 @@ mod tests {
         let state = AskPanelState::default();
         assert_eq!(state.open(None), None);
         assert!(state.is_open());
-        assert_eq!(state.set_panel_height(200.0), None);
+        assert_eq!(state.set_panel_size(PANEL_WIDTH, 200.0), None);
     }
 
     #[test]
-    fn invalid_heights_are_ignored() {
+    fn invalid_sizes_are_ignored() {
         let state = AskPanelState::default();
         state.open(Some(anchor_on_screen(rect(0.0, 0.0, 1512.0, 982.0), 36.0)));
-        assert_eq!(state.set_panel_height(0.0), None);
-        assert_eq!(state.set_panel_height(f64::NAN), None);
+        assert_eq!(state.set_panel_size(PANEL_WIDTH, 0.0), None);
+        assert_eq!(state.set_panel_size(PANEL_WIDTH, f64::NAN), None);
+        assert_eq!(state.set_panel_size(-1.0, 200.0), None);
     }
 }
