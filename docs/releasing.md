@@ -6,20 +6,27 @@ a **draft** release. Nothing is public until you publish the draft by hand.
 
 ## Branches and tags
 
-Typelite uses trunk-based releases:
-
-- **`main` is always releasable.** Every change reaches it through a pull request with the gate
-  passing; there is no long-lived develop or release branch.
-- **A release is an annotated tag** `vX.Y.Z` on a `main` commit (Semantic Versioning: a patch
+- **`main` is where work lands.** Every change reaches it through a pull request with the gate
+  passing. Merge to `main` only what is meant for the next release; unfinished features stay on
+  their pull-request branches until they are ready.
+- **A release line is a branch `release/X.Y`**, created from `main` when `X.Y.0` is cut (or, for
+  a line that was tagged on `main` before this rule, from its tag: `release/1.0` starts at
+  `v1.0.0`). All `X.Y.*` releases are tagged on it. It lives as long as `X.Y` gets patches.
+- **A release is an annotated tag** `vX.Y.Z` on its release branch (Semantic Versioning: a patch
   `X.Y.Z+1` for fixes, a minor `X.Y+1.0` for features, a major for breaking changes such as a
-  settings format that older builds cannot read). The tag starts the Release workflow; tags are
-  never moved or reused once a release is published.
-- **Prepare a release** on a short-lived branch `release/prepare-X.Y.Z` (version bump and What's
-  New), merged to `main` like any pull request, then tag the merge commit.
-- **Release branches only for patches of an older line.** When `main` has moved on and `X.Y` needs
-  a fix, create `release/X.Y` from the tag `vX.Y.Z`, fix on `main` first and cherry-pick the fix
-  onto `release/X.Y`, bump the patch version there, and tag `vX.Y.Z+1` on that branch. Until then,
-  no release branch exists.
+  settings format that older builds cannot read). The tag starts the Release workflow. Tags are
+  never moved or reused once a release is published; before that, a failed build may be tagged
+  again (see below).
+- **Patches go to the release branch in one of two ways:**
+  - **From `main`:** the fix is merged to `main` first, then cherry-picked onto `release/X.Y`
+    (`git cherry-pick -x <commit>`, so the commit says where it came from).
+  - **Hotfix straight to the release branch:** when `main` holds more than the fix, or the fix is
+    urgent, open the pull request against `release/X.Y`. After it is merged, bring the same fix to
+    `main` with a second pull request (cherry-pick it), so the next line has it too.
+- **Every patch bumps the version and adds its What's New entry on the release branch.** The same
+  What's New entry also goes to `main` (the version on `main` stays at its line's last value until
+  the next minor or major is prepared), so later releases keep the whole list.
+- Pull requests into `release/*` run the same CI as pull requests into `main`.
 
 ## What the workflow builds
 
@@ -41,27 +48,47 @@ The release notes come from What's New for that version
 
 ## Cut a release
 
-1. **Bump the version** to `X.Y.Z` in all three places, and keep them equal:
+### A new line (`X.Y.0`)
+
+1. On a short-lived branch `release/prepare-X.Y.0` from `main`: **bump the version** to `X.Y.0`
+   in all three places, and keep them equal:
    - `package.json` (`version`)
    - `src-tauri/tauri.conf.json` (`version`)
    - `src-tauri/Cargo.toml` (`[package] version`; `cargo build` updates `Cargo.lock`)
-2. **Update What's New**: add an entry for `X.Y.Z` at the top of `src/lib/whatsNew.ts`, with
+2. **Update What's New**: add an entry for `X.Y.0` at the top of `src/lib/whatsNew.ts`, with
    English strings in `src/i18n/locales/en.json` and Chinese strings in `zh.json`.
-3. Merge these changes to `main` through a pull request, with the offline gate passing.
-4. **Tag and push** from an up-to-date `main`:
+3. Merge it to `main` through a pull request, with the offline gate passing.
+4. **Create the release branch and tag it:**
 
    ```sh
    git switch main && git pull
-   git tag -a vX.Y.Z -m "Typelite X.Y.Z"
-   git push origin vX.Y.Z
+   git switch -c release/X.Y && git push -u origin release/X.Y
+   git tag -a vX.Y.0 -m "Typelite X.Y.0"
+   git push origin vX.Y.0
    ```
 
-   The workflow stops early if the tag does not match the version in `tauri.conf.json`.
-5. **Review the draft** under Releases: download the DMG, check it against `SHA256SUMS.txt`,
-   install it on a clean account if you can, and read the notes. Then press **Publish release**.
+### A patch (`X.Y.Z+1`)
 
-If the build fails, fix it on `main`, delete the tag (`git push --delete origin vX.Y.Z` and
-`git tag -d vX.Y.Z`) and any draft it left, then tag again.
+1. Get the fixes onto `release/X.Y`: cherry-picks from `main`, or hotfix pull requests against
+   `release/X.Y` (see above).
+2. On `release/X.Y` (through a pull request against it): bump the version to `X.Y.Z+1` in the
+   three places and add its What's New entry. Add the same entry to `main` in a pull request.
+3. **Tag the release branch:**
+
+   ```sh
+   git switch release/X.Y && git pull
+   git tag -a vX.Y.Z+1 -m "Typelite X.Y.Z+1"
+   git push origin vX.Y.Z+1
+   ```
+
+### Both
+
+- The workflow stops early if the tag does not match the version in `tauri.conf.json`.
+- **Review the draft** under Releases: download the DMG, check it against `SHA256SUMS.txt`,
+  install it on a clean account if you can, and read the notes. Then press **Publish release**.
+- If the build fails (or the draft needs another fix) before it is published: cancel the run,
+  delete the tag (`git push --delete origin vX.Y.Z` and `git tag -d vX.Y.Z`) and any draft it
+  left, fix the release branch, then tag again.
 
 ## Updates
 
@@ -81,8 +108,8 @@ the update package with Tauri's updater key and uploads it with `latest.json`; t
 
 ## Dry run
 
-Actions → **Release** → **Run workflow** builds the same files from the chosen branch without a
-tag. They are attached to the workflow run as an artifact (kept for 7 days); no release is created.
+Actions → **Release** → **Run workflow** builds the same files from the chosen branch (for
+example `release/X.Y`) without a tag. They are attached to the workflow run as an artifact (kept for 7 days); no release is created.
 Use it to check the pipeline before the first real tag.
 
 ## Checksums
