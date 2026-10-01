@@ -213,6 +213,7 @@ export function Capsule() {
   const doneFlash = useDoneFlash(pipelineState, hasError)
   useQuietFadeTimer(quietFade)
   useCapsuleResize(doneFlash, rootRef)
+  const askSearching = useAppStore((s) => s.askStage === 'searching')
 
   const liveState = getCapsuleState(
     pipelineState,
@@ -222,8 +223,9 @@ export function Capsule() {
     typingNudge,
     quietFade,
   )
+  // Ask's thinking state while it searches the web has the wider pill, as the window does.
   const liveSize = getPillSize(
-    liveState,
+    liveState === 'ask_thinking' && askSearching ? 'ask_searching' : liveState,
     activeVoiceMode,
     errorHasAction,
     translatePill,

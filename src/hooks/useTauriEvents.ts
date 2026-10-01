@@ -20,10 +20,20 @@ import {
   type PipelineErrorPayload,
 } from '../lib/capsuleError'
 import { applyVerificationEvent, type PresetVerificationEvent } from '../lib/readiness'
-import { endpointForError, recordAiResult, recordSpeechResult } from '../lib/connectionStatus'
+import {
+  endpointForError,
+  recordAiResult,
+  recordSpeechResult,
+  recordSearchResult,
+} from '../lib/connectionStatus'
 import { useSpeechSetupStore } from '../stores/speechSetupStore'
 import { useAiSetupStore } from '../stores/aiSetupStore'
-import { ASK_SELECTION_PREVIEW_EVENT, type SpeechSetupStatus } from '../lib/tauri'
+import {
+  ASK_SELECTION_PREVIEW_EVENT,
+  ASK_STAGE_EVENT,
+  type AskStage,
+  type SpeechSetupStatus,
+} from '../lib/tauri'
 import { TYPING_NUDGE_EVENT } from '../lib/speedStats'
 
 type Unlisten = () => void | Promise<void>
@@ -98,6 +108,8 @@ export function useTauriEvents() {
     }
 
     addListener<number>('audio:volume', setAudioVolume)
+    // Plan `searxng-setup`: the sidebar's Search dot follows real searches.
+    addListener<boolean>('search:result', recordSearchResult)
     addListener<string>('stt:partial', setPartialTranscript)
     addListener<string>('stt:final', setFinalTranscript)
     addListener<string>('llm:chunk', appendPolishedChunk)
@@ -147,6 +159,10 @@ export function useTauriEvents() {
     addListener<VoiceMode | null>('pipeline:voice_mode', setActiveVoiceMode)
     addListener<string | null>(ASK_SELECTION_PREVIEW_EVENT, (preview) =>
       useAppStore.getState().setAskSelectionPreview(preview ?? null),
+    )
+    // Plan `ask-web-search`: "Searching the web…" while Ask searches.
+    addListener<AskStage>(ASK_STAGE_EVENT, (stage) =>
+      useAppStore.getState().setAskStage(stage === 'searching' ? 'searching' : 'thinking'),
     )
     addListener<string>('pipeline:target_app', setTargetApp)
     addListener<InsertResult>('pipeline:insert_result', (result) => {

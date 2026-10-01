@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Globe, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { LiveSearchState } from '../../lib/tauri'
+import { liveBodyKey } from './liveSearch'
 
 interface NeedsLiveInfoProps {
   /** Answers from the model's own knowledge (with an "out of date" note). */
@@ -8,11 +10,10 @@ interface NeedsLiveInfoProps {
   onClose: () => void
   /** True while the "Answer anyway" request runs. */
   answering?: boolean
-  /**
-   * A later plan adds a "Set up web search" action here. Nothing passes it yet, so nothing
-   * extra is rendered; the button row already leaves room for it.
-   */
+  /** An extra action before Close (plan `ask-web-search`: "Set up web search"). */
   setupAction?: ReactNode
+  /** Plan `ask-web-search`: why the web was not used; picks the body text. */
+  liveSearch?: LiveSearchState | null
 }
 
 /**
@@ -24,6 +25,7 @@ export function NeedsLiveInfo({
   onClose,
   answering = false,
   setupAction,
+  liveSearch,
 }: NeedsLiveInfoProps) {
   const { t } = useTranslation()
   return (
@@ -32,7 +34,7 @@ export function NeedsLiveInfo({
         <Globe size={14} className="shrink-0 text-text-tertiary" />
         <p className="text-[13px] font-medium text-text-primary">{t('ask.liveTitle')}</p>
       </div>
-      <p className="text-[12px] leading-5 text-text-secondary">{t('ask.liveBody')}</p>
+      <p className="text-[12px] leading-5 text-text-secondary">{t(liveBodyKey(liveSearch))}</p>
       <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
         {setupAction}
         <button
