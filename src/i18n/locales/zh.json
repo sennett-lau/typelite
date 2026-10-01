@@ -43,7 +43,7 @@
     "aboutSelectionHint": "正在就选中文本提问",
     "send": "提问",
     "liveBodySearchFailed": "这个问题需要最新信息，但网络搜索失败了。请在设置中检查搜索服务器。",
-    "liveBodyNoResults": "这个问题需要最新信息，但网络搜索没有找到结果。",
+    "liveBodyNoResults": "这个问题需要最新信息，但搜索结果没有提供足够的信息来回答。",
     "setUpWebSearch": "设置网络搜索",
     "searchingWeb": "正在搜索网络…"
   },

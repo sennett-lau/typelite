@@ -8,7 +8,7 @@ metasearch engine. Search is off until the user adds one; without it Ask keeps t
 [`ask-translate-and-live-questions`](../2026-09-25-ask-translate-and-live-questions/index.md),
 now pointing to Settings.
 
-Status: building — 2026-09-29
+Status: building — 2026-10-01
 
 This plan replaces the "Later: web search" section and the "no web search" non-goal of plan
 `ask-translate-and-live-questions`: the default is a self-hosted SearXNG, not a hosted service.
@@ -42,7 +42,11 @@ This plan replaces the "Later: web search" section and the "no web search" non-g
 | Search only after the live-question check says live | Timeless questions never reach the search server. |
 | The live check also writes the search query; the question is searched only when it gives none (2026-09-30) | A spoken question searched as transcribed ("下场F one系几时") finds unrelated pages; a few keywords in the question's language, with names written the usual way (F1), find the schedule. One request, no extra wait. |
 | An answer that copies the results back is asked once more with a plainer instruction, then reported as an AI error (2026-09-30) | A small model sometimes echoes the `<search_results>` block; the raw block must never show as an answer, and "no results" would be untrue. |
-| Search the general and news categories in parallel; two news results first, then general, five in all | The experiment: general finds schedules, news finds what changed this week; either alone got one of three wrong. |
+| Search general and news in parallel; prioritize general results except for news questions (2026-10-01) | Headlines must not displace schedules, prices or weather. Both categories fill available slots. |
+| Upcoming schedules rank all returned snippets by explicit future dates before keeping five (2026-10-01) | A dated event can sit below undated calendar landing pages; taking the first five lost the answer in the reported F1 case. |
+| Upcoming-event answers use literal event/date extraction, with dates compared and output rendered in Rust (2026-10-01) | A small model invented dates even with date instructions. Unsupported text, past dates and publication dates must not turn into a confident next event. Original source wording and date ranges are preserved; missing evidence uses the no-answer state. |
+| Give the query classifier today’s date and explicit JSON examples (2026-10-01) | The small model omitted the query and searched without the current month/year. |
+| Animate shell and source rail widths together over 320 ms; source contents scroll within the answer’s height (2026-10-01) | Avoid the width jump before opening and after closing. Exits are interruptible and reduced motion skips movement. |
 | 4 s timeout per request, one failing category is fine | Ask must stay quick; SearXNG itself waits on slow engines. |
 | Snippets capped at 400 characters, titles at 160, HTML removed, only http(s) links | Small prompt for a small model; nothing odd reaches the panel. |
 | Results sit in `<search_results>`, marked untrusted, `<` and `>` removed from them | Prompt-injection guard, like `<selected_text>`; a result cannot close the block. |

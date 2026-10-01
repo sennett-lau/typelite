@@ -94,12 +94,19 @@ deletes it, and **Turn off web search** removes the address and the key.
 - Ask first decides whether a question needs live information. Only then does it search.
 - While it searches, the pill says **Searching the web…**, then **Thinking** while the AI writes
   the answer.
-- It searches SearXNG's general and news categories at the same time and keeps five results (the
-  top two news results first), waiting at most 4 seconds.
+- It searches SearXNG's general and news categories at the same time and keeps five results
+  (news first only for news questions), waiting at most 4 seconds. For upcoming events, it
+  looks for future dates across the returned results before choosing the five snippets.
 - The results go to your AI polish service with the instruction to answer only from them and to
   cite them as `[1]`, `[2]`. **N sources** under the answer opens a column beside it with a card
   per page (site, title and a short snippet). Hover a card for **Open**, which opens the page in
   your browser, and **Copy link**. A citation in the answer opens the column on its page.
+- For “next event” questions, the AI copies event names and dates from the snippets. Typelite
+  checks that both appear together in the source, rejects past or unreadable dates, and shows
+  the earliest supported event in the source’s original wording. It preserves date ranges and
+  does not infer a race day, weekday or local time. If the snippets cannot support an answer,
+  Ask says that it did not find enough information. Search snippets can still be incomplete or
+  outdated; the source links let you check the full schedule.
 - Search results are text from web pages. Typelite gives them to the AI marked as untrusted data,
   not instructions.
 - The log records how many results came back and how long each step took, never the question or
@@ -112,5 +119,5 @@ deletes it, and **Turn off web search** removes the address and the key.
 | Test: "The server refused JSON" (HTTP 403) | JSON output is off in SearXNG. | Add `json` to `search.formats` in `settings.yml` and run `docker restart searxng`. |
 | Test: "Could not reach the server" | SearXNG is not running, or the address or port is wrong. | Check `docker ps` and the address. |
 | Answers get worse, or SearXNG's log shows `CAPTCHA` or `suspended` | A search engine is blocking SearXNG for a while. | Nothing to do: SearXNG keeps using the other engines. If it lasts, turn that engine off in SearXNG's preferences. |
-| Ask: "the web search found nothing" | No engine returned results for the question. | Ask again with more detail, or press **Answer anyway**. |
+| Ask: "not enough information to answer" | The search returned no results, or the snippets could not support an answer. | Ask again with more detail, or press **Answer anyway**. |
 | An answer mixes up details | Small AI models make mistakes with search results too. | Open the source links to check, or use a larger AI polish model. |

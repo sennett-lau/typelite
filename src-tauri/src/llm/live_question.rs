@@ -14,7 +14,7 @@ use super::LlmConfig;
 /// How long the classification request may take before the keyword list decides.
 pub const CLASSIFY_TIMEOUT: Duration = Duration::from_secs(3);
 /// Enough for `{"live": true, "reason": "schedule", "query": "…"}` with a short query.
-const CLASSIFY_MAX_TOKENS: u32 = 80;
+const CLASSIFY_MAX_TOKENS: u32 = 120;
 /// A search query longer than this is not a query; the question is searched instead.
 const MAX_QUERY_CHARS: usize = 120;
 
@@ -23,7 +23,18 @@ const REASONS: &[&str] = &[
     "news", "time", "price", "weather", "score", "schedule", "release", "other", "none",
 ];
 
-const CLASSIFIER_PROMPT: &str = "You decide whether a question needs live information. A question is live when a correct answer depends on facts that change often or may be newer than your training data: news and current events; anything about today, now, this week, the latest or current state; prices, stock and exchange rates; weather; sports scores and results; schedules, opening hours and timetables; recent releases, versions or announcements. Timeless facts, definitions, history, science, maths, how-to and writing help are not live. Reply with JSON only, no other text: {\"live\": true or false, \"reason\": one of \"news\", \"time\", \"price\", \"weather\", \"score\", \"schedule\", \"release\", \"other\", \"none\", \"query\": for a live question, a short web search query (a few keywords, in the question's language, names and abbreviations written the usual way, for example F1 or iPhone; the question was spoken, so fix what was misheard), else \"\"}.";
+const CLASSIFIER_PROMPT: &str = r#"Classify the question and write a web search query. Do not answer it.
+Return JSON only, with all three keys: {"live":true,"reason":"schedule","query":"search keywords"}.
+"live": true for current facts, news, prices, weather, scores, schedules or recent releases; false for timeless facts, explanations, history or writing help.
+"reason": exactly one of news, time, price, weather, score, schedule, release, other, none.
+"query": short search keywords, or "" if live is false. Preserve the requested time period. For next/upcoming events, include the current month and year and words for the schedule; never guess the event, venue or date. Fix spoken names (F one -> F1). Use standard search terms in the question's language, not conversational wording.
+Examples:
+Question: 幾時下場F1? (today 2030-08-12)
+{"live":true,"reason":"schedule","query":"F1 下一場 賽程 2030年8月"}
+Question: When is the next race? (today 2030-08-12)
+{"live":true,"reason":"schedule","query":"next race schedule August 2030"}
+Question: Explain gravity
+{"live":false,"reason":"none","query":""}"#;
 
 /// Who made the decision.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -58,11 +69,19 @@ pub struct LiveCheck {
 
 /// The chat request body for the classification, with the preset's extra fields.
 pub fn build_classifier_body(config: &LlmConfig, question: &str) -> Value {
+    build_classifier_body_for_date(
+        config,
+        question,
+        &chrono::Local::now().format("%Y-%m-%d").to_string(),
+    )
+}
+
+fn build_classifier_body_for_date(config: &LlmConfig, question: &str, today: &str) -> Value {
     super::protocol::build_chat_body(
         &config.model,
         vec![
             json!({ "role": "system", "content": CLASSIFIER_PROMPT }),
-            json!({ "role": "user", "content": format!("Question: {question}") }),
+            json!({ "role": "user", "content": format!("Today is {today}.\nQuestion: {question}") }),
         ],
         CLASSIFY_MAX_TOKENS,
         0.0,
@@ -172,6 +191,10 @@ const ENGLISH_KEYWORDS: &[(&str, &str)] = &[
     ("who won", "score"),
     ("standings", "score"),
     ("schedule", "schedule"),
+    ("next race", "schedule"),
+    ("next match", "schedule"),
+    ("next game", "schedule"),
+    ("upcoming", "schedule"),
     ("opening hours", "schedule"),
     ("what time does", "schedule"),
     ("timetable", "schedule"),
@@ -183,6 +206,10 @@ const ENGLISH_KEYWORDS: &[(&str, &str)] = &[
 
 /// Chinese keywords, Simplified and Traditional.
 const CHINESE_KEYWORDS: &[(&str, &str)] = &[
+    ("下場", "schedule"),
+    ("下场", "schedule"),
+    ("下一場", "schedule"),
+    ("下一场", "schedule"),
     ("新闻", "news"),
     ("新聞", "news"),
     ("头条", "news"),
@@ -350,7 +377,8 @@ mod tests {
 
     #[test]
     fn classifier_body_is_short_strict_and_keeps_preset_extras() {
-        let body = build_classifier_body(&config(), "What's the AI news today?");
+        let body =
+            build_classifier_body_for_date(&config(), "What's the AI news today?", "2026-10-01");
         assert_eq!(body["model"], "test-model");
         assert_eq!(body["max_tokens"], CLASSIFY_MAX_TOKENS);
         assert_eq!(body["temperature"], 0.0);
@@ -358,6 +386,10 @@ mod tests {
         assert_eq!(body["reasoning_effort"], "none");
         let system = body["messages"][0]["content"].as_str().unwrap();
         assert!(system.contains("JSON only"));
+        assert!(body["messages"][1]["content"]
+            .as_str()
+            .unwrap()
+            .contains("Today is 2026-10-01"));
         assert!(body["messages"][1]["content"]
             .as_str()
             .unwrap()
