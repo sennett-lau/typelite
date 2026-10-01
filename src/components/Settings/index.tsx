@@ -8,7 +8,8 @@ import { SttPane } from './SttPane'
 import { LlmPane } from './LlmPane'
 import { ScenesPane } from './ScenesPane'
 import { SystemPane } from './SystemPane'
-import { AlignLeft, Mic, Monitor, Settings as Gear, Sparkles } from 'lucide-react'
+import { SearchPane } from './SearchPane'
+import { AlignLeft, Globe, Mic, Monitor, Settings as Gear, Sparkles } from 'lucide-react'
 import { DirtyBar } from './shared/DirtyBar'
 import { useDirtyConfig } from './shared/useDirtyConfig'
 
@@ -21,6 +22,8 @@ const PANES = [
   { id: 'stt', labelKey: 'settings.speechRecognition', Icon: Mic },
   { id: 'llm', labelKey: 'settings.aiPolish', Icon: Sparkles },
   { id: 'scenes', labelKey: 'settings.prompts', Icon: AlignLeft },
+  // Plan `ask-web-search`: the search provider Ask uses for live questions.
+  { id: 'search', labelKey: 'settings.search', Icon: Globe },
   { id: 'system', labelKey: 'settings.system', Icon: Monitor },
 ] as const
 
@@ -95,6 +98,7 @@ export function Settings() {
         {activePane === 'stt' && <SttPane />}
         {activePane === 'llm' && <LlmPane />}
         {activePane === 'scenes' && <ScenesPane />}
+        {activePane === 'search' && <SearchPane />}
         {activePane === 'system' && <SystemPane />}
       </motion.div>
     </PageFrame>

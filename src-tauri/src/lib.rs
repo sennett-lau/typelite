@@ -18,6 +18,7 @@ pub mod pipeline;
 pub mod platform;
 pub mod readiness;
 pub mod recording_deadline;
+pub mod search_server;
 pub mod selection;
 pub mod shortcut_gate;
 pub mod speed_stats;
@@ -27,6 +28,7 @@ pub mod timing;
 pub mod tray;
 pub mod updates;
 pub mod voice_intent;
+pub mod web_search;
 
 pub use hotkey::{default_ask_shortcut, default_shortcut, parse_hotkey};
 pub use tray::{refresh_tray, TrayHandle};
@@ -1198,6 +1200,14 @@ pub fn run() {
             // use.
             app.manage(commands::ai_setup::AiSetupState::default());
             tauri::async_runtime::block_on(commands::ai_setup::init(&app_handle));
+            // Plan `searxng-setup`: where the Built-in search lives, and its start at launch.
+            {
+                let config = tauri::async_runtime::block_on(
+                    app_handle.state::<storage::ConfigManager>().load(),
+                )
+                .unwrap_or_default();
+                search_server::init(&app_handle, &config);
+            }
             // Plan `auto-update`: the update status and the automatic checks.
             updates::start(&app_handle);
             app.manage(commands::ask::AskDictationState::default());
@@ -1451,8 +1461,19 @@ pub fn run() {
             commands::ask::abort_ask_dictation,
             commands::ask::take_pending_ask_message,
             commands::ask::answer_ask_anyway,
+            commands::ask::open_ask_source,
+            commands::web_search::get_web_search_status,
+            commands::web_search::save_web_search,
+            commands::web_search::remove_web_search,
+            commands::web_search::test_web_search,
+            search_server::builtin_search_status,
+            search_server::install_builtin_search,
+            search_server::check_builtin_search_update,
+            search_server::update_builtin_search,
+            search_server::remove_builtin_search,
             ask_panel::close_ask_panel,
             ask_panel::resize_ask_panel,
+            ask_panel::ask_panel_limits,
             updates::update_status,
             updates::check_for_update,
             updates::install_update,
@@ -1565,6 +1586,8 @@ pub fn run() {
                 // Plan `ai-polish-setup`: the built-in AI server is a separate program; stop it
                 // too.
                 llm::builtin::server().stop();
+                // Plan `searxng-setup`: the Built-in search server runs only while Typelite runs.
+                search_server::server().stop();
             }
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen {

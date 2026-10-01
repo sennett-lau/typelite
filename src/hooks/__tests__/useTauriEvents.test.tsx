@@ -26,6 +26,7 @@ vi.mock('../../i18n', () => ({
 
 vi.mock('../../lib/tauri', () => ({
   ASK_SELECTION_PREVIEW_EVENT: 'ask:selection_preview',
+  ASK_STAGE_EVENT: 'ask:stage',
 }))
 
 vi.mock('../../components/toast-service', () => ({

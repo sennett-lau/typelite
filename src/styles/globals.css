@@ -742,6 +742,109 @@ body,
     background: var(--color-bg-elevated);
     box-shadow: 0 0 0 0.5px var(--color-border);
   }
+  /* Plan `searxng-setup`: the Built-in search card (Settings → Search, onboarding). */
+  .search-setup-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px 15px;
+    border-radius: 11px;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 0 0 0.5px var(--color-border);
+  }
+  .search-setup-pill {
+    border-radius: 9999px;
+    background: var(--color-accent-light);
+    padding: 2px 9px;
+    color: var(--color-accent);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .search-setup-pill.is-ok {
+    background: color-mix(in srgb, var(--color-success) 14%, transparent);
+    color: var(--color-success);
+  }
+  .search-setup-pill.is-warn {
+    background: color-mix(in srgb, var(--color-warning, #ff9f0a) 16%, transparent);
+    color: var(--color-warning, #b76e00);
+  }
+  .search-setup-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: var(--color-bg-secondary);
+  }
+  .search-setup-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-accent);
+    transition: width 0.3s linear;
+  }
+  .search-setup-steps {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--color-text-tertiary);
+    font-size: 12.5px;
+  }
+  .search-setup-steps li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .search-setup-steps li.is-done {
+    color: var(--color-text-primary);
+  }
+  .search-setup-steps li.is-now {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .search-setup-dot {
+    display: inline-grid;
+    width: 14px;
+    height: 14px;
+    flex: none;
+    place-items: center;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+  }
+  .search-setup-steps li.is-done .search-setup-dot {
+    border-color: var(--color-success);
+    background: var(--color-success);
+    color: #fff;
+  }
+  .search-setup-facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 14px;
+    margin: 0;
+    font-size: 12.5px;
+  }
+  .search-setup-facts dt {
+    color: var(--color-text-secondary);
+  }
+  .search-setup-facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .search-setup-update {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    background: var(--color-accent-light);
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+  /* A setup card whose form is taller than the fixed card (the web search step). */
+  .setup-card-fit {
+    height: auto;
+  }
   .setup-card-icon {
     display: grid;
     width: 34px;
@@ -2217,22 +2320,14 @@ body,
    centre. */
 .ask-glass {
   position: relative;
+  isolation: isolate;
+  display: flex;
   width: 420px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 16px;
-  background:
-    radial-gradient(
-      80% 60% at 12% 0%,
-      color-mix(in srgb, var(--color-aurora-a) 22%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      70% 60% at 92% 100%,
-      color-mix(in srgb, var(--color-aurora-b) 20%, transparent),
-      transparent 70%
-    ),
-    rgba(28, 28, 30, 0.58);
+  /* Plan `ask-web-search`: plain dark glass; the colour comes from the aurora behind it. */
+  background: rgba(20, 20, 24, 0.68);
   -webkit-backdrop-filter: blur(28px) saturate(1.8);
   backdrop-filter: blur(28px) saturate(1.8);
   /* Fits inside the window's 16 pt padding (`WINDOW_PADDING` in ask_panel.rs). */
@@ -2274,9 +2369,72 @@ body,
   color: rgba(255, 255, 255, 0.8);
   font-weight: 600;
 }
-/* Long answers scroll inside the panel. */
+/* Plan `ask-web-search`: the pill's aurora (`.aurora-blob`) behind the glass: two large blurred
+   blobs of the accent and violet, drifting slowly. Dark mode dims them and pushes them to the
+   corners, so the text in the middle keeps its contrast. */
+.ask-glass-aurora {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  opacity: 0.34;
+  pointer-events: none;
+}
+.ask-glass-blob {
+  position: absolute;
+  width: 60%;
+  height: 140%;
+  border-radius: 9999px;
+  filter: blur(48px);
+}
+.ask-glass-blob-a {
+  top: -25%;
+  left: -18%;
+  background: var(--color-aurora-a);
+  animation: ask-glass-drift-a 14s ease-in-out infinite alternate;
+}
+.ask-glass-blob-b {
+  top: 5%;
+  right: -18%;
+  background: var(--color-aurora-b);
+  animation: ask-glass-drift-b 17s ease-in-out infinite alternate;
+}
+@keyframes ask-glass-drift-a {
+  to {
+    transform: translateX(35%) scale(1.1);
+  }
+}
+@keyframes ask-glass-drift-b {
+  to {
+    transform: translateX(-30%) scale(0.92);
+  }
+}
+.dark .ask-glass {
+  background: rgba(12, 12, 16, 0.74);
+}
+.dark .ask-glass-aurora {
+  opacity: 0.26;
+}
+.dark .ask-glass-blob-a {
+  top: -45%;
+  left: -30%;
+}
+.dark .ask-glass-blob-b {
+  top: 35%;
+  right: -30%;
+}
+/* The question, answer and footer; the sources column sits to its right. */
+.ask-glass-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+/* Long answers scroll inside the panel once it reaches its maximum height. */
 .ask-glass-answer {
-  max-height: 190px;
+  min-height: 0;
+  flex: 1 1 auto;
   overflow-y: auto;
   padding: 8px 14px 4px;
   font-size: 13.5px;
@@ -2289,6 +2447,226 @@ body,
   color: #ffd60a;
   font-size: 11.5px;
   line-height: 16px;
+}
+/* Plan `ask-web-search`: a site's letter mark (no site icons: loading one contacts the site). */
+.ask-site-mark {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  place-items: center;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+/* "3 sources" in the footer. */
+.ask-sources-summary {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 9px 3px 4px;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 16px;
+  cursor: pointer;
+}
+.ask-sources-summary:hover,
+.ask-sources-summary[aria-expanded='true'] {
+  background: rgba(255, 255, 255, 0.18);
+}
+.ask-sources-stack {
+  display: inline-flex;
+}
+.ask-sources-stack .ask-site-mark {
+  border: 1.5px solid rgba(30, 30, 34, 0.95);
+}
+.ask-sources-stack .ask-site-mark + .ask-site-mark {
+  margin-left: -6px;
+}
+/* The sources column on the right, the panel's full height. */
+.ask-sources-column {
+  display: flex;
+  width: 288px;
+  min-height: 0;
+  flex: none;
+  flex-direction: column;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  /* Slides in from the panel's right edge (and out again, `.is-closing`). */
+  animation: ask-sources-in 0.24s cubic-bezier(0.2, 0, 0, 1) both;
+}
+.ask-sources-column.is-closing {
+  pointer-events: none;
+  animation: ask-sources-out 0.18s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes ask-sources-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ask-sources-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+.ask-sources-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 8px 6px 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ask-sources-list {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 2px;
+  overflow-y: auto;
+  padding: 0 6px 8px;
+}
+.ask-source-card {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.ask-source-card:hover,
+.ask-source-card.is-highlighted {
+  background: rgba(255, 255, 255, 0.08);
+}
+.ask-source-site {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+}
+.ask-source-host {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ask-source-number {
+  display: inline-grid;
+  min-width: 14px;
+  height: 14px;
+  margin-left: auto;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+.ask-source-title {
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.ask-source-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+/* Open and Copy link: shown on hover, over the citation number. */
+.ask-source-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+}
+.ask-source-card:hover .ask-source-actions,
+.ask-source-card.is-highlighted .ask-source-actions,
+.ask-source-card.is-confirming .ask-source-actions,
+.ask-source-card:focus-within .ask-source-actions {
+  opacity: 1;
+}
+.ask-source-card:hover .ask-source-number,
+.ask-source-card.is-highlighted .ask-source-number,
+.ask-source-card.is-confirming .ask-source-number,
+.ask-source-card:focus-within .ask-source-number {
+  visibility: hidden;
+}
+.ask-source-action {
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(40, 40, 46, 0.95);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  padding: 0 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ask-source-action:hover {
+  background: rgba(70, 70, 78, 0.98);
+}
+.ask-source-action.is-done {
+  background: var(--color-aurora-a);
+  box-shadow: none;
+  color: var(--color-pill-chip-text);
+}
+.ask-source-action:focus-visible,
+.ask-sources-summary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+/* Plan `ask-web-search`: a [n] citation in the answer; it shows source n in the column. */
+.ask-glass-cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  margin: 0 1px;
+  padding: 0 3px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: 2px;
+  cursor: pointer;
+}
+.ask-glass-cite:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 .ask-glass-hint {
   flex: 1;
@@ -2358,6 +2736,16 @@ body,
 @media (prefers-reduced-motion: reduce) {
   .ask-glass {
     animation-name: ask-glass-fade-in;
+  }
+  .ask-glass-blob {
+    animation: none;
+  }
+  .ask-sources-column,
+  .ask-sources-column.is-closing {
+    animation-name: ask-glass-fade-in;
+  }
+  .ask-sources-column.is-closing {
+    animation-direction: reverse;
   }
 }
 
