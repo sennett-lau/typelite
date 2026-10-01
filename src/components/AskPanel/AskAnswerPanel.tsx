@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { AlertTriangle, Check, ChevronRight, ExternalLink, Link2, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
 import type { AskDictationResult, AskPanelLimits, AskSource } from '../../lib/tauri'
 import {
   FALLBACK_LIMITS,
+  SOURCES_COLUMN_WIDTH,
   answerSegments,
   isLongAnswer,
   liveBodyKey,
@@ -38,8 +40,65 @@ function sourceHost(url: string): string {
   }
 }
 
-/** The sources column's slide-out (`ask-sources-out` in globals.css). */
-const SOURCES_SLIDE_OUT_MS = 180
+/** The shell and the source rail share one curve, keeping the answer still as they expand. */
+const SOURCES_TRANSITION = { duration: 0.32, ease: [0.22, 1, 0.36, 1] as const }
+
+/**
+ * Eases the panel's height to its new value when the sources column opens or closes (the answer
+ * re-wraps to a new width), on the same curve as the width.
+ */
+function useAnimatedPanelHeight(key: boolean, reducedMotion: boolean) {
+  const ref = useRef<HTMLElement | null>(null)
+  const lastHeight = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const previous = lastHeight.current
+    element.style.transition = ''
+    element.style.height = ''
+    const next = element.offsetHeight
+    lastHeight.current = next
+    if (previous === null || Math.abs(next - previous) < 2 || reducedMotion) return
+    const [a, b, c, d] = SOURCES_TRANSITION.ease
+    element.style.height = `${previous}px`
+    // Read layout so the browser takes the old height before the transition starts.
+    void element.offsetHeight
+    element.style.transition = `height ${SOURCES_TRANSITION.duration}s cubic-bezier(${a}, ${b}, ${c}, ${d})`
+    element.style.height = `${next}px`
+    const timer = setTimeout(
+      () => {
+        element.style.height = ''
+        element.style.transition = ''
+      },
+      SOURCES_TRANSITION.duration * 1000 + 40,
+    )
+    return () => clearTimeout(timer)
+  }, [key, reducedMotion])
+  return ref
+}
+
+/** The sources column's rail; it widens from the panel's right edge and narrows back. */
+function SourcesRail({
+  transition,
+  children,
+}: {
+  transition: { duration: number; ease?: readonly number[] }
+  children: React.ReactNode
+}) {
+  const present = useIsPresent()
+  return (
+    <motion.div
+      className="ask-sources-rail"
+      data-exiting={!present || undefined}
+      initial={{ width: 0 }}
+      animate={{ width: SOURCES_COLUMN_WIDTH }}
+      exit={{ width: 0 }}
+      transition={transition}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 /** How long "Opened ✓" and "Copied ✓" stay on a source card. */
 const CONFIRM_MS = 1500
@@ -107,15 +166,21 @@ export function AskSourcesColumn({
   sources,
   highlighted,
   onHide,
-  closing = false,
 }: {
   sources: AskSource[]
   highlighted: number | null
   onHide: () => void
-  /** Sliding out; the panel keeps its width until it is gone. */
-  closing?: boolean
 }) {
   const { t } = useTranslation()
+  const present = useIsPresent()
+  const reducedMotion = useReducedMotion()
+  const listRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (highlighted === null) return
+    listRef.current
+      ?.querySelector(`[data-source-number="${highlighted}"]`)
+      ?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'instant' : 'smooth' })
+  }, [highlighted, reducedMotion])
   const [confirmed, setConfirmed] = useState<{ number: number; action: 'open' | 'copy' } | null>(
     null,
   )
@@ -136,10 +201,16 @@ export function AskSourcesColumn({
   }
 
   return (
-    <aside
-      className={`ask-sources-column${closing ? ' is-closing' : ''}`}
+    <motion.aside
+      className="ask-sources-column"
       data-testid="ask-panel-sources"
-      data-closing={closing || undefined}
+      data-closing={!present || undefined}
+      inert={!present}
+      aria-hidden={!present || undefined}
+      initial={{ opacity: 0, x: reducedMotion ? 0 : 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: reducedMotion ? 0 : 8 }}
+      transition={{ duration: reducedMotion ? 0 : 0.18, ease: 'easeOut' }}
     >
       <div className="ask-sources-head">
         <span>{t('askPanel.sources')}</span>
@@ -153,7 +224,7 @@ export function AskSourcesColumn({
           <ChevronRight size={13} aria-hidden="true" />
         </button>
       </div>
-      <div className="ask-sources-list">
+      <div className="ask-sources-list" ref={listRef}>
         {sources.map((source) => {
           const done = confirmed?.number === source.number ? confirmed.action : null
           return (
@@ -161,6 +232,7 @@ export function AskSourcesColumn({
               key={source.url}
               className={`ask-source-card${highlighted === source.number ? ' is-highlighted' : ''}${done ? ' is-confirming' : ''}`}
               data-testid={`ask-source-${source.number}`}
+              data-source-number={source.number}
               onClick={() => open(source)}
             >
               <span className="ask-source-site">
@@ -214,7 +286,7 @@ export function AskSourcesColumn({
           )
         })}
       </div>
-    </aside>
+    </motion.aside>
   )
 }
 
@@ -287,47 +359,23 @@ export function AskAnswerPanel({
   // Plan `ask-web-search`: the sources column, and the source a citation points at.
   const [sourcesOpen, setSourcesOpen] = useState(false)
   const [highlighted, setHighlighted] = useState<number | null>(null)
-  // The column slides out before it goes, so the panel shrinks only afterwards.
-  const [sourcesClosing, setSourcesClosing] = useState(false)
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const stopClosing = useCallback(() => {
-    if (closeTimer.current) clearTimeout(closeTimer.current)
-    closeTimer.current = null
-    setSourcesClosing(false)
-  }, [])
+  const reducedMotion = useReducedMotion()
   const hideSources = useCallback(() => {
     setSourcesOpen(false)
     setHighlighted(null)
-    setSourcesClosing(true)
-    if (closeTimer.current) clearTimeout(closeTimer.current)
-    closeTimer.current = setTimeout(() => {
-      closeTimer.current = null
-      setSourcesClosing(false)
-    }, SOURCES_SLIDE_OUT_MS)
   }, [])
-  useEffect(
-    () => () => {
-      if (closeTimer.current) clearTimeout(closeTimer.current)
-    },
-    [],
-  )
 
   useEffect(() => {
     setInsertFailed(false)
     setSourcesOpen(false)
-    stopClosing()
     setHighlighted(null)
     // The parent builds a new `content` object on each render; reset only for a new message.
-  }, [result, errorMessage, stopClosing])
+  }, [result, errorMessage])
 
-  const showSource = useCallback(
-    (n: number) => {
-      stopClosing()
-      setSourcesOpen(true)
-      setHighlighted(n)
-    },
-    [stopClosing],
-  )
+  const showSource = useCallback((n: number) => {
+    setSourcesOpen(true)
+    setHighlighted(n)
+  }, [])
 
   // Only the couldn't-replace result has a copy button, and its text is already on the
   // clipboard; pressing it copies again.
@@ -440,23 +488,31 @@ export function AskAnswerPanel({
 
   const panelLimits = limits ?? FALLBACK_LIMITS
   const showColumn = sourcesOpen && sources.length > 0
-  const columnShown = (showColumn || sourcesClosing) && sources.length > 0
-  const width = panelWidth(isLongAnswer(text), columnShown, panelLimits)
+  const width = panelWidth(isLongAnswer(text), showColumn, panelLimits)
+  const transition = reducedMotion ? { duration: 0 } : SOURCES_TRANSITION
+  // The answer column takes its final width at once, so its text wraps once instead of on every
+  // frame (a long answer already fills the panel, so the open column narrows it).
+  const mainWidth = width - (showColumn ? SOURCES_COLUMN_WIDTH : 0)
+  const sectionRef = useAnimatedPanelHeight(showColumn, reducedMotion === true)
 
   return (
-    <section
+    <motion.section
       role="dialog"
       aria-label={t('askPanel.label')}
       data-testid="ask-floating-note"
       className="ask-glass"
-      style={{ width, maxHeight: panelLimits.maxHeight }}
+      ref={sectionRef}
+      initial={false}
+      animate={{ width }}
+      transition={transition}
+      style={{ maxHeight: panelLimits.maxHeight }}
     >
       {/* Plan `ask-web-search`: the pill's aurora behind the glass. */}
       <div className="ask-glass-aurora" aria-hidden="true">
         <div className="ask-glass-blob ask-glass-blob-a" />
         <div className="ask-glass-blob ask-glass-blob-b" />
       </div>
-      <div className="ask-glass-main">
+      <div className="ask-glass-main" style={{ width: mainWidth }}>
         <div className="flex items-center gap-2 pt-2.5 pr-2 pl-3.5">
           <span className="ask-glass-question" data-testid="ask-panel-question">
             {question}
@@ -485,7 +541,6 @@ export function AskAnswerPanel({
               if (showColumn) {
                 hideSources()
               } else {
-                stopClosing()
                 setSourcesOpen(true)
                 setHighlighted(null)
               }
@@ -497,14 +552,13 @@ export function AskAnswerPanel({
           {actions}
         </div>
       </div>
-      {columnShown && (
-        <AskSourcesColumn
-          sources={sources}
-          highlighted={highlighted}
-          onHide={hideSources}
-          closing={!showColumn}
-        />
-      )}
-    </section>
+      <AnimatePresence initial={false}>
+        {showColumn && (
+          <SourcesRail key="sources" transition={transition}>
+            <AskSourcesColumn sources={sources} highlighted={highlighted} onHide={hideSources} />
+          </SourcesRail>
+        )}
+      </AnimatePresence>
+    </motion.section>
   )
 }

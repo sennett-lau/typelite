@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CapsuleAskThinking } from '../CapsuleAskThinking'
 import { useAppStore } from '../../../stores/appStore'
@@ -12,17 +12,16 @@ vi.mock('react-i18next', async () => {
 
 afterEach(() => {
   cleanup()
-  useAppStore.setState({ askStage: 'thinking' })
+  useAppStore.setState({ askStage: 'thinking', askSearched: false })
 })
 
 // Plan `ask-web-search`.
 describe('Ask pill while searching and following up', () => {
-  it('says "Searching the web…" while Ask searches, then "Thinking"', () => {
-    useAppStore.setState({ askStage: 'searching' })
-    render(<CapsuleAskThinking />)
+  it('says "Searching the web…" while Ask searches, else "Thinking"', () => {
+    const { rerender } = render(<CapsuleAskThinking searching />)
     expect(screen.getByText('Searching the web…')).toBeDefined()
 
-    act(() => useAppStore.setState({ askStage: 'thinking' }))
+    rerender(<CapsuleAskThinking searching={false} />)
     expect(screen.getByText('Thinking')).toBeDefined()
     expect(screen.queryByText('Searching the web…')).toBeNull()
   })

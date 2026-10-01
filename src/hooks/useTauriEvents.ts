@@ -126,6 +126,7 @@ export function useTauriEvents() {
         // Clear any previous error, or the calm fade, when starting a new pipeline run
         setPipelineError(null)
         setQuietFade(false)
+        useAppStore.setState({ askSearched: false })
         run.polished = false
         run.aiFailed = false
       }

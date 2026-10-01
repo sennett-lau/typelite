@@ -506,6 +506,11 @@ interface AppState {
   setAskSelectionPreview: (preview: string | null) => void
   /** Plan `ask-web-search`: what the Ask thinking pill says (searching the web, or thinking). */
   askStage: 'searching' | 'thinking'
+  /**
+   * Plan `ask-web-search`: this Ask run has searched the web, so the pill keeps the wider
+   * "Searching the web…" size until the answer (no shrink back for "Thinking").
+   */
+  askSearched: boolean
   setAskStage: (stage: 'searching' | 'thinking') => void
 
   // Recording
@@ -1310,7 +1315,9 @@ export const useAppStore = create<AppState>((set) => ({
   askSelectionPreview: null,
   setAskSelectionPreview: (askSelectionPreview) => set({ askSelectionPreview }),
   askStage: 'thinking',
-  setAskStage: (askStage) => set({ askStage }),
+  askSearched: false,
+  setAskStage: (askStage) =>
+    set((s) => ({ askStage, askSearched: s.askSearched || askStage === 'searching' })),
 
   audioVolume: 0,
   setAudioVolume: (audioVolume) => set({ audioVolume }),
