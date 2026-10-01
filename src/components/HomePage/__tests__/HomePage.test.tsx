@@ -153,7 +153,7 @@ describe('HomePage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Take the shortcut tour' }))
       expect(useAppStore.getState().onboardingTour).toBe(true)
-      expect(useAppStore.getState().onboardingStep).toBe(4)
+      expect(useAppStore.getState().onboardingStep).toBe(5)
       expect(useAppStore.getState().onboardingCompleted).toBe(false)
     })
 

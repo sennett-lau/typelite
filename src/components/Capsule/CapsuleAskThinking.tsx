@@ -1,17 +1,23 @@
 import { useTranslation } from 'react-i18next'
-import { MessageCircle } from 'lucide-react'
+import { Globe, MessageCircle } from 'lucide-react'
+import { useAppStore } from '../../stores/appStore'
 import { CapsuleWorking } from './CapsuleWorking'
 
-/** Ask is waiting for the AI's answer. */
+/**
+ * Ask is waiting for the AI's answer, or (plan `ask-web-search`) searching the web for a live
+ * question first.
+ */
 export function CapsuleAskThinking() {
   const { t } = useTranslation()
+  const searching = useAppStore((s) => s.askStage === 'searching')
+  const Icon = searching ? Globe : MessageCircle
 
   return (
     <CapsuleWorking
-      label={t('ask.thinking')}
+      label={searching ? t('ask.searchingWeb') : t('ask.thinking')}
       icon={
         <>
-          <MessageCircle size={12} className="shrink-0 text-white/90" aria-hidden="true" />
+          <Icon size={12} className="shrink-0 text-white/90" aria-hidden="true" />
           <span className="sr-only">{t('ask.title')}</span>
         </>
       }
