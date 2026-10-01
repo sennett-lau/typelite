@@ -5,7 +5,6 @@ import { activeAiPreset, activeSpeechPreset, endpointState } from '../../lib/con
 import { isAiReady, isSpeechReady } from '../../lib/readiness'
 import { settingsPaneHash } from '../../lib/router'
 import { cancelSpeechSetup } from '../../lib/tauri'
-import { DEFAULT_SETUP_MODEL, defaultModelChoice } from '../../lib/speechSetup'
 import { isSetupRunning } from '../../stores/speechSetupStore'
 import { Group, Row } from '../ui/Group'
 import { ProgressTrack } from '../Speech/BuiltinParts'
@@ -17,19 +16,15 @@ import {
   runningSize,
   setupFailed,
 } from '../Speech/builtinText'
-import {
-  beginSpeechSetup,
-  useSpeechHardware,
-  useSpeechSetupStatus,
-} from '../../hooks/useSpeechSetup'
+import { beginSpeechSetup, useSpeechSetupStatus } from '../../hooks/useSpeechSetup'
 
 /**
  * "Finish setup" (plan `setup-without-dead-ends`): one row per service that is not ready yet, with
  * what it means for the shortcuts. Hidden when both work.
  *
- * Speech (plans `quick-speech-setup` and `two-tab-speech`): "Set up" starts the Built-in setup
- * right here with the model this Mac is offered first; the progress shows under the row until it
- * is done. "Other options" opens Settings → Speech. AI: "Set up" opens Settings → AI.
+ * "Set up" opens the service's Settings pane (Speech or AI), where the user picks Built-in or their
+ * own server; nothing downloads from Home. A Built-in speech setup started there still shows its
+ * progress (and Retry after a failure) under the row until it is done.
  */
 export function FinishSetup() {
   const { t } = useTranslation()
@@ -37,7 +32,6 @@ export function FinishSetup() {
   const speechHealth = useAppStore((s) => s.speechHealth)
   const aiHealth = useAppStore((s) => s.aiHealth)
   const setupStatus = useSpeechSetupStatus()
-  const hardware = useSpeechHardware()
 
   const rows: { id: 'speech' | 'ai'; pane: 'stt' | 'llm'; failed: boolean }[] = []
   if (!isSpeechReady(config)) {
@@ -55,12 +49,6 @@ export function FinishSetup() {
   }
   const running = isSetupRunning(setupStatus)
   const failed = setupFailed(setupStatus)
-  // No model fits on this Mac's disk: Settings says how much space is needed.
-  const noModelFits = hardware !== null && hardware.offer.models.length === 0
-  const setUpSpeech = () => {
-    if (noModelFits) openPane('stt')
-    else beginSpeechSetup(defaultModelChoice(hardware) ?? DEFAULT_SETUP_MODEL)
-  }
 
   return (
     <div className="mb-[22px]">
@@ -80,19 +68,9 @@ export function FinishSetup() {
                 </>
               }
             >
-              {row.id === 'speech' && (
-                <button
-                  type="button"
-                  onClick={() => openPane('stt')}
-                  className="cursor-pointer border-none bg-transparent p-0 text-[12px] text-accent hover:underline"
-                >
-                  {t('home.setup.otherOptions')}
-                </button>
-              )}
               <button
                 type="button"
-                onClick={() => (row.id === 'speech' ? setUpSpeech() : openPane(row.pane))}
-                disabled={row.id === 'speech' && running}
+                onClick={() => openPane(row.pane)}
                 aria-label={`${t('home.setup.setUp')}: ${t(`home.setup.${row.id}`)}`}
                 className="btn-accent"
               >
