@@ -1478,6 +1478,15 @@ body,
       transform 0.22s cubic-bezier(0.2, 0, 0, 1),
       filter 0.22s ease;
   }
+  /* Plan `quiet-no-speech`: the calm fade is the largest shrink (recording 160 pt to 104 pt) and
+     has no content to watch, so the front-loaded curve above read as a snap. It narrows evenly
+     over 0.4 s instead (`PILL_QUIET_RESIZE_MS`). */
+  .pill-quiet {
+    transition-duration: 0.4s, 0.4s, 0.4s, 0.28s, 0.28s, 0.22s, 0.22s, 0.22s;
+    transition-timing-function:
+      cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1),
+      ease, ease, ease, cubic-bezier(0.2, 0, 0, 1), ease;
+  }
   /* The pill just appeared: take the new size at once (only opacity and position animate). */
   .pill-size-instant {
     transition-property: opacity, transform, filter;
@@ -2428,7 +2437,7 @@ body,
 .ask-glass-main {
   display: flex;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: none;
   flex-direction: column;
 }
 /* Long answers scroll inside the panel once it reaches its maximum height. */
@@ -2475,6 +2484,7 @@ body,
   font-weight: 600;
   line-height: 16px;
   cursor: pointer;
+  transition: background-color 0.18s ease;
 }
 .ask-sources-summary:hover,
 .ask-sources-summary[aria-expanded='true'] {
@@ -2490,7 +2500,24 @@ body,
   margin-left: -6px;
 }
 /* The sources column on the right, the panel's full height. */
+.ask-sources-rail {
+  display: flex;
+  flex: none;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Closing: out of flow, so the panel eases back to the answer's height while the column slides
+   away at its right edge. */
+.ask-sources-rail[data-exiting] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
 .ask-sources-column {
+  /* In flow, so the panel grows to fit the cards (up to its maximum height, then they scroll).
+     Fixed width: its cards wrap once, not on every frame while the rail widens. */
+  position: relative;
   display: flex;
   width: 288px;
   min-height: 0;
@@ -2498,32 +2525,9 @@ body,
   flex-direction: column;
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.2);
-  /* Slides in from the panel's right edge (and out again, `.is-closing`). */
-  animation: ask-sources-in 0.24s cubic-bezier(0.2, 0, 0, 1) both;
 }
-.ask-sources-column.is-closing {
+.ask-sources-column[data-closing] {
   pointer-events: none;
-  animation: ask-sources-out 0.18s cubic-bezier(0.4, 0, 1, 1) both;
-}
-@keyframes ask-sources-in {
-  from {
-    opacity: 0;
-    transform: translateX(28px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes ask-sources-out {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: translateX(28px);
-  }
 }
 .ask-sources-head {
   display: flex;
@@ -2739,13 +2743,6 @@ body,
   }
   .ask-glass-blob {
     animation: none;
-  }
-  .ask-sources-column,
-  .ask-sources-column.is-closing {
-    animation-name: ask-glass-fade-in;
-  }
-  .ask-sources-column.is-closing {
-    animation-direction: reverse;
   }
 }
 

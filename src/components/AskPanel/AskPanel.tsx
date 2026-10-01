@@ -425,27 +425,14 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
     }
   }, [embedded, panelShown, panelKey])
 
-  // Report the panel's size, so the window fits it, stays centred on the pill and keeps its
-  // bottom edge above it. The first report waits for the limits: a long answer laid out with
-  // the fallback width and then the real one would move the window twice.
+  // Plan `ask-web-search`: while the panel is up its window keeps one size, the largest panel
+  // on this screen (the limits), and the panel sits centred at its bottom. Opening or closing
+  // the sources column, or a taller answer, then only animates the page: resizing the window
+  // made macOS draw a few frames of the old picture at the new window position, so the panel
+  // jumped sideways. The window waits for the limits so it is placed once.
   useLayoutEffect(() => {
     if (embedded || !panelShown || limits === null) return
-    const element = panelRef.current
-    if (!element) return
-    let reported = ''
-    const report = () => {
-      const box = element.getBoundingClientRect()
-      const width = Math.ceil(box.width)
-      const height = Math.ceil(box.height)
-      if (width <= 0 || height <= 0 || `${width}x${height}` === reported) return
-      reported = `${width}x${height}`
-      void Promise.resolve(resizeAskPanel(width, height)).catch(() => {})
-    }
-    report()
-    if (typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(report)
-    observer.observe(element)
-    return () => observer.disconnect()
+    void Promise.resolve(resizeAskPanel(limits.maxWidth, limits.maxHeight)).catch(() => {})
   }, [embedded, panelShown, panelKey, limits])
 
   if (!embedded) {

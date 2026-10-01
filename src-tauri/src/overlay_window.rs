@@ -222,6 +222,26 @@ pub fn make_overlay(window: &tauri::WebviewWindow) {
     let _ = window;
 }
 
+/// Moves and resizes `window` in one step: `x`, `y` are the top-left in global logical points
+/// (Tauri's coordinates), `width`, `height` the size in points. Separate `set_size` and
+/// `set_position` calls let the window server draw the window at the new size in the old place
+/// for a frame, which shows as a jump while an overlay grows or shrinks. On macOS this is one
+/// `-[NSWindow setFrame:display:]`; elsewhere it falls back to the two calls.
+pub fn set_frame(window: &tauri::WebviewWindow, x: f64, y: f64, width: f64, height: f64) {
+    let target = window.clone();
+    let _ = window.run_on_main_thread(move || {
+        #[cfg(target_os = "macos")]
+        if let Ok(ns_window) = target.ns_window() {
+            // SAFETY: the live NSWindow of this window, on the main thread.
+            if unsafe { mac::set_frame(ns_window.cast(), x, y, width, height) } {
+                return;
+            }
+        }
+        let _ = target.set_size(tauri::LogicalSize::new(width, height));
+        let _ = target.set_position(tauri::LogicalPosition::new(x, y));
+    });
+}
+
 #[cfg(target_os = "macos")]
 mod mac {
     use super::{
@@ -643,6 +663,79 @@ mod mac {
             current.name(),
             window.class().name()
         );
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Point {
+        x: f64,
+        y: f64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Size {
+        width: f64,
+        height: f64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Rect {
+        origin: Point,
+        size: Size,
+    }
+    // SAFETY: these match CoreGraphics' CGPoint, CGSize and CGRect (NSRect) on 64-bit macOS.
+    unsafe impl objc2::Encode for Point {
+        const ENCODING: objc2::Encoding =
+            objc2::Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+    }
+    unsafe impl objc2::Encode for Size {
+        const ENCODING: objc2::Encoding =
+            objc2::Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
+    }
+    unsafe impl objc2::Encode for Rect {
+        const ENCODING: objc2::Encoding =
+            objc2::Encoding::Struct("CGRect", &[Point::ENCODING, Size::ENCODING]);
+    }
+
+    /// `super::set_frame` on macOS. AppKit measures y upwards from the bottom of the primary
+    /// screen (`NSScreen.screens[0]`), Tauri downwards from its top, so y is flipped with that
+    /// screen's height. The overlays are borderless, so the frame is the content size. False
+    /// when there is no screen to measure against (the caller falls back).
+    pub unsafe fn set_frame(
+        ns_window: *mut AnyObject,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    ) -> bool {
+        // SAFETY: the caller passes a live NSWindow and runs on the main thread.
+        let Some(window) = (unsafe { ns_window.as_ref() }) else {
+            return false;
+        };
+        unsafe {
+            let screens: *mut AnyObject = msg_send![class!(NSScreen), screens];
+            let Some(screens) = screens.as_ref() else {
+                return false;
+            };
+            let count: usize = msg_send![screens, count];
+            if count == 0 {
+                return false;
+            }
+            let primary: *mut AnyObject = msg_send![screens, objectAtIndex: 0usize];
+            let Some(primary) = primary.as_ref() else {
+                return false;
+            };
+            let screen: Rect = msg_send![primary, frame];
+            let frame = Rect {
+                origin: Point {
+                    x,
+                    y: screen.size.height - y - height,
+                },
+                size: Size { width, height },
+            };
+            let _: () = msg_send![window, setFrame: frame, display: Bool::YES];
+        }
+        true
     }
 
     pub unsafe fn apply(ns_window: *mut AnyObject, label: &str) {
