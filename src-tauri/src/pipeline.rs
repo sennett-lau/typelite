@@ -119,6 +119,9 @@ fn request_accessibility_permission_prompt() -> bool {
 const SELECTED_TEXT_CAPTURE_DELAY_MS: u64 = 60;
 /// Interval for polling audio volume during recording.
 pub(crate) const VOLUME_POLL_INTERVAL_MS: u64 = 30;
+/// Plan `copy-when-no-field`: how long to wait before a second look at a field that seemed not
+/// to change after typing.
+const TYPED_TEXT_RECHECK_MS: u64 = 250;
 /// Timeout for STT finalization after recording stops.
 const STT_FINALIZE_TIMEOUT_SECS: u64 = 120;
 
@@ -2421,6 +2424,13 @@ impl PipelineHandle {
                     tokio::task::block_in_place(output::focus::check_focus)
                 })
             });
+        // Plan `copy-when-no-field`: the focused field's length before typing, to tell afterwards
+        // whether the typed text landed (keystrokes into something that is not a field report
+        // success).
+        let text_length_before = streaming_strategy
+            .is_some()
+            .then(|| tokio::task::block_in_place(output::focus::focused_text_length))
+            .flatten();
         let mut streaming_worker = streaming_strategy.map(|strategy| {
             spawn_streaming_insert_worker(
                 self.app_handle.clone(),
@@ -2518,10 +2528,48 @@ impl PipelineHandle {
                             !report.failed && !report.target_lost,
                         ) {
                             StreamingRecoveryAction::AlreadyComplete => {
-                                self.emit_streaming_insert_result(
-                                    report,
-                                    &app_ctx.profile.app_label,
+                                let mut text_length_after =
+                                    tokio::task::block_in_place(output::focus::focused_text_length);
+                                let mut landed = output::focus::typed_text_landed(
+                                    text_length_before,
+                                    text_length_after,
+                                    report.chars_inserted(),
                                 );
+                                if landed == Some(false) {
+                                    // Some apps update their field a moment after the keys
+                                    // arrive; look once more before offering Copy.
+                                    tokio::time::sleep(std::time::Duration::from_millis(
+                                        TYPED_TEXT_RECHECK_MS,
+                                    ))
+                                    .await;
+                                    text_length_after = tokio::task::block_in_place(
+                                        output::focus::focused_text_length,
+                                    );
+                                    landed = output::focus::typed_text_landed(
+                                        text_length_before,
+                                        text_length_after,
+                                        report.chars_inserted(),
+                                    );
+                                }
+                                match (landed, polished_copy_pill.as_ref()) {
+                                    // Typed, but the field did not change: offer Copy, as when
+                                    // there is no field to paste into.
+                                    (Some(false), Some(run)) => {
+                                        tracing::info!(
+                                            "Typed text did not land (field length unchanged at {:?})",
+                                            text_length_after
+                                        );
+                                        self.hold_for_copy_pill(&response.polished_text, run);
+                                        streaming_output_status = Some((
+                                            "held_for_copy",
+                                            "typed text did not land; offered Copy".to_string(),
+                                        ));
+                                    }
+                                    _ => self.emit_streaming_insert_result(
+                                        report,
+                                        &app_ctx.profile.app_label,
+                                    ),
+                                }
                             }
                             StreamingRecoveryAction::InsertSuffix { suffix } => {
                                 let mut recovered_report = report.clone();
