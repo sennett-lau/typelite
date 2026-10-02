@@ -1,4 +1,5 @@
 """JSON-lines MLX speech worker; protocol matches benchmark_speech.rs."""
+
 import importlib
 import json
 import sys
@@ -14,7 +15,10 @@ start = time.perf_counter()
 holder = importlib.import_module("mlx_whisper.transcribe").ModelHolder
 holder.get_model(model, mx.float16)
 mx.synchronize()
-print(json.dumps({"ready": True, "load_ms": (time.perf_counter() - start) * 1000}), flush=True)
+print(
+    json.dumps({"ready": True, "load_ms": (time.perf_counter() - start) * 1000}),
+    flush=True,
+)
 for line in sys.stdin:
     request = json.loads(line)
     pcm = open(request["pcm"], "rb").read()
@@ -38,8 +42,15 @@ for line in sys.stdin:
         verbose=None,
     )
     mx.synchronize()
-    print(json.dumps({
-        "elapsed_ms": (time.perf_counter() - start) * 1000,
-        "text": result["text"], "language": result["language"],
-        "peak_metal_bytes": mx.get_peak_memory(),
-    }, ensure_ascii=False), flush=True)
+    print(
+        json.dumps(
+            {
+                "elapsed_ms": (time.perf_counter() - start) * 1000,
+                "text": result["text"],
+                "language": result["language"],
+                "peak_metal_bytes": mx.get_peak_memory(),
+            },
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
