@@ -18,6 +18,9 @@ use typelite_lib::voice_intent::{VoiceIntent, VoiceIntentKind, VoiceOutputPlacem
 const WARMUPS: usize = 5;
 const SAMPLES: usize = 15;
 
+#[path = "local_performance/voice_activity.rs"]
+mod voice_activity;
+
 fn conversion(id: &str, input: &str, expected: &str, iterations: usize) -> Value {
     assert_eq!(convert(input, ChineseScript::HongKong), expected);
     let mut samples = Vec::new();
@@ -207,7 +210,7 @@ fn streaming(id: &str, events: usize, write_size: usize) -> Value {
 fn main() {
     let input = "呢个系统同佢哋嘅关系系咁嘅，佢系我同事，等阵再复你个email。";
     let expected = "呢個系統同佢哋嘅關係係咁嘅，佢係我同事，等陣再覆你個email。";
-    let results = vec![
+    let mut results = vec![
         conversion("chinese/short", input, expected, 100),
         conversion("chinese/long", &input.repeat(64), &expected.repeat(64), 10),
         conversion(
@@ -220,5 +223,6 @@ fn main() {
         streaming("stream/long-batched", 1024, 64 * 1024),
         streaming("stream/stress-batched", 4096, 256 * 1024),
     ];
+    results.extend(voice_activity::benchmarks());
     println!("{}", serde_json::to_string(&results).unwrap());
 }
