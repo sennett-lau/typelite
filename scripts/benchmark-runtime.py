@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Opt-in real inference evaluation. See benchmarks/runtime/README.md."""
 
 import argparse
@@ -9,7 +8,6 @@ import platform
 import queue
 import socket
 import subprocess
-import sys
 import threading
 import time
 import urllib.error
@@ -62,7 +60,9 @@ def prepare():
             ],
             check=True,
         )
-        manifest.append(dict(id=name, voice=voice, reference=text, language=language))
+        manifest.append(
+            {"id": name, "voice": voice, "reference": text, "language": language}
+        )
     with wave.open(str(FIXTURES / "en.wav")) as file:
         en = file.readframes(file.getnframes())
     with wave.open(str(FIXTURES / "yue.wav")) as file:
@@ -74,7 +74,7 @@ def prepare():
         with wave.open(str(FIXTURES / f"{name}.wav"), "wb") as file:
             file.setparams((1, 2, 16000, 0, "NONE", "not compressed"))
             file.writeframes(pcm)
-        manifest.append(dict(id=name, reference=reference, language=language))
+        manifest.append({"id": name, "reference": reference, "language": language})
     for entry in manifest:
         path = FIXTURES / f"{entry['id']}.wav"
         entry["sha256"] = sha(path)
@@ -121,6 +121,7 @@ class Child:
                     ["ps", "-o", "rss=", "-p", str(self.process.pid)],
                     capture_output=True,
                     text=True,
+                    check=False,  # A process can exit between the poll and ps.
                 )
                 if result.stdout.strip():
                     self.peak_rss = max(
@@ -176,7 +177,7 @@ def speech(args, engine, round_id, child, result):
             pcm = SCRATCH / f"{entry['id']}.pcm"
             pcm.write_bytes(file.readframes(file.getnframes()))
         for sample in range(args.samples + 1):
-            response = child.ask(dict(pcm=str(pcm), language=entry["language"]))
+            response = child.ask({"pcm": str(pcm), "language": entry["language"]})
             result["samples"].append(
                 dict(
                     workload=entry["id"],
@@ -197,23 +198,23 @@ def request_json(url):
 
 
 def text_request(base, model, system, content):
-    body = dict(
-        model=model,
-        messages=[
-            dict(role="system", content=system),
-            dict(role="user", content=f"<transcription>{content}</transcription>"),
+    body = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": f"<transcription>{content}</transcription>"},
         ],
-        stream=True,
-        stream_options=dict(include_usage=True),
-        temperature=0,
-        max_tokens=512,
-        seed=0,
-        top_p=1,
-        top_k=1,
-        min_p=0,
-        chat_template_kwargs=dict(enable_thinking=False),
-        cache_prompt=True,
-    )
+        "stream": True,
+        "stream_options": {"include_usage": True},
+        "temperature": 0,
+        "max_tokens": 512,
+        "seed": 0,
+        "top_p": 1,
+        "top_k": 1,
+        "min_p": 0,
+        "chat_template_kwargs": {"enable_thinking": False},
+        "cache_prompt": True,
+    }
     request = urllib.request.Request(
         base + "/v1/chat/completions",
         data=json.dumps(body).encode(),
@@ -237,14 +238,14 @@ def text_request(base, model, system, content):
                     delta.get("reasoning_content") or delta.get("reasoning") or ""
                 )
                 finish_reason = choice.get("finish_reason") or finish_reason
-    return dict(
-        elapsed_ms=(time.perf_counter() - start) * 1000,
-        ttft_ms=first_ms,
-        text=text,
-        reasoning=reasoning,
-        usage=usage,
-        finish_reason=finish_reason,
-    )
+    return {
+        "elapsed_ms": (time.perf_counter() - start) * 1000,
+        "ttft_ms": first_ms,
+        "text": text,
+        "reasoning": reasoning,
+        "usage": usage,
+        "finish_reason": finish_reason,
+    }
 
 
 def polish(args, engine, round_id, child, result, port):
@@ -306,21 +307,21 @@ def polish(args, engine, round_id, child, result, port):
 
 def run(args):
     SCRATCH.mkdir(parents=True, exist_ok=True)
-    report = dict(
-        schema_version=1,
-        suite=args.suite,
-        started_at=datetime.now(timezone.utc).isoformat(),
-        revision=subprocess.check_output(
+    report = {
+        "schema_version": 1,
+        "suite": args.suite,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "revision": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
         ).strip(),
-        machine=platform.platform(),
-        chip=subprocess.check_output(
+        "machine": platform.platform(),
+        "chip": subprocess.check_output(
             ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
         ).strip(),
-        rounds=args.rounds,
-        warm_samples=args.samples,
-        runs=[],
-    )
+        "rounds": args.rounds,
+        "warm_samples": args.samples,
+        "runs": [],
+    }
     paths = [
         Path(__file__),
         ROOT / "benchmarks/runtime/mlx_speech.py",
@@ -409,7 +410,12 @@ def run(args):
                         "WARNING",
                     ]
                 )
-            result = dict(engine=engine, round=round_id, command=command, samples=[])
+            result = {
+                "engine": engine,
+                "round": round_id,
+                "command": command,
+                "samples": [],
+            }
             with Child(
                 command, SCRATCH / f"{args.suite}-{engine}-{round_id}.log"
             ) as child:
