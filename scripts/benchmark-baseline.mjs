@@ -1,0 +1,236 @@
+#!/usr/bin/env node
+// Propose the rolling baseline from an archived report, or check generated files in CI.
+import assert from 'node:assert/strict'
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { dirname, join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const docs = join(root, 'docs/benchmarks')
+const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'))
+const percentile = (values, fraction) => {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor((sorted.length - 1) * fraction)]
+}
+const finiteNonnegative = (value) => Number.isFinite(value) && value >= 0
+
+function validateSnapshot(snapshot) {
+  assert.equal(snapshot.schema, 1, 'Unsupported benchmark schema')
+  assert(Number.isFinite(Date.parse(snapshot.timestamp)), 'Missing or invalid measurement time')
+  assert.match(snapshot.revision, /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/, 'Invalid Git revision')
+  assert.equal(typeof snapshot.git_status, 'string', 'Working-tree status is required')
+  for (const key of ['os', 'arch', 'cpu', 'node', 'rustc', 'rust_profile']) {
+    assert(
+      typeof snapshot.environment?.[key] === 'string' && snapshot.environment[key].length > 0,
+      `Missing environment ${key}`,
+    )
+  }
+  for (const key of ['logical_cpus', 'memory_bytes']) {
+    assert(
+      Number.isInteger(snapshot.environment[key]) && snapshot.environment[key] > 0,
+      `Invalid environment ${key}`,
+    )
+  }
+  assert(
+    Number.isInteger(snapshot.process_runs) && snapshot.process_runs >= 3,
+    'A baseline needs at least three process runs',
+  )
+  for (const key of [
+    'source_sha256',
+    'harness_sha256',
+    'dependencies_sha256',
+    'build_config_sha256',
+  ]) {
+    assert.match(snapshot[key], /^[a-f0-9]{64}$/, `Missing or invalid ${key}`)
+  }
+  assert(Array.isArray(snapshot.benchmarks) && snapshot.benchmarks.length > 0, 'No workloads')
+  const ids = new Set()
+  for (const row of snapshot.benchmarks) {
+    assert(typeof row.id === 'string' && !ids.has(row.id), 'Missing or duplicate workload ID')
+    ids.add(row.id)
+    assert(['us/batch', 'us/op'].includes(row.unit), `Unsupported unit: ${row.unit}`)
+    assert(
+      Number.isInteger(row.workload.samples) && row.workload.samples >= 15,
+      'A baseline needs at least 15 samples per process',
+    )
+    assert(Number.isInteger(row.workload.warmups) && row.workload.warmups > 0, 'Warmup is required')
+    assert.equal(row.runs.length, snapshot.process_runs, `Incomplete runs: ${row.id}`)
+    const processes = new Set()
+    for (const run of row.runs) {
+      assert(
+        Number.isInteger(run.process_run) &&
+          run.process_run >= 1 &&
+          run.process_run <= snapshot.process_runs &&
+          !processes.has(run.process_run),
+        'Invalid or repeated process run',
+      )
+      processes.add(run.process_run)
+      assert.equal(run.id, row.id)
+      assert.equal(run.unit, row.unit)
+      assert.deepEqual(run.workload, row.workload)
+      assert.equal(run.samples_us.length, row.workload.samples, `Incomplete samples: ${row.id}`)
+      assert(run.samples_us.every(finiteNonnegative), `Invalid samples: ${row.id}`)
+      if (run.renders_per_batch !== undefined) {
+        assert.equal(run.renders_per_batch.length, run.samples_us.length)
+        assert(run.renders_per_batch.every((value) => Number.isInteger(value) && value >= 0))
+      }
+    }
+    const samples = row.runs.flatMap((run) => run.samples_us)
+    assert.equal(
+      row.median_us,
+      percentile(
+        row.runs.map((run) => percentile(run.samples_us, 0.5)),
+        0.5,
+      ),
+      `Stale median: ${row.id}`,
+    )
+    assert.equal(row.p10_us, percentile(samples, 0.1), `Stale p10: ${row.id}`)
+    assert.equal(row.p90_us, percentile(samples, 0.9), `Stale p90: ${row.id}`)
+  }
+}
+
+function loadReport(path) {
+  const archive = realpathSync(path)
+  const slug = relative(realpathSync(join(docs, 'reports')), archive)
+  assert.match(
+    slug,
+    /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    'Use a dated report directory directly under docs/benchmarks/reports',
+  )
+  assert(readFileSync(join(archive, 'README.md'), 'utf8').trim(), 'Report README is required')
+  const before = readJson(join(archive, 'before.json'))
+  const after = readJson(join(archive, 'after.json'))
+  validateSnapshot(before)
+  validateSnapshot(after)
+  for (const key of [
+    'schema',
+    'harness_sha256',
+    'dependencies_sha256',
+    'build_config_sha256',
+    'environment',
+    'process_runs',
+  ]) {
+    assert.deepEqual(
+      after[key],
+      before[key],
+      `Before/after ${key} differ; measure both versions under the same setup`,
+    )
+  }
+  assert.equal(
+    after.benchmarks.length,
+    before.benchmarks.length,
+    'Before/after workload sets differ',
+  )
+  for (const row of after.benchmarks) {
+    const previous = before.benchmarks.find((entry) => entry.id === row.id)
+    assert(previous, `Workload added without a before measurement: ${row.id}`)
+    assert.equal(row.unit, previous.unit)
+    assert.deepEqual(row.workload, previous.workload, `Workload changed: ${row.id}`)
+  }
+  return { ...after, baseline_report: `reports/${slug}` }
+}
+
+function renderBaseline(snapshot) {
+  const report = snapshot.baseline_report
+  const environment = snapshot.environment
+  const rows = snapshot.benchmarks.map((row) => {
+    const scale = row.median_us >= 1000 ? 1000 : 1
+    const unit = row.unit.replace('us', scale === 1000 ? 'ms' : 'µs')
+    const format = (value) => (value / scale).toFixed(3)
+    const counts = row.runs.flatMap((run) => run.renders_per_batch ?? [])
+    const renders =
+      counts.length === 0
+        ? '—'
+        : Math.min(...counts) === Math.max(...counts)
+          ? String(counts[0])
+          : `${Math.min(...counts)}–${Math.max(...counts)}`
+    return `| \`${row.id}\` | ${format(row.median_us)} | ${format(row.p10_us)}–${format(row.p90_us)} | ${unit} | ${renders} |`
+  })
+  return `# Current code-performance baseline
+
+<!-- Generated by scripts/benchmark-baseline.mjs. Promote a new archived report to update. -->
+
+This reference comes from [${report.split('/').at(-1)}](${report}/README.md).
+The shared baseline advances when its PR merges; a branch's proposed update is reviewable here.
+The [archived after snapshot](${report}/after.json) remains unchanged when later baselines advance.
+
+## Provenance
+
+- Recorded at: ${snapshot.timestamp} (UTC).
+- Git HEAD: \`${snapshot.revision}\`; working-tree status is preserved in the raw data.
+- Source SHA-256: \`${snapshot.source_sha256}\`.
+- Harness SHA-256: \`${snapshot.harness_sha256}\`.
+- Machine: ${environment.cpu}, ${environment.arch}, ${environment.logical_cpus} logical CPUs,
+  ${environment.memory_bytes / 1024 ** 3} GiB RAM; ${environment.os}.
+- Toolchain: Node ${environment.node}; ${environment.rustc}.
+- Rust profile: ${environment.rust_profile}.
+- Runs: ${snapshot.process_runs} fresh processes per workload. Raw data records each workload's
+  warmups and sample count, dependency/build hashes and build environment.
+
+Git HEAD alone does not identify a measured working tree; use the source hash above.
+[baseline.json](baseline.json) contains the full snapshot plus a report backlink. It can be passed
+to \`npm run bench:local -- --compare docs/benchmarks/baseline.json\` when the environment and
+harness still match. Future PRs should also capture a fresh before run on their PR base.
+
+## Metrics
+
+Timings are medians of process medians; p10/p90 span the individual samples. Lower is better.
+Units vary by row (1 ms = 1,000 µs). Render counts exclude mounting and resetting the probes.
+
+| Workload | Median | p10–p90 | Unit | Renders/batch |
+|---|---:|---:|---|---:|
+${rows.join('\n')}
+
+UI timings use React development mode in jsdom. Stream timings include local HTTP and provider
+processing; conversion uses warm OpenCC. See [methodology](methodology.md) and the
+[report's limitations](${report}/README.md) before drawing conclusions about real application latency.
+
+To propose the next baseline, follow the [performance PR workflow](README.md#performance-pr-workflow).
+Do not edit this generated table or replace the archived measurements.
+`
+}
+
+function main() {
+  const args = process.argv.slice(2)
+  assert.equal(
+    args.length,
+    1,
+    'Usage: node scripts/benchmark-baseline.mjs <report-directory> | --check',
+  )
+  const checking = args[0] === '--check'
+  const baselinePath = join(docs, 'baseline.json')
+  const reportPath = checking
+    ? resolve(docs, readJson(baselinePath).baseline_report)
+    : resolve(root, args[0])
+  const snapshot = loadReport(reportPath)
+  const json = `${JSON.stringify(snapshot, null, 2)}\n`
+  const markdown = renderBaseline(snapshot)
+  if (checking) {
+    assert.equal(
+      readFileSync(baselinePath, 'utf8'),
+      json,
+      'baseline.json differs from its archived after snapshot',
+    )
+    assert.equal(
+      readFileSync(join(docs, 'BASELINE.md'), 'utf8'),
+      markdown,
+      'BASELINE.md is stale; regenerate it',
+    )
+    console.log(
+      `Baseline is consistent with ${snapshot.baseline_report}; ${snapshot.benchmarks.length} workloads validated.`,
+    )
+  } else {
+    writeFileSync(baselinePath, json)
+    writeFileSync(join(docs, 'BASELINE.md'), markdown)
+    console.log(
+      `Proposed baseline from ${snapshot.baseline_report}. Review and merge with the performance PR.`,
+    )
+  }
+}
+
+try {
+  main()
+} catch (error) {
+  console.error(error.message)
+  process.exitCode = 1
+}

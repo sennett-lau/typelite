@@ -202,53 +202,41 @@ impl LlmProvider for OpenAiProvider {
             // until more text shows it is not the end.
             let mut held_back = prompt::FinalPeriodStream::default();
 
-            let mut buffer = String::new();
+            let mut decoder = protocol::ChatStreamDecoder::default();
             let mut stream_done = false;
             while !stream_done {
                 let Some(chunk) = stream.next().await else {
                     break;
                 };
                 let chunk = chunk?;
-                buffer.push_str(&String::from_utf8_lossy(&chunk));
+                decoder.push(&chunk);
 
-                // Process SSE lines
-                while let Some(line_end) = buffer.find('\n') {
-                    let line = buffer[..line_end].trim().to_string();
-                    buffer = buffer[line_end + 1..].to_string();
-
-                    if let Some(data) = line.strip_prefix("data: ") {
-                        if data == "[DONE]" {
-                            stream_done = true;
-                            break;
-                        }
-                        if let Ok(v) = serde_json::from_str::<serde_json::Value>(data) {
-                            let event = protocol::parse_stream_event(&v);
-                            if let Some(error) = event.error {
-                                return Err(AppError::Config(error));
-                            }
-                            if let Some(content) = event.text {
-                                if !content.is_empty() {
-                                    full_text.push_str(&content);
-                                    if strip_final_period {
-                                        let visible = held_back.visible(&full_text);
-                                        if !visible.is_empty() {
-                                            callback(visible);
-                                        }
-                                    } else {
-                                        callback(&content);
-                                    }
+                while let Some(event) = decoder.next_event() {
+                    if event.done {
+                        stream_done = true;
+                        break;
+                    }
+                    if let Some(error) = event.error {
+                        return Err(AppError::Config(error));
+                    }
+                    if let Some(content) = event.text {
+                        if !content.is_empty() {
+                            full_text.push_str(&content);
+                            if strip_final_period {
+                                let visible = held_back.visible(&full_text);
+                                if !visible.is_empty() {
+                                    callback(visible);
                                 }
+                            } else {
+                                callback(&content);
                             }
-
-                            // Collect reasoning_content as fallback for thinking-mode models
-                            // where all output may land in this field instead of content
-                            if let Some(rc) = event.reasoning {
-                                if !rc.is_empty() {
-                                    reasoning_text.push_str(&rc);
-                                }
-                            }
-                            stream_done = event.done;
                         }
+                    }
+
+                    // Collect reasoning_content as fallback for thinking-mode models
+                    // where all output may land in this field instead of content.
+                    if let Some(rc) = event.reasoning {
+                        reasoning_text.push_str(&rc);
                     }
                 }
             }
