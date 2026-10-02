@@ -719,14 +719,14 @@ const SCRIPT_MARKERS: [(char, char); 54] = [
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ChineseScript {
+pub(crate) enum ChineseScript {
     Traditional,
     Simplified,
 }
 
 /// Which Chinese script `text` is written in, or `None` when it has no marker characters (no
 /// Chinese, or only characters shared by both scripts) or an equal number of each.
-fn detect_chinese_script(text: &str) -> Option<ChineseScript> {
+pub(crate) fn detect_chinese_script(text: &str) -> Option<ChineseScript> {
     let (mut traditional, mut simplified) = (0usize, 0usize);
     for character in text.chars() {
         for (traditional_form, simplified_form) in SCRIPT_MARKERS {
