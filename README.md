@@ -162,6 +162,7 @@ The images are rendered from the app's own components and the website's demos; s
 | [Languages](docs/guides/languages/README.md) | Guides per language, translation languages, presets and recognition |
 | [Sharing presets](docs/guides/sharing-presets.md) | Export and import your speech and AI presets |
 | [Benchmarks](docs/guides/benchmarks/README.md) | Polish and speech speed on real setups, and how to measure yours |
+| [Code performance](docs/benchmarks/README.md) | Current application baseline, measured improvements and performance PR workflow |
 | [Preset catalogue](presets/languages/README.md) | Every language preset in the library |
 | [Plans](docs/plans/README.md) | How features are designed before they are built |
 | [Releasing](docs/releasing.md) | How maintainers cut a release |
