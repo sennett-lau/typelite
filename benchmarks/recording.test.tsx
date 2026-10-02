@@ -5,12 +5,24 @@ import { useTauriEvents } from '../src/hooks/useTauriEvents'
 import { useRecording } from '../src/hooks/useRecording'
 import { useAppStore } from '../src/stores/appStore'
 import { waveformBenchmarks } from './waveform'
+import { dictionaryBenchmarks } from './dictionary'
 
-const bridge = vi.hoisted(() => ({
-  listeners: new Map<string, (event: { payload: unknown }) => void>(),
-  registrations: 0,
-  t: (key: string) => key,
-}))
+const bridge = vi.hoisted(() => {
+  const dictionaryRowCalls = new Map([
+    ['dictionary.editEntry', 0],
+    ['dictionary.editCorrection', 0],
+  ])
+  return {
+    listeners: new Map<string, (event: { payload: unknown }) => void>(),
+    registrations: 0,
+    dictionaryRowCalls,
+    t: (key: string) => {
+      const count = dictionaryRowCalls.get(key)
+      if (count !== undefined) dictionaryRowCalls.set(key, count + 1)
+      return key
+    },
+  }
+})
 
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn((event: string, handler: (event: { payload: unknown }) => void) => {
@@ -29,7 +41,7 @@ const TEXT_EVENTS = 128
 const WARMUPS = 5
 const SAMPLES = 15
 
-test('measures recording subscriptions through the production hooks', async () => {
+test('measures recording, waveform and dictionary work through production components', async () => {
   const results = []
   for (const kind of ['events', 'recording', 'combined'] as const) {
     for (const workload of ['volume', 'text'] as const) {
@@ -105,5 +117,8 @@ test('measures recording subscriptions through the production hooks', async () =
     }
   }
   results.push(...waveformBenchmarks(WARMUPS, SAMPLES))
+  results.push(
+    ...dictionaryBenchmarks(WARMUPS, SAMPLES, (key) => bridge.dictionaryRowCalls.get(key) ?? 0),
+  )
   writeFileSync(process.env.TYPELITE_BENCH_OUTPUT!, JSON.stringify(results))
 })
