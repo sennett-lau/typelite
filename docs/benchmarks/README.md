@@ -11,6 +11,7 @@ real inference services separately.
 | [Baseline data](baseline.json) | Raw samples and provenance, usable with the benchmark runner's `--compare`. |
 | [Methodology](methodology.md) | Workloads, timing boundaries, statistics and limitations. |
 | [Report template](REPORT_TEMPLATE.md) | Standard report for each performance PR. |
+| [Waveform frame work](reports/2026-10-03-waveform-work/README.md) | Fewer repeated style writes and bounded resume work. |
 | [First improvement](reports/2026-10-03-local-overhead/README.md) | Recording subscriptions, stream buffering and Cantonese conversion. |
 
 ## Structure
