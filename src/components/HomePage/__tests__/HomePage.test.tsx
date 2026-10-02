@@ -295,19 +295,28 @@ describe('HomePage', () => {
     expect(window.location.hash).toBe(`#/settings?pane=${pane}`)
   })
 
-  it("renders What's New from the release list, newest first", () => {
+  it("shows What's New one release at a time, newest first", () => {
     render(<HomePage />)
 
     const section = screen.getByRole('region', { name: "What's New" })
-    const releases = within(section).getAllByRole('article')
-    expect(releases.map((release) => release.getAttribute('aria-label'))).toEqual(
-      WHATS_NEW.map((entry) => `v${entry.version}`),
-    )
-    const first = within(releases[0]).getAllByRole('listitem')
-    expect(first).toHaveLength(WHATS_NEW[0].changeKeys.length)
-    expect(first[0]).toHaveTextContent('search the web')
-    const last = within(releases[releases.length - 1]).getAllByRole('listitem')
-    expect(last[last.length - 1]).toHaveTextContent('No history')
+    const page = () => within(section).getByRole('article')
+    expect(within(section).getAllByRole('article')).toHaveLength(1)
+    expect(page().getAttribute('aria-label')).toBe(`v${WHATS_NEW[0].version}`)
+    expect(within(page()).getAllByRole('listitem')).toHaveLength(WHATS_NEW[0].changeKeys.length)
+    expect(within(page()).getAllByRole('listitem')[0]).toHaveTextContent('search the web')
+    const newer = within(section).getByRole('button', { name: 'Newer release' })
+    const older = within(section).getByRole('button', { name: 'Older release' })
+    expect(newer).toBeDisabled()
+    expect(section).toHaveTextContent(`1 of ${WHATS_NEW.length}`)
+
+    // Step to the oldest release, then back.
+    for (let i = 1; i < WHATS_NEW.length; i++) fireEvent.click(older)
+    expect(page().getAttribute('aria-label')).toBe(`v${WHATS_NEW[WHATS_NEW.length - 1].version}`)
+    const items = within(page()).getAllByRole('listitem')
+    expect(items[items.length - 1]).toHaveTextContent('No history')
+    expect(older).toBeDisabled()
+    fireEvent.click(newer)
+    expect(page().getAttribute('aria-label')).toBe(`v${WHATS_NEW[WHATS_NEW.length - 2].version}`)
   })
 })
 

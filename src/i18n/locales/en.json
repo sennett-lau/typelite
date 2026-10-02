@@ -102,6 +102,9 @@
     "notSet": "Not set",
     "change": "Change",
     "whatsNew": "What's New",
+    "whatsNewNewer": "Newer release",
+    "whatsNewOlder": "Older release",
+    "whatsNewPage": "{{page}} of {{total}}",
     "shortcuts": {
       "title": "Shortcuts",
       "dictate": "Dictate",

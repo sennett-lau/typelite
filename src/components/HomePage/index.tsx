@@ -1,4 +1,5 @@
-import { ChevronRight, Globe, Mic, MessageSquare, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight, Globe, Mic, MessageSquare, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   bindingKeyNames,
@@ -214,20 +215,50 @@ function SetupGroup() {
   )
 }
 
+/** What's New, one release at a time: the newest first, with arrows to older releases. */
 function WhatsNew() {
   const { t } = useTranslation()
+  const [page, setPage] = useState(0)
+  const entry = WHATS_NEW[page]
+  if (!entry) return null
+  const actions =
+    WHATS_NEW.length > 1 ? (
+      <>
+        <button
+          type="button"
+          className="btn-icon h-[22px] w-[22px]"
+          onClick={() => setPage(page - 1)}
+          disabled={page === 0}
+          aria-label={t('home.whatsNewNewer')}
+          title={t('home.whatsNewNewer')}
+        >
+          <ChevronLeft size={13} aria-hidden="true" />
+        </button>
+        <span className="mono-value text-[11px] text-text-tertiary" aria-live="polite">
+          {t('home.whatsNewPage', { page: page + 1, total: WHATS_NEW.length })}
+        </span>
+        <button
+          type="button"
+          className="btn-icon h-[22px] w-[22px]"
+          onClick={() => setPage(page + 1)}
+          disabled={page === WHATS_NEW.length - 1}
+          aria-label={t('home.whatsNewOlder')}
+          title={t('home.whatsNewOlder')}
+        >
+          <ChevronRight size={13} aria-hidden="true" />
+        </button>
+      </>
+    ) : undefined
   return (
-    <Group label={t('home.whatsNew')} flush className="min-w-0">
-      {WHATS_NEW.map((entry) => (
-        <article key={entry.version} aria-label={`v${entry.version}`} className="px-3.5 py-2.5">
-          <h4 className="m-0 text-[12.5px] font-semibold text-text-primary">{entry.version}</h4>
-          <ul className="mt-1.5 mb-0 list-disc space-y-1 pl-4 text-[12.5px] leading-snug text-text-secondary">
-            {entry.changeKeys.map((key) => (
-              <li key={key}>{t(`whatsNew.${key}`)}</li>
-            ))}
-          </ul>
-        </article>
-      ))}
+    <Group label={t('home.whatsNew')} actions={actions} flush className="min-w-0">
+      <article key={entry.version} aria-label={`v${entry.version}`} className="px-3.5 py-2.5">
+        <h4 className="m-0 text-[12.5px] font-semibold text-text-primary">{entry.version}</h4>
+        <ul className="mt-1.5 mb-0 list-disc space-y-1 pl-4 text-[12.5px] leading-snug text-text-secondary">
+          {entry.changeKeys.map((key) => (
+            <li key={key}>{t(`whatsNew.${key}`)}</li>
+          ))}
+        </ul>
+      </article>
     </Group>
   )
 }

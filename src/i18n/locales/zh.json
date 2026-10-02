@@ -102,6 +102,9 @@
     "notSet": "未设置",
     "change": "更改",
     "whatsNew": "新功能",
+    "whatsNewNewer": "较新的版本",
+    "whatsNewOlder": "较旧的版本",
+    "whatsNewPage": "{{page}} / {{total}}",
     "shortcuts": {
       "title": "快捷键",
       "dictate": "听写",
