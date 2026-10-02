@@ -1,7 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import i18n from '../../../i18n'
-import { AskAnswerPanel, type AskPanelContent } from '../AskAnswerPanel'
+import { AskAnswerPanel, AskSourcesColumn, type AskPanelContent } from '../AskAnswerPanel'
 import { isLongAnswer, panelWidth } from '../liveSearch'
 import { copyAskText, insertAskText, openAskSource } from '../../../lib/tauri'
 import type { AskDictationResult } from '../../../lib/tauri'
@@ -125,21 +125,79 @@ describe('AskAnswerPanel', () => {
     expect(screen.getByTestId('ask-source-2').className).toContain('is-highlighted')
     expect(openAskSource).not.toHaveBeenCalled()
 
+    // Icons and their labelled tooltips are available before any hover.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Open source 1' })).toBeVisible())
+    for (const number of [1, 2, 3]) {
+      const card = screen.getByTestId(`ask-source-${number}`)
+      const buttons = within(card).getAllByRole('button')
+      expect(buttons).toHaveLength(2)
+      for (const button of buttons) {
+        expect(button).toBeVisible()
+        expect(button).toHaveAttribute('title', button.getAttribute('aria-label'))
+        expect(button.textContent).toBe('')
+        expect(button.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+      }
+    }
+
     // Open and Copy link go through the app.
     fireEvent.click(screen.getByRole('button', { name: 'Open source 3' }))
     expect(openAskSource).toHaveBeenCalledWith('https://www.wired.com/')
+    expect(openAskSource).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Source 3 opened' })).toHaveAttribute(
+      'title',
+      'Source 3 opened',
+    )
     vi.mocked(copyAskText).mockResolvedValue(undefined)
     fireEvent.click(screen.getByRole('button', { name: 'Copy link of source 1' }))
     expect(copyAskText).toHaveBeenCalledWith('https://www.reuters.com/technology/')
-    await waitFor(() => expect(screen.getByTestId('ask-source-1').textContent).toContain('Copied'))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Link of source 1 copied' })).toHaveAttribute(
+        'title',
+        'Link of source 1 copied',
+      ),
+    )
+    expect(openAskSource).toHaveBeenCalledTimes(1)
+    expect(copyAskText).toHaveBeenCalledTimes(1)
 
     // A click anywhere on a card opens it too; › hides the column.
     fireEvent.click(screen.getByText('The Verge'))
     expect(openAskSource).toHaveBeenLastCalledWith('https://www.theverge.com/')
+    expect(openAskSource).toHaveBeenCalledTimes(2)
     // › slides the column out first, then it goes (and the panel shrinks).
     fireEvent.click(screen.getByRole('button', { name: 'Hide sources' }))
     expect(screen.getByTestId('ask-panel-sources')).toHaveAttribute('data-closing', 'true')
     await waitFor(() => expect(screen.queryByTestId('ask-panel-sources')).toBeNull())
+  })
+
+  it('restores the source action icons after confirmation and translates their labels', async () => {
+    await i18n.changeLanguage('zh')
+    vi.useFakeTimers()
+    render(
+      <AskSourcesColumn
+        sources={[{ number: 1, title: 'Example', url: 'https://example.com', snippet: '' }]}
+        highlighted={null}
+        onHide={vi.fn()}
+      />,
+    )
+    const open = screen.getByRole('button', { name: '打开来源 1' })
+    expect(open).toHaveAttribute('title', '打开来源 1')
+    fireEvent.click(open)
+    expect(screen.getByRole('button', { name: '已打开来源 1' }).querySelector('svg')).toHaveClass(
+      'lucide-check',
+    )
+    act(() => vi.advanceTimersByTime(1500))
+    expect(open).toHaveAttribute('aria-label', '打开来源 1')
+    expect(open.querySelector('svg')).toHaveClass('lucide-external-link')
+
+    const copy = screen.getByRole('button', { name: '复制来源 1 的链接' })
+    expect(copy).toHaveAttribute('title', '复制来源 1 的链接')
+    await act(async () => fireEvent.click(copy))
+    expect(
+      screen.getByRole('button', { name: '已复制来源 1 的链接' }).querySelector('svg'),
+    ).toHaveClass('lucide-check')
+    act(() => vi.advanceTimersByTime(1500))
+    expect(copy).toHaveAttribute('aria-label', '复制来源 1 的链接')
+    expect(copy.querySelector('svg')).toHaveClass('lucide-link2')
   })
 
   it('keeps a short answer at 420 pt and widens a long one to the limit', () => {
