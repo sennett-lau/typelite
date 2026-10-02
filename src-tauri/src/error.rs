@@ -174,158 +174,99 @@ mod tests {
     use std::time::Duration;
 
     #[test]
-    fn test_network_error_is_retryable() {
-        let err = AppError::Network("connection reset".to_string());
-        assert!(err.is_retryable());
+    fn non_http_errors_keep_their_retry_policy_and_localizable_details() {
+        for (error, retryable, code, details) in [
+            (
+                AppError::Network("connection refused".into()),
+                true,
+                "stt_unreachable",
+                "connection refused",
+            ),
+            (
+                AppError::Timeout(Duration::from_secs(10)),
+                true,
+                "stt_timeout",
+                "10 s",
+            ),
+            (
+                AppError::Auth("bad key".into()),
+                false,
+                "stt_invalid_key",
+                "bad key",
+            ),
+            (
+                AppError::Quota("quota exceeded".into()),
+                false,
+                "stt_quota_exceeded",
+                "quota exceeded",
+            ),
+            (
+                AppError::LlmQuota("quota exceeded".into()),
+                false,
+                "llm_quota_exceeded",
+                "quota exceeded",
+            ),
+            (
+                AppError::Output("keyboard failed".into()),
+                false,
+                "output_fallback_clipboard",
+                "keyboard failed",
+            ),
+            (
+                AppError::Config("bad config".into()),
+                false,
+                "stt_failed",
+                "bad config",
+            ),
+        ] {
+            assert_eq!(error.is_retryable(), retryable, "{error:?}");
+            let user_error = error.to_user_error();
+            assert_eq!(user_error.code, code, "{error:?}");
+            assert_eq!(user_error.details.as_deref(), Some(details), "{error:?}");
+            assert_eq!(user_error.retry_count, 0);
+        }
     }
 
     #[test]
-    fn test_timeout_is_retryable() {
-        let err = AppError::Timeout(Duration::from_secs(30));
-        assert!(err.is_retryable());
+    fn http_errors_distinguish_auth_failures_and_the_server_retry_boundary() {
+        for (status, retryable, code) in [
+            (401, false, "stt_invalid_key"),
+            (403, false, "stt_invalid_key"),
+            (429, false, "stt_failed"),
+            (499, false, "stt_failed"),
+            (500, true, "stt_failed"),
+            (503, true, "stt_failed"),
+        ] {
+            let error = AppError::Api {
+                status,
+                body: String::new(),
+            };
+            assert_eq!(error.is_retryable(), retryable, "HTTP {status}");
+            let user_error = error.to_user_error();
+            assert_eq!(user_error.code, code, "HTTP {status}");
+            let details = if code == "stt_invalid_key" {
+                None
+            } else {
+                Some(format!("HTTP {status}"))
+            };
+            assert_eq!(user_error.details, details, "HTTP {status}");
+        }
     }
 
     #[test]
-    fn test_500_is_retryable() {
-        let err = AppError::Api {
-            status: 500,
-            body: "internal error".to_string(),
-        };
-        assert!(err.is_retryable());
-    }
-
-    #[test]
-    fn test_503_is_retryable() {
-        let err = AppError::Api {
-            status: 503,
-            body: "service unavailable".to_string(),
-        };
-        assert!(err.is_retryable());
-    }
-
-    #[test]
-    fn test_401_is_not_retryable() {
-        let err = AppError::Api {
-            status: 401,
-            body: "unauthorized".to_string(),
-        };
-        assert!(!err.is_retryable());
-    }
-
-    #[test]
-    fn test_403_is_not_retryable() {
-        let err = AppError::Api {
-            status: 403,
-            body: "forbidden".to_string(),
-        };
-        assert!(!err.is_retryable());
-    }
-
-    #[test]
-    fn test_auth_not_retryable() {
-        let err = AppError::Auth("bad key".to_string());
-        assert!(!err.is_retryable());
-    }
-
-    #[test]
-    fn test_output_not_retryable() {
-        let err = AppError::Output("enigo failed".to_string());
-        assert!(!err.is_retryable());
-    }
-
-    #[test]
-    fn test_config_not_retryable() {
-        let err = AppError::Config("bad config".to_string());
-        assert!(!err.is_retryable());
-    }
-
-    #[test]
-    fn test_quota_is_not_retryable() {
-        let err = AppError::Quota("quota exceeded".to_string());
-        assert!(!err.is_retryable());
-    }
-
-    #[test]
-    fn test_quota_maps_to_quota_code() {
-        let err = AppError::Quota("quota exceeded".to_string());
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_quota_exceeded");
-        assert_eq!(ue.details.as_deref(), Some("quota exceeded"));
-    }
-
-    #[test]
-    fn test_llm_quota_maps_to_llm_quota_code() {
-        let err = AppError::LlmQuota("quota exceeded".to_string());
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "llm_quota_exceeded");
-        assert_eq!(ue.details.as_deref(), Some("quota exceeded"));
-    }
-
-    #[test]
-    fn test_401_maps_to_invalid_key_code() {
-        let err = AppError::Api {
-            status: 401,
-            body: "".to_string(),
-        };
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_invalid_key");
-    }
-
-    #[test]
-    fn test_403_maps_to_invalid_key_code() {
-        let err = AppError::Api {
-            status: 403,
-            body: "".to_string(),
-        };
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_invalid_key");
-    }
-
-    #[test]
-    fn test_500_maps_to_stt_failed_code() {
-        let err = AppError::Api {
-            status: 500,
-            body: "".to_string(),
-        };
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_failed");
-    }
-
-    #[test]
-    fn test_network_maps_to_unreachable_code_with_reason() {
-        let err = AppError::Network("connection refused".to_string());
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_unreachable");
-        assert_eq!(ue.details.as_deref(), Some("connection refused"));
-    }
-
-    #[test]
-    fn test_timeout_maps_to_timeout_code_with_duration() {
-        let err = AppError::Timeout(Duration::from_secs(10));
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_timeout");
-        assert_eq!(ue.details.as_deref(), Some("10 s"));
-    }
-
-    #[test]
-    fn test_api_error_details_include_server_message() {
-        let err = AppError::Api {
-            status: 500,
-            body: "\n  model not found: large-v9\nstack...".to_string(),
-        };
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "stt_failed");
+    fn api_details_use_the_first_nonempty_line_and_bound_unicode_characters() {
+        let error = |body: String| AppError::Api { status: 500, body }.to_user_error();
         assert_eq!(
-            ue.details.as_deref(),
+            error("\n  model not found: large-v9\nstack...".into())
+                .details
+                .as_deref(),
             Some("HTTP 500: model not found: large-v9")
         );
-    }
-
-    #[test]
-    fn test_output_maps_to_fallback_code() {
-        let err = AppError::Output("keyboard failed".to_string());
-        let ue = err.to_user_error();
-        assert_eq!(ue.code, "output_fallback_clipboard");
+        assert_eq!(error(" \n ".into()).details.as_deref(), Some("HTTP 500"));
+        assert_eq!(
+            error("界".repeat(161)).details,
+            Some(format!("HTTP 500: {}", "界".repeat(160)))
+        );
     }
 
     #[test]
