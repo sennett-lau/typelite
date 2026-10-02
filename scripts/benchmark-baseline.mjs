@@ -19,6 +19,37 @@ function validateOptionalMetrics(run) {
   if (run.trajectory_sha256 !== undefined) {
     assert.match(run.trajectory_sha256, /^[a-f0-9]{64}$/, `Invalid trajectory: ${run.id}`)
   }
+  if (run.rows_sha256 !== undefined) {
+    assert.match(run.rows_sha256, /^[a-f0-9]{64}$/, `Invalid row snapshot: ${run.id}`)
+  }
+  if (run.final_input_values !== undefined) {
+    assert(Array.isArray(run.final_input_values), `Invalid input values: ${run.id}`)
+    assert(run.final_input_values.every((value) => typeof value === 'string'))
+    assert(nonnegativeInteger(run.workload.fields) && run.workload.fields > 0)
+    assert.equal(
+      run.final_input_values.length,
+      run.workload.fields,
+      `Incomplete input values: ${run.id}`,
+    )
+  }
+  if (run.row_label_calls_per_batch !== undefined || run.row_evaluations_per_batch !== undefined) {
+    const callsPerRow = run.workload.label_calls_per_row
+    assert(
+      nonnegativeInteger(callsPerRow) && callsPerRow > 0,
+      `Invalid label calls per row: ${run.id}`,
+    )
+    for (const key of ['row_label_calls_per_batch', 'row_evaluations_per_batch']) {
+      assert(Array.isArray(run[key]), `Missing ${key}: ${run.id}`)
+      assert.equal(run[key].length, run.samples_us.length, `Incomplete ${key}: ${run.id}`)
+      assert(run[key].every(nonnegativeInteger), `Invalid ${key}: ${run.id}`)
+    }
+    assert(
+      run.row_label_calls_per_batch.every(
+        (calls, index) => calls === run.row_evaluations_per_batch[index] * callsPerRow,
+      ),
+      `Row evaluations do not match label calls: ${run.id}`,
+    )
+  }
   if (run.voice_activity !== undefined) {
     const activity = run.voice_activity
     assert(
@@ -55,10 +86,15 @@ function validateOptionalMetrics(run) {
 }
 
 function assertSameOutput(actual, expected) {
-  for (const key of ['trajectory_sha256', 'voice_activity']) {
+  for (const key of ['trajectory_sha256', 'voice_activity', 'rows_sha256', 'final_input_values']) {
     assert.deepEqual(actual[key], expected[key], `Deterministic ${key} changed: ${actual.id}`)
   }
-  for (const key of ['style_writes_per_batch', 'allocations_per_operation']) {
+  for (const key of [
+    'style_writes_per_batch',
+    'allocations_per_operation',
+    'row_label_calls_per_batch',
+    'row_evaluations_per_batch',
+  ]) {
     assert.equal(
       actual[key] !== undefined,
       expected[key] !== undefined,
@@ -195,6 +231,29 @@ function countRange(values) {
 
 function renderAdditionalMetrics(snapshot) {
   const sections = []
+  const dictionary = snapshot.benchmarks.filter(
+    (row) => row.runs[0].row_evaluations_per_batch !== undefined,
+  )
+  if (dictionary.length > 0) {
+    const rows = dictionary.map((row) => {
+      const calls = row.runs.flatMap((run) => run.row_label_calls_per_batch)
+      const evaluations = row.runs.flatMap((run) => run.row_evaluations_per_batch)
+      const digest = row.runs[0].rows_sha256
+      const values = row.runs[0].final_input_values
+      const inputs = values === undefined ? '—' : JSON.stringify(values).replaceAll('|', '\\|')
+      return `| \`${row.id}\` | ${countRange(calls)} | ${countRange(evaluations)} | ${digest ? `\`${digest}\`` : '—'} | ${inputs} |`
+    })
+    sections.push(`## Dictionary typing work and output
+
+Row evaluations are inferred from row-label translation calls using each workload's
+validated calls-per-row ratio. Counts exclude mounting, input resets and section switches;
+ranges span measured batches. Row snapshot hashes and final input values must match across
+process runs and before/after versions.
+
+| Workload | Row-label calls/batch | Inferred row evaluations/batch | Rows SHA-256 | Final input values |
+|---|---:|---:|---|---|
+${rows.join('\n')}`)
+  }
   const waveform = snapshot.benchmarks.filter(
     (row) =>
       row.runs[0].trajectory_sha256 !== undefined ||

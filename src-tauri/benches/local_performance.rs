@@ -18,6 +18,8 @@ use typelite_lib::voice_intent::{VoiceIntent, VoiceIntentKind, VoiceOutputPlacem
 const WARMUPS: usize = 5;
 const SAMPLES: usize = 15;
 
+#[path = "local_performance/dictionary.rs"]
+mod dictionary;
 #[path = "local_performance/voice_activity.rs"]
 mod voice_activity;
 
@@ -224,5 +226,6 @@ fn main() {
         streaming("stream/stress-batched", 4096, 256 * 1024),
     ];
     results.extend(voice_activity::benchmarks());
+    results.extend(dictionary::run());
     println!("{}", serde_json::to_string(&results).unwrap());
 }
