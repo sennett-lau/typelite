@@ -918,6 +918,7 @@ async fn check_live_question(
                 reason,
                 source: crate::llm::live_question::LiveCheckSource::KeywordsAfterError,
                 query: None,
+                language: crate::llm::question_language::detect(question, None),
             }
         }
     };
@@ -954,11 +955,12 @@ fn build_web_answer_body(
     question: &str,
     results: &[crate::web_search::SearchResult],
     today: &str,
+    language: Option<&str>,
 ) -> serde_json::Value {
     let preset = config.active_ai_preset();
     crate::llm::protocol::build_chat_body(
         &preset.model,
-        crate::web_search::answer_messages(question, results, today),
+        crate::web_search::answer_messages(question, results, today, language),
         WEB_ANSWER_TOKEN_LIMIT,
         0.2,
         false,
@@ -990,6 +992,7 @@ async fn answer_from_web(
     question: &str,
     query: &str,
     reason: &str,
+    language: Option<&str>,
 ) -> Result<WebAnswer, WebAnswerError> {
     // The pill shows "Searching the web…" while the search runs, then "Thinking" again.
     let _ = app.emit(ASK_STAGE_EVENT, "searching");
@@ -1009,6 +1012,7 @@ async fn answer_from_web(
         &web_search_key(config),
         query,
         focus,
+        language,
     )
     .await;
     let _ = app.emit(ASK_STAGE_EVENT, "thinking");
@@ -1074,12 +1078,23 @@ async fn answer_from_web(
         );
         return Ok(WebAnswer { answer, sources });
     }
-    let body = build_web_answer_body(&config, question, &outcome.results, &today);
+    let body = build_web_answer_body(&config, question, &outcome.results, &today, language);
     let mut answer = send_ask_chat(client, &config, &api_key, &body)
         .await
         .map_err(WebAnswerError::Ai)?;
     // A small model sometimes copies the results back instead of answering: ask once more with
     // a plainer instruction, and never show the raw results as an answer.
+    if crate::web_search::repeats_question(&answer, question) {
+        tracing::warn!("Ask web answer: the AI repeated the question; asking again");
+        let body = crate::web_search::answer_only_body(&body);
+        answer = send_ask_chat(client, &config, &api_key, &body)
+            .await
+            .map_err(WebAnswerError::Ai)?;
+        if crate::web_search::repeats_question(&answer, question) {
+            tracing::info!("Ask web answer: the AI repeated the question again");
+            return Err(WebAnswerError::Search(LiveSearchState::NoResults));
+        }
+    }
     if crate::web_search::echoes_results(&answer) {
         tracing::warn!("Ask web answer: the AI copied the search results; asking again");
         let body = crate::web_search::answer_only_body(&body);
@@ -1093,6 +1108,10 @@ async fn answer_from_web(
                     .to_string(),
             ));
         }
+    }
+    // Mixed Traditional and Simplified characters become the question's script.
+    if let Some(script) = crate::llm::question_language::answer_script(question, language) {
+        answer = crate::stt::chinese_script::convert(&answer, script);
     }
     let sources = crate::web_search::answer_sources(&answer, &outcome.results);
     tracing::info!(
@@ -1699,8 +1718,16 @@ pub async fn stop_ask_dictation(
                 // Plan `ask-web-search`: with a search provider, answer from the web.
                 let live_search = if config.web_search.is_configured() {
                     let query = check.query.as_deref().unwrap_or(&question);
-                    match answer_from_web(&app, &config, &client, &question, query, check.reason)
-                        .await
+                    match answer_from_web(
+                        &app,
+                        &config,
+                        &client,
+                        &question,
+                        query,
+                        check.reason,
+                        check.language,
+                    )
+                    .await
                     {
                         Ok(web) => {
                             ai_elapsed = Some(ai_started.elapsed());
@@ -2153,6 +2180,7 @@ mod tests {
             "where is the next F1 race",
             &results,
             "Tuesday, 2026-09-29",
+            Some("en"),
         );
         assert_eq!(body["model"], "qwen3:4b");
         assert_eq!(body["max_tokens"], WEB_ANSWER_TOKEN_LIMIT);
