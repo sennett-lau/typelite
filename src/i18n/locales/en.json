@@ -932,6 +932,15 @@
     "failed": "Could not start recording the shortcut: {{error}}"
   },
   "whatsNew": {
+    "webSearch": "Ask anything can search the web for live questions (news, scores, schedules, prices) with SearXNG: Typelite sets it up on your Mac in one click, or uses your own server.",
+    "askSources": "Answers from the web cite their sources: open the sources column beside the answer to see each page, open it or copy its link.",
+    "autoUpdate": "Updates from GitHub Releases: Typelite downloads a new version in the background and asks you to restart. Only the version file is requested; turn it off in Settings → System.",
+    "keepAccessibility": "From 1.1.0 on, the Accessibility permission stays granted after each update. Coming from 1.0, turn it on once more after installing.",
+    "copyPill": "When the text cannot be typed into the app in front, the pill offers it with a Copy button instead.",
+    "translateLanguageLive": "A translation language added in Settings shows in the Translate pill straight away, without a restart.",
+    "pillMotion": "The pill and the Ask panel stay centred and change size smoothly, without jumps.",
+    "homeSetup": "Set up on Home opens the matching Settings page.",
+    "shortcutRecording": "Settings records one shortcut at a time.",
     "polishCorrections": "AI polish keeps only what you meant when you correct yourself (\"at one, oh no, at two\", \"the first thing, sorry, the third thing\").",
     "polishRequests": "AI polish writes down a request you dictate (\"write an email in Japanese…\") instead of carrying it out or switching language.",
     "polishCodeWords": "AI polish keeps file names, commands and short code words whole: \"dot gitignore\" becomes .gitignore.",
