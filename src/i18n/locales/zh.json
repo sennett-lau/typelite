@@ -66,10 +66,8 @@
     "sourcesCount_other": "{{count}} 个来源",
     "hideSources": "隐藏来源",
     "showSource": "显示来源 {{n}}",
-    "open": "打开",
-    "opened": "已打开",
-    "copyLink": "复制链接",
-    "linkCopied": "已复制",
+    "sourceOpened": "已打开来源 {{n}}",
+    "sourceLinkCopied": "已复制来源 {{n}} 的链接",
     "copySourceLink": "复制来源 {{n}} 的链接",
     "openSource": "打开来源 {{n}}"
   },
