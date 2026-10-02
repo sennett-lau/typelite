@@ -8,6 +8,7 @@ export default defineConfig({
     include: ['benchmarks/recording.test.tsx'],
     setupFiles: ['src/test-setup.ts'],
     maxWorkers: 1,
-    testTimeout: 60_000,
+    // Dictionary batches intentionally exercise two mounted 1,000-row lists before optimizing.
+    testTimeout: 120_000,
   },
 })

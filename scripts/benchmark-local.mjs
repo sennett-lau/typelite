@@ -62,6 +62,37 @@ function validateMeasurements(row) {
   if (row.trajectory_sha256 !== undefined) {
     assert.match(row.trajectory_sha256, /^[a-f0-9]{64}$/, `Invalid trajectory: ${row.id}`)
   }
+  if (row.rows_sha256 !== undefined) {
+    assert.match(row.rows_sha256, /^[a-f0-9]{64}$/, `Invalid row snapshot: ${row.id}`)
+  }
+  if (row.final_input_values !== undefined) {
+    assert(Array.isArray(row.final_input_values), `Invalid input values: ${row.id}`)
+    assert(row.final_input_values.every((value) => typeof value === 'string'))
+    assert(nonnegativeInteger(row.workload.fields) && row.workload.fields > 0)
+    assert.equal(
+      row.final_input_values.length,
+      row.workload.fields,
+      `Incomplete input values: ${row.id}`,
+    )
+  }
+  if (row.row_label_calls_per_batch !== undefined || row.row_evaluations_per_batch !== undefined) {
+    const callsPerRow = row.workload.label_calls_per_row
+    assert(
+      nonnegativeInteger(callsPerRow) && callsPerRow > 0,
+      `Invalid label calls per row: ${row.id}`,
+    )
+    for (const key of ['row_label_calls_per_batch', 'row_evaluations_per_batch']) {
+      assert(Array.isArray(row[key]), `Missing ${key}: ${row.id}`)
+      assert.equal(row[key].length, row.samples_us.length, `Incomplete ${key}: ${row.id}`)
+      assert(row[key].every(nonnegativeInteger), `Invalid ${key}: ${row.id}`)
+    }
+    assert(
+      row.row_label_calls_per_batch.every(
+        (calls, index) => calls === row.row_evaluations_per_batch[index] * callsPerRow,
+      ),
+      `Row evaluations do not match label calls: ${row.id}`,
+    )
+  }
   if (row.voice_activity !== undefined) {
     const activity = row.voice_activity
     assert(
@@ -101,8 +132,15 @@ function assertSameWorkload(actual, expected) {
   assert.equal(actual.id, expected.id)
   assert.equal(actual.unit, expected.unit, `Unit changed: ${actual.id}`)
   assert.deepEqual(actual.workload, expected.workload, `Workload changed: ${actual.id}`)
-  for (const key of ['trajectory_sha256', 'voice_activity']) {
+  for (const key of ['trajectory_sha256', 'voice_activity', 'rows_sha256', 'final_input_values']) {
     assert.deepEqual(actual[key], expected[key], `Deterministic ${key} changed: ${actual.id}`)
+  }
+  for (const key of ['row_label_calls_per_batch', 'row_evaluations_per_batch']) {
+    assert.equal(
+      actual[key] !== undefined,
+      expected[key] !== undefined,
+      `Metric ${key} missing: ${actual.id}`,
+    )
   }
 }
 
@@ -129,8 +167,10 @@ const harnessFiles = [
   'benchmarks/vitest.config.ts',
   'benchmarks/recording.test.tsx',
   'benchmarks/waveform.tsx',
+  'benchmarks/dictionary.tsx',
   'src-tauri/benches/local_performance.rs',
   'src-tauri/benches/local_performance/voice_activity.rs',
+  'src-tauri/benches/local_performance/dictionary.rs',
 ]
 const sourceFiles = run('git', [
   'ls-files',

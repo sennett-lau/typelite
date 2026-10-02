@@ -30,6 +30,9 @@ checks without reverting code. Those executables print the same raw JSON workloa
 | `stream/stress-batched` | 4,097 content events, server writes up to 256 KiB. |
 | `voice/speech-{4,60,600}s` | Speech-activity analysis of deterministic 16 kHz PCM with alternating louder/quiet regions. |
 | `voice/{quiet,silence}-4s` | Quiet-speech and digital-silence controls for the same detector. |
+| `ui/dictionary/add-{words,corrections}` | 24 independent input edits across two Add fields with 1,000 visible rows in the actual pane. |
+| `dictionary/export-json-{0,2,20,1000,10000}` | Pretty JSON export with an equal split of words and correction rules. |
+| `dictionary/import-json-*` | JSON parse and transactional import into fresh temporary SQLite WAL databases; empty/tiny/large and partial/all-duplicate cases. |
 
 UI probes independently mount the production event hook, recording hook or both. Render counts
 exclude mounting and resets. A stable translation mock avoids artificial listener registrations;
@@ -50,6 +53,18 @@ total requested bytes and peak live requested bytes for one operation. These are
 requests, not RSS or total application memory. The allocator's disabled tracking check remains
 present equally during both versions' timing samples.
 
+Dictionary UI probes mount once per workload and reset drafts outside timing. Lightweight
+translation counters track the two edit-label evaluations in each visible row; they verify the
+counter during initial rendering and report inferred row evaluations, not DOM mutations. Input
+values, every row's text/labels/toggle, unchanged store data and draft persistence across section
+switches are checked outside timing. These timings remain React development/jsdom proxies.
+
+Dictionary transfer fixtures contain optional pronunciation, disabled corrections, Unicode and
+escaped characters. Export bytes must equal an independent pretty-JSON fixture. Import setup,
+duplicate seeding, schema creation, full read-back assertions and directory cleanup are outside
+timing; parsing and the default-durability transaction are inside. The temporary database is
+never the user's database. Empty and tiny commits may be dominated by SQLite/filesystem noise.
+
 Rust uses the app's release profile, including its size optimization. Stream times include the
 real provider's prompt construction, persistent HTTP connection, response decoding, callback
 accumulation and final text cleanup. Server write sizes do not guarantee client read boundaries.
@@ -58,3 +73,16 @@ The fixtures use ASCII; deterministic unit tests separately cover arbitrary UTF-
 There are no machine-dependent timing gates in CI. Run the ordinary correctness checks alongside
 this suite, inspect process spread, and confirm small gains with alternating executable runs.
 None of these numbers are total dictation latency or model inference speed.
+
+For an ambiguous Rust result, reuse the exact binaries retained by the primary runner:
+
+```sh
+node scripts/benchmark-rust-confirm.mjs before.json after.json output/benchmarks/confirmation.json
+```
+
+The supplemental runner checks snapshot compatibility, the current machine and executable
+hashes, then runs `before, after, after, before, before, after` without rebuilding or running the
+frontend. It preserves all Rust workloads, raw samples, execution order, snapshot/script hashes
+and summaries. Use a new output path; existing files are refused. Keep the original full-suite
+before/after evidence and archive this confirmation alongside it, explaining what concern it
+resolves. It does not automatically replace or promote the rolling baseline.
