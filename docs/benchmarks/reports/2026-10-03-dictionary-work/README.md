@@ -7,6 +7,7 @@ and serialize borrowed views in the existing JSON field order.
 
 ## Provenance
 
+- PR: [#58](https://github.com/sennett-lau/typelite/pull/58), stacked on speech-check PR #57.
 - Report date: 2026-10-03, Asia/Tokyo.
 - Kind: performance improvement and suite baseline reset. Two dictionary UI workloads and
   thirteen transfer workloads were added; all twenty existing workloads remain as controls.
