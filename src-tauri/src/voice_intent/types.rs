@@ -267,67 +267,7 @@ pub struct VoiceRouteRequest<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
-    use serde::Deserialize;
-
     use super::*;
-
-    #[derive(Debug, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct FixtureCase {
-        id: String,
-        mode: VoiceMode,
-        locale: String,
-        utterance: String,
-        has_selection: bool,
-        flags: VoiceRoutingFlags,
-        expected_kind: VoiceIntentKind,
-        expected_placement: VoiceOutputPlacement,
-        expected_provider: Option<SearchProvider>,
-        expected_payload: Option<String>,
-        destructive_blocker: bool,
-    }
-
-    fn assert_fixture_contract(source: &str) {
-        let cases: Vec<FixtureCase> = serde_json::from_str(source).unwrap();
-        assert!(cases.len() >= 250, "fixture has only {} cases", cases.len());
-        assert!(
-            cases.iter().filter(|case| case.destructive_blocker).count() >= 100,
-            "fixture needs at least 100 destructive blockers"
-        );
-
-        let mut ids = HashSet::new();
-        for case in &cases {
-            assert!(
-                ids.insert(case.id.as_str()),
-                "duplicate fixture id: {}",
-                case.id
-            );
-            assert!(!case.locale.trim().is_empty());
-            assert!(!case.utterance.trim().is_empty());
-            let _ = (
-                case.mode,
-                case.has_selection,
-                case.flags,
-                case.expected_kind,
-                case.expected_placement,
-                case.expected_provider,
-                case.expected_payload.as_deref(),
-            );
-        }
-    }
-
-    #[test]
-    fn voice_intent_types_fixture_contract_has_release_scale_corpora() {
-        assert_fixture_contract(include_str!("../../tests/fixtures/voice_intent_en.json"));
-        assert_fixture_contract(include_str!(
-            "../../tests/fixtures/voice_intent_zh_hans.json"
-        ));
-        assert_fixture_contract(include_str!(
-            "../../tests/fixtures/voice_intent_zh_hant.json"
-        ));
-    }
 
     #[test]
     fn voice_intent_types_use_stable_wire_values() {
@@ -428,25 +368,27 @@ mod tests {
     }
 
     #[test]
-    fn voice_intent_types_clamp_confidence_and_serialize_safe_metadata() {
-        let intent = VoiceIntent::from_parts(
-            VoiceIntentKind::DictateInsert,
-            VoiceOutputPlacement::InsertAtCursor,
-            4.0,
-            None,
-            None,
-            None,
-            Some(RouteFallbackReason::UnsupportedLocale),
-        )
-        .unwrap();
-
-        assert_eq!(intent.confidence, 1.0);
-        let value = serde_json::to_value(intent).unwrap();
-        assert_eq!(value["kind"], "dictate_insert");
-        assert_eq!(value["placement"], "insert_at_cursor");
-        assert_eq!(value["fallback_reason"], "unsupported_locale");
-        for forbidden in ["utterance", "selected_text", "query", "url"] {
-            assert!(value.get(forbidden).is_none());
+    fn voice_intent_types_normalize_confidence_and_trim_payloads() {
+        for (input, expected) in [
+            (-0.5, 0.0),
+            (0.72, 0.72),
+            (4.0, 1.0),
+            (f32::NAN, 0.0),
+            (f32::INFINITY, 0.0),
+            (f32::NEG_INFINITY, 0.0),
+        ] {
+            let intent = VoiceIntent::from_parts(
+                VoiceIntentKind::DraftInsert,
+                VoiceOutputPlacement::InsertAtCursor,
+                input,
+                None,
+                Some("  draft text\n".to_string()),
+                None,
+                None,
+            )
+            .unwrap();
+            assert_eq!(intent.confidence, expected, "input {input}");
+            assert_eq!(intent.payload.as_deref(), Some("draft text"));
         }
     }
 

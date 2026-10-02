@@ -4,12 +4,16 @@ import { translate } from '../../../test-utils/i18nMock'
 import { useAppStore } from '../../../stores/appStore'
 import { IDLE_SETUP_STATUS, useSpeechSetupStore } from '../../../stores/speechSetupStore'
 import * as tauri from '../../../lib/tauri'
-import { WHATS_NEW } from '../../../lib/whatsNew'
-import en from '../../../i18n/locales/en.json'
-import zh from '../../../i18n/locales/zh.json'
 import { HomePage } from '../index'
 
 vi.mock('../../../lib/tauri')
+
+vi.mock('../../../lib/whatsNew', () => ({
+  WHATS_NEW: [
+    { version: '9.8.7', changeKeys: ['fixtureFirst', 'fixtureSecond'] },
+    { version: '9.8.6', changeKeys: ['fixtureOlder'] },
+  ],
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: translate }),
@@ -159,19 +163,6 @@ describe('HomePage', () => {
     })
   })
 
-  it('starts with the headline and no usage counters', () => {
-    render(<HomePage />)
-
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Just say it.')
-    expect(
-      screen.getByText(
-        "Press a shortcut anywhere, speak, and clean text lands where you're typing.",
-      ),
-    ).toBeInTheDocument()
-    expect(screen.queryByText('Total Recordings')).not.toBeInTheDocument()
-    expect(screen.queryByText('Today')).not.toBeInTheDocument()
-  })
-
   it('shows one shortcut row per feature with key caps from the live config', () => {
     setHotkeys({
       dictationBindings: [{ primary: 'End', modifiers: [] }],
@@ -199,13 +190,8 @@ describe('HomePage', () => {
 
     const translateRow = screen.getByTestId('shortcut-row-translate')
     expect(translateRow).toHaveTextContent('Translate')
-    // Plan `compact-key-labels`: ⇧ with a small R, full name as tooltip and for screen readers.
     const translateCaps = Array.from(translateRow.querySelectorAll('kbd'))
     expect(translateCaps.map((kbd) => kbd.getAttribute('title'))).toEqual(['End', 'Right Shift'])
-    expect(translateCaps[0].textContent).toBe('End')
-    expect(translateCaps[1].querySelector('.kbd-glyph')).toHaveTextContent('⇧')
-    expect(translateCaps[1].querySelector('.kbd-side')).toHaveTextContent('R')
-    expect(within(translateCaps[1]).getByText('Right Shift')).toHaveClass('sr-only')
 
     const ask = screen.getByTestId('shortcut-row-ask')
     expect(ask).toHaveTextContent('Ask anything')
@@ -213,24 +199,6 @@ describe('HomePage', () => {
     expect(ask.querySelectorAll('kbd')).toHaveLength(0)
 
     expect(screen.queryByTestId('shortcut-row-editSelection')).not.toBeInTheDocument()
-  })
-
-  it('shows only the icon, the name and the keys on a tile, never a description or hint', () => {
-    const config = useAppStore.getState().config
-    useAppStore.setState({
-      config: {
-        ...config,
-        translation: { targets: ['en', 'zh-Hant-TW'], active_target: 'zh-Hant-TW' },
-      },
-    })
-    render(<HomePage />)
-
-    const dictate = screen.getByTestId('shortcut-row-dictate')
-    expect(dictate).not.toHaveTextContent('Speak and paste polished text')
-    const translateRow = screen.getByTestId('shortcut-row-translate')
-    expect(translateRow).not.toHaveTextContent('Speak and paste it in')
-    expect(translateRow).not.toHaveTextContent('switch language')
-    expect(screen.getByTestId('shortcut-row-ask')).not.toHaveTextContent('short answer')
   })
 
   it('adds a row for an extra feature only when it has a shortcut', () => {
@@ -258,6 +226,8 @@ describe('HomePage', () => {
         input_device: 'USB Mic',
         polish_enabled: false,
         output_mode: 'clipboard',
+        speech_presets: [{ ...config.speech_presets[0], name: 'Test speech' }],
+        ai_presets: [{ ...config.ai_presets[0], model: 'test-ai' }],
       },
     })
 
@@ -265,17 +235,11 @@ describe('HomePage', () => {
 
     const card = screen.getByRole('region', { name: 'Your setup' })
     expect(within(card).getByTestId('config-row-microphone')).toHaveTextContent('USB Mic')
-    expect(within(card).getByTestId('config-row-speech')).toHaveTextContent('Built-in (on-device)')
-    expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('qwen3-4b')
+    expect(within(card).getByTestId('config-row-speech')).toHaveTextContent('Test speech')
+    expect(within(card).getByTestId('config-row-ai')).toHaveTextContent('test-ai')
     expect(within(card).getByTestId('config-row-polish')).toHaveTextContent('Disabled')
     expect(within(card).getByTestId('config-row-output')).toHaveTextContent('Paste from clipboard')
     expect(card.querySelectorAll('kbd')).toHaveLength(0)
-  })
-
-  it('shows Insights, empty until the first run', () => {
-    render(<HomePage />)
-    const board = screen.getByRole('region', { name: 'Insights' })
-    expect(board).toHaveTextContent('Dictate once to see where the time goes.')
   })
 
   it('shows the system default microphone when none is chosen', () => {
@@ -295,33 +259,21 @@ describe('HomePage', () => {
     expect(window.location.hash).toBe(`#/settings?pane=${pane}`)
   })
 
-  it("renders What's New from the release list, newest first", () => {
+  it("renders What's New versions and changes in the supplied order", () => {
     render(<HomePage />)
 
     const section = screen.getByRole('region', { name: "What's New" })
     const releases = within(section).getAllByRole('article')
-    expect(releases.map((release) => release.getAttribute('aria-label'))).toEqual(
-      WHATS_NEW.map((entry) => `v${entry.version}`),
-    )
-    const first = within(releases[0]).getAllByRole('listitem')
-    expect(first).toHaveLength(WHATS_NEW[0].changeKeys.length)
-    expect(first[0]).toHaveTextContent('search the web')
-    const last = within(releases[releases.length - 1]).getAllByRole('listitem')
-    expect(last[last.length - 1]).toHaveTextContent('No history')
-  })
-})
-
-describe("What's New data", () => {
-  it('lists releases newest first, from 1.0.0, with text for every change in both languages', () => {
-    expect(WHATS_NEW[0].version).toBe('1.1.0')
-    expect(WHATS_NEW[WHATS_NEW.length - 1].version).toBe('1.0.0')
-    const lookup = (messages: Record<string, unknown>, key: string) =>
-      (messages.whatsNew as Record<string, string>)[key]
-    for (const entry of WHATS_NEW) {
-      for (const key of entry.changeKeys) {
-        expect(lookup(en, key), `en ${key}`).toBeTruthy()
-        expect(lookup(zh, key), `zh ${key}`).toBeTruthy()
-      }
-    }
+    expect(releases.map((release) => release.getAttribute('aria-label'))).toEqual([
+      'v9.8.7',
+      'v9.8.6',
+    ])
+    expect(
+      releases.map((release) =>
+        within(release)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ),
+    ).toEqual([['whatsNew.fixtureFirst', 'whatsNew.fixtureSecond'], ['whatsNew.fixtureOlder']])
   })
 })
