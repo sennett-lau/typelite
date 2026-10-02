@@ -1,9 +1,11 @@
-# Code performance benchmarks
+# Performance benchmarks and decisions
 
 This is the record of Typelite's application performance: recording UI updates, streaming
 responses and transcript processing. Start with the [current baseline](BASELINE.md) to see the
 latest measured numbers. [Speech and model benchmarks](../guides/benchmarks/README.md) cover
-real inference services separately.
+setup-specific inference services separately. Runtime replacement experiments belong here
+with the code performance evidence; they use their own schema and do not replace the
+application-overhead baseline.
 
 | Document | Purpose |
 |---|---|
@@ -12,6 +14,8 @@ real inference services separately.
 | [Methodology](methodology.md) | Workloads, timing boundaries, statistics and limitations. |
 | [Report template](REPORT_TEMPLATE.md) | Standard report for each performance PR. |
 | [First improvement](reports/2026-10-03-local-overhead/README.md) | Recording subscriptions, stream buffering and Cantonese conversion. |
+| [MLX runtime evaluation](reports/2026-10-03-mlx-runtime-evaluation/README.md) | Real speech and text inference, model formats, quality and memory tradeoffs. |
+| [MLX decision](decisions/2026-10-03-mlx-runtime.md) | Why the shipping engines remain unchanged and when to revisit that decision. |
 
 ## Structure
 
@@ -34,6 +38,18 @@ Report directories are append-only evidence. Keep both raw snapshots and any con
 never replace old measurements when the baseline advances. Add a dated correction if a report
 needs an interpretation fixed. Executable fixtures remain in `benchmarks/` and
 `src-tauri/benches/`; the runner is `scripts/benchmark-local.mjs`.
+
+## Decisions, including no change
+
+Before repeating an optimization proposal, search `decisions/` and the reports for the
+component or runtime name. Record a dated decision even when an experiment does not result
+in a shipping change. Include the tested scope, alternatives, evidence links, limitations,
+and concrete conditions for reopening it. Link it from this index and the PR. A new runtime
+release or hardware target can justify new evidence; the same hypothesis alone does not.
+
+Keep rejected and deferred candidates in their reports. Do not promote an experimental
+runtime into `baseline.json` merely because one workload is faster. Use a new dated report
+when the inputs, acceptance criteria or implementation change.
 
 ## Performance PR workflow
 
