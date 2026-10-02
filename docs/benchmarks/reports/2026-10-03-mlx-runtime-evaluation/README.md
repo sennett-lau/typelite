@@ -1,5 +1,8 @@
 # MLX runtime evaluation on M1 Pro
 
+[PR #55](https://github.com/sennett-lau/typelite/pull/55) · branch
+`perf/mlx-runtime-evaluation` · stacked on the test-audit PR #54.
+
 **Decision: retain the shipping C++ engines for now.** MLX speech is promising:
 the 4-bit candidate cuts about a quarter of warm inference time on these short
 synthetic clips with slightly lower sampled process memory. This is a reason to
