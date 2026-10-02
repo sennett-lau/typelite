@@ -6,7 +6,8 @@ including a decision to retain the current engines.
 
 ## Status
 
-Building — 2026-10-03.
+Done — 2026-10-03. The experiment is complete; adopting a shipping MLX backend is
+deferred in the [recorded decision](../../benchmarks/decisions/2026-10-03-mlx-runtime.md).
 
 ## Goals and non-goals
 
@@ -44,6 +45,11 @@ Building — 2026-10-03.
 
 ## Open questions
 
-- Does MLX improve actual dictation latency on this M1 Pro?
-- Are any gains large enough to justify a new packaging and model format path?
-- Which results require a real speech corpus or the default 4B model before adoption?
+- Resolved: MLX 4-bit improves warm inference on the synthetic speech clips by
+  about 24–25%; this is not a whole-app latency claim. The text prototype has no
+  demonstrated quality-preserving performance advantage.
+- Deferred to a separate proposal: native speech integration and a real speech
+  corpus. The measured warm speech gain justifies that investigation, while
+  startup, fidelity and lifecycle evidence are insufficient for changing defaults.
+- Untested: the default 4B text model, other Macs, long/noisy real speech and both
+  engines loaded concurrently. Do not generalize the smaller-model experiment.

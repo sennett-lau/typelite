@@ -24,9 +24,11 @@ node_modules/
 dist/
 dist-ssr/
 *.tsbuildinfo
-__pycache__/
 npm-debug.log*
 pnpm-debug.log*
+
+# Python benchmark workers
+__pycache__/
 
 # Rust / Tauri
 target/

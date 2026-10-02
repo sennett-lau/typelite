@@ -72,3 +72,48 @@ warm OS filesystem and shader caches after setup; they are not reboot-cold times
 Quantization, runtime revisions and model hashes belong with every archived
 report. Compare the median of process medians and pooled p10/p90 warm samples,
 and inspect all returned text and finish reasons before drawing conclusions.
+
+## Quantized speech and text models
+
+Quantize the downloaded FP16 speech model without downloading another checkpoint:
+
+```sh
+output/mlx-evaluation/venv/bin/python benchmarks/runtime/quantize_whisper.py \
+  output/mlx-evaluation/models/whisper output/mlx-evaluation/models/whisper-4bit
+```
+
+Then repeat the speech command with `--mlx-model output/mlx-evaluation/models/whisper-4bit`
+and a different output file. The script uses MLX affine 4-bit weights with group
+size 64, following [the upstream quantization API](https://github.com/ml-explore/mlx-examples/blob/main/whisper/convert.py).
+It refuses to overwrite a destination or re-quantize a quantized source.
+
+For text, download the same Qwen3-1.7B checkpoint in the two runtime formats:
+
+```sh
+output/mlx-evaluation/venv/bin/python - <<'PY'
+from huggingface_hub import snapshot_download, hf_hub_download
+snapshot_download("mlx-community/Qwen3-1.7B-4bit",
+    revision="3b1b1768f8f8cf8351c712464f906e86c2b8269e",
+    local_dir="output/mlx-evaluation/models/qwen-mlx",
+    allow_patterns=["*.json", "*.txt", "*.safetensors"])
+hf_hub_download("unsloth/Qwen3-1.7B-GGUF", "Qwen3-1.7B-Q4_K_M.gguf",
+    revision="d7f544eead698dbd1f15126ef60b45a1e1933222",
+    local_dir="output/mlx-evaluation/models/qwen-cpp")
+PY
+
+output/mlx-evaluation/venv/bin/python scripts/benchmark-runtime.py text \
+  --cpp-model output/mlx-evaluation/models/qwen-cpp/Qwen3-1.7B-Q4_K_M.gguf \
+  --mlx-model output/mlx-evaluation/models/qwen-mlx \
+  --output output/mlx-evaluation/text.json
+
+output/mlx-evaluation/venv/bin/python benchmarks/runtime/summarize.py \
+  output/mlx-evaluation/speech.json output/mlx-evaluation/text.json
+```
+
+Q4_K_M and MLX 4-bit are different quantizations. These compare usable runtime and
+model-format combinations, not identical mathematical weights. Preserve all
+results, including slow or inaccurate candidates. Text quality probes run after
+the timed workloads and are stored separately in `quality`; they are not part of
+the warm latency summary. A failed run has no `finished_at` and the summarizer
+rejects it. The local-overhead baseline promotion command intentionally does not
+consume this separate schema.
