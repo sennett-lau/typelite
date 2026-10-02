@@ -2473,6 +2473,10 @@ impl PipelineHandle {
         )
         .unwrap_or_default();
         let library_store = crate::commands::language_presets::library_store(&self.app_handle).ok();
+        // Plain dictation: no translation, no selected text, no draft or question.
+        let plain_dictation = !translate_enabled
+            && voice_intent.kind == crate::voice_intent::VoiceIntentKind::DictateInsert
+            && !selected_text_has_content(selected_text.as_deref());
         let language = language_parts(
             config,
             library_store.as_ref(),
@@ -2516,8 +2520,26 @@ impl PipelineHandle {
         };
 
         let polish_outcome = match polish_result {
-            Ok(response) => {
+            Ok(mut response) => {
                 let elapsed = llm_start.elapsed();
+                // A dictated request carried out in another language (llm::output_guard) is
+                // replaced by the transcript, unless streaming already typed it.
+                let streamed = streaming_report
+                    .as_ref()
+                    .is_some_and(|report| report.has_inserted_text());
+                if plain_dictation
+                    && !streamed
+                    && crate::llm::output_guard::changed_language(
+                        provider_text,
+                        &response.polished_text,
+                    )
+                {
+                    tracing::warn!(
+                        "Polish changed the language of the dictation; pasting the transcript"
+                    );
+                    response.polished_text =
+                        crate::llm::output_guard::transcript_as_output(provider_text);
+                }
                 if let Some(report) = streaming_report.as_ref() {
                     if report.has_inserted_text() {
                         let mut streaming_output_status: Option<(&'static str, String)> = None;
