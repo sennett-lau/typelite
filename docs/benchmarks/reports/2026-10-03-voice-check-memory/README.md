@@ -6,6 +6,7 @@ noise floor. Decode directly per window and select the percentile in place inste
 
 ## Provenance
 
+- PR: [#57](https://github.com/sennett-lau/typelite/pull/57), stacked on waveform PR #56.
 - Report date: 2026-10-03, Asia/Tokyo.
 - Kind: performance improvement; same twenty-workload harness as the preceding report.
 - Previous reference: [waveform work](../2026-10-03-waveform-work/README.md).
