@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest'
 import { useTauriEvents } from '../src/hooks/useTauriEvents'
 import { useRecording } from '../src/hooks/useRecording'
 import { useAppStore } from '../src/stores/appStore'
+import { waveformBenchmarks } from './waveform'
 
 const bridge = vi.hoisted(() => ({
   listeners: new Map<string, (event: { payload: unknown }) => void>(),
@@ -21,6 +22,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: bridge.t }) }))
 vi.mock('../src/i18n', () => ({ default: { language: 'en', changeLanguage: vi.fn() } }))
 vi.mock('../src/components/toast-service', () => ({ toast: vi.fn() }))
+vi.mock('framer-motion', () => ({ useReducedMotion: () => false }))
 
 const VOLUME_EVENTS = 333
 const TEXT_EVENTS = 128
@@ -102,5 +104,6 @@ test('measures recording subscriptions through the production hooks', async () =
       })
     }
   }
+  results.push(...waveformBenchmarks(WARMUPS, SAMPLES))
   writeFileSync(process.env.TYPELITE_BENCH_OUTPUT!, JSON.stringify(results))
 })
