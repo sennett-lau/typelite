@@ -3,7 +3,7 @@
 Analyze PCM windows directly and select the noise-floor percentile in place, preserving the
 existing silence guard while avoiding a full recording of decoded floating-point samples.
 
-Status: building — 2026-10-03.
+Status: done — 2026-10-03.
 
 ## Goals and non-goals
 
@@ -32,8 +32,8 @@ Status: building — 2026-10-03.
 
 ## Open questions
 
-How much CPU work and temporary requested allocation can be removed without changing any
-reference result?
+None. The [report](../../benchmarks/reports/2026-10-03-voice-check-memory/README.md)
+records exact output equivalence, CPU reductions and requested-allocation savings.
 
 ## Considered
 
