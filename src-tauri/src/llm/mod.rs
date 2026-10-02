@@ -6,6 +6,7 @@ pub mod language_router;
 pub mod live_question;
 pub mod models;
 pub mod openai;
+pub mod output_guard;
 pub mod prompt;
 pub mod protocol;
 
