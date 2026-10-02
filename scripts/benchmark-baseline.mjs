@@ -13,6 +13,59 @@ const percentile = (values, fraction) => {
   return sorted[Math.floor((sorted.length - 1) * fraction)]
 }
 const finiteNonnegative = (value) => Number.isFinite(value) && value >= 0
+const nonnegativeInteger = (value) => Number.isSafeInteger(value) && value >= 0
+
+function validateOptionalMetrics(run) {
+  if (run.trajectory_sha256 !== undefined) {
+    assert.match(run.trajectory_sha256, /^[a-f0-9]{64}$/, `Invalid trajectory: ${run.id}`)
+  }
+  if (run.voice_activity !== undefined) {
+    const activity = run.voice_activity
+    assert(
+      activity &&
+        nonnegativeInteger(activity.duration_ms) &&
+        nonnegativeInteger(activity.voiced_ms),
+    )
+    assert(Number.isFinite(activity.peak_db) && Number.isFinite(activity.noise_floor_db))
+    assert.equal(typeof activity.has_speech, 'boolean')
+  }
+  if (run.style_writes_per_batch !== undefined) {
+    assert(Array.isArray(run.style_writes_per_batch), `Invalid style writes: ${run.id}`)
+    assert.equal(run.style_writes_per_batch.length, run.samples_us.length)
+    assert(
+      run.style_writes_per_batch.every(
+        (counts) =>
+          counts && nonnegativeInteger(counts.transform) && nonnegativeInteger(counts.opacity),
+      ),
+      `Invalid style-write counts: ${run.id}`,
+    )
+  }
+  if (run.allocations_per_operation !== undefined) {
+    for (const key of [
+      'calls_including_realloc',
+      'requested_bytes_including_realloc',
+      'peak_live_requested_bytes',
+    ]) {
+      assert(
+        nonnegativeInteger(run.allocations_per_operation?.[key]),
+        `Invalid allocation ${key}: ${run.id}`,
+      )
+    }
+  }
+}
+
+function assertSameOutput(actual, expected) {
+  for (const key of ['trajectory_sha256', 'voice_activity']) {
+    assert.deepEqual(actual[key], expected[key], `Deterministic ${key} changed: ${actual.id}`)
+  }
+  for (const key of ['style_writes_per_batch', 'allocations_per_operation']) {
+    assert.equal(
+      actual[key] !== undefined,
+      expected[key] !== undefined,
+      `Metric ${key} missing: ${actual.id}`,
+    )
+  }
+}
 
 function validateSnapshot(snapshot) {
   assert.equal(snapshot.schema, 1, 'Unsupported benchmark schema')
@@ -74,6 +127,8 @@ function validateSnapshot(snapshot) {
         assert.equal(run.renders_per_batch.length, run.samples_us.length)
         assert(run.renders_per_batch.every((value) => Number.isInteger(value) && value >= 0))
       }
+      validateOptionalMetrics(run)
+      assertSameOutput(run, row.runs[0])
     }
     const samples = row.runs.flatMap((run) => run.samples_us)
     assert.equal(
@@ -116,9 +171,9 @@ function loadReport(path) {
       `Before/after ${key} differ; measure both versions under the same setup`,
     )
   }
-  assert.equal(
-    after.benchmarks.length,
-    before.benchmarks.length,
+  assert.deepEqual(
+    after.benchmarks.map((row) => row.id).sort(),
+    before.benchmarks.map((row) => row.id).sort(),
     'Before/after workload sets differ',
   )
   for (const row of after.benchmarks) {
@@ -126,8 +181,75 @@ function loadReport(path) {
     assert(previous, `Workload added without a before measurement: ${row.id}`)
     assert.equal(row.unit, previous.unit)
     assert.deepEqual(row.workload, previous.workload, `Workload changed: ${row.id}`)
+    assertSameOutput(row.runs[0], previous.runs[0])
   }
   return { ...after, baseline_report: `reports/${slug}` }
+}
+
+function countRange(values) {
+  if (values.length === 0) return '—'
+  const minimum = Math.min(...values)
+  const maximum = Math.max(...values)
+  return minimum === maximum ? String(minimum) : `${minimum}–${maximum}`
+}
+
+function renderAdditionalMetrics(snapshot) {
+  const sections = []
+  const waveform = snapshot.benchmarks.filter(
+    (row) =>
+      row.runs[0].trajectory_sha256 !== undefined ||
+      row.runs[0].style_writes_per_batch !== undefined,
+  )
+  if (waveform.length > 0) {
+    const rows = waveform.map((row) => {
+      const counts = row.runs.flatMap((run) => run.style_writes_per_batch ?? [])
+      const trajectory = row.runs[0].trajectory_sha256
+      return `| \`${row.id}\` | ${countRange(counts.map((count) => count.transform))} | ${countRange(counts.map((count) => count.opacity))} | ${trajectory ? `\`${trajectory}\`` : '—'} |`
+    })
+    sections.push(`## Animation work and output
+
+Setter counts exclude mounting and initial-frame setup; ranges span measured batches.
+Trajectory hashes cover every observed frame in an untimed pass and must match across
+process runs and before/after versions.
+
+| Workload | Transform writes/batch | Opacity writes/batch | Trajectory SHA-256 |
+|---|---:|---:|---|
+${rows.join('\n')}`)
+  }
+  const voices = snapshot.benchmarks.filter((row) => row.runs[0].voice_activity !== undefined)
+  if (voices.length > 0) {
+    const rows = voices.map((row) => {
+      const activity = row.runs[0].voice_activity
+      return `| \`${row.id}\` | ${activity.duration_ms} | ${activity.peak_db.toFixed(3)} | ${activity.noise_floor_db.toFixed(3)} | ${activity.voiced_ms} | ${activity.has_speech ? 'yes' : 'no'} |`
+    })
+    sections.push(`## Voice-check output
+
+All measured fields must match exactly across process runs and before/after versions.
+Levels are rounded here for readability; the raw data retains their full precision.
+
+| Workload | Duration (ms) | Peak (dBFS) | Noise floor (dBFS) | Voiced (ms) | Speech |
+|---|---:|---:|---:|---:|---|
+${rows.join('\n')}`)
+  }
+  const allocations = snapshot.benchmarks.filter(
+    (row) => row.runs[0].allocations_per_operation !== undefined,
+  )
+  if (allocations.length > 0) {
+    const rows = allocations.map((row) => {
+      const measured = row.runs.map((run) => run.allocations_per_operation)
+      return `| \`${row.id}\` | ${countRange(measured.map((value) => value.calls_including_realloc))} | ${countRange(measured.map((value) => value.requested_bytes_including_realloc))} | ${countRange(measured.map((value) => value.peak_live_requested_bytes))} |`
+    })
+    sections.push(`## Requested allocations
+
+An untimed operation per process counts allocation/reallocation calls and requested bytes;
+ranges span processes. These are allocator requests, not process RSS or physical memory.
+Allocation metrics may change between versions while measured outputs remain identical.
+
+| Workload | Calls/op (including realloc) | Requested bytes/op (including realloc) | Peak live requested bytes/op |
+|---|---:|---:|---:|
+${rows.join('\n')}`)
+  }
+  return sections.length > 0 ? `\n\n${sections.join('\n\n')}` : ''
 }
 
 function renderBaseline(snapshot) {
@@ -179,7 +301,7 @@ Units vary by row (1 ms = 1,000 µs). Render counts exclude mounting and resetti
 
 | Workload | Median | p10–p90 | Unit | Renders/batch |
 |---|---:|---:|---|---:|
-${rows.join('\n')}
+${rows.join('\n')}${renderAdditionalMetrics(snapshot)}
 
 UI timings use React development mode in jsdom. Stream timings include local HTTP and provider
 processing; conversion uses warm OpenCC. See [methodology](methodology.md) and the
