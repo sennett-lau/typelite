@@ -3,7 +3,7 @@
 Keep dictionary editing and file formats unchanged while avoiding list rendering on each Add
 keystroke, repeated SQL preparation during import, and cloned JSON trees during export.
 
-Status: building - 2026-10-03.
+Status: done - 2026-10-03.
 
 ## Goals and non-goals
 
@@ -35,5 +35,6 @@ Status: building - 2026-10-03.
 
 ## Open questions
 
-How much of large-dictionary typing and transfer time is unnecessary work, and do the changes
-avoid regressions for empty/tiny or all-duplicate imports?
+None for this change. The [report](../../benchmarks/reports/2026-10-03-dictionary-work/README.md)
+records large UI/transfer gains and mixed tiny-import results, including the accepted possibility
+of a small absolute overhead.

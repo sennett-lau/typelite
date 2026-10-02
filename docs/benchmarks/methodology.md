@@ -73,3 +73,16 @@ The fixtures use ASCII; deterministic unit tests separately cover arbitrary UTF-
 There are no machine-dependent timing gates in CI. Run the ordinary correctness checks alongside
 this suite, inspect process spread, and confirm small gains with alternating executable runs.
 None of these numbers are total dictation latency or model inference speed.
+
+For an ambiguous Rust result, reuse the exact binaries retained by the primary runner:
+
+```sh
+node scripts/benchmark-rust-confirm.mjs before.json after.json output/benchmarks/confirmation.json
+```
+
+The supplemental runner checks snapshot compatibility, the current machine and executable
+hashes, then runs `before, after, after, before, before, after` without rebuilding or running the
+frontend. It preserves all Rust workloads, raw samples, execution order, snapshot/script hashes
+and summaries. Use a new output path; existing files are refused. Keep the original full-suite
+before/after evidence and archive this confirmation alongside it, explaining what concern it
+resolves. It does not automatically replace or promote the rolling baseline.
