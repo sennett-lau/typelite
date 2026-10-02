@@ -19,17 +19,36 @@ checks without reverting code. Those executables print the same raw JSON workloa
 |---|---|
 | `ui/*/volume` | 333 individually flushed microphone updates; approximately ten seconds of event count at the app's 30 ms poll, delivered immediately. |
 | `ui/*/text` | 128 individually flushed AI text chunks. |
+| `ui/waveform/silence` | 600 controlled animation frames and 300 zero-volume updates through the real Waveform component. |
+| `ui/waveform/voice-and-pauses` | 600 controlled frames and 300 changing-volume updates, including pauses. |
+| `ui/waveform/hidden-resume` | A twelve-hour timestamp jump followed by 120 frames; measures history catch-up CPU work. |
 | `chinese/short` | One Cantonese sentence with protected words and mixed English; warm OpenCC plus Cantonese fixes. |
 | `chinese/long` | The same sentence repeated 64 times; a long-input stress case. |
 | `chinese/no-han` | English-only fast-path control. |
 | `stream/short-small-writes` | 129 content events, written in batches of at most 128 bytes by the fixture server. |
 | `stream/long-batched` | 1,025 content events, server writes up to 64 KiB. |
 | `stream/stress-batched` | 4,097 content events, server writes up to 256 KiB. |
+| `voice/speech-{4,60,600}s` | Speech-activity analysis of deterministic 16 kHz PCM with alternating louder/quiet regions. |
+| `voice/{quiet,silence}-4s` | Quiet-speech and digital-silence controls for the same detector. |
 
 UI probes independently mount the production event hook, recording hook or both. Render counts
 exclude mounting and resets. A stable translation mock avoids artificial listener registrations;
 state and cleanup assertions guard against "optimizing" by losing events. UI times are **React
 development/jsdom proxies**, not native rendering or battery measurements.
+
+Waveform probes use a controlled 60 Hz clock, actual CSS setters and lightweight setter
+counters. Mounting, initial animation setup, final DOM assertions and unmounting are outside
+timing. A separate validation pass hashes every bar's transform/opacity after every frame;
+the runner requires identical trajectories across processes and before/after. Counts and
+timings include setter instrumentation equally on both versions. They do not measure native
+frame presentation or energy use. A long hidden interval is a stress case, not a typical frame.
+
+Voice checks compare every output field with a frozen reference implementation outside timing,
+including edge trimming, incomplete windows, odd PCM bytes and threshold boundaries. Fixture
+generation is excluded. Separate untimed allocation probes report allocation/reallocation calls,
+total requested bytes and peak live requested bytes for one operation. These are Rust allocator
+requests, not RSS or total application memory. The allocator's disabled tracking check remains
+present equally during both versions' timing samples.
 
 Rust uses the app's release profile, including its size optimization. Stream times include the
 real provider's prompt construction, persistent HTTP connection, response decoding, callback
