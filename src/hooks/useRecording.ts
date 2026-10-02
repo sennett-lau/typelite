@@ -3,7 +3,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../stores/appStore'
 
 export function useRecording() {
-  const { pipelineState, resetRecording } = useAppStore()
+  const pipelineState = useAppStore((state) => state.pipelineState)
+  const resetRecording = useAppStore((state) => state.resetRecording)
 
   const startRecording = useCallback(async () => {
     resetRecording()

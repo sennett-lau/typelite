@@ -57,20 +57,21 @@ impl ChineseScript {
 }
 
 /// Words in which 系 or 繫 really is 系 or 繫. Everywhere else, Cantonese means 係 ("is").
-const KEEP_XI: &[&str] = &[
-    "系統",
-    "系列",
-    "系數",
-    "體系",
-    "派系",
-    "科系",
-    "學系",
-    "聯繫",
-    "維繫",
-    "關係",
-    "直系",
-    "星系",
-    "太陽系",
+/// Character slices avoid rebuilding these fixed words for every 系/繫 in a transcript.
+const KEEP_XI: &[&[char]] = &[
+    &['系', '統'],
+    &['系', '列'],
+    &['系', '數'],
+    &['體', '系'],
+    &['派', '系'],
+    &['科', '系'],
+    &['學', '系'],
+    &['聯', '繫'],
+    &['維', '繫'],
+    &['關', '係'],
+    &['直', '系'],
+    &['星', '系'],
+    &['太', '陽', '系'],
 ];
 /// 復 before these means 覆, "reply" (覆你, 覆返個email).
 const REPLY_AFTER: &[char] = &['你', '佢', '我', '返', '個'];
@@ -95,7 +96,6 @@ fn cantonese_fixes(text: &str) -> String {
         let c = chars[i];
         if c == '系' || c == '繫' {
             for word in KEEP_XI {
-                let word: Vec<char> = word.chars().collect();
                 for (offset, &wc) in word.iter().enumerate() {
                     if wc != c || offset > i || i - offset + word.len() > chars.len() {
                         continue;
@@ -194,6 +194,14 @@ mod tests {
             "呢個系統同佢哋嘅關係係咁嘅"
         );
         assert_eq!(convert("恢复系列", ChineseScript::HongKong), "恢復系列");
+    }
+
+    #[test]
+    fn protected_words_keep_their_characters_next_to_mixed_text() {
+        assert_eq!(
+            cantonese_fixes("🙂系：系統、系列、系數、體系、派系、科系、學系、聯繫、維繫、關係、直系、星系、太陽系。復你個email，系🙂"),
+            "🙂係：系統、系列、系數、體系、派系、科系、學系、聯繫、維繫、關係、直系、星系、太陽系。覆你個email，係🙂"
+        );
     }
 
     #[test]
