@@ -23,7 +23,7 @@ workloads count events without sleeping between them.
 | Field | Value |
 |---|---|
 | Kind | Initial performance improvement and first rolling baseline. |
-| PR | Initial working-tree change; a PR has not been opened yet. |
+| PR | [#53](https://github.com/sennett-lau/typelite/pull/53); measurements were captured before the commits. |
 | Previous rolling baseline | None; [before.json](before.json) records the unmodified production code. |
 | Before source SHA-256 | `5b4e45c2ab423484be56a3a8816ef619c74dabc2cbc0c352f6cfb341c3b96f29` |
 | After source SHA-256 | `acf2ad8ba13c346cec3121d211eb83c9af845c1a114c36d4129b10e3c3171dc1` |
