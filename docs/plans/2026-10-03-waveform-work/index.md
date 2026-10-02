@@ -4,7 +4,7 @@ Keep the capsule's existing waveform appearance and motion while avoiding repeat
 DOM writes for unchanged bar styles and unbounded catch-up work after a hidden
 window resumes. Extend the benchmark foundation before changing the component.
 
-Status: building — 2026-10-03.
+Status: done — 2026-10-03.
 
 ## Goals and non-goals
 
@@ -38,8 +38,8 @@ Status: building — 2026-10-03.
 
 ## Open questions
 
-- How much work disappears during silence and how much remains during changing speech?
-- Can bounded catch-up preserve the complete observed style trajectory after a long pause?
+None. The [measured report](../../benchmarks/reports/2026-10-03-waveform-work/README.md)
+records the gains and identical complete animation trajectories.
 
 ## Considered
 
