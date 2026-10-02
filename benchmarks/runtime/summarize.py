@@ -66,7 +66,7 @@ for name in sys.argv[1:]:
                     for r in report["runs"]
                     if r["engine"] == engine
                 ]
-                pooled = sum(groups, [])
+                pooled = [value for group in groups for value in group]
                 stats.append(
                     (
                         statistics.median(map(statistics.median, groups)),

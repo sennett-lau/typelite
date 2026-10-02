@@ -9,7 +9,6 @@ import mlx.core as mx
 import mlx_whisper
 import numpy as np
 
-
 model = sys.argv[1]
 start = time.perf_counter()
 holder = importlib.import_module("mlx_whisper.transcribe").ModelHolder
@@ -21,7 +20,8 @@ print(
 )
 for line in sys.stdin:
     request = json.loads(line)
-    pcm = open(request["pcm"], "rb").read()
+    with open(request["pcm"], "rb") as file:
+        pcm = file.read()
     start = time.perf_counter()
     audio = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768
     if len(audio) < 17600:
