@@ -6,6 +6,7 @@ window resumed. Cache the exact formatted styles and bound catch-up to one full 
 
 ## Provenance
 
+- PR: [#56](https://github.com/sennett-lau/typelite/pull/56), based on test cleanup #54.
 - Report date: 2026-10-03, Asia/Tokyo.
 - Kind: performance improvement and suite baseline reset. Three waveform and five speech-check
   workloads were added before production changes; existing workloads remain as controls.
