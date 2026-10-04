@@ -44,6 +44,7 @@ vi.mock('../../../lib/tauri', () => ({
   ASK_PANEL_CLOSED_EVENT: 'ask:panel_closed',
   closeAskPanel: vi.fn(),
   resizeAskPanel: vi.fn(),
+  setAskPanelHitRect: vi.fn(),
   askPanelLimits: vi.fn(() => Promise.resolve({ maxWidth: 1008, maxHeight: 443 })),
   copyAskText: vi.fn(),
   insertAskText: vi.fn(),
