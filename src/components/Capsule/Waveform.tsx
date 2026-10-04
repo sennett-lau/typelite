@@ -19,10 +19,24 @@ const REDUCED_SCALE = 0.5
 /** After a long pause (for example a hidden window) do not replay more than one screen of history. */
 const MAX_CATCH_UP_SAMPLES = WAVEFORM_BARS
 
-function applyBar(bar: HTMLDivElement, level: number) {
+interface RenderedStyle {
+  transform: string
+  opacity: string
+}
+
+function applyBar(bar: HTMLDivElement, level: number, previous: RenderedStyle) {
   const scale = MIN_SCALE + (1 - MIN_SCALE) * level
-  bar.style.transform = `scaleY(${scale.toFixed(3)})`
-  bar.style.opacity = (0.4 + 0.6 * level).toFixed(2)
+  const transform = `scaleY(${scale.toFixed(3)})`
+  const opacity = (0.4 + 0.6 * level).toFixed(2)
+  // The visible precision is unchanged. Silent or settled bars need no DOM writes.
+  if (previous.transform !== transform) {
+    bar.style.transform = transform
+    previous.transform = transform
+  }
+  if (previous.opacity !== opacity) {
+    bar.style.opacity = opacity
+    previous.opacity = opacity
+  }
 }
 
 /**
@@ -51,6 +65,7 @@ export function Waveform() {
     }
 
     const history = new LevelHistory(WAVEFORM_BARS)
+    const renderedStyles = bars.map(() => ({ transform: '', opacity: '' }))
     let level = 0
     let sinceSample = 0
     let last: number | null = null
@@ -65,18 +80,19 @@ export function Waveform() {
 
       // Time-based pushes keep the scroll speed constant whatever the frame rate.
       sinceSample += dt
-      let pushes = 0
-      while (sinceSample >= WAVEFORM_SAMPLE_MS) {
-        sinceSample -= WAVEFORM_SAMPLE_MS
-        if (pushes < MAX_CATCH_UP_SAMPLES) history.push(level)
-        pushes++
+      const pushes = Math.floor(sinceSample / WAVEFORM_SAMPLE_MS)
+      sinceSample %= WAVEFORM_SAMPLE_MS
+      // After a hidden-window pause every missed sample has this same level. One full
+      // history produces the same bars without walking through hours of missed frames.
+      for (let i = 0; i < Math.min(pushes, MAX_CATCH_UP_SAMPLES); i++) {
+        history.push(level)
       }
 
       // Scroll smoothly between pushes: each bar blends towards its right-hand neighbour.
       const frac = sinceSample / WAVEFORM_SAMPLE_MS
       for (let i = 0; i < bars.length; i++) {
         const bar = bars[i]
-        if (bar) applyBar(bar, history.sample(i, frac, level))
+        if (bar) applyBar(bar, history.sample(i, frac, level), renderedStyles[i])
       }
 
       raf = requestAnimationFrame(frame)

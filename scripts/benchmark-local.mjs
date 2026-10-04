@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Offline local overhead; scripts/benchmark.mjs remains the real-model latency benchmark.
 import { execFileSync } from 'node:child_process'
+import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
   copyFileSync,
@@ -40,11 +41,96 @@ const hashFiles = (files) => {
       .update(readFileSync(join(root, file)))
   return hash.digest('hex')
 }
+const nonnegativeInteger = (value) => Number.isSafeInteger(value) && value >= 0
+
+function workloadIds(rows) {
+  assert(Array.isArray(rows) && rows.length > 0, 'No benchmark workloads')
+  const ids = rows.map((row) => row.id)
+  assert(
+    ids.every((id) => typeof id === 'string' && id.length > 0),
+    'Invalid workload ID',
+  )
+  assert.equal(new Set(ids).size, ids.length, 'Duplicate workload ID')
+  return ids.sort()
+}
+
+function validateMeasurements(row) {
+  assert(Number.isSafeInteger(row.workload?.samples) && row.workload.samples > 0)
+  assert(Array.isArray(row.samples_us), `Missing samples: ${row.id}`)
+  assert.equal(row.samples_us.length, row.workload.samples, `Incomplete samples: ${row.id}`)
+  assert(row.samples_us.every((value) => Number.isFinite(value) && value >= 0))
+  if (row.trajectory_sha256 !== undefined) {
+    assert.match(row.trajectory_sha256, /^[a-f0-9]{64}$/, `Invalid trajectory: ${row.id}`)
+  }
+  if (row.voice_activity !== undefined) {
+    const activity = row.voice_activity
+    assert(
+      activity &&
+        nonnegativeInteger(activity.duration_ms) &&
+        nonnegativeInteger(activity.voiced_ms),
+    )
+    assert(Number.isFinite(activity.peak_db) && Number.isFinite(activity.noise_floor_db))
+    assert.equal(typeof activity.has_speech, 'boolean')
+  }
+  if (row.style_writes_per_batch !== undefined) {
+    assert(Array.isArray(row.style_writes_per_batch), `Invalid style writes: ${row.id}`)
+    assert.equal(row.style_writes_per_batch.length, row.samples_us.length)
+    assert(
+      row.style_writes_per_batch.every(
+        (counts) =>
+          counts && nonnegativeInteger(counts.transform) && nonnegativeInteger(counts.opacity),
+      ),
+      `Invalid style-write counts: ${row.id}`,
+    )
+  }
+  if (row.allocations_per_operation !== undefined) {
+    for (const key of [
+      'calls_including_realloc',
+      'requested_bytes_including_realloc',
+      'peak_live_requested_bytes',
+    ]) {
+      assert(
+        nonnegativeInteger(row.allocations_per_operation?.[key]),
+        `Invalid allocation ${key}: ${row.id}`,
+      )
+    }
+  }
+}
+
+function assertSameWorkload(actual, expected) {
+  assert.equal(actual.id, expected.id)
+  assert.equal(actual.unit, expected.unit, `Unit changed: ${actual.id}`)
+  assert.deepEqual(actual.workload, expected.workload, `Workload changed: ${actual.id}`)
+  for (const key of ['trajectory_sha256', 'voice_activity']) {
+    assert.deepEqual(actual[key], expected[key], `Deterministic ${key} changed: ${actual.id}`)
+  }
+}
+
+if (baseline) {
+  workloadIds(baseline.benchmarks)
+  for (const row of baseline.benchmarks) {
+    assert.equal(row.runs.length, baseline.process_runs, `Incomplete baseline runs: ${row.id}`)
+    assert.deepEqual(
+      row.runs.map((entry) => entry.process_run).sort((a, b) => a - b),
+      Array.from({ length: baseline.process_runs }, (_, index) => index + 1),
+      `Invalid baseline process runs: ${row.id}`,
+    )
+    for (const entry of row.runs) {
+      validateMeasurements(entry)
+      assert.equal(entry.id, row.id)
+      assert.equal(entry.unit, row.unit)
+      assert.deepEqual(entry.workload, row.workload)
+      assertSameWorkload(entry, row.runs[0])
+    }
+  }
+}
 const harnessFiles = [
   'scripts/benchmark-local.mjs',
   'benchmarks/vitest.config.ts',
   'benchmarks/recording.test.tsx',
+  'benchmarks/waveform.tsx',
   'src-tauri/benches/local_performance.rs',
+  'src-tauri/benches/local_performance/voice_activity.rs',
 ]
 const sourceFiles = run('git', [
   'ls-files',
@@ -164,10 +250,25 @@ try {
     )
     const frontend = JSON.parse(readFileSync(frontendOutput, 'utf8'))
     const rust = JSON.parse(run(savedExecutable, []))
-    for (const row of [...frontend, ...rust]) {
+    const rows = [...frontend, ...rust]
+    const ids = workloadIds(rows)
+    if (processRun > 0) {
+      assert.deepEqual(ids, [...groups.keys()].sort(), 'Workload sets differ between process runs')
+    }
+    if (baseline) {
+      assert.deepEqual(ids, workloadIds(baseline.benchmarks), 'Before/after workload sets differ')
+    }
+    for (const row of rows) {
+      validateMeasurements(row)
       if (!groups.has(row.id))
         groups.set(row.id, { id: row.id, unit: row.unit, workload: row.workload, runs: [] })
-      groups.get(row.id).runs.push({ process_run: processRun + 1, ...row })
+      const group = groups.get(row.id)
+      if (group.runs.length > 0) assertSameWorkload(row, group.runs[0])
+      if (baseline) {
+        const previous = baseline.benchmarks.find((entry) => entry.id === row.id)
+        assertSameWorkload(row, previous.runs[0])
+      }
+      group.runs.push({ ...row, process_run: processRun + 1 })
     }
   }
 } finally {
@@ -194,13 +295,6 @@ writeFileSync(out, `${JSON.stringify({ ...metadata, benchmarks }, null, 2)}\n`)
 console.log('\nWorkload | median µs | p10–p90 µs | renders/batch | change')
 for (const row of benchmarks) {
   const previous = baseline?.benchmarks.find((entry) => entry.id === row.id)
-  if (
-    previous &&
-    (previous.unit !== row.unit ||
-      JSON.stringify(previous.workload) !== JSON.stringify(row.workload))
-  ) {
-    throw new Error(`Workload changed: ${row.id}`)
-  }
   const change = previous ? `${((row.median_us / previous.median_us - 1) * 100).toFixed(1)}%` : '—'
   const renders = row.runs[0].renders_per_batch?.[0] ?? '—'
   console.log(
