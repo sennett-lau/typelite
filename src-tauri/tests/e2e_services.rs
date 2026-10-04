@@ -869,6 +869,45 @@ async fn run_corpus(name: &str, cases: &[FidelityCase], guard: bool) {
 
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn polish_writes_spoken_numbers_and_dots() {
+    let cases = [
+        ("five point five", "5.5"),
+        // Speech servers may write the number words in Title Case after a model name.
+        (
+            "is the Opus Five Point Five better than the Sonnet Five Point Five",
+            "Is the Opus 5.5 better than the Sonnet 5.5?",
+        ),
+        ("use version two point one", "Use version 2.1"),
+        ("use version one dot two dot zero", "Use version 1.2.0"),
+        (
+            "set the limit to zero point zero five",
+            "Set the limit to 0.05",
+        ),
+        (
+            "open dot gitignore and notes dot tmp",
+            "Open .gitignore and notes.tmp",
+        ),
+        (
+            "the point of the story is that one day a dot on the page will matter",
+            "The point of the story is that one day a dot on the page will matter",
+        ),
+    ];
+    let repeat: usize = env_or("TYPELITE_E2E_REPEAT", "5").parse().unwrap_or(5);
+    for (index, (raw, expected)) in cases.iter().enumerate() {
+        for _ in 0..repeat {
+            let (text, _) = polish(&dictation_request(raw)).await;
+            // The model sometimes writes a narrow no-break space before a number.
+            let text = text.replace('\u{202f}', " ");
+            assert!(
+                text.trim().eq_ignore_ascii_case(expected),
+                "number/dot case {index}: expected {expected:?}, got {text:?}"
+            );
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn polish_keeps_file_names_and_code_words_whole() {
     let cases: &[FidelityCase] = &[
         (

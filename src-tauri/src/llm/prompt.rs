@@ -20,6 +20,7 @@ Rules:
    LINE BREAKS: Never put a line break inside a sentence or between sentences about the same topic. Use line breaks only for list items and between clearly separate topics. Most dictations are a single paragraph.
 5. Preserve the user's language (including mixed languages), all substantive content, technical terms, and proper nouns exactly. Do NOT add any words, phrases, or content that were not present in the original speech.
    CODE WORDS: Keep file names, extensions, commands, identifiers and unknown short words ("xlp") as one token, exactly as spoken. Never split them into letters or put a space after their dot. Spoken "dot" before a name is the dot: "dot gitignore" → ".gitignore", "notes dot tmp" → "notes.tmp".
+   NUMBERS: Write spoken decimals and version numbers as digits with dots, including in English: "five point five" → "5.5", "version two point one" → "version 2.1", "version one dot two dot zero" → "version 1.2.0". Capitalised number words are still numbers, also after a product or model name: "Opus Five Point Five" → "Opus 5.5", "GPT Four Point One" → "GPT 4.1". Preserve every stated digit, including zeros: "zero point zero five" → "0.05". Keep ordinary prose such as "the point of the story" and "one day" as words.
    CANTONESE: For Cantonese speech, keep its words, particles and meaning (嘅 咗 唔 係 啲 冇 喇 啦 呀, 頭先, 係咪, 可唔可以, 仲未); never turn them into Mandarin. Rule 2 still removes fillers and replaced words, and the [CHINESE_SCRIPT] section decides the characters.
 6. Output ONLY the processed text. No explanations, no quotes around output. Be consistent: do not mix formatting styles or punctuation conventions.
 7. NO FINAL PERIOD: When the output is one sentence, do not put a period (. or 。) at its end, like a typed chat message: "See you at 4", not "See you at 4.". Keep a final question mark or exclamation mark (? ？ ! ！). Output with two or more sentences ends normally. Keep a final period only when the speaker says "period" or "full stop". When editing selected text, end the way the selected text ends.
@@ -49,6 +50,18 @@ Output: Create a post in Cantonese about our new app
 
 Input: "add dist to dot gitignore and dot npmignore and check the xlp flag"
 Output: Add dist to .gitignore and .npmignore and check the xlp flag
+
+Input: "two point five"
+Output: 2.5
+
+Input: "set the limit to five point five and use version two point one"
+Output: Set the limit to 5.5 and use version 2.1
+
+Input: "save zero point zero five in dot env and open notes dot tmp"
+Output: Save 0.05 in .env and open notes.tmp
+
+Input: "the point of the story is that one day a dot on the page will matter"
+Output: The point of the story is that one day a dot on the page will matter
 
 Input: "the first thing um sorry the third thing it's the budget"
 Output: The third thing, it's the budget
@@ -1076,6 +1089,23 @@ mod tests {
             published == prompt,
             "the polish prompt changed; regenerate {path} (see this test's comment)"
         );
+    }
+
+    #[test]
+    fn prompt_writes_decimals_and_versions_as_digits_but_keeps_prose() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+        for example in [
+            "\"five point five\" → \"5.5\"",
+            "\"version two point one\" → \"version 2.1\"",
+            "\"version one dot two dot zero\" → \"version 1.2.0\"",
+            "\"zero point zero five\" → \"0.05\"",
+            "\"Opus Five Point Five\" → \"Opus 5.5\"",
+            "Output: Set the limit to 5.5 and use version 2.1",
+            "Output: Save 0.05 in .env and open notes.tmp",
+            "Output: The point of the story is that one day a dot on the page will matter",
+        ] {
+            assert!(prompt.contains(example));
+        }
     }
 
     /// A request in dictation ("create a post in Cantonese ...") is written down, not done.
