@@ -387,7 +387,7 @@ fn language_parts(
     transcript: &str,
     detected_language: Option<&str>,
 ) -> LanguageParts {
-    use llm::language_router::{language_profile, language_profiles, route};
+    use llm::language_router::language_profile;
     if translate_enabled {
         let profile = language_profile(config, store, target_lang);
         if profile.enabled {
@@ -405,20 +405,35 @@ fn language_parts(
     if !route_polish {
         return LanguageParts::default();
     }
+    LanguageParts {
+        translation_instructions: String::new(),
+        polish_notes: routed_language(config, store, transcript, detected_language).map(
+            |profile| llm::PolishLanguageNotes {
+                code: profile.code,
+                text: profile.instructions,
+            },
+        ),
+    }
+}
+
+/// Plan `language-routing-everywhere`: which of the user's languages `transcript` is in, for
+/// Dictate and Ask (Translate knows its target). A speech preset with a fixed language counts
+/// as having detected it. Logs the decision with codes only, never text.
+pub(crate) fn routed_language(
+    config: &storage::AppConfig,
+    store: Option<&llm::language_library::store::LibraryStore>,
+    transcript: &str,
+    detected_language: Option<&str>,
+) -> Option<llm::language_router::LanguageProfile> {
+    use llm::language_router::{language_profiles, route};
     let detected = config
         .speech_language()
         .and_then(crate::stt::normalize_detected_language)
         .or_else(|| detected_language.map(str::to_string));
-    let profiles = language_profiles(config, store);
+    let mut profiles = language_profiles(config, store);
     let decision = route(&profiles, transcript, detected.as_deref());
     tracing::info!("Language route: {}", decision.describe(&profiles));
-    LanguageParts {
-        translation_instructions: String::new(),
-        polish_notes: decision.index().map(|index| llm::PolishLanguageNotes {
-            code: profiles[index].code.clone(),
-            text: profiles[index].instructions.clone(),
-        }),
-    }
+    decision.index().map(|index| profiles.swap_remove(index))
 }
 
 /// Plan `qwen3-asr-support`: a Qwen3-ASR transcript (Simplified Chinese) in the characters of the
@@ -426,23 +441,17 @@ fn language_parts(
 /// so on). Unchanged when the router picks no Chinese language. Only called for Qwen3-ASR answers,
 /// so whisper, Built-in and Qwen Cloud transcripts keep their script (plan `qwen-cloud-speech`
 /// leaves that to polish). Logs the language code only, never text.
-fn transcript_in_language_script(
+pub(crate) fn transcript_in_language_script(
     config: &storage::AppConfig,
     store: Option<&llm::language_library::store::LibraryStore>,
     transcript: &str,
     detected_language: Option<&str>,
 ) -> String {
     use crate::stt::chinese_script::{convert, ChineseScript};
-    use llm::language_router::{language_profiles, route};
-    let detected = config
-        .speech_language()
-        .and_then(crate::stt::normalize_detected_language)
-        .or_else(|| detected_language.map(str::to_string));
-    let profiles = language_profiles(config, store);
-    let Some(index) = route(&profiles, transcript, detected.as_deref()).index() else {
+    let Some(profile) = routed_language(config, store, transcript, detected_language) else {
         return transcript.to_string();
     };
-    let code = &profiles[index].code;
+    let code = &profile.code;
     let Some(script) = ChineseScript::for_language(code) else {
         return transcript.to_string();
     };
