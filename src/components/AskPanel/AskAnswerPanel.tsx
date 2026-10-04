@@ -100,7 +100,7 @@ function SourcesRail({
   )
 }
 
-/** How long "Opened ✓" and "Copied ✓" stay on a source card. */
+/** How long a confirmation check stays on a source card. */
 const CONFIRM_MS = 1500
 
 function openSource(url: string) {
@@ -159,8 +159,8 @@ export function AskSourcesSummary({
 
 /**
  * Plan `ask-web-search`: the sources column on the right, full height. One card per source:
- * site, citation number, title and snippet. Hover shows Open and Copy link; a click on the card
- * opens the page. Both go through the app (the panel never takes focus).
+ * site, citation number, title and snippet. Open and Copy link icons stay visible; a click
+ * on the card opens the page. Both go through the app (the panel never takes focus).
  */
 export function AskSourcesColumn({
   sources,
@@ -227,10 +227,17 @@ export function AskSourcesColumn({
       <div className="ask-sources-list" ref={listRef}>
         {sources.map((source) => {
           const done = confirmed?.number === source.number ? confirmed.action : null
+          const openLabel = t(done === 'open' ? 'askPanel.sourceOpened' : 'askPanel.openSource', {
+            n: source.number,
+          })
+          const copyLabel = t(
+            done === 'copy' ? 'askPanel.sourceLinkCopied' : 'askPanel.copySourceLink',
+            { n: source.number },
+          )
           return (
             <div
               key={source.url}
-              className={`ask-source-card${highlighted === source.number ? ' is-highlighted' : ''}${done ? ' is-confirming' : ''}`}
+              className={`ask-source-card${highlighted === source.number ? ' is-highlighted' : ''}`}
               data-testid={`ask-source-${source.number}`}
               data-source-number={source.number}
               onClick={() => open(source)}
@@ -239,49 +246,43 @@ export function AskSourcesColumn({
                 <SiteMark url={source.url} />
                 <span className="ask-source-host">{sourceHost(source.url)}</span>
                 <span className="ask-source-number">{source.number}</span>
+                <span className="ask-source-actions">
+                  <button
+                    type="button"
+                    className={`ask-source-action${done === 'open' ? ' is-done' : ''}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      open(source)
+                    }}
+                    aria-label={openLabel}
+                    title={openLabel}
+                  >
+                    {done === 'open' ? (
+                      <Check size={13} aria-hidden="true" />
+                    ) : (
+                      <ExternalLink size={13} aria-hidden="true" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={`ask-source-action${done === 'copy' ? ' is-done' : ''}`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      copyLink(source)
+                    }}
+                    aria-label={copyLabel}
+                    title={copyLabel}
+                  >
+                    {done === 'copy' ? (
+                      <Check size={13} aria-hidden="true" />
+                    ) : (
+                      <Link2 size={13} aria-hidden="true" />
+                    )}
+                  </button>
+                </span>
               </span>
               <span className="ask-source-title">{source.title}</span>
               {source.snippet && <span className="ask-source-snippet">{source.snippet}</span>}
-              <span className="ask-source-actions">
-                <button
-                  type="button"
-                  className={`ask-source-action${done === 'open' ? ' is-done' : ''}`}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    open(source)
-                  }}
-                  aria-label={t('askPanel.openSource', { n: source.number })}
-                >
-                  {done === 'open' ? (
-                    <>
-                      {t('askPanel.opened')} <Check size={11} aria-hidden="true" />
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink size={11} aria-hidden="true" /> {t('askPanel.open')}
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className={`ask-source-action${done === 'copy' ? ' is-done' : ''}`}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    copyLink(source)
-                  }}
-                  aria-label={t('askPanel.copySourceLink', { n: source.number })}
-                >
-                  {done === 'copy' ? (
-                    <>
-                      {t('askPanel.linkCopied')} <Check size={11} aria-hidden="true" />
-                    </>
-                  ) : (
-                    <>
-                      <Link2 size={11} aria-hidden="true" /> {t('askPanel.copyLink')}
-                    </>
-                  )}
-                </button>
-              </span>
             </div>
           )
         })}
