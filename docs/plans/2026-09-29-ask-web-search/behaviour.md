@@ -54,9 +54,9 @@ the footer's buttons act on the answer (the pattern of ChatGPT's and Perplexity'
 | Part | Behaviour |
 |---|---|
 | Card | Letter mark and site, the citation number, the title and a two-line snippet from the search result. |
-| Hover | Open and Copy link appear over the number. A click on the card also opens the page. |
-| Open | Opens the page in the default browser (through the app; the panel never takes focus); the button shows "Opened ✓" for 1.5 s. The panel stays open. |
-| Copy link | Puts the address on the clipboard (through the app); "Copied ✓" for 1.5 s. |
+| Actions | Open and Copy link are always-visible icon buttons beside the citation number, with translated accessible labels and tooltips. Each button occupies only its visible circle. A click on the card body also opens the page. |
+| Open | Opens the page in the default browser (through the app; the panel never takes focus); the button shows a check icon and an "Opened" accessible label and tooltip for 1.5 s. The panel stays open. |
+| Copy link | Puts the address on the clipboard (through the app); a check icon and a "Copied" accessible label and tooltip for 1.5 s. |
 | `[n]` in the answer | A click opens the column with card n highlighted; hover highlights card n. |
 | New message | The column starts closed. |
 
