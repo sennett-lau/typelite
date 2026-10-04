@@ -78,6 +78,7 @@ pub struct Rejections {
 
 /// The earliest supported event on or after today. Output consists only of literal source
 /// text and its citation: the model cannot add a date, weekday, location or season summary.
+/// Foreign event names and dates remain verbatim; there is no generated surrounding prose.
 pub fn answer(text: &str, results: &[SearchResult], today: NaiveDate) -> Option<String> {
     answer_with_rejections(text, results, today).0
 }
@@ -306,6 +307,25 @@ mod tests {
         assert_eq!(
             answer(text, &results, today()).as_deref(),
             Some("Malaysian GP — 2026年10月2日至4日 [2]")
+        );
+    }
+
+    #[test]
+    fn foreign_event_names_and_dates_remain_literal_for_a_chinese_question() {
+        let results = vec![result(
+            "2026 calendar",
+            "日本グランプリ 2026年10月2日至4日。",
+        )];
+        let prompt = messages("下一場比賽是甚麼時候？", &results);
+        assert!(prompt[0]["content"]
+            .as_str()
+            .unwrap()
+            .contains("copied exactly"));
+        let extraction =
+            r#"{"events":[{"source":1,"event":"日本グランプリ","date":"2026年10月2日至4日"}]}"#;
+        assert_eq!(
+            answer(extraction, &results, today()).as_deref(),
+            Some("日本グランプリ — 2026年10月2日至4日 [1]")
         );
     }
 
