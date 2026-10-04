@@ -1,9 +1,12 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DictionaryPane } from '../DictionaryPane'
 import * as tauri from '../../../lib/tauri'
+import { useAppStore } from '../../../stores/appStore'
+import { toast } from '../../toast-service'
 
 vi.mock('../../../lib/tauri')
+vi.mock('../../toast-service', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -42,29 +45,14 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-const mockAppStore = {
-  dictionary: [] as Array<{ id: number; word: string; pronunciation: string | null }>,
-  setDictionary: vi.fn(),
-  correctionRules: [] as Array<{
-    id: number
-    pattern: string
-    replacement: string
-    enabled: boolean
-  }>,
-  setCorrectionRules: vi.fn(),
-}
-
-vi.mock('../../../stores/appStore', () => ({
-  useAppStore: (selector: any) => selector(mockAppStore),
-}))
-
 describe('DictionaryPane', () => {
   beforeEach(() => {
-    mockAppStore.dictionary = []
-    mockAppStore.correctionRules = []
+    useAppStore.setState(useAppStore.getInitialState(), true)
     vi.clearAllMocks()
-    vi.mocked(tauri.getDictionary).mockResolvedValue([])
-    vi.mocked(tauri.getCorrectionRules).mockResolvedValue([])
+    vi.mocked(tauri.getDictionary).mockImplementation(async () => useAppStore.getState().dictionary)
+    vi.mocked(tauri.getCorrectionRules).mockImplementation(
+      async () => useAppStore.getState().correctionRules,
+    )
     vi.mocked(tauri.addDictionaryEntry).mockResolvedValue(undefined)
     vi.mocked(tauri.removeDictionaryEntry).mockResolvedValue(undefined)
     vi.mocked(tauri.addCorrectionRule).mockResolvedValue(undefined)
@@ -90,6 +78,8 @@ describe('DictionaryPane', () => {
 
   afterEach(() => {
     cleanup()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('shows words and corrections as separate compact sections', () => {
@@ -150,20 +140,154 @@ describe('DictionaryPane', () => {
 
     await waitFor(() => {
       expect(tauri.addCorrectionRule).toHaveBeenCalledWith('拓肯', 'Token')
-      expect(mockAppStore.setCorrectionRules).toHaveBeenCalledWith([
-        { id: 1, pattern: '拓肯', replacement: 'Token', enabled: true },
-      ])
+      expect(screen.getByText('拓肯')).toBeInTheDocument()
+      expect(screen.getByText('Token')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Wrong phrase')).toHaveValue('')
+      expect(screen.getByPlaceholderText('Correct phrase')).toHaveValue('')
     })
   })
 
+  it.each([
+    { pronunciation: ' type light ', savedPronunciation: 'type light' },
+    { pronunciation: '   ', savedPronunciation: null },
+  ])(
+    'adds a trimmed word with pronunciation $savedPronunciation and refreshes the list',
+    async ({ pronunciation, savedPronunciation }) => {
+      vi.mocked(tauri.getDictionary).mockResolvedValueOnce([
+        { id: 1, word: 'Typelite', pronunciation: savedPronunciation },
+      ])
+      render(<DictionaryPane />)
+      fireEvent.change(screen.getByPlaceholderText('Word'), { target: { value: ' Typelite ' } })
+      fireEvent.change(screen.getByPlaceholderText('Pronunciation optional'), {
+        target: { value: pronunciation },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+      expect(await screen.findByText('Typelite')).toBeInTheDocument()
+      expect(tauri.addDictionaryEntry).toHaveBeenCalledWith('Typelite', savedPronunciation)
+      expect(screen.getByPlaceholderText('Word')).toHaveValue('')
+      expect(screen.getByPlaceholderText('Pronunciation optional')).toHaveValue('')
+      expect(tauri.getCorrectionRules).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('requires a nonblank word and both nonblank correction fields', () => {
+    render(<DictionaryPane />)
+    const wordAdd = screen.getByRole('button', { name: 'Add' })
+    expect(wordAdd).toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText('Word'), { target: { value: '   ' } })
+    expect(wordAdd).toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText('Word'), { target: { value: 'Typelite' } })
+    expect(wordAdd).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Corrections' }))
+    const correctionAdd = screen.getByRole('button', { name: 'Add correction' })
+    expect(correctionAdd).toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText('Wrong phrase'), {
+      target: { value: 'type light' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Correct phrase'), { target: { value: '   ' } })
+    expect(correctionAdd).toBeDisabled()
+    fireEvent.change(screen.getByPlaceholderText('Correct phrase'), {
+      target: { value: 'Typelite' },
+    })
+    expect(correctionAdd).toBeEnabled()
+    expect(tauri.addDictionaryEntry).not.toHaveBeenCalled()
+    expect(tauri.addCorrectionRule).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      section: 'Words',
+      api: 'addDictionaryEntry' as const,
+      fields: ['Word', 'Pronunciation optional'],
+      button: 'Add',
+      error: 'dictionary.failedToAdd',
+    },
+    {
+      section: 'Corrections',
+      api: 'addCorrectionRule' as const,
+      fields: ['Wrong phrase', 'Correct phrase'],
+      button: 'Add correction',
+      error: 'dictionary.failedToAddCorrection',
+    },
+  ])(
+    'retains the $section draft and reports a failed add without refreshing',
+    async ({ section, api, fields, button, error }) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(tauri[api]).mockRejectedValueOnce(new Error('Write failed'))
+      render(<DictionaryPane />)
+      fireEvent.click(screen.getByRole('button', { name: section }))
+      fireEvent.change(screen.getByPlaceholderText(fields[0]), {
+        target: { value: ' first draft ' },
+      })
+      fireEvent.change(screen.getByPlaceholderText(fields[1]), {
+        target: { value: ' second draft ' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: button }))
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(error))
+      expect(screen.getByPlaceholderText(fields[0])).toHaveValue(' first draft ')
+      expect(screen.getByPlaceholderText(fields[1])).toHaveValue(' second draft ')
+      expect(tauri.getDictionary).not.toHaveBeenCalled()
+      expect(tauri.getCorrectionRules).not.toHaveBeenCalled()
+    },
+  )
+
+  it('clears only the submitted draft when the user switches sections before the add finishes', async () => {
+    let finishAdd!: () => void
+    vi.mocked(tauri.addDictionaryEntry).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishAdd = resolve
+      }),
+    )
+    render(<DictionaryPane />)
+    fireEvent.change(screen.getByPlaceholderText('Word'), { target: { value: 'Typelite' } })
+    fireEvent.change(screen.getByPlaceholderText('Pronunciation optional'), {
+      target: { value: 'type light' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(screen.getByPlaceholderText('Word')).toHaveValue('Typelite')
+    expect(tauri.getDictionary).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Corrections' }))
+    fireEvent.change(screen.getByPlaceholderText('Wrong phrase'), {
+      target: { value: 'type light' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Correct phrase'), {
+      target: { value: 'Typelite' },
+    })
+
+    await act(async () => finishAdd())
+    expect(tauri.getDictionary).toHaveBeenCalledTimes(1)
+    expect(screen.getByPlaceholderText('Wrong phrase')).toHaveValue('type light')
+    expect(screen.getByPlaceholderText('Correct phrase')).toHaveValue('Typelite')
+    fireEvent.click(screen.getByRole('button', { name: 'Words' }))
+    expect(screen.getByPlaceholderText('Word')).toHaveValue('')
+    expect(screen.getByPlaceholderText('Pronunciation optional')).toHaveValue('')
+  })
+
+  it('keeps a successfully added draft cleared when refreshing the list fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(tauri.getDictionary).mockRejectedValueOnce(new Error('Read failed'))
+    useAppStore.setState({ dictionary: [{ id: 1, word: 'Existing', pronunciation: null }] })
+    render(<DictionaryPane />)
+    fireEvent.change(screen.getByPlaceholderText('Word'), { target: { value: 'Typelite' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('dictionary.failedToAdd'))
+    expect(tauri.addDictionaryEntry).toHaveBeenCalledWith('Typelite', null)
+    expect(screen.getByPlaceholderText('Word')).toHaveValue('')
+    expect(screen.getByText('Existing')).toBeInTheDocument()
+  })
+
   it('searches words, pronunciations, wrong phrases, and replacements locally', () => {
-    mockAppStore.dictionary = [
-      { id: 1, word: 'Typelite', pronunciation: 'type light' },
-      { id: 2, word: 'MeloLab', pronunciation: 'mee-lo' },
-    ]
-    mockAppStore.correctionRules = [
-      { id: 3, pattern: 'type light', replacement: 'Typelite', enabled: true },
-    ]
+    useAppStore.setState({
+      dictionary: [
+        { id: 1, word: 'Typelite', pronunciation: 'type light' },
+        { id: 2, word: 'MeloLab', pronunciation: 'mee-lo' },
+      ],
+      correctionRules: [{ id: 3, pattern: 'type light', replacement: 'Typelite', enabled: true }],
+    })
     render(<DictionaryPane />)
 
     fireEvent.change(screen.getByPlaceholderText('Search dictionary'), {
@@ -180,10 +304,10 @@ describe('DictionaryPane', () => {
   })
 
   it('edits dictionary and correction rows inline', async () => {
-    mockAppStore.dictionary = [{ id: 1, word: 'Token', pronunciation: null }]
-    mockAppStore.correctionRules = [
-      { id: 2, pattern: 'type light', replacement: 'Typelite', enabled: true },
-    ]
+    useAppStore.setState({
+      dictionary: [{ id: 1, word: 'Token', pronunciation: null }],
+      correctionRules: [{ id: 2, pattern: 'type light', replacement: 'Typelite', enabled: true }],
+    })
     render(<DictionaryPane />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit entry Token' }))
