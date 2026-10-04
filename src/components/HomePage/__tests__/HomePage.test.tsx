@@ -4,6 +4,8 @@ import { translate } from '../../../test-utils/i18nMock'
 import { useAppStore } from '../../../stores/appStore'
 import { IDLE_SETUP_STATUS, useSpeechSetupStore } from '../../../stores/speechSetupStore'
 import * as tauri from '../../../lib/tauri'
+import en from '../../../i18n/locales/en.json'
+import zh from '../../../i18n/locales/zh.json'
 import { HomePage } from '../index'
 
 vi.mock('../../../lib/tauri')
@@ -259,21 +261,45 @@ describe('HomePage', () => {
     expect(window.location.hash).toBe(`#/settings?pane=${pane}`)
   })
 
-  it("renders What's New versions and changes in the supplied order", () => {
+  it("shows What's New one release at a time, newest first", () => {
     render(<HomePage />)
 
     const section = screen.getByRole('region', { name: "What's New" })
-    const releases = within(section).getAllByRole('article')
-    expect(releases.map((release) => release.getAttribute('aria-label'))).toEqual([
-      'v9.8.7',
-      'v9.8.6',
-    ])
+    const page = () => within(section).getByRole('article')
+    expect(within(section).getAllByRole('article')).toHaveLength(1)
+    expect(page().getAttribute('aria-label')).toBe('v9.8.7')
     expect(
-      releases.map((release) =>
-        within(release)
-          .getAllByRole('listitem')
-          .map((item) => item.textContent),
-      ),
-    ).toEqual([['whatsNew.fixtureFirst', 'whatsNew.fixtureSecond'], ['whatsNew.fixtureOlder']])
+      within(page())
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['whatsNew.fixtureFirst', 'whatsNew.fixtureSecond'])
+    const newer = within(section).getByRole('button', { name: 'Newer release' })
+    const older = within(section).getByRole('button', { name: 'Older release' })
+    expect(newer).toBeDisabled()
+    expect(section).toHaveTextContent('1 of 2')
+
+    fireEvent.click(older)
+    expect(page().getAttribute('aria-label')).toBe('v9.8.6')
+    expect(within(page()).getByRole('listitem')).toHaveTextContent('whatsNew.fixtureOlder')
+    expect(older).toBeDisabled()
+    fireEvent.click(newer)
+    expect(page().getAttribute('aria-label')).toBe('v9.8.7')
+  })
+})
+
+describe("What's New data", () => {
+  it('lists releases newest first, from 1.0.0, with text for every change in both languages', async () => {
+    const { WHATS_NEW } =
+      await vi.importActual<typeof import('../../../lib/whatsNew')>('../../../lib/whatsNew')
+    expect(WHATS_NEW[0].version).toBe('1.1.0')
+    expect(WHATS_NEW[WHATS_NEW.length - 1].version).toBe('1.0.0')
+    const lookup = (messages: Record<string, unknown>, key: string) =>
+      (messages.whatsNew as Record<string, string>)[key]
+    for (const entry of WHATS_NEW) {
+      for (const key of entry.changeKeys) {
+        expect(lookup(en, key), `en ${key}`).toBeTruthy()
+        expect(lookup(zh, key), `zh ${key}`).toBeTruthy()
+      }
+    }
   })
 })
