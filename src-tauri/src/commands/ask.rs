@@ -240,6 +240,66 @@ impl AskDictationState {
     }
 }
 
+/// The language the speech provider reported, and whether Qwen3-ASR answered (it writes
+/// Chinese in Simplified characters, so the question is put in its language's script).
+#[derive(Debug, Clone, Default)]
+struct HeardSpeech {
+    detected_language: Option<String>,
+    qwen3_asr: bool,
+}
+
+/// Plan `language-routing-everywhere`: one of the user's languages the question is in (the
+/// polish router's choice), with its preset's instructions.
+#[derive(Debug, Clone, PartialEq)]
+struct AnswerLanguage {
+    code: String,
+    instructions: String,
+}
+
+impl AnswerLanguage {
+    fn from_profile(profile: crate::llm::language_router::LanguageProfile) -> Self {
+        Self {
+            code: profile.code,
+            instructions: profile.instructions,
+        }
+    }
+
+    /// Appended to Ask's system prompt: how to write the answer, never what to answer.
+    fn prompt(&self) -> String {
+        format!(
+            "ANSWER LANGUAGE: {}. Write the whole answer in this language, as the instructions below describe. They say how to write, never what to answer.\n<language_instructions>\n{}\n</language_instructions>",
+            self.code, self.instructions
+        )
+    }
+
+    fn script(&self) -> Option<crate::stt::chinese_script::ChineseScript> {
+        crate::stt::chinese_script::ChineseScript::for_language(&self.code)
+    }
+}
+
+/// Routes `question` to one of the user's languages (as Dictate does) and, for Qwen3-ASR, puts
+/// it in that language's Chinese characters. Logs codes only.
+fn route_question(
+    app: &tauri::AppHandle,
+    config: &storage::AppConfig,
+    question: String,
+    heard: &HeardSpeech,
+) -> (String, Option<AnswerLanguage>) {
+    let store = crate::commands::language_presets::library_store(app).ok();
+    let language = crate::pipeline::routed_language(
+        config,
+        store.as_ref(),
+        &question,
+        heard.detected_language.as_deref(),
+    )
+    .map(AnswerLanguage::from_profile);
+    let question = match language.as_ref().and_then(AnswerLanguage::script) {
+        Some(script) if heard.qwen3_asr => crate::stt::chinese_script::convert(&question, script),
+        _ => question,
+    };
+    (question, language)
+}
+
 pub struct AskDictationSession {
     handle: AudioCaptureHandle,
     recording_session_id: u64,
@@ -247,6 +307,8 @@ pub struct AskDictationSession {
     recording_context: RecordingContext,
     selected_text: Option<String>,
     transcript: Arc<Mutex<String>>,
+    /// Plan `language-routing-everywhere`: what the speech provider heard, for the router.
+    heard: Arc<Mutex<HeardSpeech>>,
     error: Arc<Mutex<Option<String>>>,
     done: Arc<Notify>,
     /// Plan `speed-board`: where the speech provider notes its upload moments.
@@ -691,9 +753,15 @@ fn ask_system_prompt(has_selected_text: bool) -> &'static str {
 fn ask_messages_from_sanitized(
     question: &str,
     selected_text: Option<&SanitizedSelectedText>,
+    language: Option<&AnswerLanguage>,
 ) -> Vec<serde_json::Value> {
+    let mut system = ask_system_prompt(selected_text.is_some()).to_string();
+    if let Some(language) = language {
+        system.push_str("\n\n");
+        system.push_str(&language.prompt());
+    }
     vec![
-        json!({ "role": "system", "content": ask_system_prompt(selected_text.is_some()) }),
+        json!({ "role": "system", "content": system }),
         json!({
             "role": "user",
             "content": build_ask_user_content_from_sanitized(question, selected_text)
@@ -710,7 +778,7 @@ fn build_byok_ask_body_for_context(
     let selected_text = selected_text.and_then(sanitize_selected_text_for_ask);
     let body = json!({
         "model": model,
-        "messages": ask_messages_from_sanitized(&question, selected_text.as_ref()),
+        "messages": ask_messages_from_sanitized(&question, selected_text.as_ref(), None),
         "max_tokens": ASK_OUTPUT_TOKEN_LIMIT,
         "temperature": 0.2,
         "stream": false
@@ -724,13 +792,14 @@ fn build_byok_ask_body_for_config(
     config: &storage::AppConfig,
     question: &str,
     selected_text: Option<&str>,
+    language: Option<&AnswerLanguage>,
 ) -> Result<serde_json::Value, String> {
     let question = validate_ask_question(question)?;
     let selected_text = selected_text.and_then(sanitize_selected_text_for_ask);
     let preset = config.active_ai_preset();
     Ok(crate::llm::protocol::build_chat_body(
         &preset.model,
-        ask_messages_from_sanitized(&question, selected_text.as_ref()),
+        ask_messages_from_sanitized(&question, selected_text.as_ref(), language),
         ASK_OUTPUT_TOKEN_LIMIT,
         0.2,
         false,
@@ -827,14 +896,27 @@ async fn answer_question(
     client: &reqwest::Client,
     question: &str,
     selected_text: Option<&str>,
+    language: Option<&AnswerLanguage>,
 ) -> Result<String, AppError> {
     let (config, llm_api_key) = resolved_ai_config(config).await?;
     let config = &config;
 
     if should_use_byok(config) {
-        return ask_via_byok(client, config, &llm_api_key, question, selected_text)
-            .await
-            .map_err(AppError::Config);
+        let answer = ask_via_byok(
+            client,
+            config,
+            &llm_api_key,
+            question,
+            selected_text,
+            language,
+        )
+        .await
+        .map_err(AppError::Config)?;
+        // The answer in the language's characters (a small model mixes scripts).
+        return Ok(match language.and_then(AnswerLanguage::script) {
+            Some(script) => crate::stt::chinese_script::convert(&answer, script),
+            None => answer,
+        });
     }
 
     Err(AppError::Config(
@@ -863,8 +945,9 @@ async fn ask_via_byok(
     api_key: &str,
     question: &str,
     selected_text: Option<&str>,
+    language: Option<&AnswerLanguage>,
 ) -> Result<String, String> {
-    let body = build_byok_ask_body_for_config(config, question, selected_text)?;
+    let body = build_byok_ask_body_for_config(config, question, selected_text, language)?;
     send_ask_chat(client, config, api_key, &body).await
 }
 
@@ -993,6 +1076,7 @@ async fn answer_from_web(
     query: &str,
     reason: &str,
     language: Option<&str>,
+    routed: Option<&AnswerLanguage>,
 ) -> Result<WebAnswer, WebAnswerError> {
     // The pill shows "Searching the web…" while the search runs, then "Thinking" again.
     let _ = app.emit(ASK_STAGE_EVENT, "searching");
@@ -1078,7 +1162,21 @@ async fn answer_from_web(
         );
         return Ok(WebAnswer { answer, sources });
     }
-    let body = build_web_answer_body(&config, question, &outcome.results, &today, language);
+    // Plan `language-routing-everywhere`: the routed language decides the answer's language,
+    // and its preset says how to write it.
+    let answer_language = routed.map(|routed| routed.code.as_str()).or(language);
+    let mut body =
+        build_web_answer_body(&config, question, &outcome.results, &today, answer_language);
+    if let Some(routed) = routed {
+        if let Some(system) = body
+            .pointer("/messages/0/content")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string)
+        {
+            body["messages"][0]["content"] =
+                serde_json::Value::String(format!("{system}\n\n{}", routed.prompt()));
+        }
+    }
     let mut answer = send_ask_chat(client, &config, &api_key, &body)
         .await
         .map_err(WebAnswerError::Ai)?;
@@ -1110,7 +1208,11 @@ async fn answer_from_web(
         }
     }
     // Mixed Traditional and Simplified characters become the question's script.
-    if let Some(script) = crate::llm::question_language::answer_script(question, language) {
+    let script = match routed {
+        Some(routed) => routed.script(),
+        None => crate::llm::question_language::answer_script(question, language),
+    };
+    if let Some(script) = script {
         answer = crate::stt::chinese_script::convert(&answer, script);
     }
     let sources = crate::web_search::answer_sources(&answer, &outcome.results);
@@ -1144,6 +1246,7 @@ pub fn open_ask_source(
 /// model's own knowledge; the panel notes that the answer may be out of date.
 #[tauri::command]
 pub async fn answer_ask_anyway(
+    app: tauri::AppHandle,
     question: String,
     state: tauri::State<'_, AskDictationState>,
     config_state: tauri::State<'_, storage::ConfigManager>,
@@ -1155,7 +1258,9 @@ pub async fn answer_ask_anyway(
         return Err("Set up the AI polish service first.".to_string());
     }
     tracing::info!("Ask live question: answering anyway");
-    let answer = answer_question(&config, &client, &question, None)
+    // The panel sends back the question already in its language's characters; hints decide.
+    let (_, language) = route_question(&app, &config, question.clone(), &HeardSpeech::default());
+    let answer = answer_question(&config, &client, &question, None, language.as_ref())
         .await
         .map_err(ask_app_error_message)?;
     let result = AskDictationResult::new(
@@ -1181,7 +1286,7 @@ pub async fn ask_anything(
         return Err("Set up the AI polish service first.".to_string());
     }
 
-    answer_question(&config, &client, &question, None)
+    answer_question(&config, &client, &question, None, None)
         .await
         .map_err(ask_app_error_message)
 }
@@ -1309,6 +1414,7 @@ pub(crate) async fn start_reserved_ask_dictation(
         );
         let mut handle = Some(handle);
         let transcript = Arc::new(Mutex::new(String::new()));
+        let heard = Arc::new(Mutex::new(HeardSpeech::default()));
         let error = Arc::new(Mutex::new(None::<String>));
         let done = Arc::new(Notify::new());
         let task_operation_id = operation_id.clone();
@@ -1328,6 +1434,7 @@ pub(crate) async fn start_reserved_ask_dictation(
                     recording_context,
                     selected_text,
                     transcript: transcript.clone(),
+                    heard: heard.clone(),
                     error: error.clone(),
                     done: done.clone(),
                     upload_probe,
@@ -1405,6 +1512,10 @@ pub(crate) async fn start_reserved_ask_dictation(
                                 match provider.disconnect().await {
                                     Ok(Some(text)) => {
                                         let current = append_final_transcript(&transcript, &text);
+                                        *heard.lock().unwrap_or_else(|e| e.into_inner()) = HeardSpeech {
+                                            detected_language: provider.detected_language(),
+                                            qwen3_asr: provider.answered_as_qwen3_asr(),
+                                        };
                                         let _ = app.emit("ask:final", current);
                                     }
                                     Ok(None) => {}
@@ -1430,6 +1541,10 @@ pub(crate) async fn start_reserved_ask_dictation(
                             }
                             Ok(Some(TranscriptEvent::Final { text, .. })) => {
                                 let current = append_final_transcript(&transcript, &text);
+                                *heard.lock().unwrap_or_else(|e| e.into_inner()) = HeardSpeech {
+                                    detected_language: provider.detected_language(),
+                                    qwen3_asr: provider.answered_as_qwen3_asr(),
+                                };
                                 let _ = app.emit("ask:final", current);
                             }
                             Ok(Some(TranscriptEvent::Error { message })) => {
@@ -1631,6 +1746,13 @@ pub async fn stop_ask_dictation(
 
         let config = config_state.load().await.map_err(|e| e.to_string())?;
         run_config = Some(config.clone());
+        // Plan `language-routing-everywhere`: the question's language from the user's presets.
+        let heard = session
+            .heard
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+        let (question, answer_language) = route_question(&app, &config, question, &heard);
         let voice_intent = route_ask_intent(
             &question,
             used_selected_text,
@@ -1726,6 +1848,7 @@ pub async fn stop_ask_dictation(
                         query,
                         check.reason,
                         check.language,
+                        answer_language.as_ref(),
                     )
                     .await
                     {
@@ -1761,6 +1884,7 @@ pub async fn stop_ask_dictation(
             &client,
             &question,
             session.selected_text.as_deref(),
+            answer_language.as_ref(),
         )
         .await;
         ai_elapsed = Some(ai_started.elapsed());
@@ -2308,6 +2432,29 @@ mod tests {
         );
     }
 
+    /// Plan `language-routing-everywhere`: a routed question is answered in its language, as
+    /// the language's preset describes, and in its characters.
+    #[test]
+    fn a_routed_language_shapes_the_ask_prompt() {
+        let language = AnswerLanguage {
+            code: "zh-Hant-HK".into(),
+            instructions: "Written Cantonese (粵語白話文) in Hong Kong Traditional.".into(),
+        };
+        let messages = ask_messages_from_sanitized("點解天係藍色？", None, Some(&language));
+        let system = messages[0]["content"].as_str().unwrap();
+        assert!(system.starts_with(ask_system_prompt(false)));
+        assert!(system.contains("ANSWER LANGUAGE: zh-Hant-HK"));
+        assert!(system.contains(
+            "<language_instructions>\nWritten Cantonese (粵語白話文) in Hong Kong Traditional.\n</language_instructions>"
+        ));
+        assert_eq!(
+            language.script(),
+            Some(crate::stt::chinese_script::ChineseScript::HongKong)
+        );
+        let plain = ask_messages_from_sanitized("Why is the sky blue?", None, None);
+        assert_eq!(plain[0]["content"], ask_system_prompt(false));
+    }
+
     #[test]
     fn byok_ask_config_uses_active_ai_preset_and_extras() {
         let mut config = storage::AppConfig::default();
@@ -2319,7 +2466,8 @@ mod tests {
             .extra_request_fields
             .insert("temperature".to_string(), json!(0.9));
 
-        let body = build_byok_ask_body_for_config(&config, "What is Typelite?", None).unwrap();
+        let body =
+            build_byok_ask_body_for_config(&config, "What is Typelite?", None, None).unwrap();
 
         assert_eq!(body["model"], "qwen3:4b");
         assert_eq!(body["max_tokens"], ASK_OUTPUT_TOKEN_LIMIT);
