@@ -1,0 +1,5244 @@
+{
+  "schema": 1,
+  "timestamp": "2026-10-02T20:22:04.082Z",
+  "revision": "336b3e83e6eb945b5235b65e7c42dfb6db785b29",
+  "git_status": "?? .SUMMARY\n?? docs/benchmarks/reports/2026-10-03-dictionary-work/\n",
+  "source_sha256": "825f79c9a4fdd360ba759288075fb0dc460e4d41e3f90360f3ed8884291f548a",
+  "harness_sha256": "fe4b4c25721e696573dc8d667f849d4857de8f400c1ccfd702532e031f33d820",
+  "dependencies_sha256": "d8a5701e33fd41890321407988901cd26dd44bd986184200c4dd80e9a2ba96b4",
+  "build_config_sha256": "d00639dd6c540252e4d1e226bf530239658c48139b9e8b00ebcf0b88ef3c53e8",
+  "environment": {
+    "os": "darwin 25.5.0",
+    "arch": "arm64",
+    "cpu": "Apple M1 Pro",
+    "logical_cpus": 8,
+    "memory_bytes": 34359738368,
+    "node": "v24.10.0",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "rust_profile": "release (opt-level=s, thin LTO, 1 codegen unit)",
+    "build_env": {}
+  },
+  "process_runs": 3,
+  "rust_executable": "/Users/sennett/Documents/code/mine/typelite/typelite/output/benchmarks/bin/09ad6d743c3ad0580a83210603de4fc2c4bb4f09b3b54df5b4a87a1e97f2892d",
+  "rust_executable_sha256": "09ad6d743c3ad0580a83210603de4fc2c4bb4f09b3b54df5b4a87a1e97f2892d",
+  "benchmarks": [
+    {
+      "id": "ui/events/volume",
+      "unit": "us/batch",
+      "workload": {
+        "events": 333,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom"
+      },
+      "runs": [
+        {
+          "id": "ui/events/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            6248.124999999959,
+            5066.166000000067,
+            5071.707999999944,
+            5127.667000000088,
+            5012.958000000026,
+            5349.499999999921,
+            5347.250000000031,
+            6802.665999999931,
+            5132.333999999901,
+            5226.625000000013,
+            5160.750000000007,
+            5339.49999999993,
+            5277.5420000000395,
+            5251.999999999953,
+            5590.666000000056
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 1
+        },
+        {
+          "id": "ui/events/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5691.458000000011,
+            6241.29199999993,
+            5175.749999999994,
+            5639.374999999973,
+            5626.082999999994,
+            5709.875000000011,
+            5635.332999999946,
+            5690.33300000001,
+            6358.041999999955,
+            5258.208999999965,
+            5201.958999999988,
+            5299.874999999929,
+            5109.459000000015,
+            5206.250000000068,
+            5199.500000000057
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 2
+        },
+        {
+          "id": "ui/events/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5316.832999999974,
+            6021.708999999987,
+            4980.832999999961,
+            5642.583000000059,
+            5488.375000000019,
+            5569.875000000025,
+            5206.624999999917,
+            5410.833000000025,
+            6018.83399999997,
+            4990.541000000007,
+            5004.1669999999385,
+            5017.1249999999645,
+            5088.500000000067,
+            5042.1250000000555,
+            5058.250000000044
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 3
+        }
+      ],
+      "median_us": 5251.999999999953,
+      "p10_us": 5017.1249999999645,
+      "p90_us": 6018.83399999997
+    },
+    {
+      "id": "ui/events/text",
+      "unit": "us/batch",
+      "workload": {
+        "events": 128,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom"
+      },
+      "runs": [
+        {
+          "id": "ui/events/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            1992.7909999998974,
+            1942.4999999999955,
+            1946.1670000000595,
+            1971.2079999999332,
+            2152.6250000000573,
+            2009.9159999999756,
+            2020.750000000021,
+            2209.8330000000033,
+            2035.708999999997,
+            2071.125000000052,
+            2021.2080000000014,
+            1977.2080000000187,
+            1945.208999999977,
+            2046.0840000000644,
+            2009.375000000091
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 1
+        },
+        {
+          "id": "ui/events/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            2002.4579999999332,
+            2000.7910000000493,
+            2102.87500000004,
+            1985.0409999999101,
+            1959.8330000000033,
+            1971.5830000000096,
+            1968.1249999999864,
+            2224.749999999972,
+            1971.582999999896,
+            1984.083000000055,
+            1999.125000000049,
+            2024.6249999999009,
+            2024.167000000034,
+            1969.1659999999729,
+            2059.8340000000235
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 2
+        },
+        {
+          "id": "ui/events/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            1898.6670000000458,
+            1948.3749999999418,
+            1921.7499999999745,
+            1870.3330000000733,
+            1861.0830000000078,
+            1852.8749999999263,
+            1889.250000000061,
+            2019.1670000000386,
+            1895.917000000054,
+            1926.7500000000837,
+            1858.791999999994,
+            1878.667000000064,
+            1946.8329999999696,
+            1949.124999999981,
+            1891.8750000000273
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 3
+        }
+      ],
+      "median_us": 1999.125000000049,
+      "p10_us": 1878.667000000064,
+      "p90_us": 2059.8340000000235
+    },
+    {
+      "id": "ui/recording/volume",
+      "unit": "us/batch",
+      "workload": {
+        "events": 333,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom"
+      },
+      "runs": [
+        {
+          "id": "ui/recording/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5610.99999999999,
+            5555.666999999971,
+            6018.542000000025,
+            5571.000000000026,
+            5772.542000000044,
+            5633.708999999953,
+            5891.208000000006,
+            5562.332999999967,
+            5858.95800000003,
+            5577.374999999961,
+            5549.5409999999765,
+            5754.917000000091,
+            5654.7500000000355,
+            5752.917000000025,
+            5503.20899999997
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 0,
+          "process_run": 1
+        },
+        {
+          "id": "ui/recording/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5646.124999999984,
+            5707.99999999997,
+            5881.666999999993,
+            5754.291999999964,
+            5704.499999999939,
+            5596.749999999929,
+            5741.374999999948,
+            5664.040999999997,
+            5754.957999999988,
+            5943.250000000035,
+            5675.374999999917,
+            5828.999999999951,
+            5631.750000000011,
+            5698.792000000026,
+            5607.082999999989
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 0,
+          "process_run": 2
+        },
+        {
+          "id": "ui/recording/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5296.707999999967,
+            5452.874999999949,
+            5480.7910000000675,
+            5241.457999999966,
+            5402.791999999977,
+            5268.584000000033,
+            5413.749999999936,
+            5334.208999999987,
+            5315.916000000016,
+            5341.958999999974,
+            5348.459000000048,
+            5501.791999999909,
+            5278.583000000026,
+            5320.958000000019,
+            5300.417000000039
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 0,
+          "process_run": 3
+        }
+      ],
+      "median_us": 5633.708999999953,
+      "p10_us": 5300.417000000039,
+      "p90_us": 5828.999999999951
+    },
+    {
+      "id": "ui/recording/text",
+      "unit": "us/batch",
+      "workload": {
+        "events": 128,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom"
+      },
+      "runs": [
+        {
+          "id": "ui/recording/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            2063.250000000039,
+            2104.7080000000733,
+            2167.750000000069,
+            2044.040999999993,
+            2140.333000000055,
+            2271.7499999999973,
+            2009.4159999999874,
+            1962.4579999999696,
+            1951.8330000000788,
+            1987.3329999999214,
+            2014.5420000000058,
+            1952.374999999961,
+            1968.6660000000984,
+            1940.040999999951,
+            1941.3339999999835
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 0,
+          "process_run": 1
+        },
+        {
+          "id": "ui/recording/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            2124.166999999943,
+            2134.582999999907,
+            2121.0419999999885,
+            2196.083999999928,
+            2243.8750000000027,
+            2314.9170000000368,
+            2102.041999999983,
+            2053.9170000000695,
+            2029.9999999999727,
+            2104.4999999999163,
+            2174.1670000000113,
+            2043.1670000000395,
+            2031.25,
+            2137.583999999947,
+            2083.458999999948
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 0,
+          "process_run": 2
+        },
+        {
+          "id": "ui/recording/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            2050.875000000019,
+            2016.9169999999212,
+            2010.9170000000631,
+            2010.9580000000733,
+            2205.624999999941,
+            2311.916999999994,
+            1952.7500000000373,
+            1860.2919999999585,
+            1875.291999999945,
+            1966.5830000000142,
+            1934.1249999999945,
+            1892.9999999999154,
+            1895.4589999999598,
+            1900.5829999999833,
+            1904.374999999959
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 0,
+          "process_run": 3
+        }
+      ],
+      "median_us": 2009.4159999999874,
+      "p10_us": 1900.5829999999833,
+      "p90_us": 2196.083999999928
+    },
+    {
+      "id": "ui/combined/volume",
+      "unit": "us/batch",
+      "workload": {
+        "events": 333,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom"
+      },
+      "runs": [
+        {
+          "id": "ui/combined/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5045.66699999998,
+            5189.000000000078,
+            4965.9580000000005,
+            5189.375000000041,
+            5068.416999999954,
+            5084.541999999942,
+            5139.00000000001,
+            5519.792000000052,
+            5073.417000000063,
+            5045.875000000024,
+            5008.332999999993,
+            5195.62499999995,
+            5196.290999999974,
+            5165.624999999977,
+            5140.792000000033
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 1
+        },
+        {
+          "id": "ui/combined/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            5239.291000000094,
+            5225.167000000056,
+            5229.290999999989,
+            5344.999999999914,
+            5208.41699999994,
+            5353.166999999985,
+            5247.37499999992,
+            5501.083999999992,
+            5193.750000000023,
+            5302.916000000096,
+            5207.41600000008,
+            5172.041000000036,
+            5155.0829999999905,
+            5257.041999999956,
+            5176.290999999992
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 2
+        },
+        {
+          "id": "ui/combined/volume",
+          "unit": "us/batch",
+          "workload": {
+            "events": 333,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            4920.04200000008,
+            4951.29200000008,
+            4908.958999999982,
+            5093.417000000045,
+            4794.291000000044,
+            5081.375000000094,
+            5029.791000000046,
+            5179.250000000025,
+            4913.000000000011,
+            4887.541000000056,
+            4868.583000000058,
+            5136.833000000024,
+            4836.791000000062,
+            5021.334000000024,
+            4872.999999999934
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 3
+        }
+      ],
+      "median_us": 5139.00000000001,
+      "p10_us": 4887.541000000056,
+      "p90_us": 5257.041999999956
+    },
+    {
+      "id": "ui/combined/text",
+      "unit": "us/batch",
+      "workload": {
+        "events": 128,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom"
+      },
+      "runs": [
+        {
+          "id": "ui/combined/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            1965.6669999999394,
+            1957.3340000000599,
+            1944.1249999999854,
+            1954.2500000000018,
+            1967.916999999943,
+            1961.7500000000518,
+            1999.791000000073,
+            2043.3750000000828,
+            1982.4169999999413,
+            1921.5410000000475,
+            1914.2080000000306,
+            1963.8749999999163,
+            2027.5000000000318,
+            2005.9170000000677,
+            1949.5419999999513
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 1
+        },
+        {
+          "id": "ui/combined/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            1981.2500000000455,
+            1979.5830000000478,
+            1975.3330000000915,
+            2301.5420000000404,
+            1949.2089999999962,
+            1963.9999999999418,
+            1990.7499999999345,
+            1942.3329999999623,
+            2054.4159999999465,
+            2009.040999999911,
+            1985.6250000000273,
+            1993.249999999989,
+            2001.7500000000155,
+            1989.832999999976,
+            1988.334000000009
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 2
+        },
+        {
+          "id": "ui/combined/text",
+          "unit": "us/batch",
+          "workload": {
+            "events": 128,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom"
+          },
+          "samples_us": [
+            1924.8329999999214,
+            2018.87499999998,
+            1877.3330000000215,
+            2018.041999999923,
+            1876.8330000000333,
+            1958.9999999999463,
+            1998.0000000000473,
+            1875.6670000000213,
+            1962.9580000000715,
+            1908.125000000041,
+            1943.7500000000227,
+            1976.3749999999618,
+            2012.5410000000556,
+            1898.7920000000713,
+            1883.833999999979
+          ],
+          "renders_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "listener_registrations": 29,
+          "process_run": 3
+        }
+      ],
+      "median_us": 1963.8749999999163,
+      "p10_us": 1898.7920000000713,
+      "p90_us": 2018.041999999923
+    },
+    {
+      "id": "ui/waveform/silence",
+      "unit": "us/batch",
+      "workload": {
+        "frames": 600,
+        "volume_events": 300,
+        "frame_interval_ms": 16.666666666666668,
+        "hidden_ms": 0,
+        "untimed_initial_frames": 1,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+      },
+      "runs": [
+        {
+          "id": "ui/waveform/silence",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 600,
+            "volume_events": 300,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 0,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            6820.707999999968,
+            6921.458999999913,
+            7525.2499999999145,
+            6867.499999999836,
+            6788.583000000017,
+            6818.37500000006,
+            6855.957999999873,
+            7343.6249999999745,
+            6596.708000000035,
+            6729.667000000063,
+            6761.958999999933,
+            6716.375000000198,
+            7204.750000000104,
+            7262.79199999999,
+            7522.79099999987
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            }
+          ],
+          "trajectory_sha256": "ddda97f9b70e5314eb6d27b711ab4b67a327ae1e5444a73ed6d5a9ac5f96d847",
+          "process_run": 1
+        },
+        {
+          "id": "ui/waveform/silence",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 600,
+            "volume_events": 300,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 0,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            6820.208000000093,
+            6935.416999999916,
+            7342.750000000024,
+            6828.708000000006,
+            6777.707999999848,
+            6990.416000000096,
+            6843.707999999879,
+            7342.208999999912,
+            6816.332999999986,
+            6866.874999999936,
+            6829.042000000072,
+            6695.499999999811,
+            7301.083000000062,
+            7604.041999999936,
+            7479.749999999967
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            }
+          ],
+          "trajectory_sha256": "ddda97f9b70e5314eb6d27b711ab4b67a327ae1e5444a73ed6d5a9ac5f96d847",
+          "process_run": 2
+        },
+        {
+          "id": "ui/waveform/silence",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 600,
+            "volume_events": 300,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 0,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            6486.374999999953,
+            6981.500000000096,
+            7284.832999999935,
+            6671.542000000045,
+            6669.167000000016,
+            6571.583000000146,
+            6528.66599999993,
+            7146.91700000003,
+            6569.708999999875,
+            6595.166999999947,
+            6487.62499999998,
+            6577.833000000055,
+            8958.499999999958,
+            7442.999999999984,
+            7341.333999999961
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            },
+            {
+              "transform": 0,
+              "opacity": 0
+            }
+          ],
+          "trajectory_sha256": "ddda97f9b70e5314eb6d27b711ab4b67a327ae1e5444a73ed6d5a9ac5f96d847",
+          "process_run": 3
+        }
+      ],
+      "median_us": 6855.957999999873,
+      "p10_us": 6571.583000000146,
+      "p90_us": 7442.999999999984
+    },
+    {
+      "id": "ui/waveform/voice-and-pauses",
+      "unit": "us/batch",
+      "workload": {
+        "frames": 600,
+        "volume_events": 300,
+        "frame_interval_ms": 16.666666666666668,
+        "hidden_ms": 0,
+        "untimed_initial_frames": 1,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+      },
+      "runs": [
+        {
+          "id": "ui/waveform/voice-and-pauses",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 600,
+            "volume_events": 300,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 0,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            46446.08300000004,
+            45281.20800000011,
+            51397.91600000012,
+            46437.957999999984,
+            45640.49999999997,
+            44385.6659999999,
+            44927.291999999856,
+            46300.707999999984,
+            45585.50000000014,
+            45355.58399999991,
+            45828.457999999955,
+            44907.083999999944,
+            44816.874999999985,
+            45190.66599999997,
+            45129.45799999988
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            }
+          ],
+          "trajectory_sha256": "f48b4d1423f9ae3ca8ee961421752c4a4a603be8ceae1f9a84fda60c407feefb",
+          "process_run": 1
+        },
+        {
+          "id": "ui/waveform/voice-and-pauses",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 600,
+            "volume_events": 300,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 0,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            45488.70799999986,
+            44827.25000000005,
+            44755.83299999994,
+            45646.95800000004,
+            46031.50000000005,
+            47343.70899999999,
+            45622.99999999982,
+            45024.41700000009,
+            44874.4999999999,
+            45229.54200000004,
+            44532.79199999997,
+            44800.99999999993,
+            44838.04099999975,
+            44598.16699999965,
+            44633.500000000364
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            }
+          ],
+          "trajectory_sha256": "f48b4d1423f9ae3ca8ee961421752c4a4a603be8ceae1f9a84fda60c407feefb",
+          "process_run": 2
+        },
+        {
+          "id": "ui/waveform/voice-and-pauses",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 600,
+            "volume_events": 300,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 0,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            45544.5830000001,
+            45183.41600000008,
+            44934.0830000001,
+            44701.917000000096,
+            44923.332999999955,
+            44644.95899999997,
+            44673.542,
+            44628.50000000003,
+            45212.33400000005,
+            45239.249999999854,
+            45502.792,
+            44747.20900000011,
+            44707.70900000025,
+            44813.41699999984,
+            44756.24999999991
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            },
+            {
+              "transform": 8630,
+              "opacity": 6056
+            }
+          ],
+          "trajectory_sha256": "f48b4d1423f9ae3ca8ee961421752c4a4a603be8ceae1f9a84fda60c407feefb",
+          "process_run": 3
+        }
+      ],
+      "median_us": 44874.4999999999,
+      "p10_us": 44633.500000000364,
+      "p90_us": 46031.50000000005
+    },
+    {
+      "id": "ui/waveform/hidden-resume",
+      "unit": "us/batch",
+      "workload": {
+        "frames": 121,
+        "volume_events": 61,
+        "frame_interval_ms": 16.666666666666668,
+        "hidden_ms": 43200000,
+        "untimed_initial_frames": 1,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+      },
+      "runs": [
+        {
+          "id": "ui/waveform/hidden-resume",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 121,
+            "volume_events": 61,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 43200000,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            10363.041000000067,
+            9936.2500000002,
+            9781.750000000102,
+            9780.917000000045,
+            10320.542000000387,
+            9686.2500000002,
+            9772.291999999652,
+            9877.29199999967,
+            10261.791999999787,
+            9887.99999999992,
+            9944.45799999994,
+            9805.166999999983,
+            10196.707999999944,
+            9867.833000000246,
+            9775.87500000027
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            }
+          ],
+          "trajectory_sha256": "578908f548df8c5d4e835264e99887d09cd2aefd7c5339591061218563704083",
+          "process_run": 1
+        },
+        {
+          "id": "ui/waveform/hidden-resume",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 121,
+            "volume_events": 61,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 43200000,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            10509.833999999955,
+            10177.040999999917,
+            9984.16700000007,
+            9858.083000000079,
+            10499.0829999997,
+            9715.291999999863,
+            9782.750000000306,
+            9733.791999999994,
+            10504.750000000058,
+            9732.958999999937,
+            9763.209000000188,
+            9827.666000000136,
+            10421.499999999924,
+            9734.375,
+            9859.83299999998
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            }
+          ],
+          "trajectory_sha256": "578908f548df8c5d4e835264e99887d09cd2aefd7c5339591061218563704083",
+          "process_run": 2
+        },
+        {
+          "id": "ui/waveform/hidden-resume",
+          "unit": "us/batch",
+          "workload": {
+            "frames": 121,
+            "volume_events": 61,
+            "frame_interval_ms": 16.666666666666668,
+            "hidden_ms": 43200000,
+            "untimed_initial_frames": 1,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; controlled RAF; real CSS setters"
+          },
+          "samples_us": [
+            9888.958000000002,
+            9880.540999999994,
+            10723.665999999866,
+            9931.957999999668,
+            9933.208999999806,
+            9792.624999999589,
+            10490.291999999954,
+            9841.499999999996,
+            9833.916000000045,
+            9994.500000000244,
+            10345.58399999969,
+            9867.375000000266,
+            9866.7089999999,
+            9924.16699999967,
+            10349.083000000064
+          ],
+          "style_writes_per_batch": [
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            },
+            {
+              "transform": 1875,
+              "opacity": 1433
+            }
+          ],
+          "trajectory_sha256": "578908f548df8c5d4e835264e99887d09cd2aefd7c5339591061218563704083",
+          "process_run": 3
+        }
+      ],
+      "median_us": 9877.29199999967,
+      "p10_us": 9734.375,
+      "p90_us": 10421.499999999924
+    },
+    {
+      "id": "ui/dictionary/add-words",
+      "unit": "us/batch",
+      "workload": {
+        "visible_rows": 1000,
+        "input_events": 24,
+        "fields": 2,
+        "row_label_key": "dictionary.editEntry",
+        "label_calls_per_row": 2,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+      },
+      "runs": [
+        {
+          "id": "ui/dictionary/add-words",
+          "unit": "us/batch",
+          "workload": {
+            "visible_rows": 1000,
+            "input_events": 24,
+            "fields": 2,
+            "row_label_key": "dictionary.editEntry",
+            "label_calls_per_row": 2,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+          },
+          "samples_us": [
+            3512.499999999818,
+            7039.70900000013,
+            5460.625000000164,
+            5665.332999999919,
+            5615.999999999985,
+            6199.374999999691,
+            5858.958000000257,
+            5440.916000000016,
+            5382.790999999997,
+            5932.91599999975,
+            5682.333000000199,
+            5716.541999999663,
+            5066.041000000041,
+            5372.291000000132,
+            6712.332999999944
+          ],
+          "row_label_calls_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_evaluations_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "rows_sha256": "3f5a731913a9f849ee852dd0294ae068a96e8bec87be0713a3839e9ef8c0e26a",
+          "final_input_values": [
+            "newbenchmark",
+            "pronounce_it"
+          ],
+          "process_run": 1
+        },
+        {
+          "id": "ui/dictionary/add-words",
+          "unit": "us/batch",
+          "workload": {
+            "visible_rows": 1000,
+            "input_events": 24,
+            "fields": 2,
+            "row_label_key": "dictionary.editEntry",
+            "label_calls_per_row": 2,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+          },
+          "samples_us": [
+            2775.3750000001673,
+            3864.332999999988,
+            2705.7919999997466,
+            5393.000000000029,
+            5510.2499999998145,
+            5866.625000000113,
+            5828.082999999879,
+            5184.958999999708,
+            5701.041999999688,
+            5849.624999999833,
+            5049.624999999651,
+            5172.375000000102,
+            5159.958000000188,
+            4974.791999999979,
+            5935.124999999971
+          ],
+          "row_label_calls_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_evaluations_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "rows_sha256": "3f5a731913a9f849ee852dd0294ae068a96e8bec87be0713a3839e9ef8c0e26a",
+          "final_input_values": [
+            "newbenchmark",
+            "pronounce_it"
+          ],
+          "process_run": 2
+        },
+        {
+          "id": "ui/dictionary/add-words",
+          "unit": "us/batch",
+          "workload": {
+            "visible_rows": 1000,
+            "input_events": 24,
+            "fields": 2,
+            "row_label_key": "dictionary.editEntry",
+            "label_calls_per_row": 2,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+          },
+          "samples_us": [
+            2729.12499999984,
+            2780.1250000002256,
+            2621.4169999998376,
+            5323.624999999993,
+            5394.917000000078,
+            5810.375000000022,
+            5832.583000000341,
+            5247.957999999926,
+            5226.500000000215,
+            5615.20900000005,
+            5062.167000000045,
+            5187.708999999813,
+            5555.833999999777,
+            4822.458999999981,
+            6258.416000000125
+          ],
+          "row_label_calls_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_evaluations_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "rows_sha256": "3f5a731913a9f849ee852dd0294ae068a96e8bec87be0713a3839e9ef8c0e26a",
+          "final_input_values": [
+            "newbenchmark",
+            "pronounce_it"
+          ],
+          "process_run": 3
+        }
+      ],
+      "median_us": 5247.957999999926,
+      "p10_us": 2780.1250000002256,
+      "p90_us": 5932.91599999975
+    },
+    {
+      "id": "ui/dictionary/add-corrections",
+      "unit": "us/batch",
+      "workload": {
+        "visible_rows": 1000,
+        "input_events": 24,
+        "fields": 2,
+        "row_label_key": "dictionary.editCorrection",
+        "label_calls_per_row": 2,
+        "warmups": 5,
+        "samples": 15,
+        "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+      },
+      "runs": [
+        {
+          "id": "ui/dictionary/add-corrections",
+          "unit": "us/batch",
+          "workload": {
+            "visible_rows": 1000,
+            "input_events": 24,
+            "fields": 2,
+            "row_label_key": "dictionary.editCorrection",
+            "label_calls_per_row": 2,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+          },
+          "samples_us": [
+            2864.6249999992506,
+            2558.208000000377,
+            2525.875000000269,
+            2775.916999999936,
+            2406.2910000002375,
+            2286.750000000211,
+            2296.707999999853,
+            2304.1659999998956,
+            2316.250000000764,
+            5097.000000000662,
+            5127.666999999747,
+            5153.49999999944,
+            5069.375000000036,
+            5452.666999999565,
+            5434.3330000001515
+          ],
+          "row_label_calls_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_evaluations_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "rows_sha256": "6b912761b5b04fcddd4c27760b304abfc9ca668162dacdfe01e01ed707c8a234",
+          "final_input_values": [
+            "tehbenchmark",
+            "thebenchmark"
+          ],
+          "process_run": 1
+        },
+        {
+          "id": "ui/dictionary/add-corrections",
+          "unit": "us/batch",
+          "workload": {
+            "visible_rows": 1000,
+            "input_events": 24,
+            "fields": 2,
+            "row_label_key": "dictionary.editCorrection",
+            "label_calls_per_row": 2,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+          },
+          "samples_us": [
+            2428.583000000799,
+            2734.7910000007687,
+            2365.834000000177,
+            2302.5410000000193,
+            2615.6249999994543,
+            2650.2080000000205,
+            2341.082999999344,
+            2266.6669999998703,
+            2770.2500000004875,
+            2331.125000000611,
+            2314.041999999972,
+            3084.708000000319,
+            5137.374999999338,
+            5389.7500000002765,
+            5664.915999999721
+          ],
+          "row_label_calls_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_evaluations_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "rows_sha256": "6b912761b5b04fcddd4c27760b304abfc9ca668162dacdfe01e01ed707c8a234",
+          "final_input_values": [
+            "tehbenchmark",
+            "thebenchmark"
+          ],
+          "process_run": 2
+        },
+        {
+          "id": "ui/dictionary/add-corrections",
+          "unit": "us/batch",
+          "workload": {
+            "visible_rows": 1000,
+            "input_events": 24,
+            "fields": 2,
+            "row_label_key": "dictionary.editCorrection",
+            "label_calls_per_row": 2,
+            "warmups": 5,
+            "samples": 15,
+            "mode": "React dev/jsdom; actual DictionaryPane; mounted list; independent input events"
+          },
+          "samples_us": [
+            2486.166000000594,
+            2555.7079999998678,
+            2441.7090000006283,
+            2358.4170000003724,
+            2417.5829999994676,
+            2558.7500000001455,
+            2332.2500000003856,
+            2307.542000000467,
+            2299.9159999999392,
+            2312.5,
+            2371.874999999818,
+            3011.583999999857,
+            5057.084000000032,
+            5431.58399999993,
+            5227.374999999483
+          ],
+          "row_label_calls_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "row_evaluations_per_batch": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "rows_sha256": "6b912761b5b04fcddd4c27760b304abfc9ca668162dacdfe01e01ed707c8a234",
+          "final_input_values": [
+            "tehbenchmark",
+            "thebenchmark"
+          ],
+          "process_run": 3
+        }
+      ],
+      "median_us": 2615.6249999994543,
+      "p10_us": 2302.5410000000193,
+      "p90_us": 5227.374999999483
+    },
+    {
+      "id": "chinese/short",
+      "unit": "us/op",
+      "workload": {
+        "input_bytes": 86,
+        "iterations_per_sample": 100,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.94,
+            6.042909999999999,
+            6.31,
+            5.76792,
+            6.0195799999999995,
+            5.7675,
+            5.872089999999999,
+            5.76625,
+            5.86292,
+            5.73959,
+            5.60084,
+            5.62334,
+            5.92459,
+            5.7670900000000005,
+            5.5966700000000005
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.6575,
+            5.98667,
+            5.774579999999999,
+            5.88833,
+            5.8329200000000005,
+            5.7729099999999995,
+            5.78208,
+            5.8575,
+            5.91458,
+            6.06708,
+            6.030410000000001,
+            5.734579999999999,
+            5.797909999999999,
+            6.03583,
+            5.76917
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            6.947919999999999,
+            5.8275,
+            9.02125,
+            5.812919999999999,
+            5.7704200000000005,
+            5.803330000000001,
+            5.97708,
+            5.70833,
+            5.92,
+            6.27292,
+            6.015,
+            6.03541,
+            5.9725,
+            5.737080000000001,
+            5.75917
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 5.8329200000000005,
+      "p10_us": 5.70833,
+      "p90_us": 6.042909999999999
+    },
+    {
+      "id": "chinese/long",
+      "unit": "us/op",
+      "workload": {
+        "input_bytes": 5504,
+        "iterations_per_sample": 10,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            370.6458,
+            344.325,
+            346.3375,
+            351.3416,
+            347.1666,
+            347.2208,
+            352.8958,
+            356.52079999999995,
+            345.2166,
+            352.84159999999997,
+            343.5458,
+            342.77079999999995,
+            349.6542,
+            343.8458,
+            345.3417
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            347.7625,
+            369.93330000000003,
+            352.00829999999996,
+            353.1667,
+            364.80830000000003,
+            359.8833,
+            365.6333,
+            351.775,
+            355.1625,
+            354.7083,
+            344.69169999999997,
+            349.8666,
+            353.39579999999995,
+            351.1,
+            349.3458
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            349.2083,
+            348.6708,
+            364.175,
+            369.5917,
+            373.3833,
+            356.9458,
+            353.45410000000004,
+            353.62919999999997,
+            368.81669999999997,
+            366.1375,
+            354.9791,
+            378.4542,
+            354.3125,
+            358.7042,
+            364.7792
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 353.1667,
+      "p10_us": 344.69169999999997,
+      "p90_us": 368.81669999999997
+    },
+    {
+      "id": "chinese/no-han",
+      "unit": "us/op",
+      "workload": {
+        "input_bytes": 42,
+        "iterations_per_sample": 1000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.080917,
+            0.080833,
+            0.080875,
+            0.088708,
+            0.080833,
+            0.08095800000000002,
+            0.080875,
+            0.080917,
+            0.08075,
+            0.08095899999999999,
+            0.08125,
+            0.080916,
+            0.080875,
+            0.08079100000000002,
+            0.081042
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.083792,
+            0.082834,
+            0.082458,
+            0.082625,
+            0.082542,
+            0.08275,
+            0.083,
+            0.082708,
+            0.082375,
+            0.08275,
+            0.082458,
+            0.082541,
+            0.082333,
+            0.082583,
+            0.082542
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.08241699999999999,
+            0.082458,
+            0.08241600000000002,
+            0.082542,
+            0.082667,
+            0.082458,
+            0.082458,
+            0.08241600000000002,
+            0.082333,
+            0.082542,
+            0.09225,
+            0.083292,
+            0.085375,
+            0.082459,
+            0.08258399999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 0.082459,
+      "p10_us": 0.080875,
+      "p90_us": 0.083
+    },
+    {
+      "id": "stream/short-small-writes",
+      "unit": "us/op",
+      "workload": {
+        "events": 129,
+        "iterations_per_sample": 10,
+        "response_bytes": 6592,
+        "samples": 15,
+        "server_write_bytes": 128,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            257.2875,
+            288.6375,
+            258.9542,
+            259.871,
+            251.07520000000005,
+            217.7126,
+            203.2876,
+            190.2709,
+            183.4041,
+            192.0292,
+            194.696,
+            193.4127,
+            174.04160000000002,
+            186.5874,
+            182.3374
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            259.0832,
+            274.82090000000005,
+            268.43330000000003,
+            276.56260000000003,
+            222.1833,
+            177.9582,
+            182.6792,
+            216.5541,
+            194.26659999999998,
+            252.43339999999998,
+            203.92919999999998,
+            205.3167,
+            170.66670000000002,
+            177.725,
+            163.4292
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            262.2792,
+            263.80859999999996,
+            260.95860000000005,
+            250.31670000000003,
+            184.7249,
+            203.37910000000002,
+            207.1498,
+            203.7459,
+            233.4208,
+            232.57070000000004,
+            205.85400000000004,
+            171.04149999999998,
+            230.0458,
+            235.44159999999997,
+            198.04969999999997
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 205.3167,
+      "p10_us": 177.725,
+      "p90_us": 262.2792
+    },
+    {
+      "id": "stream/long-batched",
+      "unit": "us/op",
+      "workload": {
+        "events": 1025,
+        "iterations_per_sample": 10,
+        "response_bytes": 52288,
+        "samples": 15,
+        "server_write_bytes": 65536,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            639.3542,
+            660.3333,
+            628.0253,
+            617.3208000000001,
+            631.1167,
+            632.5375,
+            657.0542,
+            643.6834,
+            663.7083,
+            691.6419,
+            754.0876000000001,
+            682.9125,
+            665.3916999999999,
+            673.4707999999999,
+            699.4957999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            638.6166999999999,
+            656.4624,
+            638.1251,
+            626.2668,
+            687.7456,
+            629.7457,
+            624.2624,
+            652.4834,
+            657.7,
+            708.2499,
+            677.5792,
+            659.0499,
+            682.1958999999999,
+            672.6290999999999,
+            687.0334
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            627.9208,
+            619.0375,
+            611.7582,
+            672.2876,
+            664.5584000000001,
+            636.5499,
+            622.4043,
+            609.9750999999999,
+            611.2707,
+            660.2207999999999,
+            683.0542,
+            666.2292,
+            664.8792,
+            668.4581999999999,
+            661.5623
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 660.2207999999999,
+      "p10_us": 619.0375,
+      "p90_us": 687.0334
+    },
+    {
+      "id": "stream/stress-batched",
+      "unit": "us/op",
+      "workload": {
+        "events": 4097,
+        "iterations_per_sample": 10,
+        "response_bytes": 208960,
+        "samples": 15,
+        "server_write_bytes": 262144,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2324.5625,
+            2400.8791,
+            2407.4542,
+            2311.1293,
+            2370.5459,
+            2327.3084,
+            2321.7084,
+            2364.1958000000004,
+            2323.3209,
+            2335.3539,
+            2362.6541,
+            2397.3125,
+            2325.4919,
+            2337.9623,
+            2329.8540999999996
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2320.3082999999997,
+            2357.5128,
+            2362.4292,
+            2338.2376,
+            2324.2957,
+            2334.4917,
+            2335.625,
+            2349.4543000000003,
+            2362.3334,
+            2395.3208999999997,
+            2337.5375,
+            2348.4666,
+            2342.4376,
+            2330.6081999999997,
+            2378.5833
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2313.2501,
+            2341.6917,
+            2356.1414999999997,
+            2342.0666,
+            2361.2166,
+            2336.9543,
+            2306.1584,
+            2331.796,
+            2334.9415,
+            2333.2248,
+            2327.7666999999997,
+            2340.8707999999997,
+            2348.4166,
+            2342.9042,
+            2317.1625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 2336.9543,
+      "p10_us": 2320.3082999999997,
+      "p90_us": 2370.5459
+    },
+    {
+      "id": "voice/speech-4s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 250,
+        "pcm_bytes": 128000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            56.517664,
+            57.1565,
+            56.822168,
+            57.147,
+            57.372668000000004,
+            58.229164,
+            57.629664,
+            56.7275,
+            56.8595,
+            57.476836000000006,
+            56.6365,
+            57.073167999999995,
+            56.725668,
+            57.395332,
+            56.90633199999999
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            57.507168,
+            57.33783199999999,
+            56.975336000000006,
+            57.43083599999999,
+            56.8995,
+            57.426168,
+            57.399164000000006,
+            56.673668000000006,
+            57.018,
+            56.595836,
+            57.329668,
+            56.91866400000001,
+            56.4245,
+            57.394332000000006,
+            56.73866400000001
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            57.310164,
+            57.325832000000005,
+            57.735832,
+            57.224168,
+            57.493832000000005,
+            56.8535,
+            58.0145,
+            56.462,
+            57.592,
+            60.2165,
+            56.630835999999995,
+            57.718332,
+            56.62,
+            57.309,
+            57.080667999999996
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 57.073167999999995,
+      "p10_us": 56.62,
+      "p90_us": 57.629664
+    },
+    {
+      "id": "voice/speech-60s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 16,
+        "pcm_bytes": 1920000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            876.127625,
+            887.51825,
+            890.6848749999999,
+            885.7474374999999,
+            902.927125,
+            915.0416875,
+            916.1198125,
+            888.23175,
+            898.8255625,
+            899.9349374999999,
+            901.515625,
+            879.9140625,
+            883.6119375000001,
+            891.95575,
+            885.224
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            914.8801875,
+            915.247375,
+            910.4453125,
+            905.6431875000001,
+            885.0104375,
+            894.3984375,
+            888.5963125000001,
+            891.375,
+            895.109375,
+            891.44275,
+            902.0520625,
+            905.7291250000001,
+            894.559875,
+            908.221375,
+            896.3515625
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            907.5182500000001,
+            886.1301874999999,
+            895.03125,
+            915.6796875,
+            887.79425,
+            910.8671875,
+            921.9192499999999,
+            902.2578125,
+            891.5052499999999,
+            901.026,
+            901.4453125,
+            892.9349375,
+            910.8255625,
+            901.5677499999999,
+            903.237
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 896.3515625,
+      "p10_us": 885.224,
+      "p90_us": 914.8801875
+    },
+    {
+      "id": "voice/speech-600s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 1,
+        "pcm_bytes": 19200000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            9044.25,
+            8747.708,
+            8778.582999999999,
+            8881.458,
+            8907.292000000001,
+            9003.584,
+            8908.332999999999,
+            8907.166,
+            8923.75,
+            8980.708,
+            8848.25,
+            8842.041,
+            8780.25,
+            8914.583,
+            8925.875
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            9048.5,
+            8852.5,
+            9020.375,
+            14509.459,
+            10392.583,
+            9351.125,
+            9159.5,
+            9713.125,
+            9286.125,
+            8981.958999999999,
+            9175.832999999999,
+            9044.167000000001,
+            8939.834,
+            8900.417000000001,
+            8982.292
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            8965.707999999999,
+            8888.792,
+            8964.375,
+            8962.125,
+            9015.375,
+            8889.875,
+            8889.875,
+            9005.417,
+            8940.416,
+            8966.25,
+            8966.041,
+            8954.292000000001,
+            9122.125,
+            8889.708,
+            8943.667000000001
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 8962.125,
+      "p10_us": 8848.25,
+      "p90_us": 9175.832999999999
+    },
+    {
+      "id": "voice/quiet-4s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 250,
+        "pcm_bytes": 128000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            56.474168,
+            57.152,
+            56.716167999999996,
+            57.581168000000005,
+            56.691168,
+            56.55,
+            59.001168,
+            56.83316800000001,
+            56.724664000000004,
+            56.643167999999996,
+            56.434332,
+            57.8875,
+            56.5405,
+            57.187,
+            56.932832000000005
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            61.8415,
+            57.6295,
+            59.675836000000004,
+            56.889832000000006,
+            58.4865,
+            56.742,
+            56.917668,
+            56.52533199999999,
+            57.662668,
+            57.859,
+            57.102163999999995,
+            57.457832,
+            56.983667999999994,
+            56.979,
+            57.2395
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            57.398164,
+            56.7825,
+            57.428336,
+            57.4835,
+            57.03766400000001,
+            57.556832,
+            56.685168,
+            57.35266800000001,
+            58.326832,
+            57.543164000000004,
+            58.454831999999996,
+            57.43333199999999,
+            57.35,
+            57.405832,
+            57.036336000000006
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 57.2395,
+      "p10_us": 56.55,
+      "p90_us": 58.326832
+    },
+    {
+      "id": "voice/silence-4s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "digital silence",
+        "iterations_per_sample": 250,
+        "pcm_bytes": 128000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            53.252835999999995,
+            53.727668,
+            53.311832,
+            53.512832,
+            53.455332000000006,
+            53.475663999999995,
+            53.5215,
+            53.5095,
+            53.311836,
+            54.0115,
+            53.291332,
+            53.967332,
+            53.343168000000006,
+            53.264836,
+            53.883168000000005
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            54.837836,
+            53.241668,
+            53.5085,
+            53.621164,
+            53.892168,
+            55.113836000000006,
+            53.4725,
+            54.063332,
+            54.828663999999996,
+            53.984,
+            54.429331999999995,
+            54.061164000000005,
+            53.2255,
+            53.8135,
+            53.123168
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            54.260163999999996,
+            53.761,
+            53.775336,
+            56.059,
+            54.088167999999996,
+            53.657332000000004,
+            55.626332000000005,
+            54.927668,
+            55.014168000000005,
+            54.80533199999999,
+            54.819331999999996,
+            53.839664000000006,
+            53.523,
+            54.528332,
+            53.746164
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 53.892168,
+      "p10_us": 53.264836,
+      "p90_us": 54.837836
+    },
+    {
+      "id": "dictionary/export-json-0",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 0,
+        "dictionary_rows": 0,
+        "input_json_bytes": 81,
+        "iterations_per_sample": 100,
+        "output_bytes": 98,
+        "rows": 0,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.18791,
+            0.18833000000000003,
+            0.18625,
+            0.18625,
+            0.18791999999999998,
+            0.18666,
+            0.18709,
+            0.18791999999999998,
+            0.18791,
+            0.18708000000000002,
+            0.1875,
+            0.18791,
+            0.1875,
+            0.18833000000000003,
+            0.18916999999999998
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.2025,
+            0.19916999999999999,
+            0.20291,
+            0.1925,
+            0.19332999999999997,
+            0.19417,
+            0.1925,
+            0.19332999999999997,
+            0.19207999999999997,
+            0.19375,
+            0.19332999999999997,
+            0.19875,
+            0.19959,
+            0.2,
+            0.19916999999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.19084,
+            0.19125,
+            0.19082999999999997,
+            0.19,
+            0.19082999999999997,
+            0.18958000000000003,
+            0.19041,
+            0.19167,
+            0.19167,
+            0.19166,
+            0.19082999999999997,
+            0.19208999999999998,
+            0.19042,
+            0.19125,
+            0.19125
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 0.19084,
+      "p10_us": 0.18709,
+      "p90_us": 0.19916999999999999
+    },
+    {
+      "id": "dictionary/import-json-0",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 0,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 0,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 0,
+        "existing_rows": 0,
+        "input_json_bytes": 81,
+        "iterations_per_sample": 1,
+        "rows": 0,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            9.042000000000002,
+            11.375,
+            8.458,
+            7.75,
+            8.042,
+            7.542,
+            7.292,
+            11.792,
+            9.584,
+            8.334,
+            12,
+            12.75,
+            8.375,
+            15.792,
+            8.625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            16.541999999999998,
+            10.708,
+            10.792,
+            13.708,
+            12.958,
+            15.708,
+            8.417,
+            8.084,
+            7.959,
+            8.042,
+            7.707999999999999,
+            9.916,
+            10.459,
+            8.625,
+            7.791999999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            11.917,
+            8.709000000000001,
+            10.167,
+            10.75,
+            9.791,
+            8.292,
+            8.042,
+            7.584,
+            7.542,
+            8.416,
+            12.375,
+            15.625,
+            11.834000000000001,
+            12.25,
+            9.041
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 9.791,
+      "p10_us": 7.707999999999999,
+      "p90_us": 12.958
+    },
+    {
+      "id": "dictionary/export-json-2",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 1,
+        "dictionary_rows": 1,
+        "input_json_bytes": 210,
+        "iterations_per_sample": 100,
+        "output_bytes": 293,
+        "rows": 2,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            0.6679199999999998,
+            0.6679100000000001,
+            0.67,
+            0.69792,
+            0.6675,
+            0.76042,
+            0.6670900000000001,
+            0.6679100000000001,
+            0.66708,
+            0.66708,
+            0.6675,
+            0.6675,
+            0.6675,
+            0.66834,
+            0.66833
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            0.67292,
+            0.67292,
+            0.67291,
+            0.67625,
+            0.675,
+            0.67375,
+            0.67292,
+            0.6766599999999999,
+            0.6725,
+            0.67417,
+            0.675,
+            0.6741600000000001,
+            0.67375,
+            0.67375,
+            0.67333
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            0.71042,
+            0.71084,
+            0.7083400000000001,
+            0.85834,
+            1.52209,
+            0.6645899999999999,
+            0.6645899999999999,
+            0.66375,
+            0.66208,
+            0.6679199999999998,
+            0.705,
+            0.67708,
+            0.86458,
+            0.8175,
+            0.73625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 0.67375,
+      "p10_us": 0.66708,
+      "p90_us": 0.73625
+    },
+    {
+      "id": "dictionary/import-json-2",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 2,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 1,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 1,
+        "existing_rows": 0,
+        "input_json_bytes": 210,
+        "iterations_per_sample": 1,
+        "rows": 2,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            110.792,
+            109.875,
+            117.959,
+            108.375,
+            128.875,
+            126.08399999999999,
+            122.79200000000002,
+            101,
+            109.125,
+            115.91600000000001,
+            114.16600000000001,
+            106.375,
+            98.75,
+            95.417,
+            98.875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            144.166,
+            128.583,
+            117.75,
+            133.042,
+            119.291,
+            134.417,
+            126.87500000000001,
+            123.709,
+            131.917,
+            131.95899999999997,
+            127.875,
+            123.416,
+            127.33300000000001,
+            118.541,
+            117.917
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            152.375,
+            302.959,
+            142.25,
+            144.416,
+            153.25,
+            126.334,
+            280.791,
+            140.459,
+            134.458,
+            128.542,
+            136.125,
+            474.25,
+            141.667,
+            144.292,
+            185
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 127.33300000000001,
+      "p10_us": 106.375,
+      "p90_us": 152.375
+    },
+    {
+      "id": "dictionary/import-json-2-100pct-duplicates",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 0,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 1,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 1,
+        "existing_rows": 2,
+        "input_json_bytes": 210,
+        "iterations_per_sample": 1,
+        "rows": 2,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            18.5,
+            17.166,
+            18.541999999999998,
+            16.458000000000002,
+            14.542,
+            17.958,
+            13.541,
+            17.5,
+            16.291999999999998,
+            20.791,
+            19.542,
+            22.625,
+            18.666999999999998,
+            15.625,
+            20.833
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            17.167,
+            13.584000000000001,
+            16.083,
+            14.833,
+            13.458,
+            14.75,
+            13.5,
+            13.833,
+            13.375,
+            17.416999999999998,
+            14.708,
+            14.584,
+            13.917000000000002,
+            13.291,
+            12.917
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            12.792,
+            12.791,
+            15,
+            13.292000000000002,
+            12.959000000000001,
+            13.334,
+            14.917,
+            16.459,
+            14.875,
+            19.209,
+            13.625,
+            13.125,
+            13.208,
+            15.875,
+            14.292
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 13.917000000000002,
+      "p10_us": 13.125,
+      "p90_us": 18.666999999999998
+    },
+    {
+      "id": "dictionary/export-json-20",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 10,
+        "dictionary_rows": 10,
+        "input_json_bytes": 1212,
+        "iterations_per_sample": 100,
+        "output_bytes": 1835,
+        "rows": 20,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            3.7370799999999997,
+            3.38959,
+            3.38625,
+            3.38542,
+            3.38459,
+            3.3933299999999997,
+            3.3875,
+            3.4079099999999998,
+            3.4191700000000003,
+            3.38167,
+            3.37959,
+            3.375,
+            3.37833,
+            3.38625,
+            3.3829200000000004
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            3.35625,
+            3.3558299999999996,
+            3.3533299999999997,
+            3.3495800000000004,
+            3.3525,
+            3.48,
+            3.50541,
+            3.63,
+            3.5658299999999996,
+            3.33416,
+            3.4320800000000005,
+            3.50917,
+            3.3358299999999996,
+            3.37375,
+            3.3795800000000003
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            3.34875,
+            3.39084,
+            3.3491700000000004,
+            3.35125,
+            3.38959,
+            3.34875,
+            3.3554199999999996,
+            3.3933400000000002,
+            3.36334,
+            3.3441699999999996,
+            3.4275,
+            3.35042,
+            3.3454099999999998,
+            3.3883300000000003,
+            3.3454200000000003
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 3.37375,
+      "p10_us": 3.3454200000000003,
+      "p90_us": 3.48
+    },
+    {
+      "id": "dictionary/import-json-20",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 20,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 10,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 10,
+        "existing_rows": 0,
+        "input_json_bytes": 1212,
+        "iterations_per_sample": 1,
+        "rows": 20,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            172.5,
+            182.542,
+            167.625,
+            181.833,
+            175.292,
+            231.75,
+            152.75,
+            158.541,
+            163.416,
+            160.667,
+            178.583,
+            166.875,
+            149.166,
+            164.625,
+            160.708
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            120.417,
+            136.417,
+            125.08300000000001,
+            134.292,
+            132,
+            137,
+            126.66700000000002,
+            124.04199999999999,
+            136.084,
+            216.458,
+            219,
+            217.042,
+            223,
+            213.875,
+            209.041
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            127.042,
+            252.54200000000003,
+            148.167,
+            152.541,
+            156.75,
+            170.458,
+            139.833,
+            135.583,
+            126.375,
+            145.25,
+            121.375,
+            127,
+            170.125,
+            141.333,
+            119.25
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 141.333,
+      "p10_us": 125.08300000000001,
+      "p90_us": 216.458
+    },
+    {
+      "id": "dictionary/export-json-1000",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 500,
+        "dictionary_rows": 500,
+        "input_json_bytes": 55763,
+        "iterations_per_sample": 10,
+        "output_bytes": 85786,
+        "rows": 1000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            142.7208,
+            142.9791,
+            142.1292,
+            151.42090000000002,
+            144.98340000000002,
+            143.3583,
+            142.7416,
+            152.9042,
+            144.0375,
+            143.4042,
+            149.65,
+            149.975,
+            142.775,
+            147.6542,
+            142.4792
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            146.5584,
+            149.1875,
+            148.5959,
+            146,
+            146.4167,
+            144.9042,
+            146.87910000000002,
+            145.6,
+            143.5541,
+            152.45420000000001,
+            139.2,
+            142.2625,
+            142.9708,
+            140.1291,
+            139.9208
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            146.67919999999998,
+            150.775,
+            146.7584,
+            154.5375,
+            139.0958,
+            139.0375,
+            148.2541,
+            139.3208,
+            147.725,
+            144.1917,
+            143.5958,
+            145.3041,
+            143.4,
+            144.025,
+            146.1208
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 145.3041,
+      "p10_us": 139.9208,
+      "p90_us": 149.975
+    },
+    {
+      "id": "dictionary/import-json-1000",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 1000,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 500,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 500,
+        "existing_rows": 0,
+        "input_json_bytes": 55763,
+        "iterations_per_sample": 1,
+        "rows": 1000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            1747.625,
+            1809.792,
+            1854.9160000000002,
+            1944.25,
+            1752.291,
+            1709.2920000000001,
+            1827.125,
+            1761.208,
+            1742.4160000000002,
+            1766.791,
+            1688.5,
+            1817.208,
+            1749.334,
+            1715.25,
+            1727
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            2037.25,
+            1990.875,
+            1902.792,
+            1908.75,
+            1880.041,
+            1950.166,
+            1857.5410000000002,
+            2068.625,
+            1998.167,
+            1869.9579999999999,
+            1996.208,
+            1901.125,
+            1896,
+            1834.792,
+            1806.541
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            1842.375,
+            2397.625,
+            1937.916,
+            1820.584,
+            1833.5829999999999,
+            1978.0420000000001,
+            1916.208,
+            1842.6670000000001,
+            1697.542,
+            2006.583,
+            2227.166,
+            1951.5839999999998,
+            2050.25,
+            2617.167,
+            2038.3329999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 1902.792,
+      "p10_us": 1727,
+      "p90_us": 2038.3329999999999
+    },
+    {
+      "id": "dictionary/export-json-10000",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 5000,
+        "dictionary_rows": 5000,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "output_bytes": 856786,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            1558,
+            1489.291,
+            1372.25,
+            1375.917,
+            1446.4160000000002,
+            1431.625,
+            1401.5,
+            1373.875,
+            1410.916,
+            1386.7079999999999,
+            1407.333,
+            1433.667,
+            1404.459,
+            1401.9589999999998,
+            1386.167
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            1413.667,
+            1436.9579999999999,
+            1398,
+            1391.3339999999998,
+            1407.5,
+            1422.625,
+            1493.5829999999999,
+            1372.709,
+            1368.584,
+            1371.875,
+            1375.708,
+            1370.333,
+            1426.417,
+            1435,
+            1503.0829999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            1414.625,
+            1417.5,
+            1416.958,
+            1495,
+            1410.584,
+            1462.959,
+            1440.917,
+            1412.375,
+            1373.5,
+            1373.583,
+            1437.1670000000001,
+            1435.5,
+            1400.25,
+            1401.042,
+            1428.291
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 1407.5,
+      "p10_us": 1372.709,
+      "p90_us": 1462.959
+    },
+    {
+      "id": "dictionary/import-json-10000",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 10000,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 5000,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 5000,
+        "existing_rows": 0,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            16818.875,
+            16828.583000000002,
+            16407.958,
+            15940.625,
+            15855.999999999998,
+            15684.125,
+            15808.375,
+            15408.5,
+            16772.292,
+            17226.584,
+            17124.834,
+            17081.208,
+            16709.792,
+            16906.708,
+            16235.083
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            15558.584,
+            15662.333,
+            15587.416,
+            17106.333000000002,
+            17019.916,
+            16869.542,
+            16594.166,
+            16271.625000000002,
+            16315.25,
+            16099.584,
+            15725.416,
+            15875.332999999999,
+            15842.458999999999,
+            15227.375,
+            15666.291
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            16528.791,
+            15715.541,
+            15557.334,
+            15716.125000000002,
+            15078.083,
+            15019.207999999999,
+            16617.625,
+            17051.583,
+            16681.25,
+            17111.5,
+            16507.708,
+            16165.5,
+            16168.124999999998,
+            15943.041000000001,
+            15701.75
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 16165.5,
+      "p10_us": 15557.334,
+      "p90_us": 17051.583
+    },
+    {
+      "id": "dictionary/import-json-10000-100pct-duplicates",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 0,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 5000,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 5000,
+        "existing_rows": 10000,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            11958.167000000001,
+            12679.459,
+            12099.208,
+            12383.333,
+            12105.209,
+            11874.707999999999,
+            12489.417,
+            12171.207999999999,
+            12277.5,
+            12270.75,
+            12545.583,
+            12559.083,
+            11940,
+            12132.208999999999,
+            12456.875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            12426.833999999999,
+            12502,
+            12436.667,
+            12226,
+            12417.917000000001,
+            12288.291,
+            12673.875,
+            12443.916,
+            12453.541000000001,
+            12702.458,
+            12447.125,
+            12396.875,
+            12576.042000000001,
+            12851.542000000001,
+            12252.25
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            11932.792,
+            11944.541,
+            11898.792,
+            12142.875,
+            12329.708999999999,
+            12026.417,
+            12449.375,
+            12009.875,
+            12243.375,
+            11843.375,
+            11931.292,
+            11815,
+            12034,
+            12131.5,
+            12429.5
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 12270.75,
+      "p10_us": 11931.292,
+      "p90_us": 12559.083
+    },
+    {
+      "id": "dictionary/import-json-10000-90pct-duplicates",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 1000,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 5000,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 5000,
+        "existing_rows": 9000,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "runs": [
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            12702.875,
+            12912.125,
+            12330.209,
+            12470.959,
+            13456.666000000001,
+            12799.082999999999,
+            12831.708,
+            12588.125,
+            12739.375,
+            12538.667,
+            13201.542,
+            13201.417,
+            12762.542,
+            13113,
+            12583.416
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 1
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            12546.167000000001,
+            12645.916,
+            13175.75,
+            12717.792,
+            12655.666,
+            12671.667,
+            12582.041000000001,
+            13009.792,
+            12877.875,
+            12697.5,
+            13049.209,
+            12404.25,
+            12460.541000000001,
+            12875.209,
+            12471.083
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 2
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            12794.416,
+            12861.5,
+            12666.333,
+            12547.75,
+            13375.583,
+            13486.207999999999,
+            13236.416000000001,
+            13377.708999999999,
+            12896.917000000001,
+            12814.542,
+            12703.167,
+            12582.209,
+            12587.166000000001,
+            12495.457999999999,
+            12712.708
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          },
+          "process_run": 3
+        }
+      ],
+      "median_us": 12762.542,
+      "p10_us": 12471.083,
+      "p90_us": 13201.542
+    }
+  ]
+}

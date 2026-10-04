@@ -2568,6 +2568,7 @@ body,
   font-size: 11px;
 }
 .ask-source-host {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2575,9 +2576,8 @@ body,
 }
 .ask-source-number {
   display: inline-grid;
-  min-width: 14px;
+  flex: 0 0 14px;
   height: 14px;
-  margin-left: auto;
   place-items: center;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.16);
@@ -2600,41 +2600,23 @@ body,
   font-size: 11.5px;
   line-height: 1.4;
 }
-/* Open and Copy link: shown on hover, over the citation number. */
+/* Visible icon buttons share the site row without covering its text or citation. */
 .ask-source-actions {
-  position: absolute;
-  top: 6px;
-  right: 6px;
   display: flex;
+  flex: 0 0 auto;
   gap: 4px;
-  opacity: 0;
-}
-.ask-source-card:hover .ask-source-actions,
-.ask-source-card.is-highlighted .ask-source-actions,
-.ask-source-card.is-confirming .ask-source-actions,
-.ask-source-card:focus-within .ask-source-actions {
-  opacity: 1;
-}
-.ask-source-card:hover .ask-source-number,
-.ask-source-card.is-highlighted .ask-source-number,
-.ask-source-card.is-confirming .ask-source-number,
-.ask-source-card:focus-within .ask-source-number {
-  visibility: hidden;
 }
 .ask-source-action {
   display: inline-flex;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   align-items: center;
-  gap: 4px;
-  border: none;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 9999px;
   background: rgba(40, 40, 46, 0.95);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
-  padding: 0 8px;
+  padding: 0;
   color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
   cursor: pointer;
 }
 .ask-source-action:hover {

@@ -69,3 +69,6 @@ jobs:
 
       - name: Language presets
         run: node scripts/language-presets.mjs --check
+
+      - name: Performance baseline consistency
+        run: node scripts/benchmark-baseline.mjs --check

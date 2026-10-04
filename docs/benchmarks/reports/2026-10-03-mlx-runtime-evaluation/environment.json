@@ -1,0 +1,126 @@
+{
+  "machine": {
+    "chip": "Apple M1 Pro",
+    "memory_bytes": 34359738368,
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.2\nBuildVersion:\t\t25F84\n",
+    "python": "3.12.10"
+  },
+  "files": [
+    {
+      "name": "ggml-large-v3-turbo-q5_0.bin",
+      "bytes": 574041195,
+      "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+    },
+    {
+      "name": "weights.safetensors",
+      "bytes": 1613977612,
+      "sha256": "951ed3fc1203e6a62467abb2144a96ce7eafca8fa77e3704fdb8635ff3e7f8a6"
+    },
+    {
+      "name": "llama-server-aarch64-apple-darwin",
+      "bytes": 12289488,
+      "sha256": "170d8cae09fc2eeb33b753437f73d23989015279a7273676a0105689d4c946b8"
+    },
+    {
+      "name": "benchmark_speech",
+      "bytes": 2216880,
+      "sha256": "c3a4f3e77a6f304b85b7c072c21d7f69420c182a32531b0e8d7b2b85e785e8c9"
+    },
+    {
+      "name": "whisper-4bit/weights.safetensors",
+      "bytes": 463462982,
+      "sha256": "e2d6146b49644c13ed7467060d3c43c402bbdfca1f01f1c21f6fbeda23b6567e"
+    },
+    {
+      "name": "qwen-cpp/Qwen3-1.7B-Q4_K_M.gguf",
+      "bytes": 1107409472,
+      "sha256": "b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897"
+    },
+    {
+      "name": "qwen-mlx/added_tokens.json",
+      "bytes": 707,
+      "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+    },
+    {
+      "name": "qwen-mlx/config.json",
+      "bytes": 937,
+      "sha256": "507a6701220524eb8b283425bf0856a9ae4f21f4052e563896ddd668994b1dc7"
+    },
+    {
+      "name": "qwen-mlx/merges.txt",
+      "bytes": 1671853,
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+    },
+    {
+      "name": "qwen-mlx/model.safetensors",
+      "bytes": 968080210,
+      "sha256": "0e86d9677e519323849eac1bc272caae88567a481ff188c431f70be543d9995f"
+    },
+    {
+      "name": "qwen-mlx/model.safetensors.index.json",
+      "bytes": 49731,
+      "sha256": "1e3058d4ba4b04e4de35b74467725cbef90ff022198404218e48f21adc9cfa15"
+    },
+    {
+      "name": "qwen-mlx/special_tokens_map.json",
+      "bytes": 613,
+      "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+    },
+    {
+      "name": "qwen-mlx/tokenizer.json",
+      "bytes": 11422654,
+      "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "name": "qwen-mlx/tokenizer_config.json",
+      "bytes": 9706,
+      "sha256": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0"
+    },
+    {
+      "name": "qwen-mlx/vocab.json",
+      "bytes": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "models": {
+    "mlx_whisper": {
+      "repo": "mlx-community/whisper-large-v3-turbo",
+      "revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+      "precision": "float16",
+      "safetensors_tensor_dtypes": {
+        "I64": 1,
+        "F16": 586
+      }
+    },
+    "cpp_whisper": {
+      "model": "large-v3-turbo",
+      "precision": "q5_0"
+    },
+    "mlx_whisper_4bit": {
+      "source": "mlx_whisper",
+      "precision": "affine 4-bit",
+      "group_size": 64,
+      "conversion_script": "benchmarks/runtime/quantize_whisper.py"
+    },
+    "mlx_qwen": {
+      "repo": "mlx-community/Qwen3-1.7B-4bit",
+      "revision": "3b1b1768f8f8cf8351c712464f906e86c2b8269e",
+      "precision": "affine 4-bit",
+      "group_size": 64
+    },
+    "cpp_qwen": {
+      "repo": "unsloth/Qwen3-1.7B-GGUF",
+      "revision": "d7f544eead698dbd1f15126ef60b45a1e1933222",
+      "precision": "Q4_K_M"
+    }
+  },
+  "llama_version": "0.00.000.176 I srv  llama_server: initializing ...\nversion: 0.5.0-dev (build 1, commit 1ab7e5a)\nbuilt with AppleClang 16.0.0.16000026 for Darwin arm64\n",
+  "runtimes": {
+    "whisper-rs": "0.16.0",
+    "whisper-rs-sys": "0.15.0",
+    "whisper.cpp": "1.8.3",
+    "mlx": "0.32.3",
+    "mlx-whisper": "0.4.3",
+    "mlx-lm": "0.32.0"
+  }
+}

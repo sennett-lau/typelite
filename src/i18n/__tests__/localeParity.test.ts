@@ -4,22 +4,47 @@ import zh from '../locales/zh.json'
 
 const locales = { en, zh }
 
-function leafKeys(value: unknown, prefix = ''): string[] {
+function leaves(value: unknown, prefix = ''): [string, unknown][] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return prefix ? [prefix] : []
+    return prefix ? [[prefix, value]] : []
   }
 
   return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) =>
-    leafKeys(child, prefix ? `${prefix}.${key}` : key),
+    leaves(child, prefix ? `${prefix}.${key}` : key),
   )
 }
 
 describe('locale message coverage', () => {
   it('keeps every locale aligned with English leaf keys', () => {
-    const expectedKeys = leafKeys(en).sort()
+    expect(
+      leaves(zh)
+        .map(([key]) => key)
+        .sort(),
+    ).toEqual(
+      leaves(en)
+        .map(([key]) => key)
+        .sort(),
+    )
+  })
 
-    for (const [locale, messages] of Object.entries(locales)) {
-      expect(leafKeys(messages).sort(), locale).toEqual(expectedKeys)
+  it.each(Object.entries(locales))(
+    '%s has a nonempty string for every message',
+    (locale, messages) => {
+      for (const [key, value] of leaves(messages)) {
+        expect(typeof value, `${locale}.${key}`).toBe('string')
+        expect((value as string).trim(), `${locale}.${key}`).not.toBe('')
+      }
+    },
+  )
+
+  it('preserves interpolation variables across locales', () => {
+    const variables = (value: unknown) =>
+      [...String(value).matchAll(/\{\{\s*-?\s*([^},]+)(?:,[^}]+)?\}\}/g)]
+        .map((match) => match[1].trim())
+        .sort()
+    const english = new Map(leaves(en))
+    for (const [key, value] of leaves(zh)) {
+      expect(variables(value), key).toEqual(variables(english.get(key)))
     }
   })
 })

@@ -65,30 +65,32 @@ function safeUnlisten(unlisten: Unlisten) {
 
 export function useTauriEvents() {
   const { t } = useTranslation()
-  const {
-    setAudioVolume,
-    setPartialTranscript,
-    setFinalTranscript,
-    appendPolishedChunk,
-    setPipelineState,
-    setRecordingDeadline,
-    setActiveVoiceMode,
-    setTargetApp,
-    setLastInsertResult,
-    setLastContext,
-    setCopyOffer,
-    setPipelineError,
-    setQuietFade,
-    setAccessibilityTrusted,
-    applyPersistedConfigPatch,
-    setHotkeyRegistrationError,
-  } = useAppStore()
   // Sidebar connection status for the current dictation run: the AI counts as working only
   // when the run reached "polishing" and then inserted text without an AI error. A ref, so a
   // re-registration of the listeners in the middle of a run keeps what the run has seen.
   const currentRun = useRef({ polished: false, aiFailed: false })
 
   useEffect(() => {
+    // The bridge writes to the store; subscribing here would rerender its entire host
+    // window for every microphone level and streamed text chunk.
+    const {
+      setAudioVolume,
+      setPartialTranscript,
+      setFinalTranscript,
+      appendPolishedChunk,
+      setPipelineState,
+      setRecordingDeadline,
+      setActiveVoiceMode,
+      setTargetApp,
+      setLastInsertResult,
+      setLastContext,
+      setCopyOffer,
+      setPipelineError,
+      setQuietFade,
+      setAccessibilityTrusted,
+      applyPersistedConfigPatch,
+      setHotkeyRegistrationError,
+    } = useAppStore.getState()
     let cancelled = false
     const unlisteners: Unlisten[] = []
     const run = currentRun.current
@@ -248,23 +250,5 @@ export function useTauriEvents() {
       cancelled = true
       unlisteners.forEach(safeUnlisten)
     }
-  }, [
-    setAudioVolume,
-    setPartialTranscript,
-    setFinalTranscript,
-    appendPolishedChunk,
-    setPipelineState,
-    setRecordingDeadline,
-    setActiveVoiceMode,
-    setTargetApp,
-    setLastInsertResult,
-    setLastContext,
-    setCopyOffer,
-    setPipelineError,
-    setQuietFade,
-    setAccessibilityTrusted,
-    applyPersistedConfigPatch,
-    setHotkeyRegistrationError,
-    t,
-  ])
+  }, [t])
 }

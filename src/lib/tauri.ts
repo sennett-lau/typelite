@@ -832,6 +832,16 @@ export async function resizeAskPanel(width: number, height: number): Promise<voi
   return invoke('resize_ask_panel', { width, height })
 }
 
+/** The panel's rectangle inside the Ask window; clicks outside it reach the app behind. */
+export async function setAskPanelHitRect(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  return invoke('set_ask_panel_hit_rect', { x, y, width, height })
+}
+
 /** Plan `ask-web-search`: ⅔ of the screen's work area wide and ½ of it tall (null when closed). */
 export async function askPanelLimits(): Promise<AskPanelLimits | null> {
   return invoke('ask_panel_limits')
