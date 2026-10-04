@@ -1166,6 +1166,7 @@ async fn ask_answers_a_live_question_from_searxng_results() {
         "",
         question,
         web_search::SearchFocus::General,
+        Some("en"),
     )
     .await
     .expect("SearXNG search");
@@ -1184,7 +1185,7 @@ async fn ask_answers_a_live_question_from_searxng_results() {
     let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
     let body = llm::protocol::build_chat_body(
         &config.model,
-        web_search::answer_messages(question, &outcome.results, &today),
+        web_search::answer_messages(question, &outcome.results, &today, Some("en")),
         220,
         0.2,
         false,
@@ -1294,19 +1295,128 @@ async fn ask_upcoming_schedule_from_live_search() {
         assert!(check.live);
         assert_eq!(check.reason, "schedule");
         let query = check.query.expect("classifier supplies search keywords");
-        println!("query: {query}");
         let outcome = web_search::search(
             &client,
             &search_config,
             "",
             &query,
             web_search::SearchFocus::Upcoming(today),
+            check.language,
         )
         .await
         .unwrap();
+        println!("query: {query} (language {:?})", check.language);
+        for result in &outcome.results {
+            println!("  result: {}", result.title);
+        }
         let answer = schedule_answer(&config, question, &outcome.results, today)
             .await
             .expect("search supplied a supported upcoming event");
         println!("{question}: {answer}");
+    }
+}
+
+/// A Chinese question about a place in Japan gets Japanese pages; the answer must still be in
+/// the question's language and script (reported: a Chinese question about snow in Hokkaido was
+/// answered in Japanese).
+#[tokio::test]
+#[ignore = "needs a running SearXNG and AI server; see scripts/e2e.sh"]
+async fn ask_answers_in_the_question_language_whatever_the_sources() {
+    use typelite_lib::web_search::{self, SearchProviderKind, WebSearchConfig};
+    let Ok(base_url) = std::env::var("TYPELITE_E2E_SEARXNG_URL") else {
+        println!("TYPELITE_E2E_SEARXNG_URL is not set; skipping");
+        return;
+    };
+    let search_config = WebSearchConfig {
+        provider: SearchProviderKind::Searxng,
+        base_url,
+    };
+    let config = ai_config();
+    let client = reqwest::Client::new();
+    let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
+    let has_kana = |text: &str| text.chars().any(|c| ('\u{3040}'..='\u{30ff}').contains(&c));
+    for (question, script) in [
+        ("北海道而家有冇落雪？", Some("zh-Hant")),
+        ("北海道现在下雪吗？", Some("zh-Hans")),
+        ("Is it snowing in Hokkaido right now?", None),
+    ] {
+        let check = llm::live_question::classify(&client, &config, question).await;
+        let query = check.query.clone().unwrap_or_else(|| question.to_string());
+        let outcome = web_search::search(
+            &client,
+            &search_config,
+            "",
+            &query,
+            web_search::SearchFocus::General,
+            check.language,
+        )
+        .await
+        .expect("SearXNG search");
+        let body = llm::protocol::build_chat_body(
+            &config.model,
+            web_search::answer_messages(question, &outcome.results, &today, check.language),
+            220,
+            0.2,
+            false,
+            &config.extra_request_fields,
+        );
+        let request = client
+            .post(llm::protocol::chat_endpoint(&config.base_url).unwrap())
+            .json(&body)
+            .timeout(Duration::from_secs(60));
+        let response: serde_json::Value =
+            llm::protocol::apply_auth_headers(request, &config.api_key)
+                .send()
+                .await
+                .expect("AI request")
+                .json()
+                .await
+                .expect("AI JSON");
+        let mut answer = llm::protocol::response_text(&response);
+        // As the app does (`answer_from_web`): one more try when the question comes back.
+        if web_search::repeats_question(&answer, question) {
+            println!("  (repeated the question; asking again)");
+            let request = client
+                .post(llm::protocol::chat_endpoint(&config.base_url).unwrap())
+                .json(&web_search::answer_only_body(&body))
+                .timeout(Duration::from_secs(60));
+            let response: serde_json::Value =
+                llm::protocol::apply_auth_headers(request, &config.api_key)
+                    .send()
+                    .await
+                    .expect("AI request")
+                    .json()
+                    .await
+                    .expect("AI JSON");
+            answer = llm::protocol::response_text(&response);
+        }
+        // As the app does: the question's Chinese script.
+        if let Some(script) = llm::question_language::answer_script(question, check.language) {
+            answer = typelite_lib::stt::chinese_script::convert(&answer, script);
+        }
+        let japanese_sources = outcome
+            .results
+            .iter()
+            .filter(|r| has_kana(&format!("{} {}", r.title, r.snippet)))
+            .count();
+        println!(
+            "{question} (language {:?}, {japanese_sources}/{} Japanese sources): {answer}",
+            check.language,
+            outcome.results.len()
+        );
+        assert!(!has_kana(&answer), "answered in Japanese: {answer}");
+        if let Some(script) = script {
+            assert_eq!(
+                llm::question_language::detect(&answer, None),
+                Some(script),
+                "answer is not in the question's script: {answer}"
+            );
+        } else {
+            assert!(
+                answer.chars().filter(|c| c.is_ascii_alphabetic()).count()
+                    > answer.chars().count() / 2,
+                "answer is not in English: {answer}"
+            );
+        }
     }
 }

@@ -8,7 +8,7 @@ metasearch engine. Search is off until the user adds one; without it Ask keeps t
 [`ask-translate-and-live-questions`](../2026-09-25-ask-translate-and-live-questions/index.md),
 now pointing to Settings.
 
-Status: building — 2026-10-01
+Status: building — 2026-10-02
 
 This plan replaces the "Later: web search" section and the "no web search" non-goal of plan
 `ask-translate-and-live-questions`: the default is a self-hosted SearXNG, not a hosted service.
@@ -41,6 +41,7 @@ This plan replaces the "Later: web search" section and the "no web search" non-g
 | The optional key goes out as `Authorization: Bearer` | Covers a SearXNG behind a token proxy; keyed providers will map it their way. |
 | Search only after the live-question check says live | Timeless questions never reach the search server. |
 | The live check also writes the search query; the question is searched only when it gives none (2026-09-30) | A spoken question searched as transcribed ("下场F one系几时") finds unrelated pages; a few keywords in the question's language, with names written the usual way (F1), find the schedule. One request, no extra wait. |
+| The classifier identifies the question language; script detection preserves Chinese script and supplies a fallback (2026-10-02) | A location or foreign source must not change the answer language. Both SearXNG categories receive the question language preference, independently of the query. |
 | An answer that copies the results back is asked once more with a plainer instruction, then reported as an AI error (2026-09-30) | A small model sometimes echoes the `<search_results>` block; the raw block must never show as an answer, and "no results" would be untrue. |
 | Search general and news in parallel; prioritize general results except for news questions (2026-10-01) | Headlines must not displace schedules, prices or weather. Both categories fill available slots. |
 | Upcoming schedules rank all returned snippets by explicit future dates before keeping five (2026-10-01) | A dated event can sit below undated calendar landing pages; taking the first five lost the answer in the reported F1 case. |
@@ -78,5 +79,3 @@ This plan replaces the "Later: web search" section and the "no web search" non-g
 ## Open questions
 
 - Which keyed provider to add second (Brave Search API, Tavily), and how each maps the key.
-- Whether to pass the speech language to SearXNG's `language` parameter for non-English
-  questions (the experiment used English only).

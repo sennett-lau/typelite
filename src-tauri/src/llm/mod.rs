@@ -8,6 +8,7 @@ pub mod models;
 pub mod openai;
 pub mod prompt;
 pub mod protocol;
+pub mod question_language;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
