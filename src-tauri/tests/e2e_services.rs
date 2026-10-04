@@ -834,12 +834,26 @@ fn expect_absent(text: &str, needles: &[&str]) -> Result<(), String> {
 }
 
 async fn run_fidelity_corpus(name: &str, cases: &[FidelityCase]) {
+    run_corpus(name, cases, false).await
+}
+
+/// As the app pastes plain dictation: a result in another language than the transcript is
+/// replaced by the transcript (`llm::output_guard`).
+async fn run_dictation_corpus(name: &str, cases: &[FidelityCase]) {
+    run_corpus(name, cases, true).await
+}
+
+async fn run_corpus(name: &str, cases: &[FidelityCase], guard: bool) {
     let repeat: usize = env_or("TYPELITE_E2E_REPEAT", "5").parse().unwrap_or(5);
     let mut failures = Vec::new();
     for (raw, check) in cases {
         let mut passed = 0;
         for _ in 0..repeat {
-            let (text, took) = polish(&dictation_request(raw)).await;
+            let (mut text, took) = polish(&dictation_request(raw)).await;
+            if guard && llm::output_guard::changed_language(raw, &text) {
+                println!("  guard: {raw:?} -> {text:?} replaced by the transcript");
+                text = llm::output_guard::transcript_as_output(raw);
+            }
             match check(&text) {
                 Ok(()) => passed += 1,
                 Err(why) => {
@@ -890,6 +904,13 @@ async fn polish_keeps_file_names_and_code_words_whole() {
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn polish_transcribes_requests_instead_of_doing_them() {
     let cases: &[FidelityCase] = &[
+        // Reported: dictated alone, this came out as 請用粵語解釋一下.
+        ("please explain with Cantonese", |t| {
+            if has_cjk(t) {
+                return Err("wrote CJK content".into());
+            }
+            expect_contains(t, &["explain", "cantonese"])
+        }),
         ("create a post in Cantonese about our new app", |t| {
             if has_cjk(t) {
                 return Err("wrote CJK content".into());
@@ -920,7 +941,7 @@ async fn polish_transcribes_requests_instead_of_doing_them() {
             },
         ),
     ];
-    run_fidelity_corpus("requests", cases).await;
+    run_dictation_corpus("requests", cases).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
