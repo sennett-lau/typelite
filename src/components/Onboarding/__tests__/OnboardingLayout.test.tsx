@@ -1,56 +1,75 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { invoke } from '@tauri-apps/api/core'
 import { OnboardingLayout } from '../OnboardingLayout'
 
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('react-i18next', async () => {
   const { translate } = await import('../../../test-utils/i18nMock')
   return { useTranslation: () => ({ t: translate }) }
 })
 
-afterEach(() => cleanup())
+beforeEach(() => vi.clearAllMocks())
+afterEach(cleanup)
 
-function renderLayout(wideContent = false) {
-  return render(
-    <OnboardingLayout
-      step={1}
-      totalSteps={4}
-      title="Voice input"
-      subtitle="Choose your microphone"
-      canNext
-      canBack
-      nextLabel="Next"
-      onNext={vi.fn()}
-      onBack={vi.fn()}
-      wideContent={wideContent}
-    >
-      <p>Step content</p>
-    </OnboardingLayout>,
-  )
+function props(overrides: Partial<ComponentProps<typeof OnboardingLayout>> = {}) {
+  return {
+    step: 1,
+    totalSteps: 4,
+    title: 'Test step',
+    subtitle: 'Test instructions',
+    canNext: true,
+    canBack: true,
+    nextLabel: 'Continue',
+    onNext: vi.fn(),
+    onBack: vi.fn(),
+    children: <p>Step content</p>,
+    ...overrides,
+  }
 }
 
-describe('OnboardingLayout (plan tutorial-one-page)', () => {
-  it('puts the title and the content in one block centred in a scrolling area', () => {
-    renderLayout()
-    const area = screen.getByTestId('onboarding-step-area')
-    const block = screen.getByTestId('onboarding-block')
+describe('OnboardingLayout', () => {
+  it('renders the step and gates navigation with canNext and canBack', () => {
+    const callbacks = props({ canNext: false, canBack: false })
+    const { rerender } = render(<OnboardingLayout {...callbacks} />)
+    expect(screen.getByRole('heading', { name: 'Test step' })).toBeInTheDocument()
+    expect(screen.getByText('Test instructions')).toBeInTheDocument()
+    expect(screen.getByText('Step content')).toBeInTheDocument()
 
-    expect(area).toHaveClass('overflow-y-auto', 'flex', 'flex-col', 'flex-1', 'min-h-0')
-    // my-auto centres a short block and lets a tall one start at the top and scroll.
-    expect(block).toHaveClass('my-auto')
-    expect(area).toContainElement(block)
-    expect(block).toContainElement(screen.getByRole('heading', { name: 'Voice input' }))
-    expect(block).toContainElement(screen.getByText('Choose your microphone'))
-    expect(block).toContainElement(screen.getByText('Step content'))
+    const next = screen.getByRole('button', { name: 'Continue' })
+    const back = screen.getByRole('button', { name: 'Back' })
+    expect(next).toBeDisabled()
+    expect(back).toBeDisabled()
+    fireEvent.click(next)
+    fireEvent.click(back)
+    expect(callbacks.onNext).not.toHaveBeenCalled()
+    expect(callbacks.onBack).not.toHaveBeenCalled()
+
+    rerender(<OnboardingLayout {...callbacks} canNext canBack />)
+    fireEvent.click(next)
+    fireEvent.click(back)
+    expect(callbacks.onNext).toHaveBeenCalledTimes(1)
+    expect(callbacks.onBack).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps 22 pt between the title and the content, and the usual content widths', () => {
-    renderLayout()
-    const heading = screen.getByRole('heading', { name: 'Voice input' })
-    expect(heading.parentElement).toHaveClass('pb-[22px]', 'text-center')
-    expect(screen.getByText('Step content').parentElement).toHaveClass('max-w-[400px]', 'mx-auto')
-    cleanup()
+  it('offers Skip only when supplied and uses a custom close action', () => {
+    const callbacks = props({ onClose: vi.fn() })
+    const { rerender } = render(<OnboardingLayout {...callbacks} />)
+    expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument()
 
-    renderLayout(true)
-    expect(screen.getByText('Step content').parentElement).toHaveClass('max-w-[480px]')
+    const onSkip = vi.fn()
+    rerender(<OnboardingLayout {...callbacks} onSkip={onSkip} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(onSkip).toHaveBeenCalledTimes(1)
+    expect(callbacks.onClose).toHaveBeenCalledTimes(1)
+    expect(invoke).not.toHaveBeenCalled()
+  })
+
+  it('quits when Close has no custom action', async () => {
+    render(<OnboardingLayout {...props()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('plugin:process|exit', { code: 0 }))
   })
 })

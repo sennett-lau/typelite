@@ -66,10 +66,8 @@
     "sourcesCount_other": "{{count}} sources",
     "hideSources": "Hide sources",
     "showSource": "Show source {{n}}",
-    "open": "Open",
-    "opened": "Opened",
-    "copyLink": "Copy link",
-    "linkCopied": "Copied",
+    "sourceOpened": "Source {{n}} opened",
+    "sourceLinkCopied": "Link of source {{n}} copied",
     "copySourceLink": "Copy link of source {{n}}",
     "openSource": "Open source {{n}}"
   },

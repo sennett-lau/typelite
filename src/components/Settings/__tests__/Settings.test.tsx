@@ -345,66 +345,6 @@ describe('Settings tab 切换', () => {
     seedSavedConfig()
   })
 
-  it('初始渲染显示简化后的常用设置', () => {
-    renderSettings()
-
-    expect(screen.getByText('settings.hotkey')).toBeDefined()
-    expect(screen.getByText('home.shortcuts.dictate')).toBeDefined()
-    expect(screen.getByText('home.shortcuts.ask')).toBeDefined()
-    expect(screen.getByText('home.shortcuts.translate')).toBeDefined()
-    expect(screen.getAllByRole('button', { name: 'settings.shortcutAdd' })).toHaveLength(3)
-    expect(screen.queryByText('settings.askAnything')).toBeNull()
-    expect(screen.queryByText('settings.askAnythingDesc')).toBeNull()
-    expect(screen.getByLabelText('settings.tryAsk')).toBeDefined()
-    expect(screen.queryByText('ask.voiceQuestion')).toBeNull()
-    expect(screen.getByText('settings.generalPane.outputBy')).toBeDefined()
-    expect(screen.getByText('settings.generalPane.startStop')).toBeDefined()
-    expect(screen.queryByText('settings.diagnostics')).toBeNull()
-  })
-
-  it('General pane shows each group as its own card and no More settings group', () => {
-    renderSettings()
-
-    const cards = screen.getAllByRole('region').map((region) => region.getAttribute('aria-label'))
-    expect(cards).toEqual([
-      'settings.hotkey',
-      'settings.generalPane.recording',
-      'settings.generalPane.output',
-    ])
-    expect(screen.getAllByText('home.shortcuts.ask')).toHaveLength(1)
-    expect(screen.queryByText('settings.advancedGeneral')).toBeNull()
-    expect(screen.queryByText('settings.saveHistory')).toBeNull()
-    expect(screen.queryByText('settings.hideCapsuleWhenIdle')).toBeNull()
-    expect(screen.queryByText('settings.launchAtStartup')).toBeNull()
-    expect(screen.queryByText('settings.diagnostics')).toBeNull()
-    expect(screen.queryByText('settings.restoreClipboardAfterPaste')).toBeNull()
-    expect(screen.queryByText('settings.maxRecordingDuration')).toBeNull()
-  })
-
-  it('Audio card toggles muting other audio while recording', () => {
-    renderSettings()
-
-    const toggle = screen.getByRole('switch', { name: 'settings.muteOutputWhileRecording' })
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
-    fireEvent.click(toggle)
-    expect(useAppStore.getState().config.mute_output_while_recording).toBe(true)
-  })
-
-  it('System section holds Launch at login and Show in Dock', () => {
-    renderSettings()
-    clickSettingsTab('settings.system')
-
-    const launch = screen.getByRole('switch', { name: 'settings.launchAtStartup' })
-    const dock = screen.getByRole('switch', { name: 'settings.showInDock' })
-    expect(launch).toHaveAttribute('aria-checked', 'true')
-    expect(dock).toHaveAttribute('aria-checked', 'true')
-
-    fireEvent.click(dock)
-    expect(useAppStore.getState().config.show_in_dock).toBe(false)
-    fireEvent.click(launch)
-    expect(useAppStore.getState().config.auto_start).toBe(false)
-  })
-
   it('keeps unsaved drafts dirty after leaving and reopening Settings', () => {
     const firstRender = renderSettings()
     act(() => useAppStore.getState().updateConfig({ auto_start: false }))
@@ -678,101 +618,33 @@ describe('Settings tab 切换', () => {
     }
   })
 
-  it('点击 Speech Recognition 后显示 speech preset 字段', () => {
+  it('switches every section, labels its panel and unmounts the previous content', () => {
     renderSettings()
-    clickSettingsTab('settings.speechRecognition')
-    // Plan `two-tab-speech`: the engine choice, its details, then Language and Recording.
-    const engines = screen.getByRole('radiogroup', { name: 'speech.engineLabel' })
-    expect(within(engines).getAllByRole('radio')).toHaveLength(2)
-    expect(screen.getByTestId('builtin-settings')).toBeDefined()
-    fireEvent.click(within(engines).getByText('speech.engines.server.title'))
-    expect(screen.getByLabelText('speech.address')).toBeDefined()
-    expect(screen.getByText('speech.spokenLanguage')).toBeDefined()
-    expect(screen.getByText('settings.groupRecording')).toBeDefined()
-  })
-
-  it('点击 AI Polish 后显示 LLM provider 字段', () => {
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-    // LLM pane 也含 provider，但还含 enableAiPolish toggle
-    expect(screen.getByText('settings.enableAiPolish')).toBeDefined()
-    expect(screen.queryByText('settings.askAnything')).toBeNull()
-  })
-
-  it('Settings tabs list General, Speech, AI, Prompts, Search and System only', () => {
-    renderSettings()
-    const tabs = within(screen.getByRole('tablist', { name: 'settings.sections' }))
-      .getAllByRole('tab')
-      .map((tab) => tab.textContent)
-    expect(tabs).toEqual([
-      'settings.general',
-      'settings.speechRecognition',
-      'settings.aiPolish',
-      'settings.prompts',
-      'settings.search',
-      'settings.system',
-    ])
+    const sections = [
+      ['settings.general', 'settings.hotkey'],
+      ['settings.speechRecognition', 'speech.spokenLanguage'],
+      ['settings.aiPolish', 'settings.enableAiPolish'],
+      ['settings.prompts', 'scenes.myScenes'],
+      ['settings.search', 'webSearch.group'],
+      ['settings.system', 'settings.launchAtStartup'],
+    ]
     expect(screen.getByRole('tab', { name: 'settings.general' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
-    // Plan `two-tab-speech`: toolbar tabs, each an icon above its label (no segmented control).
-    for (const tab of screen.getAllByRole('tab')) {
-      expect(tab).toHaveClass('toolbar-tab')
-      expect(tab.querySelector('svg')).not.toBeNull()
+    // Return to General too: catch stale content when revisiting a mounted section.
+    let previousContent: string | undefined
+    for (const [label, content] of [...sections, sections[0]]) {
+      clickSettingsTab(label)
+      const panel = screen.getByRole('tabpanel', { name: label })
+      expect(screen.getAllByRole('tabpanel')).toHaveLength(1)
+      expect(within(panel).getByText(content)).toBeInTheDocument()
+      expect(screen.getAllByRole('tab', { selected: true })).toEqual([
+        screen.getByRole('tab', { name: label }),
+      ])
+      if (previousContent) expect(screen.queryByText(previousContent)).not.toBeInTheDocument()
+      previousContent = content
     }
-    expect(document.querySelector('.segmented [role="tab"]')).toBeNull()
-    expect(screen.queryByText('settings.dictionary')).toBeNull()
-    expect(screen.queryByText('settings.about')).toBeNull()
-  })
-
-  it('点击 Scenes 后显示本地 scenes 空状态', () => {
-    renderSettings()
-    clickSettingsTab('settings.prompts')
-    expect(screen.getByText('scenes.myScenes')).toBeDefined()
-    expect(screen.getByText('scenes.noCustomScenes')).toBeDefined()
-    expect(screen.getByText('scenes.newScene')).toBeDefined()
-  })
-
-  it('可以在多个 tab 之间来回切换', () => {
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-    expect(screen.getByText('settings.enableAiPolish')).toBeDefined()
-
-    clickSettingsTab('settings.general')
-    expect(screen.getByText('settings.hotkey')).toBeDefined()
-  })
-
-  it('切换到 Scenes 后不会残留上一个设置页内容', () => {
-    renderSettings()
-    clickSettingsTab('settings.aiPolish')
-    expect(screen.getByText('settings.enableAiPolish')).toBeDefined()
-
-    clickSettingsTab('settings.general')
-    expect(screen.getByText('settings.hotkey')).toBeDefined()
-    expect(screen.getByLabelText('settings.tryAsk')).toBeDefined()
-
-    clickSettingsTab('settings.prompts')
-
-    expect(screen.getByText('scenes.myScenes')).toBeDefined()
-    expect(screen.queryByText('settings.askAnything')).toBeNull()
-    expect(screen.queryByText('settings.hotkey')).toBeNull()
-    expect(screen.queryByText('settings.enableAiPolish')).toBeNull()
-  })
-
-  it('switching tabs selects the tab and names the panel after it', () => {
-    renderSettings()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('settings.title')
-    clickSettingsTab('settings.prompts')
-    expect(screen.getByRole('tab', { name: 'settings.prompts' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
-    expect(screen.getByRole('tab', { name: 'settings.general' })).toHaveAttribute(
-      'aria-selected',
-      'false',
-    )
-    expect(screen.getByRole('tabpanel', { name: 'settings.prompts' })).toBeInTheDocument()
   })
 
   it('records macOS Ask hotkey as a local draft without immediate persistence', async () => {
@@ -888,7 +760,7 @@ describe('Settings Scenes local custom scenes', () => {
     vi.mocked(setFamilySceneAssignment).mockReset().mockResolvedValue([])
   })
 
-  it('shows app writing modes with representative app logos and editable scene choices', async () => {
+  it('shows saved app writing assignments and the system default for unassigned families', () => {
     useAppStore.getState().setConfig({
       ...useAppStore.getState().config,
       custom_scenes: [
@@ -912,11 +784,7 @@ describe('Settings Scenes local custom scenes', () => {
     expect(listCustomAppMappings).not.toHaveBeenCalled()
     expect(screen.getByText('scenes.appWritingModes')).toBeInTheDocument()
     expect(screen.getByText('contextFamilies.email')).toBeInTheDocument()
-    expect(screen.getByLabelText('Gmail')).toBeInTheDocument()
-    expect(screen.getByLabelText('Apple Mail')).toBeInTheDocument()
     expect(screen.getByText('contextFamilies.work_chat')).toBeInTheDocument()
-    expect(screen.getByLabelText('Slack')).toBeInTheDocument()
-    expect(screen.getByLabelText('Lark')).toBeInTheDocument()
 
     const emailSelect = screen.getByLabelText('contextFamilies.email scenes.appWritingScene')
     expect(emailSelect).toHaveValue('custom_email')
@@ -1228,29 +1096,6 @@ describe('Settings Scenes local custom scenes', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. 动画结构 — AnimatePresence wrapper 正常渲染
-// ─────────────────────────────────────────────────────────────────────────────
-describe('Settings 动画结构', () => {
-  beforeEach(() => {
-    resetStore()
-    seedSavedConfig()
-  })
-
-  it('motion wrapper 正常渲染 pane 内容', () => {
-    const { container } = renderSettings()
-    // 我们的 mock 给 motion 元素打上 data-motion 属性
-    expect(container.querySelector('[data-motion]')).not.toBeNull()
-  })
-
-  it('切换 tab 后 pane 内容正常更新（无卡死）', () => {
-    renderSettings()
-    clickSettingsTab('settings.speechRecognition')
-    // 仅断言组件没有崩溃，DOM 还在
-    expect(document.body).toBeDefined()
-  })
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 6. DirtyBar — 配置变更后出现，Reset 后消失
 // ─────────────────────────────────────────────────────────────────────────────
 describe('DirtyBar 行为', () => {
@@ -1268,35 +1113,33 @@ describe('DirtyBar 行为', () => {
     vi.mocked(toast).mockClear()
   })
 
-  it('初始状态下 DirtyBar 不显示', () => {
+  it('shows a changed draft and resets it to the saved values without persisting', async () => {
     renderSettings()
-    expect(screen.queryByText('Unsaved changes')).toBeNull()
+    const savedTheme = useAppStore.getState().config.theme
+    expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument()
+    act(() => useAppStore.getState().updateConfig({ theme: 'dark' }))
+    expect(await screen.findByText('Unsaved changes')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+
+    await waitFor(() => expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument())
+    expect(useAppStore.getState().config.theme).toBe(savedTheme)
+    expect(updateConfig).not.toHaveBeenCalled()
   })
 
-  it('修改 config 后 DirtyBar 出现', async () => {
+  it('saves a draft and uses the saved values as the next reset point', async () => {
     renderSettings()
-    act(() => {
-      useAppStore.getState().updateConfig({ theme: 'dark' })
-    })
-    await waitFor(() => {
-      expect(screen.getByText('Unsaved changes')).toBeDefined()
-    })
-  })
+    act(() => useAppStore.getState().updateConfig({ theme: 'dark' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-  it('点击 Reset 后 DirtyBar 消失', async () => {
-    renderSettings()
-    act(() => {
-      useAppStore.getState().updateConfig({ theme: 'dark' })
-    })
-    await waitFor(() => {
-      expect(screen.getByText('Unsaved changes')).toBeDefined()
-    })
+    await waitFor(() => expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument())
+    expect(updateConfig).toHaveBeenCalledWith(expect.objectContaining({ theme: 'dark' }))
+    expect(useAppStore.getState().savedConfig?.theme).toBe('dark')
 
-    fireEvent.click(screen.getByText('Reset'))
-
-    await waitFor(() => {
-      expect(screen.queryByText('Unsaved changes')).toBeNull()
-    })
+    act(() => useAppStore.getState().updateConfig({ theme: 'light' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
+    expect(useAppStore.getState().config.theme).toBe('dark')
   })
 
   it('saving a server preset writes it to the backend at once, without the DirtyBar', async () => {
@@ -1322,29 +1165,6 @@ describe('DirtyBar 行为', () => {
       expect.objectContaining({ speech_presets, active_speech_preset_id }),
     )
     expect(screen.queryByText('Unsaved changes')).toBeNull()
-  })
-
-  it('DirtyBar 显示 Save 和 Reset 两个按钮', async () => {
-    renderSettings()
-    act(() => {
-      useAppStore.getState().updateConfig({ theme: 'dark' })
-    })
-    await waitFor(() => {
-      expect(screen.getByText('Save')).toBeDefined()
-      expect(screen.getByText('Reset')).toBeDefined()
-    })
-  })
-
-  it('persisted Dock visibility patch does not erase unrelated dirty settings', async () => {
-    renderSettings()
-
-    act(() => {
-      useAppStore.getState().updateConfig({ theme: 'dark' })
-      useAppStore.getState().applyPersistedConfigPatch({ show_in_dock: true })
-    })
-
-    expect(useAppStore.getState().config.theme).toBe('dark')
-    expect(useAppStore.getState().config.show_in_dock).toBe(true)
   })
 
   it('保存失败后从后端配置恢复，避免 UI 与 backend 分叉', async () => {

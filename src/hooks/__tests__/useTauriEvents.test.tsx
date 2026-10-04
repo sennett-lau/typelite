@@ -1,4 +1,4 @@
-import { act, cleanup, render, waitFor } from '@testing-library/react'
+import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTauriEvents } from '../useTauriEvents'
 import { useAppStore } from '../../stores/appStore'
@@ -51,6 +51,22 @@ describe('useTauriEvents', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+  })
+
+  it('updates live audio and text without rerendering the host window', () => {
+    const { result } = renderHook(() => {
+      useTauriEvents()
+      return {}
+    })
+    const initialRender = result.current
+    act(() => useAppStore.setState({ polishedText: '' }))
+    for (const volume of [0.2, 0.5, 0.8]) {
+      act(() => eventListeners.get('audio:volume')?.({ payload: volume }))
+      act(() => eventListeners.get('llm:chunk')?.({ payload: 'hello ' }))
+    }
+    expect(useAppStore.getState().audioVolume).toBe(0.8)
+    expect(useAppStore.getState().polishedText).toBe('hello hello hello ')
+    expect(result.current).toBe(initialRender)
   })
 
   it('clears hotkey registration errors when the backend reports recovery', async () => {
