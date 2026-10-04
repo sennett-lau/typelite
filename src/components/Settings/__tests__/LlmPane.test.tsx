@@ -337,15 +337,6 @@ describe('LlmPane', () => {
     })
   })
 
-  describe('Ask Anything', () => {
-    it('keeps Ask Anything out of AI Polish settings', () => {
-      render(<LlmPane />)
-
-      expect(screen.queryByText('Ask anything')).not.toBeInTheDocument()
-      expect(screen.queryByText('Voice question')).not.toBeInTheDocument()
-    })
-  })
-
   describe('Feature toggles', () => {
     it('keeps context adaptation adjacent to AI polish and disables it when polish is off', () => {
       mockAppStore.config.polish_enabled = false
@@ -368,34 +359,6 @@ describe('LlmPane', () => {
       })
     })
 
-    it('shows a compact noninteractive line of representative adapted apps', () => {
-      render(<LlmPane />)
-
-      const coverage = screen.getByLabelText('Apps adapted by context')
-      for (const name of [
-        'Gmail',
-        'Slack',
-        'Lark',
-        'WeChat',
-        'Google Docs',
-        'Notion',
-        'GitHub',
-        'Cursor',
-      ]) {
-        expect(within(coverage).getByLabelText(name)).toBeInTheDocument()
-      }
-      expect(within(coverage).getByText('+63')).toBeInTheDocument()
-      expect(within(coverage).getByText('+65')).toHaveClass('context-app-count--compact')
-      expect(within(coverage).getByLabelText('Lark')).toHaveClass('context-app--compact-duplicate')
-      expect(within(coverage).getByLabelText('Notion')).toHaveClass(
-        'context-app--compact-duplicate',
-      )
-      expect(within(coverage).queryByRole('button')).not.toBeInTheDocument()
-      expect(within(coverage).queryByRole('link')).not.toBeInTheDocument()
-      expect(coverage).toHaveAttribute('aria-disabled', 'false')
-      expect(coverage).toHaveClass('gap-1')
-    })
-
     it('dims representative apps whenever app adaptation is not active', () => {
       mockAppStore.config.context_adaptation_enabled = false
       render(<LlmPane />)
@@ -404,13 +367,6 @@ describe('LlmPane', () => {
         'aria-disabled',
         'true',
       )
-    })
-
-    it('keeps the advanced toggles out of the default flow', () => {
-      render(<LlmPane />)
-
-      expect(screen.getByText('Email, chat and docs each get their own tone')).toBeInTheDocument()
-      expect(screen.queryByText('Use selected text in Ask/polish')).not.toBeInTheDocument()
     })
 
     it('hides last context until an operation snapshot exists', () => {

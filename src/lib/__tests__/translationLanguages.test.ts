@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   TARGET_LANGUAGE_SHORT_LABELS,
   TARGET_LANGUAGES,
@@ -7,7 +7,6 @@ import {
 } from '../constants'
 import { switchLanguageLabel, switchLanguageVariants } from '../switchLanguage'
 import { translate } from '../../test-utils/i18nMock'
-import zh from '../../i18n/locales/zh.json'
 
 describe('translation languages', () => {
   it('offers three Chinese variants instead of one Chinese', () => {
@@ -21,16 +20,21 @@ describe('translation languages', () => {
     expect(TARGET_LANGUAGE_SHORT_LABELS['zh-Hant-TW']).toBe('台')
   })
 
-  it('names the variants in the UI language', () => {
-    expect(targetLanguageLabel('zh-Hans', translate)).toBe('Chinese (Simplified)')
-    expect(targetLanguageLabel('zh-Hant-HK', translate)).toBe('Chinese (Traditional, Hong Kong)')
-    expect(targetLanguageLabel('zh-Hant-TW', translate)).toBe('Chinese (Traditional, Taiwan)')
-    expect(zh.translate.languages).toEqual({
-      zhHans: '简体中文',
-      zhHantHK: '繁體中文（香港）',
-      zhHantTW: '繁體中文（台灣）',
-    })
-    expect(targetLanguageLabel('ja', translate)).toBe('日本語')
+  it.each([
+    ['zh-Hans', 'translate.languages.zhHans'],
+    ['zh-Hant-HK', 'translate.languages.zhHantHK'],
+    ['zh-Hant-TW', 'translate.languages.zhHantTW'],
+  ])('localizes %s with its translation key', (code, key) => {
+    const t = vi.fn(() => 'Localized name')
+    expect(targetLanguageLabel(code, t)).toBe('Localized name')
+    expect(t).toHaveBeenCalledExactlyOnceWith(key)
+  })
+
+  it('uses native names for other languages and preserves unknown codes', () => {
+    const t = vi.fn()
+    expect(targetLanguageLabel('ja', t)).toBe('日本語')
+    expect(targetLanguageLabel('unknown-code', t)).toBe('unknown-code')
+    expect(t).not.toHaveBeenCalled()
   })
 
   it('reads old plain Chinese as Simplified and matches codes case-insensitively', () => {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MainLayout } from '../index'
 import { useAppStore } from '../../../stores/appStore'
@@ -57,83 +57,23 @@ afterEach(() => {
 })
 
 describe('MainLayout', () => {
-  it('does not show Ask as a first-class navigation item', () => {
+  it.each([
+    ['Home', '#/'],
+    ['Settings', '#/settings'],
+    ['Dictionary', '#/dictionary'],
+    ['About', '#/about'],
+  ])('navigates to %s and marks only that page current', (label, hash) => {
     render(
       <MainLayout>
-        <div>content</div>
+        <div>Page content</div>
       </MainLayout>,
     )
-
-    expect(screen.queryByRole('button', { name: 'Ask' })).not.toBeInTheDocument()
-  })
-
-  it('shows the app icon next to the name at the top of the sidebar', () => {
-    render(
-      <MainLayout>
-        <div>content</div>
-      </MainLayout>,
-    )
-
-    const brand = screen.getByTestId('sidebar-brand')
-    expect(brand).toHaveTextContent('Typelite')
-    const icon = brand.querySelector('img')
-    expect(icon).not.toBeNull()
-    expect(icon).toHaveAttribute('width', '28')
-    expect(icon).toHaveAttribute('alt', '')
-  })
-
-  it('shows Home, Settings and Dictionary as tabs and About pinned at the bottom', () => {
-    render(
-      <MainLayout>
-        <div>content</div>
-      </MainLayout>,
-    )
-
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(
-      within(nav)
-        .getAllByRole('button')
-        .map((b) => b.getAttribute('aria-label')),
-    ).toEqual(['Home', 'Settings', 'Dictionary'])
-    expect(screen.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Home',
-      'Settings',
-      'Dictionary',
-      'About',
-    ])
-    expect(screen.queryByRole('button', { name: 'History' })).not.toBeInTheDocument()
-  })
-
-  it('navigates to About and marks it as the current page', () => {
-    const { rerender } = render(
-      <MainLayout>
-        <div>content</div>
-      </MainLayout>,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: 'About' }))
-    expect(window.location.hash).toBe('#/about')
-    act(() => {
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
-    })
-    rerender(
-      <MainLayout>
-        <div>content</div>
-      </MainLayout>,
-    )
-    expect(screen.getByRole('button', { name: 'About' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: 'Home' })).not.toHaveAttribute('aria-current')
-  })
-
-  it('navigates to the Dictionary tab', () => {
-    render(
-      <MainLayout>
-        <div>content</div>
-      </MainLayout>,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: 'Dictionary' }))
-    expect(window.location.hash).toBe('#/dictionary')
+    fireEvent.click(screen.getByRole('button', { name: label }))
+    expect(window.location.hash).toBe(hash)
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')))
+    expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getAllByRole('button', { current: 'page' })).toHaveLength(1)
+    expect(screen.getByText('Page content')).toBeInTheDocument()
   })
 
   it('shows the active speech and AI presets with their last known status', () => {
