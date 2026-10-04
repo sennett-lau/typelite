@@ -48,19 +48,21 @@ impl VoiceActivity {
     /// Measures 16-bit little-endian mono PCM.
     pub fn measure(pcm: &[u8], sample_rate: u32) -> Self {
         let rate = sample_rate.max(1) as usize;
-        let samples: Vec<f64> = pcm
-            .chunks_exact(2)
-            .map(|b| f64::from(i16::from_le_bytes([b[0], b[1]])) / 32768.0)
-            .collect();
-        let duration_ms = (samples.len() * 1000 / rate) as u32;
+        // Decode each window directly: expanding a long recording into f64 samples would
+        // temporarily require four times the PCM buffer's memory before transcription.
+        let samples = pcm.len() / 2;
+        let duration_ms = (samples * 1000 / rate) as u32;
         let window = (rate * WINDOW_MS as usize / 1000).max(1);
         let edge = rate * EDGE_IGNORE_MS as usize / 1000;
-        let inner = if samples.len() > 2 * edge {
-            &samples[edge..samples.len() - edge]
+        let inner = if samples > 2 * edge {
+            &pcm[edge * 2..(samples - edge) * 2]
         } else {
             &[][..]
         };
-        let mut levels: Vec<f64> = inner.chunks_exact(window).map(window_level_db).collect();
+        let mut levels: Vec<f64> = inner
+            .chunks_exact(window * 2)
+            .map(window_level_db)
+            .collect();
         if levels.is_empty() {
             return Self {
                 duration_ms,
@@ -74,15 +76,15 @@ impl VoiceActivity {
             let threshold = ABSOLUTE_FLOOR_DB.max(noise_floor_db + ABOVE_NOISE_DB);
             levels.iter().filter(|&&db| db >= threshold).count()
         };
-        let original = levels.clone();
-        levels.sort_by(f64::total_cmp);
         let index = ((levels.len() as f64 * NOISE_PERCENTILE) as usize).min(levels.len() - 1);
-        let noise_floor_db = levels[index];
+        // Only the percentile value matters; counting voiced windows does not require
+        // their original order or a fully sorted copy.
+        let noise_floor_db = *levels.select_nth_unstable_by(index, f64::total_cmp).1;
         Self {
             duration_ms,
             peak_db,
             noise_floor_db,
-            voiced_ms: (voiced_windows(noise_floor_db, &original) as u32) * WINDOW_MS,
+            voiced_ms: (voiced_windows(noise_floor_db, &levels) as u32) * WINDOW_MS,
         }
     }
 
@@ -93,8 +95,12 @@ impl VoiceActivity {
 }
 
 /// RMS level of one window in dBFS.
-fn window_level_db(window: &[f64]) -> f64 {
-    let rms = (window.iter().map(|s| s * s).sum::<f64>() / window.len() as f64).sqrt();
+fn window_level_db(window: &[u8]) -> f64 {
+    let squares = window.chunks_exact(2).map(|bytes| {
+        let sample = f64::from(i16::from_le_bytes([bytes[0], bytes[1]])) / 32768.0;
+        sample * sample
+    });
+    let rms = (squares.sum::<f64>() / (window.len() / 2) as f64).sqrt();
     if rms <= 0.0 {
         SILENT_WINDOW_DB
     } else {
@@ -337,6 +343,40 @@ mod tests {
         assert!(!VoiceActivity::measure(&[], RATE).has_speech());
         let tiny = to_pcm(&hiss(-10.0, 0.15));
         assert!(!VoiceActivity::measure(&tiny, RATE).has_speech());
+    }
+
+    #[test]
+    fn voice_thresholds_require_both_level_and_duration() {
+        // 184/185 straddle -45 dBFS. With a background of 64, 254/255 straddle
+        // the stronger threshold of 12 dB above the measured room noise.
+        for (background, amplitude, above_threshold) in [
+            (0_i16, 184_i16, false),
+            (0, 185, true),
+            (64, 254, false),
+            (64, 255, true),
+        ] {
+            for windows in [9, 10] {
+                let mut pcm = background.to_le_bytes().repeat(16_000);
+                for sample in 3_200..3_200 + windows * 320 {
+                    pcm[sample * 2..sample * 2 + 2].copy_from_slice(&amplitude.to_le_bytes());
+                }
+                let activity = VoiceActivity::measure(&pcm, RATE);
+                assert_eq!(
+                    activity.voiced_ms,
+                    if above_threshold {
+                        windows as u32 * 20
+                    } else {
+                        0
+                    },
+                    "background {background}, amplitude {amplitude}, windows {windows}"
+                );
+                assert_eq!(activity.has_speech(), above_threshold && windows == 10);
+
+                // A trailing byte is not a complete PCM sample and must change no field.
+                pcm.push(0xff);
+                assert_eq!(VoiceActivity::measure(&pcm, RATE), activity);
+            }
+        }
     }
 
     #[test]
