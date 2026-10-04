@@ -27,6 +27,9 @@ dist-ssr/
 npm-debug.log*
 pnpm-debug.log*
 
+# Python benchmark workers
+__pycache__/
+
 # Rust / Tauri
 target/
 
