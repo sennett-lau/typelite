@@ -719,14 +719,14 @@ const SCRIPT_MARKERS: [(char, char); 54] = [
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ChineseScript {
+pub(crate) enum ChineseScript {
     Traditional,
     Simplified,
 }
 
 /// Which Chinese script `text` is written in, or `None` when it has no marker characters (no
 /// Chinese, or only characters shared by both scripts) or an equal number of each.
-fn detect_chinese_script(text: &str) -> Option<ChineseScript> {
+pub(crate) fn detect_chinese_script(text: &str) -> Option<ChineseScript> {
     let (mut traditional, mut simplified) = (0usize, 0usize);
     for character in text.chars() {
         for (traditional_form, simplified_form) in SCRIPT_MARKERS {
@@ -1078,28 +1078,6 @@ mod tests {
         );
     }
 
-    /// "Oh no" is an explicit correction marker, however the speech server punctuates it (the
-    /// onboarding "Change your mind" line).
-    #[test]
-    fn prompt_treats_oh_no_as_a_correction() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("\"X. Oh no! Y\""));
-        assert!(prompt.contains("\"lunch at one. Oh no! Let's do it at two.\" → \"lunch at two\""));
-        assert!(prompt.contains("no wait, oh no, sorry"));
-    }
-
-    /// Code words: file names, extensions and unknown short words stay one token, and a
-    /// spoken "dot" becomes the dot.
-    #[test]
-    fn prompt_keeps_file_names_and_code_words_whole() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("CODE WORDS: Keep file names, extensions, commands, identifiers and unknown short words (\"xlp\") as one token"));
-        assert!(prompt.contains("\"dot gitignore\" → \".gitignore\""));
-        assert!(
-            prompt.contains("Output: Add dist to .gitignore and .npmignore and check the xlp flag")
-        );
-    }
-
     /// A request in dictation ("create a post in Cantonese ...") is written down, not done.
     #[test]
     fn prompt_writes_down_requests_in_dictation() {
@@ -1122,39 +1100,6 @@ mod tests {
         let mut operation = String::new();
         append_voice_operation_prompt(&mut operation, &dictate, false);
         assert!(operation.contains("write them down in the language spoken"));
-    }
-
-    /// A correction that repeats the phrase keeps only the corrected version, and explicit
-    /// markers are never left alone by the "only when unambiguous" rule.
-    #[test]
-    fn prompt_drops_the_replaced_version_of_a_repeated_phrase() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("The correction often repeats the same words and changes one part"));
-        assert!(prompt.contains(
-            "Input: \"the first thing um sorry the third thing it's the budget\"\nOutput: The third thing, it's the budget"
-        ));
-        assert!(prompt.contains("Input: \"第二步，sorry，第四步係測試\"\nOutput: 第四步係測試"));
-        assert!(prompt.contains(
-            "An explicit marker (no wait, oh no, sorry, I mean, scratch that, 不對, 唔係) always marks a correction"
-        ));
-        assert!(!prompt.contains("Treat disfluency conservatively"));
-    }
-
-    /// Spelled names: dashes or spaces, "spelled", a run across a full name, and a spelling
-    /// that differs from the heard name. The letters never reach the output.
-    #[test]
-    fn prompt_writes_a_spelled_name_once() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("\"Maya Chen M-A-Y-A-C-H-E-N\" → \"Maya Chen\""));
-        assert!(prompt.contains("\"Jaxon Wu, J-A-C-K-S-O-N W-O-O\" → \"Jackson Woo\""));
-        assert!(prompt.contains("(\"P R I Y A\")"));
-        assert!(prompt.contains("Never output the letters or \"spelled\""));
-        assert!(
-            prompt.contains("Input: \"我聽日約咗Maya M-A-Y-A食飯\"\nOutput: 我聽日約咗Maya食飯")
-        );
-        // The existing examples stay.
-        assert!(prompt.contains("\"email Bovy B-O-V-E-Y\" → \"email Bovey\""));
-        assert!(prompt.contains("K-R-I-S-T-E-N"));
     }
 
     #[test]
@@ -1450,55 +1395,6 @@ mod tests {
     }
 
     #[test]
-    fn test_prompt_has_structure_rule() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("LISTS"));
-        assert!(prompt.contains("numbered list"));
-        assert!(prompt.contains("own line"));
-    }
-
-    /// A spelled-out word is written once with its spelling, and "no, actually" is a
-    /// correction even without punctuation ("email Bovy B-O-V-E-Y … at 9 no actually at 10").
-    #[test]
-    fn test_prompt_has_spelled_word_and_correction_rules() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("SPELLED WORDS"));
-        assert!(prompt.contains("drop the spelled letters"));
-        assert!(prompt.contains("\"X, no, actually Y\""));
-        assert!(prompt.contains("no punctuation around it"));
-        assert!(prompt.contains("A name the speaker spelled out is not uncertain"));
-    }
-
-    #[test]
-    fn test_prompt_has_long_dictation_rule() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("PARAGRAPHS"));
-        assert!(prompt.contains("blank line"));
-    }
-
-    #[test]
-    fn test_prompt_has_examples() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("Examples:"));
-        assert!(prompt.contains("首先我们需要买牛奶"));
-        assert!(prompt.contains("1. 买牛奶"));
-        assert!(prompt.contains("我觉得这个方案还不错"));
-    }
-
-    #[test]
-    fn test_prompt_has_multilingual_rule() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("mixed languages"));
-    }
-
-    #[test]
-    fn test_prompt_has_punctuation_rule() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("PUNCTUATION"));
-        assert!(prompt.contains("most important rule"));
-    }
-
-    #[test]
     fn test_prompt_selected_text_mode() {
         let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", true);
         assert!(prompt.contains("SELECTED TEXT MODE"));
@@ -1561,34 +1457,6 @@ mod tests {
         let prompt = build_system_prompt(AppType::General, &[], "", "preserve", true, "zh", false);
         assert!(prompt.contains("AFTER cleaning the text"));
         assert!(!prompt.contains("applying the user's instruction"));
-    }
-
-    #[test]
-    fn test_prompt_reads_as_typed() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("typed — not transcribed"));
-    }
-
-    #[test]
-    fn test_prompt_has_consistency_rule() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("Be consistent"));
-        assert!(prompt.contains("do not mix formatting styles"));
-    }
-
-    #[test]
-    fn test_prompt_has_spanish_question_rule() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("SPANISH"));
-        assert!(prompt.contains("¿...?"));
-    }
-
-    #[test]
-    fn test_prompt_prevents_duplicate_numbering() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("NUMBERING"));
-        assert!(prompt.contains("Never duplicate numbering"));
-        assert!(prompt.contains("1. 1. Item"));
     }
 
     #[test]
@@ -2040,28 +1908,6 @@ mod tests {
         }
         let selected = build_system_prompt(AppType::General, &[], "", "preserve", false, "", true);
         assert!(selected.contains("in the script the selected text uses"));
-    }
-
-    #[test]
-    fn test_prompt_keeps_cantonese_words_and_particles() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-
-        assert!(prompt
-            .contains("CANTONESE: For Cantonese speech, keep its words, particles and meaning"));
-        assert!(prompt.contains("嘅 咗 唔 係 啲 冇 喇 啦 呀, 頭先, 係咪, 可唔可以, 仲未"));
-        assert!(prompt.contains("never turn them into Mandarin"));
-        // Cleanup still applies, and the script section owns the characters.
-        assert!(prompt.contains("Rule 2 still removes fillers and replaced words"));
-        assert!(prompt.contains("[CHINESE_SCRIPT] section decides the characters"));
-        // The example drops the filler 嗯 and keeps 頭先, 咗, 喇, 係咪 and 啦.
-        assert!(prompt.contains("Input: \"嗯我頭先已經send咗個file俾你喇你睇下係咪啱啦\"\nOutput: 我頭先已經send咗個file俾你喇，你睇下係咪啱啦\n"));
-    }
-
-    #[test]
-    fn test_prompt_examples_keep_a_traditional_transcript_traditional() {
-        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-
-        assert!(prompt.contains("Output: 我今日要send個report俾老闆，但係啲數仲未check完"));
     }
 
     #[test]

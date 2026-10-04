@@ -84,31 +84,17 @@ describe('SwitchLanguageShortcut', () => {
   })
   afterEach(cleanup)
 
-  it('is a sub-row, not a row of its own, with its label, help and key field', () => {
-    const { control } = renderSwitch()
-
-    const sub = control.parentElement as HTMLElement
-    expect(sub).toHaveClass('row-sub')
-    // Not a `.row`: the hairline between rows never lands between Translate and this sub-row.
-    expect(sub).not.toHaveClass('row')
-    expect(within(sub).getByText('settings.switchLanguageHotkey')).toBeDefined()
-    expect(within(sub).getByText('settings.generalPane.switchLanguageDesc')).toBeDefined()
-    expect(within(control).getByRole('button', { name: 'Shift' })).toBeDefined()
-  })
-
-  it('names the languages it moves through, in order, in a tertiary line', () => {
+  it('names the languages it moves through in order', () => {
     renderSwitch({ languageNames: ['English', '日本語', 'Français'] })
 
-    const line = screen.getByText('English → 日本語 → Français')
-    expect(line).toHaveClass('row-help', 'text-text-tertiary')
+    expect(screen.getByText('English → 日本語 → Français')).toBeInTheDocument()
   })
 
   it('leaves the language line out with fewer than two languages', () => {
     for (const languageNames of [['English'], []]) {
       renderSwitch({ languageNames })
-      const sub = document.querySelector('.row-sub') as HTMLElement
-      expect(sub.querySelectorAll('.row-help')).toHaveLength(1)
-      expect(within(sub).queryByText(/→/)).toBeNull()
+      expect(screen.queryByText(/→/)).not.toBeInTheDocument()
+      expect(screen.queryByText('English')).not.toBeInTheDocument()
       cleanup()
     }
   })

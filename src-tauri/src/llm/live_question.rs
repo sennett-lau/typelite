@@ -1,6 +1,6 @@
 //! Plan `ask-translate-and-live-questions`: does an open Ask question need live information (news,
-//! prices, weather, ...) that the model cannot know? Typelite cannot search the web yet, so such
-//! questions get an honest reply instead of an invented answer.
+//! prices, weather, ...) that the model cannot know? Also identifies the question's language
+//! and writes search keywords for the configured search provider.
 //!
 //! The AI decides with one short request (strict JSON, a few output tokens). When that request
 //! fails or takes longer than `CLASSIFY_TIMEOUT`, a keyword list decides instead.
@@ -13,8 +13,8 @@ use super::LlmConfig;
 
 /// How long the classification request may take before the keyword list decides.
 pub const CLASSIFY_TIMEOUT: Duration = Duration::from_secs(3);
-/// Enough for `{"live": true, "reason": "schedule", "query": "…"}` with a short query.
-const CLASSIFY_MAX_TOKENS: u32 = 120;
+/// Enough for the decision, language and a short search query.
+const CLASSIFY_MAX_TOKENS: u32 = 150;
 /// A search query longer than this is not a query; the question is searched instead.
 const MAX_QUERY_CHARS: usize = 120;
 
@@ -24,17 +24,20 @@ const REASONS: &[&str] = &[
 ];
 
 const CLASSIFIER_PROMPT: &str = r#"Classify the question and write a web search query. Do not answer it.
-Return JSON only, with all three keys: {"live":true,"reason":"schedule","query":"search keywords"}.
+Return JSON only, with all four keys: {"live":true,"reason":"schedule","language":"en","query":"search keywords"}.
 "live": true for current facts, news, prices, weather, scores, schedules or recent releases; false for timeless facts, explanations, history or writing help.
 "reason": exactly one of news, time, price, weather, score, schedule, release, other, none.
+"language": the language the user asks in, as an ISO language code (en, fr, ja, etc.). For Chinese use zh-Hant for Traditional or zh-Hans for Simplified, preserving the user's script. Determine this from the question's wording, never the location or topic. A Chinese question about Hokkaido is Chinese, not Japanese.
 "query": short search keywords, or "" if live is false. Preserve the requested time period. For next/upcoming events, include the current month and year and words for the schedule; never guess the event, venue or date. Fix spoken names (F one -> F1). Use standard search terms in the question's language, not conversational wording.
 Examples:
 Question: 幾時下場F1? (today 2030-08-12)
-{"live":true,"reason":"schedule","query":"F1 下一場 賽程 2030年8月"}
+{"live":true,"reason":"schedule","language":"zh-Hant","query":"F1 下一場 賽程 2030年8月"}
 Question: When is the next race? (today 2030-08-12)
-{"live":true,"reason":"schedule","query":"next race schedule August 2030"}
+{"live":true,"reason":"schedule","language":"en","query":"next race schedule August 2030"}
+Question: 北海道现在下雪吗？
+{"live":true,"reason":"weather","language":"zh-Hans","query":"北海道 今日 降雪 天气"}
 Question: Explain gravity
-{"live":false,"reason":"none","query":""}"#;
+{"live":false,"reason":"none","language":"en","query":""}"#;
 
 /// Who made the decision.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -65,6 +68,8 @@ pub struct LiveCheck {
     /// Plan `ask-web-search`: the AI's search query for a live question (a spoken question
     /// searched as it was transcribed finds little). Never logged.
     pub query: Option<String>,
+    /// The question's language, independent of the generated query or sources.
+    pub language: Option<&'static str>,
 }
 
 /// The chat request body for the classification, with the preset's extra fields.
@@ -103,6 +108,19 @@ pub fn parse_classifier_query(text: &str) -> Option<String> {
         && query.chars().count() <= MAX_QUERY_CHARS
         && !query.contains(['\n', '\r']);
     usable.then(|| query.to_string())
+}
+
+pub fn parse_classifier_language(text: &str, question: &str) -> Option<&'static str> {
+    let language = text
+        .find('{')
+        .zip(text.rfind('}'))
+        .and_then(|(start, end)| serde_json::from_str::<Value>(text.get(start..=end)?).ok());
+    super::question_language::detect(
+        question,
+        language
+            .as_ref()
+            .and_then(|value| value.get("language")?.as_str()),
+    )
 }
 
 fn known_reason(value: &str) -> &'static str {
@@ -289,6 +307,7 @@ fn keyword_decision(question: &str, source: LiveCheckSource) -> LiveCheck {
         reason,
         source,
         query: None,
+        language: super::question_language::detect(question, None),
     }
 }
 
@@ -297,7 +316,7 @@ async fn ask_classifier(
     config: &LlmConfig,
     question: &str,
     timeout: Duration,
-) -> Result<(bool, &'static str, Option<String>), String> {
+) -> Result<LiveCheck, String> {
     let url = super::protocol::chat_endpoint(&config.base_url)?;
     let request = client
         .post(url)
@@ -321,7 +340,13 @@ async fn ask_classifier(
     } else {
         None
     };
-    Ok((live, reason, query))
+    Ok(LiveCheck {
+        live,
+        reason,
+        source: LiveCheckSource::Ai,
+        query,
+        language: parse_classifier_language(&text, question),
+    })
 }
 
 /// Decides whether `question` needs live information, within `timeout`.
@@ -332,12 +357,7 @@ pub async fn classify_with_timeout(
     timeout: Duration,
 ) -> LiveCheck {
     match tokio::time::timeout(timeout, ask_classifier(client, config, question, timeout)).await {
-        Ok(Ok((live, reason, query))) => LiveCheck {
-            live,
-            reason,
-            source: LiveCheckSource::Ai,
-            query,
-        },
+        Ok(Ok(check)) => check,
         Ok(Err(error)) => {
             // The error never contains the question: it is a status or a transport message.
             tracing::warn!("Live-question check failed ({error}); using keywords");
@@ -446,6 +466,33 @@ mod tests {
         let long = format!("{{\"query\": \"{}\"}}", "x".repeat(121));
         assert_eq!(parse_classifier_query(&long), None);
         assert_eq!(parse_classifier_query("live"), None);
+    }
+
+    #[test]
+    fn classifier_language_comes_from_the_question_not_the_query() {
+        let text = r#"{"live":true,"reason":"weather","language":"ja","query":"北海道 雪"}"#;
+        assert_eq!(
+            parse_classifier_language(text, "北海道現在下雪嗎？"),
+            Some("zh-Hant")
+        );
+        assert_eq!(
+            parse_classifier_language(text, "北海道现在下雪吗？"),
+            Some("zh-Hans")
+        );
+        assert_eq!(
+            parse_classifier_language(r#"{"language":"fr"}"#, "La météo à Tokyo ?"),
+            Some("fr")
+        );
+        assert_eq!(
+            parse_classifier_language("live", "北海道現在下雪嗎？"),
+            Some("zh-Hant")
+        );
+        assert_eq!(
+            parse_classifier_language(r#"{"language":42}"#, "Weather?"),
+            None
+        );
+        assert!(CLASSIFIER_PROMPT.contains("never the location or topic"));
+        assert!(CLASSIFIER_PROMPT.contains("question's language"));
     }
 
     #[test]

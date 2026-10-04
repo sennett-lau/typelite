@@ -1,16 +1,11 @@
 /**
- * Plan `docs-structure`: the generated language preset catalogue is up to date. Plan
- * `model-guides`: the language guides are valid and their index matches them. Fix a failure with
- * `npm run docs:cards`. Step folders (speech, AI polish) share one format, and every relative
- * link resolves.
+ * Parser, validator and renderer behavior. Repository content and generated tables are
+ * checked separately by `npm run docs:check` in the required validation gate.
  */
 import { describe, expect, it } from 'vitest'
 import {
-  checkDocs,
   headingAnchor,
-  STEPS,
   validateServiceRow,
-  LANGUAGE_GUIDES,
   parseCard,
   renderLanguageGuides,
   replaceBetweenMarkers,
@@ -21,10 +16,6 @@ const GUIDE_BODY =
   '## Recommended setup\n\nA table.\n\n## Why\n\nText.\n\n## Set it up\n\n1. Steps.\n'
 
 describe('docs cards', () => {
-  it('every language guide is valid and every generated table is up to date', () => {
-    expect(checkDocs()).toEqual([])
-  })
-
   it('rejects values that are not plain YAML text', () => {
     const text = (value: string) => `---\nid: example\nnotes: ${value}\n---\n\nBody.\n`
     expect(parseCard(text('Plain text')).fields.notes).toBe('Plain text')
@@ -85,8 +76,6 @@ ${body}`
 
     // The index sits on the Languages page, in the same folder as the guides.
     it('links each guide by file name from the Languages page', () => {
-      expect(LANGUAGE_GUIDES.dir).toBe('docs/guides/languages')
-      expect(LANGUAGE_GUIDES.table).toBe('docs/guides/languages/README.md')
       const table = renderLanguageGuides([
         {
           file: 'cantonese.md',
@@ -107,10 +96,6 @@ ${body}`
   describe('step folders', () => {
     const row = (runs = 'Cloud', key = 'Yes', address = '`https://api.example.com/v1`') =>
       `| [Example](openai-compatible.md#cloud-services) | ${runs} | Paid | ${key} | ${address} | \`m\` | |`
-
-    it('lists speech and AI polish', () => {
-      expect(STEPS.map((step) => step.id)).toEqual(['speech', 'ai-polish'])
-    })
 
     it('accepts a well-formed Services row', () => {
       expect(validateServiceRow(row())).toEqual([])

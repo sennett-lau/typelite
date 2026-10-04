@@ -493,7 +493,7 @@ fn discussed_command_reason(locale: CommandLocale, utterance: &str) -> Option<Ro
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, HashSet};
 
     use serde::Deserialize;
 
@@ -896,11 +896,24 @@ mod tests {
 
     fn run_corpus(name: &str, source: &str) {
         let cases: Vec<CorpusCase> = serde_json::from_str(source).unwrap();
+        assert!(!cases.is_empty(), "{name}: empty corpus");
+        let mut ids = HashSet::new();
         let mut counts = BTreeMap::<String, usize>::new();
         let mut blockers = 0;
         let mut destructive_false_positives = 0;
 
         for case in &cases {
+            assert!(ids.insert(&case.id), "{name}: duplicate case {}", case.id);
+            assert!(
+                !case.locale.trim().is_empty(),
+                "case {}: missing locale",
+                case.id
+            );
+            assert!(
+                !case.utterance.trim().is_empty(),
+                "case {}: empty input",
+                case.id
+            );
             let speech_language = if case.locale == "automatic" {
                 SpeechLanguageMode::Automatic
             } else {

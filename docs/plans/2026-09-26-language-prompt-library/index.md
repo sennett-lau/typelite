@@ -15,6 +15,9 @@ each region.
 
 Status: done — 2026-09-26
 
+Routing for Ask, and `require_hint` only for a shared speech code: superseded by
+[language-routing-everywhere](../2026-10-02-language-routing-everywhere/index.md).
+
 Builds on [translation-language-presets](../2026-09-26-translation-language-presets/index.md)
 (per-language instructions with built-in defaults) and changes two of its decisions:
 
