@@ -96,6 +96,10 @@ node scripts/benchmark-baseline.mjs --check # archived evidence and generated cu
 End-to-end tests against real servers are optional: `bash scripts/e2e.sh` (see
 `src-tauri/tests/e2e_services.rs` for the environment variables).
 
+Follow the [testing guidelines](docs/testing/README.md) when adding or reviewing tests: assert
+behavior and boundary contracts, use synthetic content, and identify the remaining coverage
+before removing a redundant case.
+
 ### Performance changes
 
 Keep performance part of ongoing code review. Optimize measured costs, preserve behavior, and

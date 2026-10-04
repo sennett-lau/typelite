@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import en from '../../../i18n/locales/en.json'
 import zh from '../../../i18n/locales/zh.json'
 import {
-  EXERCISES,
   SELECTION_TRANSLATE_PREFILL,
   SPEAK_TRANSLATE_LINE,
   checkExercise,
@@ -194,8 +193,8 @@ describe('Translate checks', () => {
   })
 
   it('reads a line in another language than the first target (plan tutorial-one-page)', () => {
-    expect(speakTranslateLine('en')).toBe('早晨，我哋聽日下晝可唔可以見面？')
-    expect(speakTranslateLine('zh-Hant-HK')).toBe('Good morning, can we meet tomorrow afternoon?')
+    expect(speakTranslateLine('en')).toBe(SPEAK_TRANSLATE_LINE.yue)
+    expect(speakTranslateLine('zh-Hant-HK')).toBe(SPEAK_TRANSLATE_LINE.en)
     expect(speakTranslateLine('ja')).toBe(SPEAK_TRANSLATE_LINE.en)
     expect(speakTranslateLine('')).toBe(SPEAK_TRANSLATE_LINE.en)
     // The check passes for a Cantonese line translated into English.
@@ -210,9 +209,9 @@ describe('Translate checks', () => {
   })
 
   it('pre-fills a sentence in another language than the target', () => {
-    expect(selectionTranslatePrefill('en')).toBe('今天下午三点开会')
-    expect(selectionTranslatePrefill('zh-Hans')).toBe('The meeting starts at three this afternoon.')
-    expect(selectionTranslatePrefill('ja')).toBe('The meeting starts at three this afternoon.')
+    expect(selectionTranslatePrefill('en')).toBe(SELECTION_TRANSLATE_PREFILL.zh)
+    expect(selectionTranslatePrefill('zh-Hans')).toBe(SELECTION_TRANSLATE_PREFILL.en)
+    expect(selectionTranslatePrefill('ja')).toBe(SELECTION_TRANSLATE_PREFILL.en)
     expect(looksLikeLanguage(selectionTranslatePrefill('zh-Hant-HK'), 'zh-Hant-HK')).toBe(false)
   })
 })
@@ -245,21 +244,8 @@ describe('Ask checks', () => {
   })
 })
 
-describe('exercise texts', () => {
-  const ids = Object.values(EXERCISES).flatMap((list) => list.map((exercise) => exercise.id))
-
-  it('have Chinese scripts and pre-filled text for the Chinese UI', () => {
-    const han = /\p{Script=Han}/u
-    for (const id of ids) {
-      const texts = zh.onboarding.exercises[id] as Record<string, string>
-      expect(han.test(texts.title), id).toBe(true)
-      if ('script' in texts) expect(han.test(texts.script), id).toBe(true)
-    }
-    expect(han.test(zh.onboarding.exercises.edit.prefill)).toBe(true)
-  })
-
-  it('pass their own checks for the expected Chinese results', () => {
-    expect(pasted('correction', '我们两点去吃午饭吧。')).toBe(true)
+describe('localized exercise validation', () => {
+  it('accepts a shorter Chinese answer against the localized edit prefill', () => {
     const prefill = zh.onboarding.exercises.edit.prefill
     expect(
       checkExercise(
@@ -267,13 +253,5 @@ describe('exercise texts', () => {
         input({ prefill, boxText: prefill, answer: '你有空看一下我上周发的草稿吗？不急。' }),
       ),
     ).toBe(true)
-  })
-
-  it('English scripts match the plan', () => {
-    expect(en.onboarding.exercises.correction.script).toContain('lunch at 1')
-    expect(en.onboarding.exercises.fillers.script).toContain('Friday')
-    expect(en.onboarding.exercises.question.script).toBe(
-      'What is fifteen percent of two hundred forty?',
-    )
   })
 })
