@@ -17,6 +17,57 @@ pub struct StreamEvent {
     pub done: bool,
 }
 
+/// Incremental decoder for the provider's newline-delimited SSE data lines.
+/// Keep bytes until a complete line arrives: network chunks may split a UTF-8 character.
+#[derive(Default)]
+pub(super) struct ChatStreamDecoder {
+    buffer: Vec<u8>,
+    consumed: usize,
+    scanned: usize,
+}
+
+impl ChatStreamDecoder {
+    pub(super) fn push(&mut self, bytes: &[u8]) {
+        // Compact once per network chunk, rather than copying the remaining response for
+        // every line. Retain the allocation for subsequent chunks.
+        if self.consumed > 0 {
+            self.buffer.drain(..self.consumed);
+            self.scanned -= self.consumed;
+            self.consumed = 0;
+        }
+        self.buffer.extend_from_slice(bytes);
+    }
+
+    pub(super) fn next_event(&mut self) -> Option<StreamEvent> {
+        loop {
+            let Some(offset) = self.buffer[self.scanned..].iter().position(|&b| b == b'\n') else {
+                // Do not rescan an incomplete line when another small chunk arrives.
+                self.scanned = self.buffer.len();
+                return None;
+            };
+            let end = self.scanned + offset;
+            let line = &self.buffer[self.consumed..end];
+            self.consumed = end + 1;
+            self.scanned = self.consumed;
+            // Valid lines are borrowed. Malformed bytes retain the provider's previous
+            // replacement-character behavior, without corrupting split valid characters.
+            let line = String::from_utf8_lossy(line);
+            let Some(data) = line.trim().strip_prefix("data: ") else {
+                continue;
+            };
+            if data == "[DONE]" {
+                return Some(StreamEvent {
+                    done: true,
+                    ..StreamEvent::default()
+                });
+            }
+            if let Ok(value) = serde_json::from_str(data) {
+                return Some(parse_stream_event(&value));
+            }
+        }
+    }
+}
+
 fn parse_http_url(base_url: &str) -> Result<url::Url, String> {
     let mut url = url::Url::parse(base_url.trim())
         .map_err(|error| format!("Invalid AI base URL: {error}"))?;
@@ -123,6 +174,82 @@ pub fn parse_stream_event(body: &Value) -> StreamEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn decode_chunks(chunks: &[&[u8]]) -> Vec<StreamEvent> {
+        let mut decoder = ChatStreamDecoder::default();
+        let mut events = Vec::new();
+        for chunk in chunks {
+            decoder.push(chunk);
+            while let Some(event) = decoder.next_event() {
+                events.push(event);
+            }
+        }
+        events
+    }
+
+    #[test]
+    fn streaming_preserves_unicode_at_every_byte_boundary() {
+        let text = "你好、こんにちは café 🎤";
+        let response = format!(
+            "data: {}\r\n\r\ndata: [DONE]\r\n\r\n",
+            json!({"choices": [{"delta": {"content": text}}]})
+        );
+        let bytes = response.as_bytes();
+        let expected = vec![
+            StreamEvent {
+                text: Some(text.into()),
+                ..StreamEvent::default()
+            },
+            StreamEvent {
+                done: true,
+                ..StreamEvent::default()
+            },
+        ];
+        for split in 0..=bytes.len() {
+            assert_eq!(
+                decode_chunks(&[&bytes[..split], &bytes[split..]]),
+                expected,
+                "split {split}"
+            );
+        }
+        let byte_chunks: Vec<_> = bytes.chunks(1).collect();
+        assert_eq!(decode_chunks(&byte_chunks), expected);
+    }
+
+    #[test]
+    fn streaming_keeps_partial_lines_after_complete_events() {
+        let events = decode_chunks(&[
+            b"data: {\"choices\":[{\"delta\":{\"content\":\"one\"}}]}\n\ndata: {\"cho",
+            b"ices\":[{\"delta\":{\"content\":\"two\"}}]}\n\ndata: [DONE]\n",
+        ]);
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[0].text.as_deref(), Some("one"));
+        assert_eq!(events[1].text.as_deref(), Some("two"));
+        assert!(events[2].done);
+    }
+
+    #[test]
+    fn streaming_replaces_invalid_bytes_inside_json_strings() {
+        let events =
+            decode_chunks(&[b"data: {\"choices\":[{\"delta\":{\"content\":\"a\xffb\"}}]}\n"]);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].text.as_deref(), Some("a\u{fffd}b"));
+    }
+
+    #[test]
+    fn streaming_skips_malformed_lines_and_preserves_reasoning_and_errors() {
+        let events = decode_chunks(&[
+            b": keepalive\nevent: message\ndata: bad json\ndata: \xff\n\n",
+            b"data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"thinking\"}}]}\n",
+            b"data: {\"error\":{\"message\":\"model unavailable\"}}\n\ndata: [DONE]\n",
+        ]);
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[0].reasoning.as_deref(), Some("thinking"));
+        assert_eq!(events[1].error.as_deref(), Some("model unavailable"));
+        assert!(events[2].done);
+        // As before, an unterminated line is not a complete event.
+        assert!(decode_chunks(&[b"data: [DONE]"]).is_empty());
+    }
 
     fn messages() -> Vec<Value> {
         vec![
