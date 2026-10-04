@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-02T18:40:45.732629+00:00",
+  "observation": "Warm CPP long timings increased from about 2477 ms to 3821 ms with identical 188-token output. An OS background scan was observed; causality is not established. Keep this run as potentially confounded and collect confirmation.",
+  "processes": [
+    "65987   0.1 /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/MacOS/XProtectRemediatorPirrit",
+    "78617  33.9 /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/MacOS/XProtectRemediatorSnowBeagle"
+  ],
+  "confirmation_start": {
+    "at": "2026-10-02T18:45:29.936094+00:00",
+    "scan_processes": [
+      "65987  46.4 /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/MacOS/XProtectRemediatorPirrit"
+    ],
+    "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=23003235)\t79%; AC attached; not charging present: true\n",
+    "thermal": "Note: No thermal warning level has been recorded\nNote: No performance warning level has been recorded\nNote: No CPU power status has been recorded\n"
+  },
+  "confirmation_end": {
+    "at": "2026-10-02T18:50:51.200206+00:00",
+    "scan_processes": [
+      "65987  52.6 /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/MacOS/XProtectRemediatorPirrit"
+    ]
+  }
+}

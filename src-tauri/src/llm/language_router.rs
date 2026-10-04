@@ -193,9 +193,12 @@ pub fn route(profiles: &[LanguageProfile], transcript: &str, detected: Option<&s
         return Route::Nothing;
     };
     let hears = |profile: &LanguageProfile| profile.detect_codes.iter().any(|c| c == detected);
+    // A hint is needed only for a code shared by several written forms: `zh` is Mandarin or
+    // Cantonese, but `yue` (Qwen3-ASR, ElevenLabs) is only Cantonese.
+    let needs_hint = |profile: &LanguageProfile| profile.require_hint && is_macrolanguage(detected);
     if let Some((index, _)) = candidates
         .iter()
-        .find(|(_, profile)| hears(profile) && !profile.require_hint)
+        .find(|(_, profile)| hears(profile) && !needs_hint(profile))
     {
         return Route::Detected {
             index: *index,
@@ -213,12 +216,34 @@ pub fn route(profiles: &[LanguageProfile], transcript: &str, detected: Option<&s
     }
 }
 
-/// Distinct hints found in `transcript`.
+/// Speech codes that cover several languages or written forms (ISO 639 macrolanguages whose
+/// members Typelite tells apart): whisper reports `zh` for Mandarin and for Cantonese.
+const MACROLANGUAGES: &[&str] = &["zh"];
+
+fn is_macrolanguage(code: &str) -> bool {
+    MACROLANGUAGES.contains(&code)
+}
+
+/// Distinct hints found in `transcript`. Chinese hints also match the transcript in
+/// Traditional characters: Qwen3-ASR writes Cantonese in Simplified (听日), while the preset's
+/// hints are Traditional (聽日).
 pub fn count_hints(hints: &[String], transcript: &str) -> usize {
+    use crate::stt::chinese_script::{convert, ChineseScript};
     let lower = transcript.to_lowercase();
+    let traditional = lower
+        .chars()
+        .any(|c| ('\u{4e00}'..='\u{9fff}').contains(&c))
+        .then(|| convert(&lower, ChineseScript::HongKong));
     hints
         .iter()
-        .filter(|hint| !hint.is_empty() && hint_matches(&hint.to_lowercase(), &lower))
+        .filter(|hint| {
+            let hint = hint.to_lowercase();
+            !hint.is_empty()
+                && (hint_matches(&hint, &lower)
+                    || traditional
+                        .as_deref()
+                        .is_some_and(|text| hint_matches(&hint, text)))
+        })
         .count()
 }
 
@@ -292,6 +317,22 @@ mod tests {
         route(&profiles, text, Some(heard))
             .index()
             .map(|index| profiles[index].code.clone())
+    }
+
+    /// Plan `language-routing-everywhere`: `yue` is only Cantonese, so it needs no hint; `zh`
+    /// still does. Simplified Cantonese (Qwen3-ASR) matches the Traditional hints.
+    #[test]
+    fn cantonese_routes_on_yue_and_on_simplified_hints() {
+        let (config, store) = mock_setup(&[]);
+        assert_eq!(
+            routed(&config, &store, "请你解释一下", "yue").as_deref(),
+            Some("zh-Hant-HK")
+        );
+        assert_eq!(routed(&config, &store, "请你解释一下", "zh"), None);
+        assert_eq!(
+            routed(&config, &store, "我哋听日开会", "zh").as_deref(),
+            Some("zh-Hant-HK")
+        );
     }
 
     /// The mock's five cases.

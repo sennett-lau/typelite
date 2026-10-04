@@ -1,0 +1,32 @@
+[
+  {
+    "id": "en",
+    "voice": "Samantha",
+    "reference": "Can we move the meeting to four pm tomorrow? I'll send the agenda tonight.",
+    "language": "en",
+    "sha256": "969e6487abc0fdc7e97694b0c854c72aafa608402ef7d3f3e45ab6bd3e556fe7",
+    "duration_s": 4.074875
+  },
+  {
+    "id": "yue",
+    "voice": "Sinji",
+    "reference": "我聽日下晝四點開會，記得幫我準備份報告，唔該晒。",
+    "language": "yue",
+    "sha256": "4a42266e228ab61805e0d585171fc971e1399b0917e81b805cdfbfb0a24bd59a",
+    "duration_s": 5.5744375
+  },
+  {
+    "id": "mixed",
+    "reference": "我聽日下晝四點開會，記得幫我準備份報告，唔該晒。 Can we move the meeting to four pm tomorrow? I'll send the agenda tonight.",
+    "language": "yue",
+    "sha256": "5b822df9dc86562f527124ca48799333ef531aa0084949335821d5c5c1ce74ad",
+    "duration_s": 9.8993125
+  },
+  {
+    "id": "silence",
+    "reference": "",
+    "language": "en",
+    "sha256": "f751fd7094be088dc785125e4a1a0222a17c2bd20469aa31728ca5e515ed5809",
+    "duration_s": 4.0
+  }
+]

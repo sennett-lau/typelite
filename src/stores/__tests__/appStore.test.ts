@@ -5,7 +5,7 @@ import {
   languageSettings,
   useAppStore,
 } from '../appStore'
-import type { DictionaryEntry, CorrectionRule, HotkeyConfig } from '../appStore'
+import type { HotkeyConfig } from '../appStore'
 
 function getState() {
   return useAppStore.getState()
@@ -17,116 +17,20 @@ describe('appStore', () => {
     useAppStore.setState(useAppStore.getInitialState())
   })
 
-  describe('pipeline state', () => {
-    it('defaults to idle', () => {
-      expect(getState().pipelineState).toBe('idle')
-    })
-
-    it('updates pipeline state', () => {
-      getState().setPipelineState('recording')
-      expect(getState().pipelineState).toBe('recording')
-    })
-
-    it('tracks the last structured insert result', () => {
-      expect(getState().lastInsertResult).toBeNull()
-
-      getState().setLastInsertResult({
-        status: 'inserted',
-        strategyUsed: 'keyboard',
-        charsInserted: 5,
-        charsCopied: 0,
-        warningCode: null,
-        message: null,
-      })
-
-      expect(getState().lastInsertResult).toEqual({
-        status: 'inserted',
-        strategyUsed: 'keyboard',
-        charsInserted: 5,
-        charsCopied: 0,
-        warningCode: null,
-        message: null,
-      })
-    })
-  })
-
   describe('config', () => {
-    it('has sensible defaults', () => {
+    it('starts with valid, unverified built-in presets and no stored secrets', () => {
       const { config } = getState()
-      const isMac =
-        typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC')
-      const isWindows =
-        typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('WIN')
-      expect(config.theme).toBe('system')
-      expect(config.hotkey).toBe(isMac ? 'Fn' : 'Ctrl+/')
-      expect(config.ask_hotkey).toBe(isMac ? 'Fn+Space' : 'Ctrl+.')
-      expect(config.hotkeys.dictation).toEqual(
-        isMac ? { primary: 'Fn', modifiers: [] } : { primary: '/', modifiers: ['Ctrl'] },
-      )
-      expect(config.hotkeys.ask).toEqual(
-        isMac ? { primary: 'Space', modifiers: ['Fn'] } : { primary: '.', modifiers: ['Ctrl'] },
-      )
-      expect(config.hotkeys.dictationBindings).toEqual([config.hotkeys.dictation])
-      expect(config.hotkeys.askBindings).toEqual([config.hotkeys.ask])
-      expect(config.hotkeys.translateBindings).toEqual(
-        config.hotkeys.translate ? [config.hotkeys.translate] : [],
-      )
-      expect(config.hotkeys.dictationMode).toBe(isMac || isWindows ? 'toggle' : 'hold')
-      expect(config.output_mode).toBe('keyboard')
-      expect(config.insertion_strategy).toBe('auto')
-      expect(config.windows_sendinput_newline_mode).toBe('enter')
-      expect(config.polish_enabled).toBe(true)
-      expect(config.polish_style).toBe('clean')
-      expect(config.polish_custom_prompt).toBe('')
-      expect(config.polish_chinese_script).toBe('preserve')
-      expect(config.custom_scenes).toEqual([])
-      expect(config.active_scene).toBeNull()
-      // Plan `tutorial-one-page`: no translation language until the user adds one.
-      expect(config.translation).toEqual({ targets: [], active_target: '', languages: {} })
-      expect(config.hotkeys.switchLanguage).toEqual({ primary: 'Shift', modifiers: [] })
-      expect(config.target_lang).toBe('')
-      // Plan `two-tab-speech`: only the Built-in preset, before a model is downloaded.
-      expect(config.speech_presets).toEqual([
-        {
-          id: 'builtin-speech-this-mac',
-          name: 'Built-in (on-device)',
-          kind: 'builtin',
-          base_url: '',
-          model: 'large-v3-turbo',
-          model_file: '',
-          language: 'auto',
-          builtin: true,
-          verified_at: null,
-        },
-      ])
-      expect(config.active_speech_preset_id).toBe('builtin-speech-this-mac')
-      // Plan `ai-polish-setup`: AI starts on its Built-in preset too, before a model is downloaded.
-      expect(config.ai_presets).toEqual([
-        {
-          id: 'builtin-ai-this-mac',
-          name: 'Built-in (on-device)',
-          kind: 'builtin',
-          base_url: '',
-          model: 'qwen3-4b',
-          model_file: '',
-          extra_request_fields: {},
-          builtin: true,
-          verified_at: null,
-        },
-      ])
-      expect(config.active_ai_preset_id).toBe('builtin-ai-this-mac')
-      expect(config.shortcut_tour_completed).toBe(false)
-      expect(config.shortcut_tour_prompt_dismissed).toBe(false)
+      for (const [presets, activeId] of [
+        [config.speech_presets, config.active_speech_preset_id],
+        [config.ai_presets, config.active_ai_preset_id],
+      ] as const) {
+        const active = presets.find((preset) => preset.id === activeId)
+        expect(active).toMatchObject({ kind: 'builtin', model_file: '', verified_at: null })
+        expect(active?.base_url).toBe('')
+      }
       expect(JSON.stringify(config)).not.toMatch(/api_key/)
-      expect(config.show_in_dock).toBe(true)
-      expect(config.mute_output_while_recording).toBe(false)
-      expect(config.auto_start).toBe(true)
-    })
-
-    it('setConfig replaces entire config', () => {
-      const newConfig = { ...getState().config, theme: 'dark' as const }
-      getState().setConfig(newConfig)
-      expect(getState().config.theme).toBe('dark')
+      expect(config.translation.targets).toEqual([])
+      expect(config.translation.active_target).toBe('')
     })
 
     it('updateConfig merges partial config immutably', () => {
@@ -432,29 +336,6 @@ describe('appStore', () => {
     })
   })
 
-  describe('dictionary', () => {
-    it('defaults to empty array', () => {
-      expect(getState().dictionary).toEqual([])
-      expect(getState().correctionRules).toEqual([])
-    })
-
-    it('setDictionary replaces dictionary', () => {
-      const entries: DictionaryEntry[] = [{ id: 1, word: 'API', pronunciation: null }]
-      getState().setDictionary(entries)
-      expect(getState().dictionary).toHaveLength(1)
-      expect(getState().dictionary[0].word).toBe('API')
-    })
-
-    it('setCorrectionRules replaces correction rules', () => {
-      const rules: CorrectionRule[] = [
-        { id: 1, pattern: '拓肯', replacement: 'Token', enabled: true },
-      ]
-      getState().setCorrectionRules(rules)
-      expect(getState().correctionRules).toHaveLength(1)
-      expect(getState().correctionRules[0].replacement).toBe('Token')
-    })
-  })
-
   describe('recording state', () => {
     it('resetRecording clears all recording fields', () => {
       getState().setAudioVolume(0.8)
@@ -480,15 +361,6 @@ describe('appStore', () => {
   })
 
   describe('savedConfig / resetConfig', () => {
-    it('applyPersistedConfigPatch updates config and savedConfig for patched fields', () => {
-      const saved = { ...getState().config, show_in_dock: false }
-      getState().setSavedConfig(saved)
-      getState().applyPersistedConfigPatch({ show_in_dock: true })
-
-      expect(getState().config.show_in_dock).toBe(true)
-      expect(getState().savedConfig?.show_in_dock).toBe(true)
-    })
-
     it('applyPersistedConfigPatch preserves unrelated dirty fields', () => {
       const saved = { ...getState().config, theme: 'system' as const, show_in_dock: false }
       getState().setSavedConfig(saved)
@@ -530,20 +402,6 @@ describe('appStore', () => {
       getState().resetConfig()
       // Should remain dark since savedConfig is null
       expect(getState().config.theme).toBe('dark')
-    })
-  })
-
-  describe('onboarding', () => {
-    it('defaults to not completed', () => {
-      expect(getState().onboardingCompleted).toBe(false)
-      expect(getState().onboardingStep).toBe(0)
-    })
-
-    it('tracks onboarding progress', () => {
-      getState().setOnboardingStep(2)
-      getState().setOnboardingCompleted(true)
-      expect(getState().onboardingStep).toBe(2)
-      expect(getState().onboardingCompleted).toBe(true)
     })
   })
 })

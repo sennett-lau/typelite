@@ -387,7 +387,7 @@ fn language_parts(
     transcript: &str,
     detected_language: Option<&str>,
 ) -> LanguageParts {
-    use llm::language_router::{language_profile, language_profiles, route};
+    use llm::language_router::language_profile;
     if translate_enabled {
         let profile = language_profile(config, store, target_lang);
         if profile.enabled {
@@ -405,20 +405,35 @@ fn language_parts(
     if !route_polish {
         return LanguageParts::default();
     }
+    LanguageParts {
+        translation_instructions: String::new(),
+        polish_notes: routed_language(config, store, transcript, detected_language).map(
+            |profile| llm::PolishLanguageNotes {
+                code: profile.code,
+                text: profile.instructions,
+            },
+        ),
+    }
+}
+
+/// Plan `language-routing-everywhere`: which of the user's languages `transcript` is in, for
+/// Dictate and Ask (Translate knows its target). A speech preset with a fixed language counts
+/// as having detected it. Logs the decision with codes only, never text.
+pub(crate) fn routed_language(
+    config: &storage::AppConfig,
+    store: Option<&llm::language_library::store::LibraryStore>,
+    transcript: &str,
+    detected_language: Option<&str>,
+) -> Option<llm::language_router::LanguageProfile> {
+    use llm::language_router::{language_profiles, route};
     let detected = config
         .speech_language()
         .and_then(crate::stt::normalize_detected_language)
         .or_else(|| detected_language.map(str::to_string));
-    let profiles = language_profiles(config, store);
+    let mut profiles = language_profiles(config, store);
     let decision = route(&profiles, transcript, detected.as_deref());
     tracing::info!("Language route: {}", decision.describe(&profiles));
-    LanguageParts {
-        translation_instructions: String::new(),
-        polish_notes: decision.index().map(|index| llm::PolishLanguageNotes {
-            code: profiles[index].code.clone(),
-            text: profiles[index].instructions.clone(),
-        }),
-    }
+    decision.index().map(|index| profiles.swap_remove(index))
 }
 
 /// Plan `qwen3-asr-support`: a Qwen3-ASR transcript (Simplified Chinese) in the characters of the
@@ -426,23 +441,17 @@ fn language_parts(
 /// so on). Unchanged when the router picks no Chinese language. Only called for Qwen3-ASR answers,
 /// so whisper, Built-in and Qwen Cloud transcripts keep their script (plan `qwen-cloud-speech`
 /// leaves that to polish). Logs the language code only, never text.
-fn transcript_in_language_script(
+pub(crate) fn transcript_in_language_script(
     config: &storage::AppConfig,
     store: Option<&llm::language_library::store::LibraryStore>,
     transcript: &str,
     detected_language: Option<&str>,
 ) -> String {
     use crate::stt::chinese_script::{convert, ChineseScript};
-    use llm::language_router::{language_profiles, route};
-    let detected = config
-        .speech_language()
-        .and_then(crate::stt::normalize_detected_language)
-        .or_else(|| detected_language.map(str::to_string));
-    let profiles = language_profiles(config, store);
-    let Some(index) = route(&profiles, transcript, detected.as_deref()).index() else {
+    let Some(profile) = routed_language(config, store, transcript, detected_language) else {
         return transcript.to_string();
     };
-    let code = &profiles[index].code;
+    let code = &profile.code;
     let Some(script) = ChineseScript::for_language(code) else {
         return transcript.to_string();
     };
@@ -2473,6 +2482,10 @@ impl PipelineHandle {
         )
         .unwrap_or_default();
         let library_store = crate::commands::language_presets::library_store(&self.app_handle).ok();
+        // Plain dictation: no translation, no selected text, no draft or question.
+        let plain_dictation = !translate_enabled
+            && voice_intent.kind == crate::voice_intent::VoiceIntentKind::DictateInsert
+            && !selected_text_has_content(selected_text.as_deref());
         let language = language_parts(
             config,
             library_store.as_ref(),
@@ -2516,8 +2529,26 @@ impl PipelineHandle {
         };
 
         let polish_outcome = match polish_result {
-            Ok(response) => {
+            Ok(mut response) => {
                 let elapsed = llm_start.elapsed();
+                // A dictated request carried out in another language (llm::output_guard) is
+                // replaced by the transcript, unless streaming already typed it.
+                let streamed = streaming_report
+                    .as_ref()
+                    .is_some_and(|report| report.has_inserted_text());
+                if plain_dictation
+                    && !streamed
+                    && crate::llm::output_guard::changed_language(
+                        provider_text,
+                        &response.polished_text,
+                    )
+                {
+                    tracing::warn!(
+                        "Polish changed the language of the dictation; pasting the transcript"
+                    );
+                    response.polished_text =
+                        crate::llm::output_guard::transcript_as_output(provider_text);
+                }
                 if let Some(report) = streaming_report.as_ref() {
                     if report.has_inserted_text() {
                         let mut streaming_output_status: Option<(&'static str, String)> = None;

@@ -519,6 +519,10 @@ pub async fn commit_dictionary_import(
             }
             drop(statement);
 
+            // Prepare only when a new row needs inserting. Empty and all-duplicate
+            // imports do not need INSERT statements at all.
+            let mut dictionary_insert = None;
+            let mut correction_insert = None;
             let mut accepted = 0;
             let mut skipped_duplicates = 0;
             for row in &parsed.rows {
@@ -531,10 +535,15 @@ pub async fn commit_dictionary_import(
                             skipped_duplicates += 1;
                             continue;
                         }
-                        transaction.execute(
-                            "INSERT INTO dictionary (word, pronunciation) VALUES (?1, ?2)",
-                            rusqlite::params![word, pronunciation],
-                        )?;
+                        if dictionary_insert.is_none() {
+                            dictionary_insert = Some(transaction.prepare(
+                                "INSERT INTO dictionary (word, pronunciation) VALUES (?1, ?2)",
+                            )?);
+                        }
+                        dictionary_insert
+                            .as_mut()
+                            .expect("dictionary INSERT was prepared")
+                            .execute(rusqlite::params![word, pronunciation])?;
                     }
                     ParsedDictionaryRow::Correction {
                         pattern,
@@ -547,11 +556,20 @@ pub async fn commit_dictionary_import(
                             skipped_duplicates += 1;
                             continue;
                         }
-                        transaction.execute(
-                            "INSERT INTO correction_rules (pattern, replacement, enabled)
-                             VALUES (?1, ?2, ?3)",
-                            rusqlite::params![pattern, replacement, if *enabled { 1 } else { 0 }],
-                        )?;
+                        if correction_insert.is_none() {
+                            correction_insert = Some(transaction.prepare(
+                                "INSERT INTO correction_rules (pattern, replacement, enabled)
+                                 VALUES (?1, ?2, ?3)",
+                            )?);
+                        }
+                        correction_insert
+                            .as_mut()
+                            .expect("correction INSERT was prepared")
+                            .execute(rusqlite::params![
+                                pattern,
+                                replacement,
+                                if *enabled { 1 } else { 0 }
+                            ])?;
                     }
                 }
                 accepted += 1;
@@ -570,31 +588,49 @@ pub fn export_dictionary_json(
     dictionary: &[DictionaryEntry],
     corrections: &[CorrectionRule],
 ) -> Result<String, DictionaryImportError> {
-    let dictionary = dictionary
-        .iter()
-        .map(|entry| {
-            serde_json::json!({
-                "word": entry.word,
-                "pronunciation": entry.pronunciation,
+    // Field order matches the former JSON value tree's sorted keys, keeping exported
+    // bytes unchanged while borrowing the text instead of cloning it into JSON nodes.
+    #[derive(Serialize)]
+    struct Word<'a> {
+        pronunciation: Option<&'a str>,
+        word: &'a str,
+    }
+
+    #[derive(Serialize)]
+    struct Correction<'a> {
+        enabled: bool,
+        pattern: &'a str,
+        replacement: &'a str,
+    }
+
+    #[derive(Serialize)]
+    struct Export<'a> {
+        #[serde(rename = "correctionRules")]
+        correction_rules: Vec<Correction<'a>>,
+        dictionary: Vec<Word<'a>>,
+        format: &'static str,
+        version: u8,
+    }
+
+    serde_json::to_string_pretty(&Export {
+        correction_rules: corrections
+            .iter()
+            .map(|rule| Correction {
+                enabled: rule.enabled,
+                pattern: &rule.pattern,
+                replacement: &rule.replacement,
             })
-        })
-        .collect::<Vec<_>>();
-    let corrections = corrections
-        .iter()
-        .map(|rule| {
-            serde_json::json!({
-                "pattern": rule.pattern,
-                "replacement": rule.replacement,
-                "enabled": rule.enabled,
+            .collect(),
+        dictionary: dictionary
+            .iter()
+            .map(|entry| Word {
+                pronunciation: entry.pronunciation.as_deref(),
+                word: &entry.word,
             })
-        })
-        .collect::<Vec<_>>();
-    serde_json::to_string_pretty(&serde_json::json!({
-        "format": "typelite_dictionary",
-        "version": 1,
-        "dictionary": dictionary,
-        "correctionRules": corrections,
-    }))
+            .collect(),
+        format: "typelite_dictionary",
+        version: 1,
+    })
     .map_err(|_| DictionaryImportError::InvalidStructure)
 }
 
@@ -796,30 +832,57 @@ dictionary,'=literal,,,,true\n";
     }
 
     #[test]
-    fn json_export_contains_only_dictionary_subset() {
-        let exported = export_dictionary_json(
-            &[DictionaryEntry {
+    fn json_export_preserves_format_and_only_dictionary_fields() {
+        let dictionary = [
+            DictionaryEntry {
                 id: 9,
-                word: "Typelite".to_string(),
+                word: "詞語\"quoted\"".into(),
+                pronunciation: Some("line\none\t\\two".into()),
+            },
+            DictionaryEntry {
+                id: 3,
+                word: "Typelite".into(),
                 pronunciation: None,
-            }],
-            &[CorrectionRule {
+            },
+        ];
+        let corrections = [
+            CorrectionRule {
                 id: 8,
-                pattern: "type light".to_string(),
-                replacement: "Typelite".to_string(),
+                pattern: "type light".into(),
+                replacement: "Typelite".into(),
+                enabled: false,
+            },
+            CorrectionRule {
+                id: 4,
+                pattern: "wrong\"word".into(),
+                replacement: "正確\nword".into(),
                 enabled: true,
-            }],
-        )
-        .unwrap();
-        let value: serde_json::Value = serde_json::from_str(&exported).unwrap();
-
-        assert_eq!(value["format"], "typelite_dictionary");
-        assert_eq!(value["version"], 1);
-        assert!(value.get("dictionary").is_some());
-        assert!(value.get("correctionRules").is_some());
-        assert!(value.get("settings").is_none());
-        assert!(value.get("history").is_none());
-        assert!(value.get("apiKey").is_none());
+            },
+        ];
+        let expected = serde_json::json!({
+            "format": "typelite_dictionary",
+            "version": 1,
+            "dictionary": [
+                {"word": "詞語\"quoted\"", "pronunciation": "line\none\t\\two"},
+                {"word": "Typelite", "pronunciation": null},
+            ],
+            "correctionRules": [
+                {"pattern": "type light", "replacement": "Typelite", "enabled": false},
+                {"pattern": "wrong\"word", "replacement": "正確\nword", "enabled": true},
+            ],
+        });
+        assert_eq!(
+            export_dictionary_json(&dictionary, &corrections).unwrap(),
+            serde_json::to_string_pretty(&expected).unwrap(),
+        );
+        assert_eq!(
+            export_dictionary_json(&[], &[]).unwrap(),
+            serde_json::to_string_pretty(&serde_json::json!({
+                "format": "typelite_dictionary", "version": 1,
+                "dictionary": [], "correctionRules": [],
+            }))
+            .unwrap(),
+        );
     }
 
     #[tokio::test]
@@ -862,20 +925,83 @@ dictionary,'=literal,,,,true\n";
     }
 
     #[tokio::test]
+    async fn mixed_import_preserves_values_order_and_reports_when_repeated() {
+        let store = temp_store("mixed");
+        let parsed = parse_dictionary_import(
+            b"type,word,pronunciation,wrong_phrase,corrected_phrase,enabled\n\
+dictionary,First,first sound,,,true\n\
+correction,,,bad-1,fixed-1,false\n\
+dictionary,Second,,,,true\n\
+correction,,,bad-2,fixed-2,true\n\
+dictionary,FIRST,replacement sound,,,true\n\
+correction,,,BAD-1,FIXED-1,true\n\
+dictionary,,,,,true\n",
+            ImportFormat::Csv,
+        )
+        .unwrap();
+        assert_eq!(parsed.skipped_invalid, 1);
+
+        for (accepted, skipped_duplicates) in [(4, 2), (0, 6)] {
+            let report = commit_dictionary_import(&store, parsed.clone())
+                .await
+                .unwrap();
+            assert_eq!(report.accepted, accepted);
+            assert_eq!(report.skipped_duplicates, skipped_duplicates);
+            assert_eq!(report.skipped_invalid, 1);
+            assert_eq!(report.errors, parsed.errors);
+            let words = store.list().await.unwrap();
+            assert_eq!(
+                words
+                    .iter()
+                    .map(|entry| (entry.word.as_str(), entry.pronunciation.as_deref()))
+                    .collect::<Vec<_>>(),
+                [("First", Some("first sound")), ("Second", None)],
+            );
+            let corrections = store.correction_rules().await.unwrap();
+            assert_eq!(
+                corrections
+                    .iter()
+                    .map(|rule| (
+                        rule.pattern.as_str(),
+                        rule.replacement.as_str(),
+                        rule.enabled
+                    ))
+                    .collect::<Vec<_>>(),
+                [("bad-1", "fixed-1", false), ("bad-2", "fixed-2", true)],
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn database_failure_rolls_back_every_accepted_row() {
         let store = temp_store("rollback");
+        store.add("existing", None).await.unwrap();
+        store.add_correction("before", "Before").await.unwrap();
         store
             .execute_batch_for_test(
-                "CREATE TRIGGER fail_dictionary_insert BEFORE INSERT ON dictionary
-                 WHEN NEW.word = 'boom' BEGIN SELECT RAISE(ABORT, 'boom'); END;",
+                "CREATE TRIGGER fail_correction_insert BEFORE INSERT ON correction_rules
+                 WHEN NEW.pattern = 'boom' BEGIN SELECT RAISE(ABORT, 'boom'); END;",
             )
             .unwrap();
-        let parsed = parse_dictionary_import(b"first\nboom", ImportFormat::Txt).unwrap();
+        let parsed = parse_dictionary_import(
+            b"type,word,pronunciation,wrong_phrase,corrected_phrase,enabled\n\
+dictionary,First,,,,true\n\
+correction,,,bad,fixed,false\n\
+dictionary,Second,,,,true\n\
+correction,,,boom,fixed,true\n",
+            ImportFormat::Csv,
+        )
+        .unwrap();
 
         assert_eq!(
             commit_dictionary_import(&store, parsed).await,
             Err(DictionaryImportError::Database)
         );
-        assert!(store.list().await.unwrap().is_empty());
+        let words = store.list().await.unwrap();
+        assert_eq!(words.len(), 1);
+        assert_eq!(words[0].word, "existing");
+        let corrections = store.correction_rules().await.unwrap();
+        assert_eq!(corrections.len(), 1);
+        assert_eq!(corrections[0].pattern, "before");
     }
 }

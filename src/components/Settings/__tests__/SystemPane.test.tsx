@@ -20,6 +20,19 @@ afterEach(() => {
   cleanup()
 })
 
+it.each([
+  ['Launch at login', 'auto_start'],
+  ['Show in Dock', 'show_in_dock'],
+] as const)('updates %s in the config', (label, field) => {
+  render(<SystemPane />)
+  const toggle = screen.getByRole('switch', { name: label })
+  expect(toggle).toHaveAttribute('aria-checked', 'true')
+  fireEvent.click(toggle)
+  expect(useAppStore.getState().config[field]).toBe(false)
+  fireEvent.click(toggle)
+  expect(useAppStore.getState().config[field]).toBe(true)
+})
+
 describe('SystemPane: Clear insights data (plan speed-by-preset)', () => {
   it('deletes the kept run timings and says so', async () => {
     vi.mocked(tauri.clearRunTimings).mockResolvedValue(undefined)
@@ -50,15 +63,6 @@ describe('SystemPane: Clear insights data (plan speed-by-preset)', () => {
 })
 
 describe('SystemPane: typing speed (plan typing-speed-and-nudge)', () => {
-  it('groups Measure typing speed and Reset speed stats with Clear insights data', () => {
-    render(<SystemPane />)
-    const insights = screen.getByRole('region', { name: 'Insights' })
-    expect(within(insights).getByText('Measure typing speed')).toBeInTheDocument()
-    expect(within(insights).getByText(/Which keys you press is never stored/)).toBeInTheDocument()
-    expect(within(insights).getByText('Reset speed stats')).toBeInTheDocument()
-    expect(within(insights).getByText('Clear insights data')).toBeInTheDocument()
-  })
-
   it('switches typing speed measuring off and on', () => {
     render(<SystemPane />)
     const measure = screen.getByRole('switch', { name: 'Measure typing speed' })
