@@ -143,6 +143,11 @@ code comments, tests and commit messages. A small fix needs no plan.
   (a cloud service is only ever used with the user's own key, after they choose it); never log
   dictated text. Do not copy code from GPL projects: Typelite is MIT.
 
+## Translating the interface
+
+Each interface language is one file in `src/i18n/locales/`. To fix a translation or add a
+language, see [docs/dev/translating.md](docs/dev/translating.md).
+
 ## Adding a service
 
 The speech and AI guides list the services Typelite works with, one row each in the Services

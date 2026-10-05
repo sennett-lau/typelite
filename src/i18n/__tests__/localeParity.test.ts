@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import en from '../locales/en.json'
-import zh from '../locales/zh.json'
+import { UI_LANGUAGES } from '../languages'
 
-const locales = { en, zh }
+const locales = Object.fromEntries(
+  UI_LANGUAGES.map((language) => [language.value, language.messages]),
+)
 
 function leaves(value: unknown, prefix = ''): [string, unknown][] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -15,9 +17,9 @@ function leaves(value: unknown, prefix = ''): [string, unknown][] {
 }
 
 describe('locale message coverage', () => {
-  it('keeps every locale aligned with English leaf keys', () => {
+  it.each(Object.entries(locales))('%s has exactly the English keys', (_locale, messages) => {
     expect(
-      leaves(zh)
+      leaves(messages)
         .map(([key]) => key)
         .sort(),
     ).toEqual(
@@ -37,13 +39,13 @@ describe('locale message coverage', () => {
     },
   )
 
-  it('preserves interpolation variables across locales', () => {
+  it.each(Object.entries(locales))('%s keeps the English placeholders', (_locale, messages) => {
     const variables = (value: unknown) =>
       [...String(value).matchAll(/\{\{\s*-?\s*([^},]+)(?:,[^}]+)?\}\}/g)]
         .map((match) => match[1].trim())
         .sort()
     const english = new Map(leaves(en))
-    for (const [key, value] of leaves(zh)) {
+    for (const [key, value] of leaves(messages)) {
       expect(variables(value), key).toEqual(variables(english.get(key)))
     }
   })
