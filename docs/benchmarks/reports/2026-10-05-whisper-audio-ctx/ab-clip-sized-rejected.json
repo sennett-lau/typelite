@@ -1,0 +1,773 @@
+{
+  "recorded_at": "2026-10-05T10:05:53Z",
+  "machine": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm"
+  },
+  "binaries": {
+    "before": "7ac4d80e2edbb19d99d154405c9972cb1a75384cdfbc51cd1a2f427f318c2f7b",
+    "after": "ef8193ea08928a9cdfbeb133652ac58975848b26c7293e74b92a48cdb2478842"
+  },
+  "model": {
+    "file": "ggml-large-v3-turbo-q5_0.bin",
+    "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+  },
+  "rounds": 3,
+  "warm": 5,
+  "summary": {
+    "en": {
+      "before": {
+        "median_ms": 2272.891208,
+        "p10_ms": 2163.5878672,
+        "p90_ms": 2642.4802832,
+        "first_ms_median": 2172.77425,
+        "error_rate": 0.21428571428571427,
+        "texts": [
+          "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "after": {
+        "median_ms": 382.11337499999996,
+        "p10_ms": 378.721375,
+        "p90_ms": 385.35831640000004,
+        "first_ms_median": 1308.87625,
+        "error_rate": 0.21428571428571427,
+        "texts": [
+          "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "change_pct": -83.18822415894532
+    },
+    "yue": {
+      "before": {
+        "median_ms": 2272.783583,
+        "p10_ms": 2168.5285668,
+        "p90_ms": 2653.2565836,
+        "first_ms_median": 2211.887417,
+        "error_rate": 0.3333333333333333,
+        "texts": [
+          "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+        ]
+      },
+      "after": {
+        "median_ms": 3105.326,
+        "p10_ms": 2447.6243838,
+        "p90_ms": 3315.9533248000002,
+        "first_ms_median": 3585.439375,
+        "error_rate": 1.0,
+        "texts": [
+          "And iy��, Haiti, Angst, quatre December, beg, ges,� deficit, c to happen, gu. marshuration, Die, its,s.bon, coupling, ra",
+          "next卦7 Rivera gu Anfang KommaНу inputura Oğlum, jrkc fazer",
+          "バk",
+          "不迅迅迅迅迅",
+          "是 biggest but it– PL�ë",
+          "� genome don Crisp, compliance"
+        ]
+      },
+      "change_pct": 36.630958760317654
+    },
+    "mixed": {
+      "before": {
+        "median_ms": 2296.02475,
+        "p10_ms": 2259.6692332,
+        "p90_ms": 2812.5278668,
+        "first_ms_median": 2362.981792,
+        "error_rate": 0.2,
+        "texts": [
+          "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "after": {
+        "median_ms": 810.810084,
+        "p10_ms": 803.3666584,
+        "p90_ms": 818.7548754,
+        "first_ms_median": 685.8327079999999,
+        "error_rate": 0.8,
+        "texts": [
+          "Can we move the meeting to for P.M. tomorrow? I'll. to night."
+        ]
+      },
+      "change_pct": -64.68635261880344
+    },
+    "silence": {
+      "before": {
+        "median_ms": 2632.483625,
+        "p10_ms": 2209.6956498,
+        "p90_ms": 2782.248075,
+        "first_ms_median": 2530.3920409999996,
+        "error_rate": null,
+        "texts": [
+          "you"
+        ]
+      },
+      "after": {
+        "median_ms": 337.315083,
+        "p10_ms": 336.15801719999996,
+        "p90_ms": 374.5331666,
+        "first_ms_median": 554.392541,
+        "error_rate": null,
+        "texts": [
+          "Thank you."
+        ]
+      },
+      "change_pct": -87.1864318624204
+    },
+    "en-short": {
+      "before": {
+        "median_ms": 2534.641459,
+        "p10_ms": 2215.9787168000003,
+        "p90_ms": 2643.4136254,
+        "first_ms_median": 2437.46475,
+        "error_rate": 0.0,
+        "texts": [
+          "Send it now."
+        ]
+      },
+      "after": {
+        "median_ms": 1615.766042,
+        "p10_ms": 816.9038913999999,
+        "p90_ms": 1942.65125,
+        "first_ms_median": 2379.870708,
+        "error_rate": 15.333333333333334,
+        "texts": [
+          "... ... ... ... ...",
+          "1- Today to have F쟁ers burn! Sniper-Sышible call it is-",
+          "And in the world we have to be a place where we are going to be a place where we are going to be a place where we could get the place where we are going to be a place where we are going to be.",
+          "Andaff Sam Biden's Facebook group 2.0 ��árqu Campus is collaborated!",
+          "and then we will be able to get to the end of the day.",
+          "he is going to be the first time in the world. If you want to be the first time in the world, you will be the first time in the world and in the world. If you want to be the first time in the world, you would be the first time in the world."
+        ]
+      },
+      "change_pct": -36.25267841087578
+    },
+    "en-long": {
+      "before": {
+        "median_ms": 2763.935125,
+        "p10_ms": 2467.3707833999997,
+        "p90_ms": 2945.4630251999997,
+        "first_ms_median": 2770.619958,
+        "error_rate": 0.01639344262295082,
+        "texts": [
+          "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+        ]
+      },
+      "after": {
+        "median_ms": 1687.8715829999999,
+        "p10_ms": 1548.9940668,
+        "p90_ms": 1971.2699914,
+        "first_ms_median": 972.0409159999999,
+        "error_rate": 0.01639344262295082,
+        "texts": [
+          "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+        ]
+      },
+      "change_pct": -38.93230098879401
+    }
+  },
+  "runs": {
+    "before": [
+      {
+        "load_ms": 339.439167,
+        "fixtures": {
+          "en": {
+            "first_ms": 2171.374541,
+            "warm_ms": [
+              2186.845916,
+              2407.5207499999997,
+              2431.756875,
+              2272.891208,
+              2189.60825
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2211.887417,
+            "warm_ms": [
+              2306.016583,
+              2327.840625,
+              2272.783583,
+              2231.645917,
+              2244.501
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2362.981792,
+            "warm_ms": [
+              2336.142458,
+              2291.103292,
+              2278.959583,
+              2296.02475,
+              2317.035167
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2208.6107500000003,
+            "warm_ms": [
+              2243.956125,
+              2256.399625,
+              2207.587083,
+              2186.774792,
+              2212.8585
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2233.233667,
+            "warm_ms": [
+              2210.5365840000004,
+              2206.261416,
+              2224.551833,
+              2234.496333,
+              2224.1419159999996
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2417.457209,
+            "warm_ms": [
+              2382.0185829999996,
+              2412.6589169999997,
+              2549.438583,
+              2877.684709,
+              2935.537125
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      },
+      {
+        "load_ms": 480.161417,
+        "fixtures": {
+          "en": {
+            "first_ms": 2263.5571250000003,
+            "warm_ms": [
+              2180.670416,
+              2181.852583,
+              2184.675375,
+              2173.542875,
+              2157.6208330000004
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2166.3977499999996,
+            "warm_ms": [
+              2169.3152910000003,
+              2171.537667,
+              2171.8245,
+              2166.982458,
+              2168.004084
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2242.2657080000004,
+            "warm_ms": [
+              2246.8089999999997,
+              2242.213083,
+              2287.053917,
+              2651.3195830000004,
+              2853.391209
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2530.3920409999996,
+            "warm_ms": [
+              2675.443708,
+              2871.434375,
+              2844.250875,
+              2665.626417,
+              2470.5109589999997
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2437.46475,
+            "warm_ms": [
+              2534.641459,
+              2584.455708,
+              2556.254458,
+              2517.737917,
+              2518.1590419999998
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2770.619958,
+            "warm_ms": [
+              2763.935125,
+              2787.3678750000004,
+              2844.576166,
+              2753.187209,
+              2665.290042
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      },
+      {
+        "load_ms": 584.0695420000001,
+        "fixtures": {
+          "en": {
+            "first_ms": 2172.77425,
+            "warm_ms": [
+              2169.619792,
+              2159.566584,
+              2461.887083,
+              3013.993167,
+              2762.87575
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2502.5334580000003,
+            "warm_ms": [
+              2593.2855830000003,
+              2735.522209,
+              2687.69825,
+              2590.949583,
+              2601.5940840000003
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2749.329917,
+            "warm_ms": [
+              2759.507084,
+              2714.515958,
+              2700.360125,
+              2823.0475840000004,
+              2796.748291
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2542.806416,
+            "warm_ms": [
+              2644.082583,
+              2689.2438749999997,
+              2599.651375,
+              2594.5252920000003,
+              2632.483625
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2667.5809169999998,
+            "warm_ms": [
+              2664.10325,
+              2628.689709,
+              2623.754458,
+              2652.329709,
+              2630.0395
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2861.875833,
+            "warm_ms": [
+              2872.6437499999997,
+              3081.460542,
+              2952.0802919999996,
+              2719.5935000000004,
+              2764.4185829999997
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      }
+    ],
+    "after": [
+      {
+        "load_ms": 475.145,
+        "fixtures": {
+          "en": {
+            "first_ms": 1497.0355,
+            "warm_ms": [
+              384.076333,
+              385.51625,
+              381.290333,
+              382.11337499999996,
+              380.18625000000003
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 3585.439375,
+            "warm_ms": [
+              3316.054958,
+              2444.209167,
+              3193.032666,
+              3320.71725,
+              3169.204583
+            ],
+            "texts": [
+              "And iy��, Haiti, Angst, quatre December, beg, ges,� deficit, c to happen, gu. marshuration, Die, its,s.bon, coupling, ra",
+              "next卦7 Rivera gu Anfang KommaНу inputura Oğlum, jrkc fazer",
+              "バk",
+              "不迅迅迅迅迅",
+              "是 biggest but it– PL�ë",
+              "� genome don Crisp, compliance"
+            ],
+            "language": "zh",
+            "error_rate": 1.0
+          },
+          "mixed": {
+            "first_ms": 685.8327079999999,
+            "warm_ms": [
+              810.5888329999999,
+              816.3368330000001,
+              808.727708,
+              810.810084,
+              817.654875
+            ],
+            "texts": [
+              "Can we move the meeting to for P.M. tomorrow? I'll. to night."
+            ],
+            "language": "en",
+            "error_rate": 0.8
+          },
+          "silence": {
+            "first_ms": 549.2814999999999,
+            "warm_ms": [
+              337.749542,
+              336.12958399999997,
+              337.315083,
+              383.330375,
+              330.50291599999997
+            ],
+            "texts": [
+              "Thank you."
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2261.8544580000002,
+            "warm_ms": [
+              1942.0373749999999,
+              1615.766042,
+              1601.2565,
+              822.508291,
+              1617.963041
+            ],
+            "texts": [
+              "... ... ... ... ...",
+              "1- Today to have F쟁ers burn! Sniper-Sышible call it is-",
+              "And in the world we have to be a place where we are going to be a place where we are going to be a place where we could get the place where we are going to be a place where we are going to be.",
+              "Andaff Sam Biden's Facebook group 2.0 ��árqu Campus is collaborated!",
+              "and then we will be able to get to the end of the day.",
+              "he is going to be the first time in the world. If you want to be the first time in the world, you will be the first time in the world and in the world. If you want to be the first time in the world, you would be the first time in the world."
+            ],
+            "language": "en",
+            "error_rate": 15.333333333333334
+          },
+          "en-long": {
+            "first_ms": 980.847667,
+            "warm_ms": [
+              1559.7676250000002,
+              1569.703042,
+              1687.8715829999999,
+              1809.341542,
+              1790.9402920000002
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      },
+      {
+        "load_ms": 687.911916,
+        "fixtures": {
+          "en": {
+            "first_ms": 1301.097666,
+            "warm_ms": [
+              383.107625,
+              384.1335,
+              385.59862499999997,
+              383.086208,
+              385.121416
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 3746.3773749999996,
+            "warm_ms": [
+              2976.5953339999996,
+              2452.747209,
+              3105.326,
+              3315.800875,
+              3128.993667
+            ],
+            "texts": [
+              "And iy��, Haiti, Angst, quatre December, beg, ges,� deficit, c to happen, gu. marshuration, Die, its,s.bon, coupling, ra",
+              "next卦7 Rivera gu Anfang KommaНу inputura Oğlum, jrkc fazer",
+              "バk",
+              "不迅迅迅迅迅",
+              "是 biggest but it– PL�ë",
+              "� genome don Crisp, compliance"
+            ],
+            "language": "zh",
+            "error_rate": 1.0
+          },
+          "mixed": {
+            "first_ms": 685.868167,
+            "warm_ms": [
+              815.041417,
+              810.635625,
+              819.488209,
+              839.007708,
+              810.116084
+            ],
+            "texts": [
+              "Can we move the meeting to for P.M. tomorrow? I'll. to night."
+            ],
+            "language": "en",
+            "error_rate": 0.8
+          },
+          "silence": {
+            "first_ms": 554.392541,
+            "warm_ms": [
+              336.475,
+              340.12512499999997,
+              337.121583,
+              336.200667,
+              339.35812500000003
+            ],
+            "texts": [
+              "Thank you."
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2379.870708,
+            "warm_ms": [
+              1943.0605,
+              1618.08,
+              1560.4900000000002,
+              813.1676249999999,
+              1619.310417
+            ],
+            "texts": [
+              "... ... ... ... ...",
+              "1- Today to have F쟁ers burn! Sniper-Sышible call it is-",
+              "And in the world we have to be a place where we are going to be a place where we are going to be a place where we could get the place where we are going to be a place where we are going to be.",
+              "Andaff Sam Biden's Facebook group 2.0 ��árqu Campus is collaborated!",
+              "and then we will be able to get to the end of the day.",
+              "he is going to be the first time in the world. If you want to be the first time in the world, you will be the first time in the world and in the world. If you want to be the first time in the world, you would be the first time in the world."
+            ],
+            "language": "en",
+            "error_rate": 15.333333333333334
+          },
+          "en-long": {
+            "first_ms": 972.0409159999999,
+            "warm_ms": [
+              1552.063791,
+              1552.0945,
+              1550.39,
+              1549.2236670000002,
+              1548.841
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      },
+      {
+        "load_ms": 488.79445799999996,
+        "fixtures": {
+          "en": {
+            "first_ms": 1308.87625,
+            "warm_ms": [
+              375.76725,
+              380.6715,
+              379.807,
+              377.997625,
+              379.814292
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 3541.8582499999998,
+            "warm_ms": [
+              2919.4557919999997,
+              2428.4965829999996,
+              3060.3250000000003,
+              3118.915625,
+              3063.5658750000002
+            ],
+            "texts": [
+              "And iy��, Haiti, Angst, quatre December, beg, ges,� deficit, c to happen, gu. marshuration, Die, its,s.bon, coupling, ra",
+              "next卦7 Rivera gu Anfang KommaНу inputura Oğlum, jrkc fazer",
+              "バk",
+              "不迅迅迅迅迅",
+              "是 biggest but it– PL�ë",
+              "� genome don Crisp, compliance"
+            ],
+            "language": "zh",
+            "error_rate": 1.0
+          },
+          "mixed": {
+            "first_ms": 675.555083,
+            "warm_ms": [
+              806.67875,
+              801.468792,
+              806.213458,
+              799.894292,
+              809.9590420000001
+            ],
+            "texts": [
+              "Can we move the meeting to for P.M. tomorrow? I'll. to night."
+            ],
+            "language": "en",
+            "error_rate": 0.8
+          },
+          "silence": {
+            "first_ms": 560.6917080000001,
+            "warm_ms": [
+              338.60554199999996,
+              345.787584,
+              353.848708,
+              363.776042,
+              381.704583
+            ],
+            "texts": [
+              "Thank you."
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2492.3562920000004,
+            "warm_ms": [
+              2013.7736670000002,
+              1587.038583,
+              1569.7325420000002,
+              807.502833,
+              1565.3592079999999
+            ],
+            "texts": [
+              "... ... ... ... ...",
+              "1- Today to have F쟁ers burn! Sniper-Sышible call it is-",
+              "And in the world we have to be a place where we are going to be a place where we are going to be a place where we could get the place where we are going to be a place where we are going to be.",
+              "Andaff Sam Biden's Facebook group 2.0 ��árqu Campus is collaborated!",
+              "and then we will be able to get to the end of the day.",
+              "he is going to be the first time in the world. If you want to be the first time in the world, you will be the first time in the world and in the world. If you want to be the first time in the world, you would be the first time in the world."
+            ],
+            "language": "en",
+            "error_rate": 15.333333333333334
+          },
+          "en-long": {
+            "first_ms": 959.436458,
+            "warm_ms": [
+              1546.7701670000001,
+              1691.808416,
+              1951.756666,
+              2138.0677499999997,
+              1984.278875
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      }
+    ]
+  }
+}

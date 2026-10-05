@@ -28,5 +28,29 @@
     "language": "en",
     "sha256": "f751fd7094be088dc785125e4a1a0222a17c2bd20469aa31728ca5e515ed5809",
     "duration_s": 4.0
+  },
+  {
+    "id": "en-short",
+    "voice": "Samantha",
+    "reference": "Send it now.",
+    "language": "en",
+    "sha256": "11d30484d7c9b32d902eb8ad58fbf1830409605be0870627c5a9e6bbb044076b",
+    "duration_s": 0.8388125
+  },
+  {
+    "id": "en-long",
+    "voice": "Samantha",
+    "reference": "Thanks for the update on the release. I looked at the three open pull requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up.",
+    "language": "en",
+    "sha256": "52504e9fd141259d6a9b7b471a3de630c48147ee1e6fd6feeaed109e844726f7",
+    "duration_s": 18.252375
+  },
+  {
+    "id": "yue-long",
+    "voice": "Sinji",
+    "reference": "我哋今日下晝開會，傾咗好耐都未有結論。聽日我會再同設計組同埋工程組確認下個禮拜嘅時間表，然後寫一份簡單嘅報告俾大家睇。如果有咩問題，記得喺星期五之前同我講，唔該晒。",
+    "language": "yue",
+    "sha256": "365ca2c4367b15c451fc78f89045394a8ced0c7885a9083bc875453cbba2a77a",
+    "duration_s": 19.0303125
   }
 ]

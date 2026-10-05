@@ -1,0 +1,846 @@
+{
+  "recorded_at": "2026-10-05T10:24:23Z",
+  "machine": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm"
+  },
+  "binaries": {
+    "before": "7ac4d80e2edbb19d99d154405c9972cb1a75384cdfbc51cd1a2f427f318c2f7b",
+    "after": "60b7142bc06672d88b83dd3131dcb1aac677a9fcbd953bc89928e0256b3206b4"
+  },
+  "model": {
+    "file": "ggml-large-v3-turbo-q5_0.bin",
+    "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+  },
+  "rounds": 3,
+  "warm": 5,
+  "summary": {
+    "en": {
+      "before": {
+        "median_ms": 2139.599208,
+        "p10_ms": 2137.8835922,
+        "p90_ms": 2471.3730996,
+        "first_ms_median": 2195.349167,
+        "error_rate": 0.21428571428571427,
+        "texts": [
+          "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "after": {
+        "median_ms": 1032.2697919999998,
+        "p10_ms": 1029.7535918,
+        "p90_ms": 1033.8556248,
+        "first_ms_median": 1641.972958,
+        "error_rate": 0.21428571428571427,
+        "texts": [
+          "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "change_pct": -51.754058043192174
+    },
+    "yue": {
+      "before": {
+        "median_ms": 2144.906709,
+        "p10_ms": 2141.963884,
+        "p90_ms": 2498.0743249999996,
+        "first_ms_median": 2150.5263330000002,
+        "error_rate": 0.3333333333333333,
+        "texts": [
+          "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+        ]
+      },
+      "after": {
+        "median_ms": 1033.343125,
+        "p10_ms": 1031.4933498,
+        "p90_ms": 1279.0345997999998,
+        "first_ms_median": 1035.728667,
+        "error_rate": 0.2857142857142857,
+        "texts": [
+          "我明天下週四點開會,記得幫我準備份報告,謝謝!"
+        ]
+      },
+      "change_pct": -51.823400026485714
+    },
+    "mixed": {
+      "before": {
+        "median_ms": 2384.232291,
+        "p10_ms": 2211.4501996,
+        "p90_ms": 2584.2081914,
+        "first_ms_median": 2213.6345,
+        "error_rate": 0.2,
+        "texts": [
+          "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "after": {
+        "median_ms": 1101.251875,
+        "p10_ms": 1095.8647666,
+        "p90_ms": 1247.2002998,
+        "first_ms_median": 1102.640167,
+        "error_rate": 0.2,
+        "texts": [
+          "我明天下周四點開會,記得幫我準備份報告,唔該曬。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "change_pct": -53.81104940332343
+    },
+    "silence": {
+      "before": {
+        "median_ms": 2370.9055000000003,
+        "p10_ms": 2083.8456502000004,
+        "p90_ms": 2457.1278079999997,
+        "first_ms_median": 2319.709041,
+        "error_rate": null,
+        "texts": [
+          "you"
+        ]
+      },
+      "after": {
+        "median_ms": 981.19425,
+        "p10_ms": 977.66755,
+        "p90_ms": 1218.2648583999999,
+        "first_ms_median": 981.0395,
+        "error_rate": null,
+        "texts": [
+          "you"
+        ]
+      },
+      "change_pct": -58.61521051766931
+    },
+    "en-short": {
+      "before": {
+        "median_ms": 2322.653041,
+        "p10_ms": 2089.352841,
+        "p90_ms": 2523.1585996,
+        "first_ms_median": 2356.019833,
+        "error_rate": 0.0,
+        "texts": [
+          "Send it now."
+        ]
+      },
+      "after": {
+        "median_ms": 987.977083,
+        "p10_ms": 985.0636334000001,
+        "p90_ms": 1133.3093334,
+        "first_ms_median": 990.700542,
+        "error_rate": 0.0,
+        "texts": [
+          "Send it now."
+        ]
+      },
+      "change_pct": -57.463423698675456
+    },
+    "en-long": {
+      "before": {
+        "median_ms": 2536.2590410000003,
+        "p10_ms": 2280.9295998000002,
+        "p90_ms": 2668.3224332,
+        "first_ms_median": 2603.7960829999997,
+        "error_rate": 0.01639344262295082,
+        "texts": [
+          "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+        ]
+      },
+      "after": {
+        "median_ms": 2146.6917080000003,
+        "p10_ms": 2140.8851498,
+        "p90_ms": 2627.1677672,
+        "first_ms_median": 1662.497417,
+        "error_rate": 0.01639344262295082,
+        "texts": [
+          "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+        ]
+      },
+      "change_pct": -15.359918947648211
+    },
+    "yue-long": {
+      "before": {
+        "median_ms": 2565.172042,
+        "p10_ms": 2288.7149661999997,
+        "p90_ms": 2710.898783,
+        "first_ms_median": 2556.649958,
+        "error_rate": 0.3333333333333333,
+        "texts": [
+          "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我說,麻煩你。"
+        ]
+      },
+      "after": {
+        "median_ms": 2239.4803749999996,
+        "p10_ms": 2235.6135248,
+        "p90_ms": 2804.461416,
+        "first_ms_median": 2191.331875,
+        "error_rate": 0.32,
+        "texts": [
+          "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我講,謝謝。"
+        ]
+      },
+      "change_pct": -12.696679274036793
+    }
+  },
+  "runs": {
+    "before": [
+      {
+        "load_ms": 322.4045,
+        "fixtures": {
+          "en": {
+            "first_ms": 2149.866625,
+            "warm_ms": [
+              2137.9287919999997,
+              2144.665708,
+              2139.599208,
+              2135.845125,
+              2142.041125
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2144.311,
+            "warm_ms": [
+              2149.376958,
+              2142.418084,
+              2148.0498749999997,
+              2141.661084,
+              2144.906709
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2212.346208,
+            "warm_ms": [
+              2210.800166,
+              2216.372,
+              2216.916792,
+              2212.42525,
+              2209.125625
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2083.6438749999998,
+            "warm_ms": [
+              2079.145167,
+              2087.96025,
+              2083.9858750000003,
+              2087.129125,
+              2083.752167
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2119.6035420000003,
+            "warm_ms": [
+              2088.0589999999997,
+              2089.221791,
+              2089.5494160000003,
+              2091.322958,
+              2091.32475
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2284.5818329999997,
+            "warm_ms": [
+              2283.9678339999996,
+              2279.518333,
+              2277.363125,
+              2288.759583,
+              2283.0465000000004
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          },
+          "yue-long": {
+            "first_ms": 2293.522125,
+            "warm_ms": [
+              2288.6553329999997,
+              2289.091958,
+              2288.804416,
+              2288.221833,
+              2292.435833
+            ],
+            "texts": [
+              "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我說,麻煩你。"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          }
+        }
+      },
+      {
+        "load_ms": 396.8835,
+        "fixtures": {
+          "en": {
+            "first_ms": 2198.122458,
+            "warm_ms": [
+              2139.400917,
+              2137.853459,
+              2145.6009169999998,
+              2139.689791,
+              2139.0189579999997
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2150.5263330000002,
+            "warm_ms": [
+              2142.86425,
+              2146.946042,
+              2141.1709170000004,
+              2144.655417,
+              2144.236
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2213.6345,
+            "warm_ms": [
+              2321.528334,
+              2510.355083,
+              2485.747708,
+              2384.232291,
+              2370.952708
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2319.709041,
+            "warm_ms": [
+              2384.4923329999997,
+              2415.69025,
+              2370.9055000000003,
+              2311.003834,
+              2318.6565419999997
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2356.019833,
+            "warm_ms": [
+              2340.384458,
+              2300.377167,
+              2303.1263750000003,
+              2322.653041,
+              2370.560125
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2603.7960829999997,
+            "warm_ms": [
+              2553.94025,
+              2507.316167,
+              2513.511958,
+              2536.2590410000003,
+              2544.288708
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          },
+          "yue-long": {
+            "first_ms": 2556.649958,
+            "warm_ms": [
+              2596.0590420000003,
+              2565.172042,
+              2519.016708,
+              2544.1517080000003,
+              2691.628958
+            ],
+            "texts": [
+              "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我說,麻煩你。"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          }
+        }
+      },
+      {
+        "load_ms": 534.4445410000001,
+        "fixtures": {
+          "en": {
+            "first_ms": 2195.349167,
+            "warm_ms": [
+              2142.126125,
+              2140.022916,
+              2248.081875,
+              2620.233916,
+              2725.074625
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2480.165959,
+            "warm_ms": [
+              2361.593708,
+              2405.144833,
+              2508.7078749999996,
+              2510.714125,
+              2482.124
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2542.005375,
+            "warm_ms": [
+              2590.0485,
+              2579.987291,
+              2529.767875,
+              2524.904416,
+              2587.022125
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2443.207083,
+            "warm_ms": [
+              2460.828458,
+              2472.373417,
+              2437.2335829999997,
+              2420.7101249999996,
+              2451.5768329999996
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2542.2015,
+            "warm_ms": [
+              2564.853375,
+              2516.5146250000003,
+              2500.419542,
+              2527.587916,
+              2511.318083
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2700.591292,
+            "warm_ms": [
+              2636.431292,
+              2626.239625,
+              2660.967959,
+              2673.225416,
+              2674.003542
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          },
+          "yue-long": {
+            "first_ms": 2724.289208,
+            "warm_ms": [
+              2739.750084,
+              2686.632125,
+              2634.366042,
+              2664.597958,
+              2723.7453330000003
+            ],
+            "texts": [
+              "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我說,麻煩你。"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          }
+        }
+      }
+    ],
+    "after": [
+      {
+        "load_ms": 454.277541,
+        "fixtures": {
+          "en": {
+            "first_ms": 1638.1062499999998,
+            "warm_ms": [
+              1031.019333,
+              1029.556875,
+              1031.4046660000001,
+              1031.5463750000001,
+              1028.7935
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 1032.182375,
+            "warm_ms": [
+              1032.762,
+              1036.8249999999998,
+              1029.890417,
+              1030.647583,
+              1033.4995840000001
+            ],
+            "texts": [
+              "我明天下週四點開會,記得幫我準備份報告,謝謝!"
+            ],
+            "language": "zh",
+            "error_rate": 0.2857142857142857
+          },
+          "mixed": {
+            "first_ms": 1102.640167,
+            "warm_ms": [
+              1103.0310000000002,
+              1102.021333,
+              1101.251875,
+              1095.0333329999999,
+              1097.1119170000002
+            ],
+            "texts": [
+              "我明天下周四點開會,記得幫我準備份報告,唔該曬。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 981.0395,
+            "warm_ms": [
+              981.19425,
+              995.9270409999999,
+              1016.098583,
+              977.2535,
+              976.540042
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 985.857459,
+            "warm_ms": [
+              985.0864580000001,
+              987.977083,
+              989.851584,
+              984.158458,
+              989.532375
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 1662.497417,
+            "warm_ms": [
+              2139.420333,
+              2140.846333,
+              2146.066,
+              2148.9601660000003,
+              2140.943375
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          },
+          "yue-long": {
+            "first_ms": 2187.531334,
+            "warm_ms": [
+              2237.725625,
+              2251.288167,
+              2236.602875,
+              2237.625958,
+              2239.7370410000003
+            ],
+            "texts": [
+              "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我講,謝謝。"
+            ],
+            "language": "zh",
+            "error_rate": 0.32
+          }
+        }
+      },
+      {
+        "load_ms": 458.81699999999995,
+        "fixtures": {
+          "en": {
+            "first_ms": 1641.972958,
+            "warm_ms": [
+              1030.257459,
+              1033.242833,
+              1033.979958,
+              1033.511625,
+              1033.6691250000001
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 1035.9551250000002,
+            "warm_ms": [
+              1033.343125,
+              1032.985042,
+              1032.8625,
+              1036.976667,
+              1034.8954589999998
+            ],
+            "texts": [
+              "我明天下週四點開會,記得幫我準備份報告,謝謝!"
+            ],
+            "language": "zh",
+            "error_rate": 0.2857142857142857
+          },
+          "mixed": {
+            "first_ms": 1094.284583,
+            "warm_ms": [
+              1097.8028749999999,
+              1100.1901249999999,
+              1103.872375,
+              1098.58625,
+              1094.490125
+            ],
+            "texts": [
+              "我明天下周四點開會,記得幫我準備份報告,唔該曬。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 979.0593749999999,
+            "warm_ms": [
+              981.811875,
+              982.1788750000001,
+              979.933167,
+              978.288625,
+              980.982542
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 990.700542,
+            "warm_ms": [
+              989.327042,
+              985.048417,
+              986.191542,
+              989.018208,
+              985.518833
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 1661.9658749999999,
+            "warm_ms": [
+              2141.559792,
+              2150.060083,
+              2146.6917080000003,
+              2146.294084,
+              2156.230583
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          },
+          "yue-long": {
+            "first_ms": 2191.331875,
+            "warm_ms": [
+              2241.274791,
+              2239.4803749999996,
+              2242.2135000000003,
+              2234.953958,
+              2234.1335830000003
+            ],
+            "texts": [
+              "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我講,謝謝。"
+            ],
+            "language": "zh",
+            "error_rate": 0.32
+          }
+        }
+      },
+      {
+        "load_ms": 496.499791,
+        "fixtures": {
+          "en": {
+            "first_ms": 1647.6662079999999,
+            "warm_ms": [
+              1032.2697919999998,
+              1033.349875,
+              1035.255833,
+              1030.048667,
+              1030.56025
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 1035.728667,
+            "warm_ms": [
+              1044.4958339999998,
+              1112.486791,
+              1215.39375,
+              1321.4618329999998,
+              1383.081125
+            ],
+            "texts": [
+              "我明天下週四點開會,記得幫我準備份報告,謝謝!"
+            ],
+            "language": "zh",
+            "error_rate": 0.2857142857142857
+          },
+          "mixed": {
+            "first_ms": 1442.580958,
+            "warm_ms": [
+              1377.750875,
+              1273.5380830000001,
+              1207.693625,
+              1179.8964999999998,
+              1184.268667
+            ],
+            "texts": [
+              "我明天下周四點開會,記得幫我準備份報告,唔該曬。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 1084.2975829999998,
+            "warm_ms": [
+              1133.1907079999999,
+              1185.0337909999998,
+              1225.3669579999998,
+              1229.518209,
+              1207.611709
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 1184.137958,
+            "warm_ms": [
+              1147.755791,
+              1124.237958,
+              1122.2355,
+              1119.4672910000002,
+              1139.356917
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 1946.2506670000002,
+            "warm_ms": [
+              2537.545666,
+              2574.424833,
+              2630.0808340000003,
+              2622.798167,
+              2667.554208
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          },
+          "yue-long": {
+            "first_ms": 2554.4925420000004,
+            "warm_ms": [
+              2683.037166,
+              2961.138208,
+              2885.4109160000003,
+              2603.392375,
+              2508.501083
+            ],
+            "texts": [
+              "我們今天下午開會,談了好久都未有結論,明天我會再跟設計組和工程組確認下個星期的時間表,然後寫一份簡單的報告給大家看,如果有什麼問題,記得在星期五之前跟我講,謝謝。"
+            ],
+            "language": "zh",
+            "error_rate": 0.32
+          }
+        }
+      }
+    ]
+  }
+}
