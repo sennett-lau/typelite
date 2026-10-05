@@ -530,6 +530,8 @@
     "system": "System",
     "showInDock": "Show in Dock",
     "showInDockHint": "When off, Typelite has no Dock icon. Open it from the menu-bar icon.",
+    "siMode": "Super intelligence mode",
+    "siModeHint": "Promotes every artificial kind of intelligence in Typelite to the super kind. Interface text only; just for fun.",
     "audio": "Audio",
     "muteOutputWhileRecording": "Mute other audio while recording",
     "sections": "Settings sections",

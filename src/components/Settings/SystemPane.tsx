@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
+import { setSiMode } from '../../i18n/siMode'
 import {
   checkForUpdate,
   clearRunTimings,
@@ -180,6 +181,18 @@ export function SystemPane() {
             checked={config.show_in_dock}
             onChange={(checked) => updateConfig({ show_in_dock: checked })}
             label={t('settings.showInDock')}
+            hideLabel
+          />
+        </Row>
+        {/* Plan `si-mode`. */}
+        <Row label={t('settings.siMode')} help={t('settings.siModeHint')}>
+          <Toggle
+            checked={config.si_mode}
+            onChange={(checked) => {
+              setSiMode(checked)
+              updateConfig({ si_mode: checked })
+            }}
+            label={t('settings.siMode')}
             hideLabel
           />
         </Row>

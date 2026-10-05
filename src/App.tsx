@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import i18n from './i18n'
+import { setSiMode } from './i18n/siMode'
 import { useTauriEvents } from './hooks/useTauriEvents'
 import { useTheme } from './hooks/useTheme'
 import { useAppStore } from './stores/appStore'
@@ -35,6 +36,7 @@ function CapsuleApp() {
     getConfig()
       .then((config) => {
         setConfig(config)
+        setSiMode(config.si_mode ?? false)
         // Restore UI language from config
         if (config.ui_language && config.ui_language !== i18n.language) {
           i18n.changeLanguage(config.ui_language)
@@ -60,6 +62,7 @@ function AskApp() {
     getConfig()
       .then((config) => {
         setConfig(config)
+        setSiMode(config.si_mode ?? false)
         if (config.ui_language && config.ui_language !== i18n.language) {
           i18n.changeLanguage(config.ui_language)
           localStorage.setItem('ui_language', config.ui_language)
@@ -125,6 +128,7 @@ function MainApp() {
               setAccessibilityTrusted(trusted)
             })
           }
+          setSiMode(config.si_mode ?? false)
           // Restore UI language from config
           if (config.ui_language && config.ui_language !== i18n.language) {
             i18n.changeLanguage(config.ui_language)

@@ -1156,6 +1156,8 @@ pub struct AppConfig {
     pub custom_recording_limit_seconds: u32,
     pub max_recording_seconds: u32,
     pub ui_language: String,
+    /// Plan `si-mode`: show "AI" as "SI" (super intelligence) in the interface. Interface only.
+    pub si_mode: bool,
     /// Microphone name chosen in Settings → General. Empty means "System default".
     pub input_device: String,
     /// macOS only: show the app icon in the Dock. When false the app runs as a menu-bar
@@ -1219,6 +1221,7 @@ impl Default for AppConfig {
             custom_recording_limit_seconds: 600,
             max_recording_seconds: 30,
             ui_language: "en".to_string(),
+            si_mode: false,
             input_device: String::new(),
             show_in_dock: true,
             mute_output_while_recording: false,
@@ -4980,6 +4983,15 @@ mod tests {
         }))
         .unwrap();
         assert!(on.mute_output_while_recording);
+    }
+
+    #[test]
+    fn app_config_si_mode_defaults_off_for_old_configs() {
+        assert!(!AppConfig::default().si_mode);
+        let old = AppConfig::from_stored_value(serde_json::json!({})).unwrap();
+        assert!(!old.si_mode);
+        let on = AppConfig::from_stored_value(serde_json::json!({ "si_mode": true })).unwrap();
+        assert!(on.si_mode);
     }
 
     #[test]

@@ -442,6 +442,8 @@ export interface AppConfig {
   custom_recording_limit_seconds: number
   max_recording_seconds: number
   ui_language: string
+  /** Plan `si-mode`: show "AI" as "SI" in the interface. */
+  si_mode: boolean
   /** Microphone name chosen in Settings → General; '' means "System default". */
   input_device: string
   /** macOS: show the Dock icon (Settings → System). */
@@ -1296,6 +1298,7 @@ const defaultConfig: AppConfig = {
   custom_recording_limit_seconds: 600,
   max_recording_seconds: 30,
   ui_language: 'en',
+  si_mode: false,
   input_device: '',
   show_in_dock: true,
   mute_output_while_recording: false,
