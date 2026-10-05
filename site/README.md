@@ -1,7 +1,7 @@
 # Typelite site
 
 The one-page website for Typelite: Vite, React and TypeScript, deployed to GitHub Pages at
-`https://sennett-lau.github.io/typelite/`. It is a separate project with its own
+`https://typelite.sennettlau.me/`. It is a separate project with its own
 `package.json` and lockfile; nothing here is part of the app.
 
 ## Develop
@@ -9,7 +9,7 @@ The one-page website for Typelite: Vite, React and TypeScript, deployed to GitHu
 ```sh
 cd site
 npm ci
-npm run dev        # http://localhost:5173/typelite/
+npm run dev        # http://localhost:5173/
 ```
 
 The animated demos (`src/demos/`) are React components drawn as a function of time, using the
@@ -30,7 +30,7 @@ story is a plain list and each demo shows one frame.
 
 ```sh
 npm run build      # type-check, build, then pre-render the page into dist/index.html
-npm run preview    # serve dist/ at http://localhost:4173/typelite/
+npm run preview    # serve dist/ at http://localhost:4173/
 ```
 
 The build pre-renders the whole page to static HTML (`scripts/prerender.mjs`), so it reads
@@ -46,9 +46,11 @@ changes `site/**` (or the preset index), and on demand from the Actions tab
 1. GitHub Pages needs the repository to be **public** (or a paid plan for private Pages).
 2. Enable it in **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
-The site is served under `/typelite/`, which is why `vite.config.ts` sets `base: '/typelite/'`.
-For a custom domain or another repository name, change `base` and the absolute URLs in
-`index.html` (canonical and Open Graph image).
+The site is served at the root of the custom domain `typelite.sennettlau.me` (Settings → Pages →
+Custom domain, with a DNS `CNAME typelite → sennett-lau.github.io`), so `vite.config.ts` sets
+`base: '/'`. GitHub redirects the old `sennett-lau.github.io/typelite/` address there. To move it,
+change the custom domain, and the absolute URLs in `index.html` (canonical, Open Graph,
+structured data), `public/robots.txt` and `public/sitemap.xml`.
 
 ## Media
 

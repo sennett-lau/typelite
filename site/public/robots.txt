@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://sennett-lau.github.io/typelite/sitemap.xml
+Sitemap: https://typelite.sennettlau.me/sitemap.xml

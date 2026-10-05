@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Served from https://<owner>.github.io/typelite/, so every asset URL starts with /typelite/.
+// Served at the root of https://typelite.sennettlau.me/ (a custom domain on GitHub Pages).
 export default defineConfig({
-  base: '/typelite/',
+  base: '/',
   plugins: [react()],
   // The language section reads the preset library from ../presets/languages/index.json.
   server: { fs: { allow: ['..'] } },

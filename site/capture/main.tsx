@@ -2,7 +2,7 @@
  * Capture page for scripts/capture-media.mjs: renders one demo at a fixed size, with its
  * clock driven frame by frame (`window.__typeliteCapture.setTime`). Not part of the site build.
  *
- *   /typelite/capture/?scene=hero|translate|ask|og&theme=light|dark
+ *   /capture/?scene=hero|translate|ask|og&theme=light|dark
  */
 import { createRoot } from 'react-dom/client'
 import { enableCaptureClock } from '../src/lib/clock'
