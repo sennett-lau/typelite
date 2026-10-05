@@ -25,6 +25,12 @@ number. They describe intent and structure, never to-do lists. Follow the rules 
 `docs/plans/README.md` whenever you create or change a plan. Read the relevant plan before
 building a feature.
 
+## Research
+
+Evaluations of runtimes, engines, models and libraries, with their decisions, are in
+`docs/research/` (rules in its README). Read it before proposing to replace one, and do not
+repeat an entry unless its "Reopen when" conditions are met.
+
 ## Hard constraints
 
 - Everything must be free and open source. No paid APIs or cloud STT/LLM by default; a cloud

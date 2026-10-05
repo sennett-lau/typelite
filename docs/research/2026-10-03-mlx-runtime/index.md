@@ -1,6 +1,6 @@
 # Retain C++ defaults; defer MLX speech adoption
 
-**Status:** decided, 2026-10-03. Shipping behavior unchanged.
+**Status:** decided, 2026-10-03. Outcome: **deferred**. Shipping behavior unchanged.
 
 **Scope:** Apple M1 Pro / 32 GiB, large-v3-turbo speech and Qwen3-1.7B polishing.
 This does not reject MLX generally or cover the untested default Qwen3-4B model,
@@ -9,7 +9,7 @@ other Macs, other speech models, or a native MLX implementation.
 ## Decision
 
 Keep whisper.cpp and llama.cpp as the built-in defaults. Preserve the runnable
-MLX experiment, raw outputs and [benchmark report](../reports/2026-10-03-mlx-runtime-evaluation/README.md).
+MLX experiment, raw outputs and [benchmark report](report.md).
 Do not add a Python inference service or replace the installed models as part of
 this evaluation. Do not change the application-overhead benchmark baseline.
 

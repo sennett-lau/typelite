@@ -7,7 +7,7 @@ including a decision to retain the current engines.
 ## Status
 
 Done — 2026-10-03. The experiment is complete; adopting a shipping MLX backend is
-deferred in the [recorded decision](../../benchmarks/decisions/2026-10-03-mlx-runtime.md).
+deferred in the [recorded decision](../../research/2026-10-03-mlx-runtime/index.md).
 
 ## Goals and non-goals
 
@@ -41,7 +41,7 @@ deferred in the [recorded decision](../../benchmarks/decisions/2026-10-03-mlx-ru
 
 | Part | Purpose |
 | --- | --- |
-| [Evaluation report](../../benchmarks/reports/2026-10-03-mlx-runtime-evaluation/README.md) | Measurements, decision and conditions for revisiting it |
+| [Evaluation report](../../research/2026-10-03-mlx-runtime/report.md) | Measurements, decision and conditions for revisiting it |
 
 ## Open questions
 
