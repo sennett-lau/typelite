@@ -957,6 +957,12 @@ pub fn final_period_rule_applies(kind: VoiceIntentKind, has_selected_text: bool)
         )
 }
 
+/// Replaces the no-break spaces small models put between numbers and words ("3\u{202f}pm",
+/// U+202F and U+00A0) with a plain space, so pasted text works in search and code editors.
+pub fn plain_spaces(text: &str) -> String {
+    text.replace(['\u{202f}', '\u{a0}'], " ")
+}
+
 /// Removes a final period the speaker did not dictate. Chat apps (no sentence completeness in
 /// their policy) drop it from any one-paragraph message; other apps only from a single
 /// sentence, so multi-sentence prose still ends normally. Text with line breaks (lists,
@@ -2336,6 +2342,31 @@ mod tests {
             ),
             "See you at 4"
         );
+    }
+
+    #[test]
+    fn plain_spaces_replaces_no_break_spaces() {
+        assert_eq!(
+            plain_spaces("Opus\u{202f}5.5 at 3\u{a0}pm"),
+            "Opus 5.5 at 3 pm"
+        );
+        assert_eq!(plain_spaces("no change"), "no change");
+    }
+
+    #[test]
+    fn plain_spaces_per_chunk_streams_the_cleaned_answer() {
+        // The provider makes each streamed chunk plain before the held-back period logic.
+        let mut held_back = FinalPeriodStream::default();
+        let mut received = String::new();
+        let mut shown = String::new();
+        for chunk in ["See you at 3\u{202f}", "pm.", ""] {
+            received.push_str(&plain_spaces(chunk));
+            shown.push_str(held_back.visible(&received));
+        }
+        let cleaned =
+            strip_unspoken_final_period(&received, "see you at 3pm", ContextFamily::WorkChat);
+        shown.push_str(held_back.rest(&cleaned));
+        assert_eq!(shown, "See you at 3 pm");
     }
 
     #[test]

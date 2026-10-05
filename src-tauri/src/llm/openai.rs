@@ -185,11 +185,13 @@ impl LlmProvider for OpenAiProvider {
         // ignore it. See `prompt::strip_unspoken_final_period`.
         let strip_final_period =
             prompt::final_period_rule_applies(req.voice_intent.kind, has_selected_text);
+        // Every answer gets plain spaces (see `prompt::plain_spaces`).
         let finish = |text: &str| {
+            let text = prompt::plain_spaces(text);
             if strip_final_period {
-                prompt::strip_unspoken_final_period(text, &req.raw_text, req.context.family)
+                prompt::strip_unspoken_final_period(&text, &req.raw_text, req.context.family)
             } else {
-                text.to_string()
+                text
             }
         };
 
@@ -221,6 +223,7 @@ impl LlmProvider for OpenAiProvider {
                     }
                     if let Some(content) = event.text {
                         if !content.is_empty() {
+                            let content = prompt::plain_spaces(&content);
                             full_text.push_str(&content);
                             if strip_final_period {
                                 let visible = held_back.visible(&full_text);
@@ -248,6 +251,7 @@ impl LlmProvider for OpenAiProvider {
                     "LLM content empty, using reasoning_content ({} chars) as output",
                     reasoning_text.len()
                 );
+                let reasoning_text = prompt::plain_spaces(&reasoning_text);
                 if !strip_final_period {
                     callback(&reasoning_text);
                 }
@@ -255,8 +259,8 @@ impl LlmProvider for OpenAiProvider {
             } else if full_text.is_empty() {
                 tracing::error!("LLM streaming returned no content and no reasoning_content");
             }
+            full_text = finish(&full_text);
             if strip_final_period {
-                full_text = finish(&full_text);
                 let rest = held_back.rest(&full_text);
                 if !rest.is_empty() {
                     callback(rest);
