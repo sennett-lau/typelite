@@ -530,6 +530,8 @@
     "system": "系統",
     "showInDock": "在程式塢中顯示",
     "showInDockHint": "關閉後 Typelite 不在程式塢中顯示圖示，請從選單欄圖示開啟。",
+    "siMode": "超級智慧模式",
+    "siModeHint": "把介面裡每一處「人工」智慧都升級為「超級」智慧。只改介面文字，純屬娛樂。",
     "audio": "音訊",
     "muteOutputWhileRecording": "錄音時靜音其他聲音",
     "sections": "設定分割槽",

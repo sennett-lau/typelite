@@ -530,6 +530,8 @@
     "system": "System",
     "showInDock": "Im Dock anzeigen",
     "showInDockHint": "Wenn aus, hat Typelite kein Dock-Symbol. Öffne es über das Symbol in der Menüleiste.",
+    "siMode": "Superintelligenz-Modus",
+    "siModeHint": "Befördert jede Intelligenz der künstlichen Art in Typelite zur Super-Art. Ändert nur Oberflächentexte – nur zum Spaß.",
     "audio": "Audio",
     "muteOutputWhileRecording": "Andere Audioquellen während der Aufnahme stummschalten",
     "sections": "Bereiche der Einstellungen",

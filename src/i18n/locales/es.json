@@ -530,6 +530,8 @@
     "system": "Sistema",
     "showInDock": "Mostrar en el Dock",
     "showInDockHint": "Si está desactivado, Typelite no tiene icono en el Dock. Ábrelo desde el icono de la barra de menús.",
+    "siMode": "Modo superinteligencia",
+    "siModeHint": "Asciende toda inteligencia de tipo artificial de Typelite al tipo súper. Solo cambia el texto de la interfaz; es una broma.",
     "audio": "Audio",
     "muteOutputWhileRecording": "Silenciar otros sonidos al grabar",
     "sections": "Secciones de ajustes",

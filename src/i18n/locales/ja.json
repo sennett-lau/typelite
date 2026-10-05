@@ -530,6 +530,8 @@
     "system": "システム",
     "showInDock": "Dock に表示",
     "showInDockHint": "オフにすると Dock にアイコンが表示されません。メニューバーのアイコンから開いてください。",
+    "siMode": "超知能モード",
+    "siModeHint": "Typelite の中の「人工」の知能をすべて「超」の知能に格上げします。画面の文字だけが変わる、ちょっとした遊びです。",
     "audio": "オーディオ",
     "muteOutputWhileRecording": "録音中は他の音を消音",
     "sections": "設定のセクション",
