@@ -1,0 +1,664 @@
+{
+  "recorded_at": "2026-10-05T14:54:36Z",
+  "model": "Qwen3-1.7B-Q4_K_M.gguf",
+  "rounds": 3,
+  "warm": 5,
+  "summary": {
+    "short": {
+      "llama.cpp": {
+        "prefill_ms": 5289.01,
+        "total_ms": 5485.27875000002,
+        "total_p10_ms": 5076.345483600003,
+        "total_p90_ms": 5899.792741599994,
+        "decode_tok_s": 53.19223966038336,
+        "prompt_tokens": [
+          2930
+        ],
+        "generated_tokens": [
+          11
+        ],
+        "texts": [
+          "Can we move the meeting to 4 pm tomorrow"
+        ]
+      },
+      "candle": {
+        "prefill_ms": 12280.803415999999,
+        "total_ms": 12868.0745,
+        "total_p10_ms": 12603.4588418,
+        "total_p90_ms": 13354.8038496,
+        "decode_tok_s": 18.134968274801835,
+        "prompt_tokens": [
+          2930
+        ],
+        "generated_tokens": [
+          11
+        ],
+        "texts": [
+          "Can we move the meeting to 4pm tomorrow?"
+        ]
+      }
+    },
+    "long": {
+      "llama.cpp": {
+        "prefill_ms": 5967.203,
+        "total_ms": 9366.736625000045,
+        "total_p10_ms": 9045.137166599974,
+        "total_p90_ms": 9578.294674800001,
+        "decode_tok_s": 51.18349138258567,
+        "prompt_tokens": [
+          3089
+        ],
+        "generated_tokens": [
+          174
+        ],
+        "texts": [
+          "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+        ]
+      },
+      "candle": {
+        "prefill_ms": 14274.655375,
+        "total_ms": 22235.345917,
+        "total_p10_ms": 22069.8430664,
+        "total_p90_ms": 22706.407825,
+        "decode_tok_s": 16.848047073443528,
+        "prompt_tokens": [
+          3089
+        ],
+        "generated_tokens": [
+          135
+        ],
+        "texts": [
+          "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。"
+        ]
+      }
+    }
+  },
+  "runs": {
+    "llama.cpp": [
+      {
+        "load_ms": 853.8175,
+        "prompts": {
+          "short": {
+            "first": {
+              "prefill_ms": 3996.462,
+              "total_ms": 4312.849166999999,
+              "prompt_tokens": 2930,
+              "generated_tokens": 11,
+              "text": "Can we move the meeting to 4 pm tomorrow"
+            },
+            "warm": [
+              {
+                "prefill_ms": 5562.077,
+                "total_ms": 5885.585416000001,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5301.434,
+                "total_ms": 5509.710874999998,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 4829.761,
+                "total_ms": 5021.3875,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 4970.93,
+                "total_ms": 5173.656917000002,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 4813.551,
+                "total_ms": 5006.503708,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              }
+            ]
+          },
+          "long": {
+            "first": {
+              "prefill_ms": 4989.111,
+              "total_ms": 8256.712167,
+              "prompt_tokens": 3089,
+              "generated_tokens": 174,
+              "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+            },
+            "warm": [
+              {
+                "prefill_ms": 5641.321,
+                "total_ms": 8716.831833,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5691.779,
+                "total_ms": 9529.559290999998,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5716.556,
+                "total_ms": 9608.822707999998,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5673.444,
+                "total_ms": 9027.669082999992,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5664.939,
+                "total_ms": 9204.834833000006,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              }
+            ]
+          }
+        }
+      },
+      {
+        "load_ms": 1263.700209000035,
+        "prompts": {
+          "short": {
+            "first": {
+              "prefill_ms": 3673.24,
+              "total_ms": 3869.2592080000168,
+              "prompt_tokens": 2930,
+              "generated_tokens": 11,
+              "text": "Can we move the meeting to 4 pm tomorrow"
+            },
+            "warm": [
+              {
+                "prefill_ms": 6201.523,
+                "total_ms": 6408.320082999921,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5447.897,
+                "total_ms": 5680.346125000028,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5259.173,
+                "total_ms": 5464.164459000017,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5440.153,
+                "total_ms": 5655.514292000021,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5490.857,
+                "total_ms": 5720.774541999958,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              }
+            ]
+          },
+          "long": {
+            "first": {
+              "prefill_ms": 5823.016,
+              "total_ms": 9517.592624999907,
+              "prompt_tokens": 3089,
+              "generated_tokens": 174,
+              "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+            },
+            "warm": [
+              {
+                "prefill_ms": 6012.022,
+                "total_ms": 9724.38749999992,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5990.102,
+                "total_ms": 9379.128208999988,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 6005.829,
+                "total_ms": 9396.742249999988,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5948.164,
+                "total_ms": 9284.746791999965,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 6005.912,
+                "total_ms": 9434.419124999977,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              }
+            ]
+          }
+        }
+      },
+      {
+        "load_ms": 850.2891669999144,
+        "prompts": {
+          "short": {
+            "first": {
+              "prefill_ms": 3617.425,
+              "total_ms": 3976.2541659999897,
+              "prompt_tokens": 2930,
+              "generated_tokens": 11,
+              "text": "Can we move the meeting to 4 pm tomorrow"
+            },
+            "warm": [
+              {
+                "prefill_ms": 5709.814,
+                "total_ms": 5909.264291999989,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 4951.129,
+                "total_ms": 5158.782459000008,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5243.997,
+                "total_ms": 5444.6193329999915,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5289.01,
+                "total_ms": 5485.27875000002,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              },
+              {
+                "prefill_ms": 5308.301,
+                "total_ms": 5534.448375000011,
+                "prompt_tokens": 2930,
+                "generated_tokens": 11,
+                "text": "Can we move the meeting to 4 pm tomorrow"
+              }
+            ]
+          },
+          "long": {
+            "first": {
+              "prefill_ms": 5441.271,
+              "total_ms": 8887.631749999968,
+              "prompt_tokens": 3089,
+              "generated_tokens": 174,
+              "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+            },
+            "warm": [
+              {
+                "prefill_ms": 5808.221,
+                "total_ms": 9071.339291999948,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5961.791,
+                "total_ms": 9433.029583999996,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5967.203,
+                "total_ms": 9366.736625000045,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 5970.029,
+                "total_ms": 9365.405333000013,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              },
+              {
+                "prefill_ms": 6005.146,
+                "total_ms": 9532.502625000006,
+                "prompt_tokens": 3089,
+                "generated_tokens": 174,
+                "text": "Okay so quick update on the project. We finished the first version of the onboarding screens last week and the feedback from the test group was mostly good. They liked how short it was but a few people got stuck on the permissions step because they didn't know why we needed accessibility. So we're going to add a sentence there that explains it like it's only used to paste the text for you. The other thing is the pill at the bottom it was showing up on the wrong screen when people had two monitors that's fixed now it follows the screen you're working on. For next week we want to finish the settings page and start on the translation feature and we should probably also look at the memory use because on older laptops it was a bit high like around three gigabytes so yeah let's aim to have that done by Thursday because Friday is a holiday."
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "candle": [
+      {
+        "load_ms": 2568.889,
+        "prompts": {
+          "short": {
+            "first": {
+              "generated_tokens": 11,
+              "prefill_ms": 10720.766917,
+              "prompt_tokens": 2930,
+              "text": "Can we move the meeting to 4pm tomorrow?",
+              "total_ms": 11381.729
+            },
+            "warm": [
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12704.380958,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13423.195666
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12292.42675,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12861.31975
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 11568.016416,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12154.633916
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 11957.640458,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12533.423375
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12089.6125,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12708.512042
+              }
+            ]
+          },
+          "long": {
+            "first": {
+              "generated_tokens": 135,
+              "prefill_ms": 13386.316791000001,
+              "prompt_tokens": 3089,
+              "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+              "total_ms": 21210.886916
+            },
+            "warm": [
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 13941.602291000001,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22069.711416000002
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14699.690416,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22684.106499999998
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14068.615749999999,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22049.556209
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14274.655375,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22235.345917
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14287.934375,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22316.349458
+              }
+            ]
+          }
+        }
+      },
+      {
+        "load_ms": 1693.778833,
+        "prompts": {
+          "short": {
+            "first": {
+              "generated_tokens": 11,
+              "prefill_ms": 11783.340042000002,
+              "prompt_tokens": 2930,
+              "text": "Can we move the meeting to 4pm tomorrow?",
+              "total_ms": 12380.715959
+            },
+            "warm": [
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12554.058459,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13163.275542
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12873.405542,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13479.930832999999
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12647.183042,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13248.426083
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12590.768917,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13223.084709
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12630.608499999998,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13252.216125
+              }
+            ]
+          },
+          "long": {
+            "first": {
+              "generated_tokens": 135,
+              "prefill_ms": 14127.911167,
+              "prompt_tokens": 3089,
+              "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+              "total_ms": 22099.73175
+            },
+            "warm": [
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14199.451333,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22212.249458
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14232.551292,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22198.105667
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14201.149625,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22229.407875
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14076.874083,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22098.265708
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14596.410792,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22567.824417
+              }
+            ]
+          }
+        }
+      },
+      {
+        "load_ms": 1866.701875,
+        "prompts": {
+          "short": {
+            "first": {
+              "generated_tokens": 11,
+              "prefill_ms": 11407.869166999999,
+              "prompt_tokens": 2930,
+              "text": "Can we move the meeting to 4pm tomorrow?",
+              "total_ms": 12044.929958
+            },
+            "warm": [
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12117.977625,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12719.187875
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12280.803415999999,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12868.0745
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12301.304291999999,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12907.867250000001
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12257.288833,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 12866.432791
+              },
+              {
+                "generated_tokens": 11,
+                "prefill_ms": 12477.738875,
+                "prompt_tokens": 2930,
+                "text": "Can we move the meeting to 4pm tomorrow?",
+                "total_ms": 13101.267749999999
+              }
+            ]
+          },
+          "long": {
+            "first": {
+              "generated_tokens": 135,
+              "prefill_ms": 14079.634125,
+              "prompt_tokens": 3089,
+              "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+              "total_ms": 22014.104791
+            },
+            "warm": [
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14518.992875,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22423.319166999998
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14018.768542,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22070.040542000002
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14522.847792,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22577.836792
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14595.019791,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22721.275375
+              },
+              {
+                "generated_tokens": 135,
+                "prefill_ms": 14869.3305,
+                "prompt_tokens": 3089,
+                "text": "Okay，我们项目进展如下：上周我们完成了第一个欢迎屏幕版本，测试组的反馈总体不错，他们喜欢它简洁，但少数人遇到了权限步骤，因为他们不知道为什么需要权限。我们将在那里添加一句解释，说明它仅用于粘贴文本，其他的是在底部的 pill 显示，当人们有两个显示器时会显示在错误的屏幕上，现在它已跟随你正在工作的屏幕。下周我们要完成设置页面，开始翻译功能，我们还应该也看看内存，因为旧的笔记本电脑它有点高，大约3GB左右，所以我们希望在周五前完成，不过因为周五是假日，所以定在周四完成。",
+                "total_ms": 22859.790792
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
