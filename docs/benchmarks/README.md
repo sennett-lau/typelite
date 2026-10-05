@@ -1,11 +1,11 @@
-# Performance benchmarks and decisions
+# Performance benchmarks
 
 This is the record of Typelite's application performance: recording UI updates, streaming
 responses and transcript processing. Start with the [current baseline](BASELINE.md) to see the
 latest measured numbers. [Speech and model benchmarks](../guides/benchmarks/README.md) cover
-setup-specific inference services separately. Runtime replacement experiments belong here
-with the code performance evidence; they use their own schema and do not replace the
-application-overhead baseline.
+setup-specific inference services separately. Research that evaluates replacing a runtime,
+engine or model (MLX, pure-Rust inference …) lives in [docs/research/](../research/README.md),
+with its decision; it does not change the application-overhead baseline.
 
 | Document | Purpose |
 |---|---|
@@ -17,8 +17,6 @@ application-overhead baseline.
 | [Speech-check memory](reports/2026-10-03-voice-check-memory/README.md) | Direct PCM analysis and one window-level buffer. |
 | [Waveform frame work](reports/2026-10-03-waveform-work/README.md) | Fewer repeated style writes and bounded resume work. |
 | [First improvement](reports/2026-10-03-local-overhead/README.md) | Recording subscriptions, stream buffering and Cantonese conversion. |
-| [MLX runtime evaluation](reports/2026-10-03-mlx-runtime-evaluation/README.md) | Real speech and text inference, model formats, quality and memory tradeoffs. |
-| [MLX decision](decisions/2026-10-03-mlx-runtime.md) | Why the shipping engines remain unchanged and when to revisit that decision. |
 
 ## Structure
 
@@ -44,11 +42,12 @@ needs an interpretation fixed. Executable fixtures remain in `benchmarks/` and
 
 ## Decisions, including no change
 
-Before repeating an optimization proposal, search `decisions/` and the reports for the
-component or runtime name. Record a dated decision even when an experiment does not result
-in a shipping change. Include the tested scope, alternatives, evidence links, limitations,
-and concrete conditions for reopening it. Link it from this index and the PR. A new runtime
-release or hardware target can justify new evidence; the same hypothesis alone does not.
+Before repeating an optimization proposal, search [docs/research/](../research/README.md) and
+the reports here for the component or runtime name. A performance experiment that does not
+result in a shipping change still gets a dated record: in its report here when it tunes
+Typelite's own code, or as a research entry when it evaluates a different runtime, engine or
+model. A new runtime release or hardware target can justify new evidence; the same hypothesis
+alone does not.
 
 Keep rejected and deferred candidates in their reports. Do not promote an experimental
 runtime into `baseline.json` merely because one workload is faster. Use a new dated report

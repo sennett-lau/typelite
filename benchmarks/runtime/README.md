@@ -2,7 +2,7 @@
 
 These opt-in benchmarks load real models on an Apple silicon Mac. They do not run
 in CI or change application settings. The first evaluation is recorded in
-[the MLX report](../../docs/benchmarks/reports/2026-10-03-mlx-runtime-evaluation/README.md).
+[the MLX report](../../docs/research/2026-10-03-mlx-runtime/report.md).
 
 ## Setup
 
