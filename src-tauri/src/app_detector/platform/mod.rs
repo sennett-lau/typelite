@@ -15,6 +15,13 @@ mod windows;
 
 pub(crate) trait ContextSignalSource: Send + Sync + 'static {
     fn collect(&self) -> Option<ContextSignals>;
+
+    /// Process ID and bundle ID of the frontmost app: all that a [`TargetAppGuard`] compares.
+    /// Paste asks this before every insert, so a platform should answer it cheaply; the default
+    /// collects everything.
+    fn front_app_guard(&self) -> Option<TargetAppGuard> {
+        self.collect().map(|signals| TargetAppGuard::from(&signals))
+    }
 }
 
 pub(crate) fn default_source() -> Arc<dyn ContextSignalSource> {
