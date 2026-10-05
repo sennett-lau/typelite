@@ -37,7 +37,7 @@ browser for its tab address).
 - **Change:** `ContextSignalSource::front_app_guard` returns only the process ID and bundle ID,
   which are all a `TargetAppGuard` compares. On macOS it reads them from
   `NSWorkspace.frontmostApplication`; other platforms keep the default (`collect`).
-- **Must stay the same:** the same guard values (all 120 timed samples and 9 first calls on the
+- **Must stay the same:** the same guard values (all 60 timed samples and 3 first calls on the
   candidate matched the AppleScript guard), and an app switch must be seen. A throwaway test
   with a main run loop (as Tauri has) and reads from a background thread saw a switch to Finder
   after 18 ms and the switch back after 30 ms. The restore loop polls for up to 200 ms.
