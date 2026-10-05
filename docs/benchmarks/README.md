@@ -13,6 +13,7 @@ with its decision; it does not change the application-overhead baseline.
 | [Baseline data](baseline.json) | Raw samples and provenance, usable with the benchmark runner's `--compare`. |
 | [Methodology](methodology.md) | Workloads, timing boundaries, statistics and limitations. |
 | [Report template](REPORT_TEMPLATE.md) | Standard report for each performance PR. |
+| [Chosen microphone](reports/2026-10-06-mic-device-cache/README.md) | Recording starts about 0.28 s sooner with a mic chosen in Settings. |
 | [Native target check](reports/2026-10-05-native-target-check/README.md) | Paste's target-app check without AppleScript, about 0.5 s per dictation. |
 | [Dictionary work](reports/2026-10-03-dictionary-work/README.md) | Isolated Add drafts, reused INSERTs and borrowed JSON export. |
 | [Speech-check memory](reports/2026-10-03-voice-check-memory/README.md) | Direct PCM analysis and one window-level buffer. |
