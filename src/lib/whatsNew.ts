@@ -11,6 +11,19 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: '1.1.1',
+    changeKeys: [
+      'askLanguage',
+      'presetsEverywhere',
+      'dictatedRequests',
+      'spokenNumbers',
+      'askClickThrough',
+      'sourceIcons',
+      'whatsNewPaging',
+      'lighterApp',
+    ],
+  },
+  {
     version: '1.1.0',
     changeKeys: [
       'webSearch',

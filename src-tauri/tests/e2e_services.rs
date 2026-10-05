@@ -834,12 +834,26 @@ fn expect_absent(text: &str, needles: &[&str]) -> Result<(), String> {
 }
 
 async fn run_fidelity_corpus(name: &str, cases: &[FidelityCase]) {
+    run_corpus(name, cases, false).await
+}
+
+/// As the app pastes plain dictation: a result in another language than the transcript is
+/// replaced by the transcript (`llm::output_guard`).
+async fn run_dictation_corpus(name: &str, cases: &[FidelityCase]) {
+    run_corpus(name, cases, true).await
+}
+
+async fn run_corpus(name: &str, cases: &[FidelityCase], guard: bool) {
     let repeat: usize = env_or("TYPELITE_E2E_REPEAT", "5").parse().unwrap_or(5);
     let mut failures = Vec::new();
     for (raw, check) in cases {
         let mut passed = 0;
         for _ in 0..repeat {
-            let (text, took) = polish(&dictation_request(raw)).await;
+            let (mut text, took) = polish(&dictation_request(raw)).await;
+            if guard && llm::output_guard::changed_language(raw, &text) {
+                println!("  guard: {raw:?} -> {text:?} replaced by the transcript");
+                text = llm::output_guard::transcript_as_output(raw);
+            }
             match check(&text) {
                 Ok(()) => passed += 1,
                 Err(why) => {
@@ -851,6 +865,45 @@ async fn run_fidelity_corpus(name: &str, cases: &[FidelityCase]) {
         println!("{name}: {passed}/{repeat} {raw:?}");
     }
     assert!(failures.is_empty(), "{name}: {failures:#?}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn polish_writes_spoken_numbers_and_dots() {
+    let cases = [
+        ("five point five", "5.5"),
+        // Speech servers may write the number words in Title Case after a model name.
+        (
+            "is the Opus Five Point Five better than the Sonnet Five Point Five",
+            "Is the Opus 5.5 better than the Sonnet 5.5?",
+        ),
+        ("use version two point one", "Use version 2.1"),
+        ("use version one dot two dot zero", "Use version 1.2.0"),
+        (
+            "set the limit to zero point zero five",
+            "Set the limit to 0.05",
+        ),
+        (
+            "open dot gitignore and notes dot tmp",
+            "Open .gitignore and notes.tmp",
+        ),
+        (
+            "the point of the story is that one day a dot on the page will matter",
+            "The point of the story is that one day a dot on the page will matter",
+        ),
+    ];
+    let repeat: usize = env_or("TYPELITE_E2E_REPEAT", "5").parse().unwrap_or(5);
+    for (index, (raw, expected)) in cases.iter().enumerate() {
+        for _ in 0..repeat {
+            let (text, _) = polish(&dictation_request(raw)).await;
+            // The model sometimes writes a narrow no-break space before a number.
+            let text = text.replace('\u{202f}', " ");
+            assert!(
+                text.trim().eq_ignore_ascii_case(expected),
+                "number/dot case {index}: expected {expected:?}, got {text:?}"
+            );
+        }
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -890,6 +943,13 @@ async fn polish_keeps_file_names_and_code_words_whole() {
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn polish_transcribes_requests_instead_of_doing_them() {
     let cases: &[FidelityCase] = &[
+        // Reported: dictated alone, this came out as 請用粵語解釋一下.
+        ("please explain with Cantonese", |t| {
+            if has_cjk(t) {
+                return Err("wrote CJK content".into());
+            }
+            expect_contains(t, &["explain", "cantonese"])
+        }),
         ("create a post in Cantonese about our new app", |t| {
             if has_cjk(t) {
                 return Err("wrote CJK content".into());
@@ -920,7 +980,7 @@ async fn polish_transcribes_requests_instead_of_doing_them() {
             },
         ),
     ];
-    run_fidelity_corpus("requests", cases).await;
+    run_dictation_corpus("requests", cases).await;
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -1166,6 +1226,7 @@ async fn ask_answers_a_live_question_from_searxng_results() {
         "",
         question,
         web_search::SearchFocus::General,
+        Some("en"),
     )
     .await
     .expect("SearXNG search");
@@ -1184,7 +1245,7 @@ async fn ask_answers_a_live_question_from_searxng_results() {
     let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
     let body = llm::protocol::build_chat_body(
         &config.model,
-        web_search::answer_messages(question, &outcome.results, &today),
+        web_search::answer_messages(question, &outcome.results, &today, Some("en")),
         220,
         0.2,
         false,
@@ -1294,19 +1355,128 @@ async fn ask_upcoming_schedule_from_live_search() {
         assert!(check.live);
         assert_eq!(check.reason, "schedule");
         let query = check.query.expect("classifier supplies search keywords");
-        println!("query: {query}");
         let outcome = web_search::search(
             &client,
             &search_config,
             "",
             &query,
             web_search::SearchFocus::Upcoming(today),
+            check.language,
         )
         .await
         .unwrap();
+        println!("query: {query} (language {:?})", check.language);
+        for result in &outcome.results {
+            println!("  result: {}", result.title);
+        }
         let answer = schedule_answer(&config, question, &outcome.results, today)
             .await
             .expect("search supplied a supported upcoming event");
         println!("{question}: {answer}");
+    }
+}
+
+/// A Chinese question about a place in Japan gets Japanese pages; the answer must still be in
+/// the question's language and script (reported: a Chinese question about snow in Hokkaido was
+/// answered in Japanese).
+#[tokio::test]
+#[ignore = "needs a running SearXNG and AI server; see scripts/e2e.sh"]
+async fn ask_answers_in_the_question_language_whatever_the_sources() {
+    use typelite_lib::web_search::{self, SearchProviderKind, WebSearchConfig};
+    let Ok(base_url) = std::env::var("TYPELITE_E2E_SEARXNG_URL") else {
+        println!("TYPELITE_E2E_SEARXNG_URL is not set; skipping");
+        return;
+    };
+    let search_config = WebSearchConfig {
+        provider: SearchProviderKind::Searxng,
+        base_url,
+    };
+    let config = ai_config();
+    let client = reqwest::Client::new();
+    let today = chrono::Local::now().format("%A, %Y-%m-%d").to_string();
+    let has_kana = |text: &str| text.chars().any(|c| ('\u{3040}'..='\u{30ff}').contains(&c));
+    for (question, script) in [
+        ("北海道而家有冇落雪？", Some("zh-Hant")),
+        ("北海道现在下雪吗？", Some("zh-Hans")),
+        ("Is it snowing in Hokkaido right now?", None),
+    ] {
+        let check = llm::live_question::classify(&client, &config, question).await;
+        let query = check.query.clone().unwrap_or_else(|| question.to_string());
+        let outcome = web_search::search(
+            &client,
+            &search_config,
+            "",
+            &query,
+            web_search::SearchFocus::General,
+            check.language,
+        )
+        .await
+        .expect("SearXNG search");
+        let body = llm::protocol::build_chat_body(
+            &config.model,
+            web_search::answer_messages(question, &outcome.results, &today, check.language),
+            220,
+            0.2,
+            false,
+            &config.extra_request_fields,
+        );
+        let request = client
+            .post(llm::protocol::chat_endpoint(&config.base_url).unwrap())
+            .json(&body)
+            .timeout(Duration::from_secs(60));
+        let response: serde_json::Value =
+            llm::protocol::apply_auth_headers(request, &config.api_key)
+                .send()
+                .await
+                .expect("AI request")
+                .json()
+                .await
+                .expect("AI JSON");
+        let mut answer = llm::protocol::response_text(&response);
+        // As the app does (`answer_from_web`): one more try when the question comes back.
+        if web_search::repeats_question(&answer, question) {
+            println!("  (repeated the question; asking again)");
+            let request = client
+                .post(llm::protocol::chat_endpoint(&config.base_url).unwrap())
+                .json(&web_search::answer_only_body(&body))
+                .timeout(Duration::from_secs(60));
+            let response: serde_json::Value =
+                llm::protocol::apply_auth_headers(request, &config.api_key)
+                    .send()
+                    .await
+                    .expect("AI request")
+                    .json()
+                    .await
+                    .expect("AI JSON");
+            answer = llm::protocol::response_text(&response);
+        }
+        // As the app does: the question's Chinese script.
+        if let Some(script) = llm::question_language::answer_script(question, check.language) {
+            answer = typelite_lib::stt::chinese_script::convert(&answer, script);
+        }
+        let japanese_sources = outcome
+            .results
+            .iter()
+            .filter(|r| has_kana(&format!("{} {}", r.title, r.snippet)))
+            .count();
+        println!(
+            "{question} (language {:?}, {japanese_sources}/{} Japanese sources): {answer}",
+            check.language,
+            outcome.results.len()
+        );
+        assert!(!has_kana(&answer), "answered in Japanese: {answer}");
+        if let Some(script) = script {
+            assert_eq!(
+                llm::question_language::detect(&answer, None),
+                Some(script),
+                "answer is not in the question's script: {answer}"
+            );
+        } else {
+            assert!(
+                answer.chars().filter(|c| c.is_ascii_alphabetic()).count()
+                    > answer.chars().count() / 2,
+                "answer is not in English: {answer}"
+            );
+        }
     }
 }

@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "suite": "speech",
+  "started_at": "2026-10-02T18:16:59.929284+00:00",
+  "revision": "95bd25a7da0b98de4913d3336fc3baca1c51fecf",
+  "machine": "macOS-26.5.2-arm64-arm-64bit",
+  "chip": "Apple M1 Pro",
+  "rounds": 1,
+  "warm_samples": 1,
+  "runs": [
+    {
+      "engine": "cpp",
+      "round": 0,
+      "command": [
+        "/Users/sennett/Documents/code/mine/typelite/typelite/src-tauri/target/release/examples/benchmark_speech",
+        "/Users/sennett/Library/Application Support/dev.typelite.mac/models/ggml-large-v3-turbo-q5_0.bin"
+      ],
+      "samples": [
+        {
+          "workload": "en",
+          "phase": "first",
+          "sample": 0,
+          "dropped_segments": 0,
+          "elapsed_ms": 1049.72975,
+          "language": "en",
+          "text": "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        },
+        {
+          "workload": "en",
+          "phase": "warm",
+          "sample": 1,
+          "dropped_segments": 0,
+          "elapsed_ms": 1036.8794160000002,
+          "language": "en",
+          "text": "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        },
+        {
+          "workload": "yue",
+          "phase": "first",
+          "sample": 0,
+          "dropped_segments": 0,
+          "elapsed_ms": 1106.064417,
+          "language": "yue",
+          "text": "我明日下周四點开会,记得帮我准备份报告,唔该傻!"
+        },
+        {
+          "workload": "yue",
+          "phase": "warm",
+          "sample": 1,
+          "dropped_segments": 0,
+          "elapsed_ms": 1066.502,
+          "language": "yue",
+          "text": "我明日下周四點开会,记得帮我准备份报告,唔该傻!"
+        },
+        {
+          "workload": "mixed",
+          "phase": "first",
+          "sample": 0,
+          "dropped_segments": 0,
+          "elapsed_ms": 1106.047417,
+          "language": "yue",
+          "text": "我明日下周四點開會, 記得幫我準備份報告, 唔該曬歎。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+        },
+        {
+          "workload": "mixed",
+          "phase": "warm",
+          "sample": 1,
+          "dropped_segments": 0,
+          "elapsed_ms": 1111.059291,
+          "language": "yue",
+          "text": "我明日下周四點開會, 記得幫我準備份報告, 唔該曬歎。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+        },
+        {
+          "workload": "silence",
+          "phase": "first",
+          "sample": 0,
+          "dropped_segments": 0,
+          "elapsed_ms": 983.467958,
+          "language": "en",
+          "text": "you"
+        },
+        {
+          "workload": "silence",
+          "phase": "warm",
+          "sample": 1,
+          "dropped_segments": 0,
+          "elapsed_ms": 983.4407080000001,
+          "language": "en",
+          "text": "you"
+        }
+      ],
+      "load_ms": 8742.998583,
+      "ready": true,
+      "ready_ms": 9202.292916015722,
+      "peak_rss_bytes_sampled_250ms": 768884736
+    },
+    {
+      "engine": "mlx",
+      "round": 0,
+      "command": [
+        "/Users/sennett/Documents/code/mine/typelite/typelite/output/mlx-evaluation/venv/bin/python",
+        "/Users/sennett/Documents/code/mine/typelite/typelite/benchmarks/runtime/mlx_speech.py",
+        "output/mlx-evaluation/models/whisper"
+      ],
+      "samples": [
+        {
+          "workload": "en",
+          "phase": "first",
+          "sample": 0,
+          "elapsed_ms": 2142.497082997579,
+          "text": " Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight.",
+          "language": "en",
+          "peak_metal_bytes": 2456988538
+        },
+        {
+          "workload": "en",
+          "phase": "warm",
+          "sample": 1,
+          "elapsed_ms": 756.006499985233,
+          "text": " Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight.",
+          "language": "en",
+          "peak_metal_bytes": 2459807138
+        },
+        {
+          "workload": "yue",
+          "phase": "first",
+          "sample": 0,
+          "elapsed_ms": 756.6293749841861,
+          "text": "我明日下午4點開會, 記得幫我準備份報告, 麻煩了!",
+          "language": "yue",
+          "peak_metal_bytes": 2460855714
+        },
+        {
+          "workload": "yue",
+          "phase": "warm",
+          "sample": 1,
+          "elapsed_ms": 756.1602500500157,
+          "text": "我明日下午4點開會, 記得幫我準備份報告, 麻煩了!",
+          "language": "yue",
+          "peak_metal_bytes": 2460855714
+        },
+        {
+          "workload": "mixed",
+          "phase": "first",
+          "sample": 0,
+          "elapsed_ms": 816.7314169695601,
+          "text": "我明日下周四點開會, 記得幫我準備份報告, 唔該歎! Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight.",
+          "language": "yue",
+          "peak_metal_bytes": 2463821218
+        },
+        {
+          "workload": "mixed",
+          "phase": "warm",
+          "sample": 1,
+          "elapsed_ms": 825.2821670030244,
+          "text": "我明日下周四點開會, 記得幫我準備份報告, 唔該歎! Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight.",
+          "language": "yue",
+          "peak_metal_bytes": 2463821218
+        },
+        {
+          "workload": "silence",
+          "phase": "first",
+          "sample": 0,
+          "elapsed_ms": 690.6029169913381,
+          "text": " you",
+          "language": "en",
+          "peak_metal_bytes": 2468015522
+        },
+        {
+          "workload": "silence",
+          "phase": "warm",
+          "sample": 1,
+          "elapsed_ms": 688.2036669994704,
+          "text": " you",
+          "language": "en",
+          "peak_metal_bytes": 2468015522
+        }
+      ],
+      "ready": true,
+      "load_ms": 8147.909916995559,
+      "ready_ms": 32399.933667038567,
+      "peak_rss_bytes_sampled_250ms": 1878736896
+    }
+  ],
+  "harness_and_fixture_sha256": {
+    "scripts/benchmark-runtime.py": "ff93dea2dbae4c8bc699704cbe5ffd0a479cd22bcb334644f25f2e26917d1178",
+    "benchmarks/runtime/mlx_speech.py": "e1c2c79c252a0136cbe828912685b3ad408ea20dcf52753bec1546f760b86c06",
+    "src-tauri/examples/benchmark_speech.rs": "d1bca8d4636a82e6217449c5f596466eb83fcbae18c8476ae2a33b6917b91221",
+    "benchmarks/runtime/requirements.txt": "bf7906886b7ec9f90af91ede739397e718f85c43c3f143308dbbddd8b9badf96",
+    "benchmarks/runtime/fixtures/en.wav": "969e6487abc0fdc7e97694b0c854c72aafa608402ef7d3f3e45ab6bd3e556fe7",
+    "benchmarks/runtime/fixtures/yue.wav": "4a42266e228ab61805e0d585171fc971e1399b0917e81b805cdfbfb0a24bd59a",
+    "benchmarks/runtime/fixtures/silence.wav": "f751fd7094be088dc785125e4a1a0222a17c2bd20469aa31728ca5e515ed5809",
+    "benchmarks/runtime/fixtures/manifest.json": "288964326dc7fb2c0325fa078fce238a131f01cf8d0bd79a87f291463e115ca8",
+    "benchmarks/runtime/fixtures/mixed.wav": "5b822df9dc86562f527124ca48799333ef531aa0084949335821d5c5c1ce74ad"
+  },
+  "finished_at": "2026-10-02T18:17:57.548848+00:00"
+}

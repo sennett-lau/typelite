@@ -1,0 +1,5731 @@
+{
+  "schema": 1,
+  "timestamp": "2026-10-02T20:29:17.257Z",
+  "script_sha256": "ef94eaf2d3be5140135a2a6e034ac914a0306190a65958868d631b7c4f88a848",
+  "snapshots": {
+    "before": {
+      "path": "/Users/sennett/Documents/code/mine/typelite/typelite/docs/benchmarks/reports/2026-10-03-dictionary-work/before.json",
+      "snapshot_sha256": "d61c87914b9cb1f7dbac74b30ee36ad2fb1c38ede4ba94a8fad9c6f62b4a977e",
+      "timestamp": "2026-10-02T20:04:43.521Z",
+      "revision": "3174f912f582eadff4fcd73e32601a56f466957a",
+      "source_sha256": "8f46ffe7270e506daf170325fb8e360bb3efabd194917c394b72fc694462a37e",
+      "executable": "/Users/sennett/Documents/code/mine/typelite/typelite/output/benchmarks/bin/d50eac58f4afcbad998cc8750fef5c0947fe6114f2e01312ac85056372aea0b3",
+      "executable_sha256": "d50eac58f4afcbad998cc8750fef5c0947fe6114f2e01312ac85056372aea0b3"
+    },
+    "after": {
+      "path": "/Users/sennett/Documents/code/mine/typelite/typelite/docs/benchmarks/reports/2026-10-03-dictionary-work/after.json",
+      "snapshot_sha256": "98fe53dd720184ceda0a893b9e7beef40e3a51c50292c8b18a6822e28262b58e",
+      "timestamp": "2026-10-02T20:22:04.082Z",
+      "revision": "336b3e83e6eb945b5235b65e7c42dfb6db785b29",
+      "source_sha256": "825f79c9a4fdd360ba759288075fb0dc460e4d41e3f90360f3ed8884291f548a",
+      "executable": "/Users/sennett/Documents/code/mine/typelite/typelite/output/benchmarks/bin/09ad6d743c3ad0580a83210603de4fc2c4bb4f09b3b54df5b4a87a1e97f2892d",
+      "executable_sha256": "09ad6d743c3ad0580a83210603de4fc2c4bb4f09b3b54df5b4a87a1e97f2892d"
+    }
+  },
+  "environment": {
+    "os": "darwin 25.5.0",
+    "arch": "arm64",
+    "cpu": "Apple M1 Pro",
+    "logical_cpus": 8,
+    "memory_bytes": 34359738368,
+    "node": "v24.10.0",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "rust_profile": "release (opt-level=s, thin LTO, 1 codegen unit)",
+    "build_env": {}
+  },
+  "execution_machine": {
+    "os": "darwin 25.5.0",
+    "arch": "arm64",
+    "cpu": "Apple M1 Pro",
+    "logical_cpus": 8,
+    "memory_bytes": 34359738368,
+    "node": "v24.10.0"
+  },
+  "harness_sha256": "fe4b4c25721e696573dc8d667f849d4857de8f400c1ccfd702532e031f33d820",
+  "dependencies_sha256": "d8a5701e33fd41890321407988901cd26dd44bd986184200c4dd80e9a2ba96b4",
+  "build_config_sha256": "d00639dd6c540252e4d1e226bf530239658c48139b9e8b00ebcf0b88ef3c53e8",
+  "order": [
+    "before",
+    "after",
+    "after",
+    "before",
+    "before",
+    "after"
+  ],
+  "runs": [
+    {
+      "position": 1,
+      "variant": "before",
+      "rows": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.654170000000001,
+            8.25958,
+            6.1670799999999995,
+            5.765420000000001,
+            5.59875,
+            5.6591700000000005,
+            5.62458,
+            5.62041,
+            5.62,
+            5.720840000000001,
+            5.867920000000001,
+            5.71833,
+            5.726659999999999,
+            5.62125,
+            5.705
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            346.87080000000003,
+            344.3792,
+            364.55,
+            354.2083,
+            350.2167,
+            353.8292,
+            348.3166,
+            348.94169999999997,
+            360.55,
+            352.1667,
+            349.5791,
+            346.8542,
+            367.9416,
+            350.4375,
+            354.00840000000005
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.07516699999999998,
+            0.07225,
+            0.079042,
+            0.073125,
+            0.072208,
+            0.072291,
+            0.072417,
+            0.072375,
+            0.072208,
+            0.072375,
+            0.072292,
+            0.075208,
+            0.07225,
+            0.072208,
+            0.07225
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            255.34160000000003,
+            306.7082,
+            247.34990000000002,
+            199.57920000000001,
+            203.95,
+            251.8209,
+            215.19579999999996,
+            205.3249,
+            202.45409999999998,
+            172.9957,
+            188.329,
+            177.9001,
+            180.90820000000002,
+            219.79149999999998,
+            204.2458
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            636.3665,
+            613.4208000000001,
+            685.4334,
+            658.8415,
+            654.4251,
+            666.1417,
+            640.5083,
+            695.2999,
+            686.0373999999999,
+            750.6706999999999,
+            663.5791,
+            663.8086999999999,
+            672.0333,
+            661.2374,
+            691.5917
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2333.8210000000004,
+            2330.5834000000004,
+            2293.3917,
+            2345.3041000000003,
+            2347.7125,
+            2295.204,
+            2344.5044000000003,
+            2341.2540999999997,
+            2291.7542,
+            2349.9834,
+            2325.6624,
+            2327.6580000000004,
+            2367.0001,
+            2339.5415999999996,
+            2361.0124
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            56.771336,
+            56.839836,
+            56.648836,
+            56.478168000000004,
+            57.178168,
+            56.541332000000004,
+            56.6895,
+            59.061668,
+            67.019832,
+            61.526164,
+            60.336836,
+            56.822332,
+            56.918832,
+            57.854668,
+            56.5565
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            894.0806875,
+            884.1301875,
+            897.7995,
+            883.9765625,
+            878.9036874999999,
+            886.0677499999999,
+            877.6640625,
+            883.921875,
+            881.8098749999999,
+            878.671875,
+            890.1744375,
+            880.2916875,
+            885.8176874999999,
+            886.3046875,
+            881.8151250000001
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            8910.875,
+            8767.292,
+            8789.042000000001,
+            8975.25,
+            8881.583,
+            8995.875,
+            8895.5,
+            8940.75,
+            8937.667,
+            8926.125,
+            9055.167,
+            8903.625,
+            8867.25,
+            8886.082999999999,
+            8930.834
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            61.151336,
+            56.905,
+            57.811668,
+            57.333,
+            57.001168,
+            56.766667999999996,
+            57.073,
+            57.358,
+            57.0155,
+            57.579,
+            57.055,
+            56.859663999999995,
+            57.5785,
+            56.886664,
+            57.2465
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            54.679,
+            53.1965,
+            54.301168,
+            53.35,
+            53.738332,
+            53.757668,
+            53.44,
+            53.312332,
+            53.8225,
+            54.390668000000005,
+            53.587168,
+            53.623164,
+            53.575664,
+            54.0505,
+            53.444168
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.485,
+            0.4875,
+            0.48375,
+            0.48708999999999997,
+            0.4875,
+            0.4875,
+            0.48833,
+            0.48042,
+            0.52417,
+            0.48957999999999996,
+            0.48666,
+            0.48458000000000007,
+            0.48208999999999996,
+            0.48375,
+            0.48625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            8.375,
+            9.875,
+            12.625,
+            9,
+            11.958,
+            11.458,
+            8.875,
+            8.334,
+            10.5,
+            8.542,
+            8.167,
+            7.707999999999999,
+            8.709000000000001,
+            8.084,
+            9.166
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            1.95125,
+            1.92167,
+            1.89375,
+            1.89625,
+            1.92167,
+            1.88875,
+            1.89042,
+            1.975,
+            1.88791,
+            1.89417,
+            1.88959,
+            1.8933399999999998,
+            1.96584,
+            2.03792,
+            2.03416
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            118.5,
+            100.75,
+            110.958,
+            125.375,
+            161,
+            108,
+            97.25,
+            93.417,
+            117.084,
+            93.167,
+            93.917,
+            86.209,
+            86.667,
+            104.667,
+            98.125
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            44,
+            15.209,
+            19.417,
+            14.542,
+            13.375,
+            13.5,
+            15.583,
+            14.417,
+            14.125,
+            13.292000000000002,
+            12.958,
+            15.291999999999998,
+            14.084,
+            13.375,
+            12.875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            12.6275,
+            12.47625,
+            12.554590000000001,
+            12.369589999999999,
+            12.36792,
+            12.81916,
+            12.4525,
+            12.44125,
+            12.41125,
+            12.42875,
+            12.370829999999998,
+            12.467080000000001,
+            12.38333,
+            12.50458,
+            12.417919999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            236.917,
+            205.459,
+            205.792,
+            227.083,
+            203.417,
+            204.208,
+            201.917,
+            196.667,
+            208.833,
+            215.292,
+            206.291,
+            199.958,
+            194.292,
+            200.292,
+            186.167
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            563.2833,
+            613.5125,
+            613.9916,
+            573.5083000000001,
+            562.7583999999999,
+            568.3542,
+            562.6584,
+            578.1042,
+            562.7791,
+            573.75,
+            561.1208,
+            590.3082999999999,
+            562.0625,
+            575.8458,
+            567.6916
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            2859.25,
+            3112.9159999999997,
+            2937.417,
+            2842.417,
+            2862.208,
+            2842.875,
+            2852.667,
+            2986.125,
+            2907.666,
+            2817.25,
+            2761.2909999999997,
+            2954.833,
+            2947.416,
+            2997.042,
+            2810.6670000000004
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            5720.709,
+            5813.334,
+            5815.959,
+            6000.208,
+            5803.125,
+            5933.709,
+            5997.333,
+            6001.125,
+            6093.292,
+            6152.708,
+            6255.459,
+            5964.125,
+            5825.4580000000005,
+            5879.792,
+            5888.0419999999995
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            27294.791999999998,
+            27949.166,
+            27929.625,
+            27222.416999999998,
+            26959.25,
+            26898.541,
+            26613.709,
+            26707.916,
+            26053.125,
+            26121.958000000002,
+            26406.5,
+            26010,
+            27998.334,
+            27796.375,
+            27905.541999999998
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            12021.542,
+            12010.667,
+            11737.375,
+            12160.625,
+            11650.5,
+            11873.333,
+            12225.125,
+            11880.416,
+            11709.792,
+            11809.25,
+            12325.707999999999,
+            11640.208,
+            11636.625,
+            12032.375,
+            12173.333999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            13372.208,
+            13735.542,
+            13751.125,
+            14259.792,
+            13470.375,
+            13452.833,
+            13577.208,
+            13675.708,
+            13586.666000000001,
+            14048.084,
+            14113.166,
+            13316.5,
+            13652.208,
+            14822.167000000001,
+            13661.792000000001
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        }
+      ]
+    },
+    {
+      "position": 2,
+      "variant": "after",
+      "rows": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.649579999999999,
+            6.265420000000001,
+            5.629160000000001,
+            5.72458,
+            5.60333,
+            5.65958,
+            5.63458,
+            5.647080000000001,
+            5.63417,
+            5.69667,
+            6.49125,
+            5.624160000000001,
+            5.63792,
+            5.59125,
+            5.65959
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            358.55420000000004,
+            353.325,
+            350.8042,
+            357.4333,
+            351.775,
+            350.9917,
+            345.71659999999997,
+            365.15,
+            358.075,
+            360.4084,
+            356.0375,
+            356.5292,
+            357.05830000000003,
+            359.3041,
+            361.2583
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.08366599999999999,
+            0.08375,
+            0.083917,
+            0.08375,
+            0.08391599999999999,
+            0.08391599999999999,
+            0.088375,
+            0.08379099999999999,
+            0.08591700000000001,
+            0.08629200000000001,
+            0.084042,
+            0.08391599999999999,
+            0.086,
+            0.083958,
+            0.08366599999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            272.1418,
+            282.9375,
+            221.46269999999998,
+            186.6874,
+            208.60819999999998,
+            200.2832,
+            197.3376,
+            200.9501,
+            181.22520000000003,
+            186.6416,
+            179.8125,
+            187.9498,
+            228.25409999999997,
+            193.8125,
+            192.7957
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            657.15,
+            638.1959,
+            607.5543,
+            625.0959,
+            606.6416,
+            660.2002,
+            623.3085,
+            611.2458,
+            684.5831999999999,
+            661.1706,
+            634.7544,
+            662.8082999999999,
+            661.8416,
+            656.9875999999999,
+            663.2501
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2288.8084,
+            2334.6041,
+            2290.0834,
+            2317.5374,
+            2329.2959,
+            2301.7834000000003,
+            2301.7334,
+            2393.725,
+            2401.9331,
+            2340.5415,
+            2381.5877,
+            2362.2999,
+            2300.671,
+            2383.5167,
+            2360.2293
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            56.753164000000005,
+            57.2965,
+            57.31066800000001,
+            56.629667999999995,
+            57.352832,
+            56.684168,
+            56.461,
+            57.638168,
+            58.144,
+            58.063832000000005,
+            57.2065,
+            57.0205,
+            56.664668,
+            56.436832,
+            56.803164
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            909.171875,
+            886.7995000000001,
+            906.625,
+            880.7161249999999,
+            883.34375,
+            908.41925,
+            899.2629999999999,
+            882.9140625,
+            900.4296875,
+            890.51825,
+            881.109375,
+            903.9088125000001,
+            876.6640625,
+            879.8671875,
+            879.5286249999999
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            8841.458,
+            9015.25,
+            8879.207999999999,
+            8842.125,
+            8821.042,
+            8973.166,
+            8918.125,
+            8852.417,
+            8826.917,
+            8929.582999999999,
+            8932.792,
+            8854.542,
+            8831.667,
+            8892.083,
+            8913.625
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            58.175,
+            57.783332,
+            57.493332,
+            57.278836000000005,
+            56.757836,
+            56.544667999999994,
+            56.778332,
+            56.5275,
+            57.271,
+            56.727835999999996,
+            56.558332,
+            56.834168,
+            56.80466800000001,
+            57.000332,
+            56.783
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            53.919,
+            53.73416400000001,
+            53.754832,
+            53.314164,
+            54.697,
+            53.371168,
+            53.703832000000006,
+            54.314164,
+            53.343668,
+            53.536,
+            53.52366800000001,
+            53.27083199999999,
+            53.8695,
+            53.208831999999994,
+            53.627832000000005
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.18916,
+            0.18709,
+            0.18709,
+            0.18666,
+            0.18708000000000002,
+            0.18666999999999997,
+            0.27542,
+            0.18708000000000002,
+            0.18875,
+            0.18709,
+            0.18791,
+            0.18875,
+            0.18666999999999997,
+            0.1875,
+            0.18666999999999997
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            8.625,
+            8,
+            7.834,
+            11,
+            11.667,
+            10.167,
+            9.75,
+            9.541,
+            20.792,
+            8.667,
+            9.208,
+            10.75,
+            8.042,
+            7.625,
+            10.792
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            0.66333,
+            0.6629100000000001,
+            0.6625,
+            0.6725,
+            0.6820900000000001,
+            0.68375,
+            0.68167,
+            0.6808399999999999,
+            0.68042,
+            0.6808299999999999,
+            0.6625,
+            0.66375,
+            0.66125,
+            0.6616599999999999,
+            0.6625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            135.292,
+            130.458,
+            156.083,
+            146.833,
+            235.375,
+            145.625,
+            191.458,
+            147.833,
+            186.083,
+            132.666,
+            135.083,
+            129.125,
+            123.54099999999998,
+            145.792,
+            145.25
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            26.959,
+            25.292,
+            21.625,
+            17.625,
+            18.333,
+            15.917,
+            15.917,
+            15.625,
+            20.292,
+            18.958000000000002,
+            22.791,
+            19.5,
+            14.792,
+            13.5,
+            16
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            3.415,
+            3.3883300000000003,
+            3.38875,
+            3.3875,
+            3.39,
+            3.3895799999999996,
+            3.39042,
+            3.38708,
+            3.3833300000000004,
+            3.39125,
+            3.38709,
+            3.39042,
+            3.3895799999999996,
+            3.3820799999999998,
+            3.38375
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            155.792,
+            352.667,
+            136.084,
+            147.084,
+            146.958,
+            144.792,
+            146.5,
+            141.5,
+            183.917,
+            239.917,
+            195.625,
+            169.5,
+            141.542,
+            139,
+            146.375
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            148.4666,
+            148.4,
+            145.6833,
+            139.5875,
+            139.5541,
+            139.6583,
+            139.2708,
+            139.1542,
+            142.2542,
+            142.35829999999999,
+            140.3833,
+            143.25830000000002,
+            139.30839999999998,
+            139.1917,
+            139.8458
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            1838.25,
+            2222.459,
+            2144.5840000000003,
+            7307,
+            2231.459,
+            2095.458,
+            2025.958,
+            2074.208,
+            2112.666,
+            2280.584,
+            1992.2910000000002,
+            1867.584,
+            2019.959,
+            2043.708,
+            1887.541
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            1450.7910000000002,
+            1394.417,
+            1399.125,
+            1379.8339999999998,
+            1388.917,
+            1388.041,
+            1402.125,
+            1389.375,
+            1382.2089999999998,
+            1386.542,
+            1424.8329999999999,
+            1395.5829999999999,
+            1387.5,
+            1387.208,
+            1383
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            17084.834,
+            15996.125,
+            16442.208,
+            16529.833000000002,
+            16262.541,
+            14464.207999999999,
+            14253.959,
+            14582.25,
+            14540.582999999999,
+            14267.458,
+            14352.958,
+            14183.042,
+            14565.333999999999,
+            14151.5,
+            14229.041
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            11681.75,
+            11794.832999999999,
+            12067.082999999999,
+            11948.959,
+            12106,
+            12226.542,
+            12060.042,
+            11855.208,
+            11723.832999999999,
+            11763.792,
+            12211.875,
+            12177.291,
+            12091.5,
+            12102.125,
+            12342.459
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            12516.709,
+            12470.75,
+            12785.75,
+            12890.333,
+            12524.625,
+            12321.875,
+            12280.792000000001,
+            12920.208,
+            12846.167,
+            13202.458,
+            12692.625,
+            12648.25,
+            12920.791,
+            12791.417,
+            12637.458
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        }
+      ]
+    },
+    {
+      "position": 3,
+      "variant": "after",
+      "rows": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.64125,
+            5.676659999999999,
+            5.6883300000000006,
+            6.090419999999999,
+            5.79834,
+            5.7375,
+            5.655830000000001,
+            5.67917,
+            5.61291,
+            5.70291,
+            5.5929199999999994,
+            5.747089999999999,
+            5.68625,
+            5.60959,
+            5.6125
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            347.1625,
+            348.7625,
+            348.1083,
+            353.7458,
+            348.8625,
+            346.7375,
+            361.7708,
+            348.1625,
+            352.98339999999996,
+            360.0417,
+            348.1083,
+            348.0833,
+            347.55830000000003,
+            353.5959,
+            347.1042
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.08241600000000002,
+            0.08079100000000002,
+            0.081,
+            0.080875,
+            0.08095899999999999,
+            0.084333,
+            0.081375,
+            0.081167,
+            0.08129199999999999,
+            0.081041,
+            0.081084,
+            0.08095899999999999,
+            0.08095899999999999,
+            0.081125,
+            0.081125
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            260.2166,
+            275.63739999999996,
+            255.025,
+            191.1083,
+            211.63760000000002,
+            200.82070000000002,
+            201.1376,
+            180.94160000000002,
+            192.5502,
+            194.85,
+            204.74579999999997,
+            199.36239999999998,
+            245.22900000000004,
+            222.92929999999996,
+            197.9332
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            618.4168000000001,
+            607.8832,
+            623.4793,
+            604.7292,
+            669.129,
+            619.2333000000001,
+            609.0373999999999,
+            614.5208,
+            635.3874,
+            677.8292,
+            648.4249,
+            612.5791,
+            629.2457,
+            661.4625,
+            723.1002000000001
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2423.3542,
+            2420.6002,
+            2375.5083999999997,
+            2377.0247000000004,
+            2363.1124,
+            2356.8458,
+            2321.0793000000003,
+            2269.5289000000002,
+            2310.3206,
+            2314.2792,
+            2304.1252,
+            2327.7332,
+            2301.7083000000002,
+            2305.1458,
+            2305.2708000000002
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            56.823664,
+            57.4865,
+            56.683832,
+            56.869,
+            56.857831999999995,
+            56.42883199999999,
+            57.007332000000005,
+            58.779332,
+            58.558831999999995,
+            56.911668,
+            56.550163999999995,
+            57.204831999999996,
+            56.461832,
+            56.723168,
+            56.779
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            907.8203125,
+            902.8698125000001,
+            906.7708749999999,
+            892.7682500000001,
+            879.0573125,
+            879.7551875,
+            883.8073125,
+            876.9557500000001,
+            885.0078125,
+            881.21875,
+            895.7942499999999,
+            880.078125,
+            878.8931875,
+            887.315125,
+            882.2994375
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            8932.917,
+            8927.542,
+            8831.5,
+            8836.25,
+            8926.708999999999,
+            8884.792000000001,
+            8793.917,
+            8811.708,
+            8750.083,
+            8983,
+            8867.833,
+            8813.25,
+            9019.125,
+            8941.459,
+            9064.25
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            56.8705,
+            56.392664,
+            58.011168000000005,
+            57.309336,
+            57.246668,
+            57.56766399999999,
+            57.921,
+            56.668332,
+            57.306,
+            56.461168,
+            56.699668,
+            56.5865,
+            56.500832,
+            57.454331999999994,
+            57.262332
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            54.912836000000006,
+            53.746,
+            53.506831999999996,
+            53.608163999999995,
+            53.355,
+            53.1255,
+            53.827332000000006,
+            53.1825,
+            53.5395,
+            53.577,
+            53.168832,
+            52.988832,
+            53.789168,
+            53.124336,
+            53.991336000000004
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.1875,
+            0.18708000000000002,
+            0.18708000000000002,
+            0.18791,
+            0.1875,
+            0.18875,
+            0.18875,
+            0.1875,
+            0.18709,
+            0.18791999999999998,
+            0.1875,
+            0.18709,
+            0.18666999999999997,
+            0.18791,
+            0.1875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            8.417,
+            7.958000000000001,
+            9.25,
+            8.25,
+            10.332999999999998,
+            8.209,
+            8.084,
+            12.292,
+            11.583,
+            7.958000000000001,
+            7.707999999999999,
+            7.375,
+            7.25,
+            10.125,
+            7.75
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            0.66375,
+            0.66667,
+            0.66417,
+            0.66375,
+            0.66208,
+            0.66541,
+            0.66542,
+            0.6625,
+            0.66417,
+            0.66375,
+            0.7354100000000001,
+            0.68667,
+            0.68625,
+            0.71375,
+            0.6858299999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            128.458,
+            130.584,
+            138.833,
+            149.5,
+            121.58399999999999,
+            930.875,
+            125.709,
+            129.708,
+            137.625,
+            117.833,
+            136.042,
+            122.41699999999999,
+            112.083,
+            135.959,
+            221
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            18.459,
+            15.625,
+            13.834,
+            14.042,
+            13.332999999999998,
+            16.833,
+            16.125,
+            14.708,
+            33.375,
+            28.334,
+            24.25,
+            25.291,
+            16.458000000000002,
+            19.125,
+            15.875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            3.38375,
+            3.5129099999999998,
+            3.5220800000000003,
+            3.50958,
+            3.45,
+            3.3866700000000005,
+            3.39084,
+            3.6745900000000002,
+            3.43625,
+            3.4583299999999997,
+            3.42875,
+            3.50458,
+            3.49875,
+            3.39291,
+            3.41
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            157.917,
+            137.375,
+            147.541,
+            181.708,
+            130.917,
+            995.1249999999999,
+            119.95899999999999,
+            133.958,
+            130.625,
+            148.5,
+            285.708,
+            141.542,
+            128.417,
+            123.5,
+            247.5
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            150.2417,
+            148.8125,
+            144.81660000000002,
+            140.2167,
+            144.52079999999998,
+            141.0958,
+            139.2791,
+            141.5208,
+            151.9,
+            139.5,
+            138.8583,
+            138.95,
+            139.1875,
+            139.1916,
+            139.2458
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            2151.0829999999996,
+            2053.9579999999996,
+            1944.417,
+            2074.75,
+            1940.834,
+            2028.583,
+            2122.958,
+            2141.4590000000003,
+            2124.042,
+            1965.542,
+            2004.667,
+            2052.75,
+            2060.5,
+            2019.5420000000001,
+            1966.625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            1375.125,
+            1377.5829999999999,
+            1392,
+            1375.5,
+            1422.584,
+            1503.7920000000001,
+            1432.1670000000001,
+            1425.5,
+            1433.875,
+            1410.042,
+            1435.084,
+            1432,
+            1462.875,
+            1488.7920000000001,
+            1433.959
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            17030.583,
+            16228.334,
+            17069.334,
+            16394.875,
+            15724.583,
+            15620.083999999999,
+            16111.707999999999,
+            15212.333,
+            14976.917,
+            17452.084,
+            17123.75,
+            17626.708000000002,
+            17130,
+            16368.582999999999,
+            16420.542
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            11911.333,
+            12306.375,
+            11923.291000000001,
+            11698.917,
+            11642,
+            11787.083,
+            12173.458999999999,
+            12192.25,
+            11786.042,
+            12350.5,
+            12089.291000000001,
+            12404.125,
+            12344.417,
+            11972.458,
+            12026.125
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            12762.541000000001,
+            12264.583,
+            12659.167000000001,
+            12728.792,
+            13449.208,
+            12945.833,
+            13165.166000000001,
+            12800.792,
+            12741.542,
+            12883.083,
+            13280,
+            13009.041000000001,
+            12604.5,
+            13239.75,
+            13156.208
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        }
+      ]
+    },
+    {
+      "position": 4,
+      "variant": "before",
+      "rows": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.8445800000000006,
+            6.3345899999999995,
+            5.577920000000001,
+            5.62125,
+            5.68,
+            5.77333,
+            5.60833,
+            5.9483299999999995,
+            5.74083,
+            5.6025,
+            5.595829999999999,
+            5.587910000000001,
+            5.66875,
+            5.58958,
+            5.659159999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            358.65,
+            353.7167,
+            355.9625,
+            348.56669999999997,
+            356.1333,
+            346.875,
+            352.89160000000004,
+            348.1667,
+            347.98339999999996,
+            352.575,
+            368.2917,
+            350.2125,
+            358.38340000000005,
+            351.9792,
+            351.2666
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.07245900000000001,
+            0.072375,
+            0.083417,
+            0.072208,
+            0.072208,
+            0.072292,
+            0.075125,
+            0.07225,
+            0.07225,
+            0.072208,
+            0.07225,
+            0.072208,
+            0.072291,
+            0.072375,
+            0.072333
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            268.4585,
+            302.20410000000004,
+            222.00860000000003,
+            181.7166,
+            262.9419,
+            219.0791,
+            202.854,
+            186.78320000000002,
+            201.9664,
+            182.6583,
+            181.7792,
+            193.129,
+            198.9583,
+            184.20430000000002,
+            219.06239999999997
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            630.8419,
+            609.3165999999999,
+            662.5334,
+            655.2459,
+            616.2334,
+            620.2167,
+            606.5541000000001,
+            680.0292000000001,
+            636.6582000000001,
+            617.9084,
+            659.9207,
+            658.0541,
+            697.5126,
+            711.2209,
+            656.6623999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2503.2542000000003,
+            2394.3747000000003,
+            2348.8668000000002,
+            2343.2585,
+            2356.6041,
+            2330.0415000000003,
+            2301.8332,
+            2322.0584,
+            2299.2877,
+            2295.8043000000002,
+            2290.9957000000004,
+            2302.8415,
+            2308.85,
+            2316.7791,
+            2217.7084999999997
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            57.156164000000004,
+            56.908,
+            58.649,
+            59.366832,
+            57.321164,
+            56.264668,
+            57.571168,
+            56.47033199999999,
+            57.329167999999996,
+            58.501332000000005,
+            57.085668,
+            56.659832,
+            56.877832000000005,
+            56.52666800000001,
+            56.172
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            876.9765625,
+            888.4583125,
+            881.4661249999999,
+            877.265625,
+            889.1926875,
+            879.15625,
+            890.625,
+            881.75,
+            876.5520625,
+            886.9739375,
+            888.216125,
+            883.2708125,
+            882.75,
+            878.9505625,
+            889.2578125
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            9029.375,
+            9080.916,
+            9215.917000000001,
+            8981.542,
+            8846.291,
+            8793.625,
+            9021.291000000001,
+            8891.082999999999,
+            8812.542,
+            8785.833,
+            8947.5,
+            8856.916,
+            8810.25,
+            8762.208,
+            8939.916
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            56.753831999999996,
+            56.898836,
+            56.714335999999996,
+            56.536332,
+            57.3975,
+            56.583836,
+            56.792168,
+            56.76,
+            56.370332000000005,
+            57.4385,
+            56.566168,
+            56.919,
+            56.77666800000001,
+            57.05983199999999,
+            73.901
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            53.516332000000006,
+            53.95216800000001,
+            53.451336000000005,
+            54.250832,
+            53.237164,
+            55.458832,
+            55.0455,
+            54.447332,
+            55.246332,
+            55.2825,
+            53.742332,
+            53.714168,
+            53.995,
+            53.709168000000005,
+            54.6645
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.52459,
+            0.5070899999999999,
+            0.7525,
+            0.53583,
+            0.64375,
+            0.495,
+            0.48375,
+            0.49042,
+            0.48791000000000007,
+            0.48833,
+            0.54042,
+            0.4875,
+            0.48625,
+            0.48583,
+            0.485
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            11.833,
+            10.042,
+            12.792,
+            11.125,
+            8.708,
+            8.375,
+            8,
+            12.417,
+            9.417,
+            11.25,
+            9.334000000000001,
+            12.292,
+            12.292,
+            9.292,
+            9.833
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            1.89084,
+            1.89042,
+            1.89125,
+            1.9025,
+            1.89833,
+            1.8995899999999997,
+            1.89625,
+            1.89083,
+            1.92458,
+            2.01875,
+            1.88958,
+            1.88875,
+            1.9220899999999999,
+            1.88959,
+            1.94
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            113.292,
+            116.75,
+            119.833,
+            112.667,
+            105.125,
+            159.916,
+            96.91699999999999,
+            123.62500000000001,
+            103.125,
+            98.125,
+            105.167,
+            94.25,
+            131.791,
+            104.792,
+            104.083
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            13.334,
+            12.707999999999998,
+            15.916000000000002,
+            13.25,
+            14.583,
+            12.792,
+            19.959,
+            15.709000000000001,
+            18.165999999999997,
+            17,
+            14.041,
+            14,
+            13.25,
+            14.292,
+            13.75
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            12.454160000000002,
+            12.55583,
+            13.187080000000002,
+            12.771670000000002,
+            12.890419999999999,
+            13.57958,
+            12.817079999999999,
+            12.771659999999999,
+            12.7675,
+            12.76291,
+            12.5975,
+            12.38,
+            12.37334,
+            13.125409999999999,
+            12.937919999999998
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            248,
+            228.291,
+            219.29100000000003,
+            211.083,
+            232.833,
+            235.208,
+            220,
+            228.5,
+            200.875,
+            213.791,
+            214.625,
+            220.208,
+            230.5,
+            200.041,
+            193.042
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            561.05,
+            572.7375,
+            569.3875,
+            596.3834,
+            567.525,
+            566.475,
+            561.5,
+            568.9667,
+            560.675,
+            608.1625,
+            571.7416000000001,
+            561.5625,
+            563.7291,
+            566.2333000000001,
+            572.2042
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            2885,
+            2903.542,
+            2954.75,
+            2852.125,
+            2798.0829999999996,
+            2880.4590000000003,
+            2790.458,
+            2970.875,
+            2901.542,
+            2801.791,
+            2848.667,
+            2885.125,
+            2812.7920000000004,
+            2964.833,
+            2950
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            5747.5419999999995,
+            5817.0419999999995,
+            5752.666,
+            5929.375,
+            5988.958,
+            5911.3330000000005,
+            6056.4169999999995,
+            5985.125,
+            5882.875,
+            6103.792,
+            5726.290999999999,
+            5864.6669999999995,
+            5703.375,
+            5760.833,
+            5692.375
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            28302.833,
+            28338.959,
+            36178.625,
+            58485.625,
+            33382.791000000005,
+            35964.708999999995,
+            27517.5,
+            26825.417,
+            28113.417,
+            26813.459000000003,
+            26601.875,
+            26304.208,
+            26323.833000000002,
+            26146.75,
+            27870.417
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            12125.5,
+            12067.875,
+            12073.917,
+            12030.917,
+            11718.625,
+            11645.417,
+            11810.084,
+            12237.833,
+            12076.959,
+            12209.792000000001,
+            11923.958,
+            11811.042000000001,
+            11971.625,
+            11548.625,
+            12337.917
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            14548.667,
+            14219.167,
+            13660.25,
+            13483.083,
+            13745.583,
+            13822.5,
+            14145.291000000001,
+            13657,
+            13756.166000000001,
+            13734.042,
+            13997.625,
+            14186.832999999999,
+            13720.457999999999,
+            13709.541000000001,
+            13973.75
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        }
+      ]
+    },
+    {
+      "position": 5,
+      "variant": "before",
+      "rows": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.609579999999999,
+            6.9916599999999995,
+            6.3575,
+            5.622920000000001,
+            6.021660000000001,
+            5.69208,
+            5.58458,
+            5.6358299999999995,
+            5.6,
+            5.58792,
+            5.5975,
+            5.65959,
+            5.8641700000000005,
+            5.811660000000001,
+            5.705830000000001
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            345.5792,
+            367.1667,
+            360.5459,
+            356.4,
+            352.69169999999997,
+            346.18330000000003,
+            353.96659999999997,
+            353.1708,
+            358.825,
+            344.8042,
+            343.8833,
+            358.4833,
+            365.9875,
+            348.56669999999997,
+            371.31669999999997
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.080875,
+            0.081333,
+            0.081208,
+            0.080917,
+            0.081125,
+            0.091417,
+            0.081041,
+            0.081208,
+            0.080917,
+            0.081042,
+            0.08129100000000002,
+            0.08129199999999999,
+            0.081167,
+            0.0815,
+            0.080875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            272.1416,
+            282.1666,
+            276.33340000000004,
+            271.2958,
+            228.8209,
+            231.45840000000004,
+            252.779,
+            218,
+            209.17919999999998,
+            198.6584,
+            181.1959,
+            185.6335,
+            196.2292,
+            214.6084,
+            195.68760000000003
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            634.6541,
+            650.4918,
+            668.5,
+            636.4749,
+            618.6667,
+            642.8915,
+            635.9165,
+            675.0833,
+            619.2332,
+            660.775,
+            662.3583,
+            660.7375,
+            711.0832,
+            689.0458000000001,
+            655.3417999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2375.8333,
+            2383.6665000000003,
+            2360.6668,
+            2355.2584,
+            2408.0875,
+            2380.0585,
+            2427.0667999999996,
+            2400.3874,
+            2366.6958,
+            2358.0458,
+            2337.4121999999998,
+            2302.675,
+            2335.5081999999998,
+            2355.6207999999997,
+            2314.6834000000003
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            56.849332000000004,
+            56.419,
+            56.8525,
+            57.0745,
+            56.897168,
+            56.770332,
+            56.5175,
+            57.445668,
+            56.569,
+            57.028836000000005,
+            56.8105,
+            56.445164,
+            57.288668,
+            56.452,
+            56.7645
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            877.9453125,
+            894.0807500000001,
+            882.408875,
+            878.0078125,
+            902.0078125,
+            881.234375,
+            879.95575,
+            881.4114375,
+            875,
+            911.90625,
+            906.5,
+            906.0833124999999,
+            903.5859375,
+            894.046875,
+            901.6979375
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            8893.75,
+            8992.458,
+            8861.333,
+            8778.5,
+            8765.25,
+            8924.625,
+            9078.417,
+            8830.666,
+            8862.167000000001,
+            8903.416000000001,
+            8926.875,
+            8865.125,
+            8849.208,
+            8764.542,
+            8931.082999999999
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            56.681664,
+            61.082167999999996,
+            67.486168,
+            64.274164,
+            57.075835999999995,
+            57.148668,
+            57.002332,
+            56.944332,
+            57.879832,
+            56.633336,
+            57.217667999999996,
+            56.912,
+            57.266831999999994,
+            57.620332000000005,
+            56.841
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            53.370832,
+            54.078168000000005,
+            53.588836,
+            53.649,
+            53.667668000000006,
+            53.335663999999994,
+            54.045332,
+            54.301168,
+            53.11183199999999,
+            54.634164,
+            53.53716800000001,
+            54.1055,
+            55.549332,
+            54.573664,
+            54.793332
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.50541,
+            0.49957999999999997,
+            0.84,
+            0.48707999999999996,
+            0.48625,
+            0.48916,
+            0.48875,
+            0.48833,
+            0.48875,
+            0.48959,
+            0.49209,
+            0.485,
+            0.5033299999999999,
+            0.49166000000000004,
+            0.56333
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            9.292,
+            9.375,
+            8.208,
+            8,
+            7.791999999999999,
+            9.667000000000002,
+            8.333,
+            14.375,
+            9.459,
+            15.5,
+            10.332999999999998,
+            11.709,
+            9.5,
+            7.917000000000001,
+            7.707999999999999
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            2.02084,
+            1.92,
+            1.9383299999999999,
+            1.91583,
+            1.9154200000000001,
+            1.92417,
+            1.94333,
+            1.91458,
+            1.96333,
+            1.9720800000000003,
+            2.05541,
+            1.91833,
+            1.91167,
+            1.91667,
+            1.91458
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            107.958,
+            116,
+            102.584,
+            112.958,
+            116.333,
+            117.75,
+            128.41600000000003,
+            102.834,
+            106.5,
+            104.208,
+            110.208,
+            111.708,
+            110.375,
+            97.917,
+            117.834
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            15,
+            13.042,
+            12.667,
+            14.375,
+            19.958000000000002,
+            13.332999999999998,
+            14.459,
+            14.209000000000001,
+            15.25,
+            14.583,
+            13.75,
+            13.917000000000002,
+            13.208,
+            13.625,
+            13.625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            12.831660000000001,
+            12.765830000000001,
+            12.65375,
+            12.635,
+            12.599169999999999,
+            12.553329999999999,
+            12.5925,
+            13.92,
+            12.4875,
+            12.54875,
+            12.439169999999999,
+            12.332910000000002,
+            12.56875,
+            12.4675,
+            12.387920000000001
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            155.125,
+            164.209,
+            161.666,
+            177.834,
+            161.625,
+            144.25,
+            150.917,
+            159.583,
+            144.75,
+            175.792,
+            162.958,
+            197.125,
+            149.458,
+            151.416,
+            157.333
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            581.7209,
+            587.8542,
+            583.1958999999999,
+            582.9708,
+            586.5791999999999,
+            587.0584,
+            595.0667,
+            578.6166,
+            564.95,
+            572.3333,
+            604.3457999999999,
+            587.5916,
+            580.3167,
+            563.2334,
+            564.2417
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            2772,
+            2700.584,
+            2817.208,
+            2877.375,
+            2943.583,
+            3036.708,
+            2907.167,
+            2863.25,
+            2905.917,
+            3085.125,
+            2953.667,
+            3073.4590000000003,
+            2858.5,
+            2931.417,
+            2990.958
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            6109,
+            5823,
+            5705.208,
+            5856.166,
+            5851.125,
+            6120.291,
+            5760,
+            6071.791,
+            5856.542,
+            5961.584,
+            5748,
+            5851.875,
+            5907.458,
+            5970.75,
+            5695.708
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            28511.125,
+            27868.958,
+            28049.542,
+            27910.167,
+            27398.042,
+            27134.790999999997,
+            27360,
+            28082.209,
+            26376.416999999998,
+            26149.75,
+            26105.291999999998,
+            27112.125,
+            28028.083,
+            27260.375,
+            27181.375
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            12183.582999999999,
+            40960.542,
+            12319.667,
+            11934.083,
+            12004.834,
+            11913.916,
+            12257.5,
+            11919.875,
+            11813.167,
+            12030.75,
+            12324.958,
+            12218.833,
+            11720.667000000001,
+            11726.417,
+            12108.541000000001
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            13274.417,
+            13648.083,
+            13694.625,
+            13889.75,
+            13724.375,
+            14216.833,
+            13772.041000000001,
+            13898.25,
+            13974.417,
+            13940.958,
+            14036.875,
+            13864.125,
+            13709,
+            13938.208,
+            13262.875
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        }
+      ]
+    },
+    {
+      "position": 6,
+      "variant": "after",
+      "rows": [
+        {
+          "id": "chinese/short",
+          "samples_us": [
+            5.6825,
+            6.2775,
+            5.575419999999999,
+            5.69166,
+            5.98542,
+            5.60875,
+            5.64208,
+            5.60291,
+            5.70125,
+            5.65166,
+            5.663330000000001,
+            5.907920000000001,
+            5.92042,
+            5.88541,
+            5.779580000000001
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 86,
+            "iterations_per_sample": 100,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/long",
+          "samples_us": [
+            369.6083,
+            357.1291,
+            357.85,
+            358.6666,
+            359.1,
+            357.525,
+            360.1791,
+            358.7333,
+            354.94169999999997,
+            362.6709,
+            344.4542,
+            350.87080000000003,
+            351.78340000000003,
+            345.625,
+            344.8375
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 5504,
+            "iterations_per_sample": 10,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "chinese/no-han",
+          "samples_us": [
+            0.081417,
+            0.090292,
+            0.080916,
+            0.080917,
+            0.081,
+            0.08095800000000002,
+            0.081,
+            0.081042,
+            0.081125,
+            0.081,
+            0.08095800000000002,
+            0.080917,
+            0.080917,
+            0.093625,
+            0.081042
+          ],
+          "unit": "us/op",
+          "workload": {
+            "input_bytes": 42,
+            "iterations_per_sample": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/short-small-writes",
+          "samples_us": [
+            290.40009999999995,
+            264.2207,
+            295.3583,
+            233.3,
+            201.1334,
+            202.42900000000003,
+            187.2498,
+            187.6664,
+            189.2459,
+            194.6748,
+            221.77089999999998,
+            185.4335,
+            204.67100000000002,
+            199.2584,
+            191.9583
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 129,
+            "iterations_per_sample": 10,
+            "response_bytes": 6592,
+            "samples": 15,
+            "server_write_bytes": 128,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/long-batched",
+          "samples_us": [
+            665.1083000000001,
+            691.4459,
+            625.3874000000001,
+            622.5292999999999,
+            633.1791000000001,
+            636.8791,
+            694.9289,
+            643.1958999999999,
+            627.8206,
+            623.2248000000001,
+            643.7834,
+            718.9041,
+            674.1875,
+            680.7583,
+            679.046
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 1025,
+            "iterations_per_sample": 10,
+            "response_bytes": 52288,
+            "samples": 15,
+            "server_write_bytes": 65536,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "stream/stress-batched",
+          "samples_us": [
+            2368.1084,
+            2381.8419000000004,
+            2397.2084999999997,
+            2433.3835000000004,
+            2375.8417,
+            2383.4,
+            2335.3376,
+            2393.0793,
+            2389.7375,
+            2340.1918,
+            2411.5129,
+            2387.2377,
+            2342.4915,
+            2351.7458,
+            2398.5625
+          ],
+          "unit": "us/op",
+          "workload": {
+            "events": 4097,
+            "iterations_per_sample": 10,
+            "response_bytes": 208960,
+            "samples": 15,
+            "server_write_bytes": 262144,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/speech-4s",
+          "samples_us": [
+            58.358332000000004,
+            57.4265,
+            59.564,
+            56.707164,
+            56.888332000000005,
+            56.749835999999995,
+            56.670836,
+            56.653836,
+            57.166168000000006,
+            58.901668,
+            58.920168000000004,
+            57.843164,
+            58.210331999999994,
+            57.578,
+            56.305
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -22.388888419190664,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 23936,
+            "requested_bytes_including_realloc": 23936
+          },
+          "id": "voice/speech-60s",
+          "samples_us": [
+            899.7395625,
+            884.6328125,
+            902.377625,
+            898.359375,
+            882.609375,
+            892.8333125,
+            882.502625,
+            888.4140625,
+            884.2994375000001,
+            883.3698125,
+            900.6380625,
+            880.002625,
+            892.153625,
+            888.591125,
+            888.9296875
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 60000,
+            "has_speech": true,
+            "noise_floor_db": -71.5320465194308,
+            "peak_db": -22.148482985964996,
+            "voiced_ms": 41920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 16,
+            "pcm_bytes": 1920000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 239936,
+            "requested_bytes_including_realloc": 239936
+          },
+          "id": "voice/speech-600s",
+          "samples_us": [
+            8913.625,
+            8925.791000000001,
+            8793.542,
+            8806,
+            8972.709,
+            8912.082999999999,
+            8888.291,
+            8931.375,
+            9138.333999999999,
+            9154.916000000001,
+            9034.792,
+            8976.958,
+            8871.584,
+            8900,
+            8814
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 600000,
+            "has_speech": true,
+            "noise_floor_db": -71.5158890441485,
+            "peak_db": -22.02962316914944,
+            "voiced_ms": 419920
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 1,
+            "pcm_bytes": 19200000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/quiet-4s",
+          "samples_us": [
+            58.206,
+            56.824,
+            56.542164,
+            57.304832000000005,
+            56.567336000000005,
+            57.084668,
+            57.862168,
+            57.8785,
+            56.87233199999999,
+            56.542668,
+            57.074832,
+            56.766336,
+            56.64566800000001,
+            57.034,
+            57.3195
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": true,
+            "noise_floor_db": -71.50050564100374,
+            "peak_db": -42.96441616663476,
+            "voiced_ms": 2720
+          },
+          "workload": {
+            "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "allocations_per_operation": {
+            "calls_including_realloc": 1,
+            "peak_live_requested_bytes": 1536,
+            "requested_bytes_including_realloc": 1536
+          },
+          "id": "voice/silence-4s",
+          "samples_us": [
+            53.3105,
+            54.0865,
+            53.287832,
+            53.9885,
+            53.377,
+            53.344668,
+            53.667168,
+            53.4095,
+            53.187332,
+            53.232668,
+            52.850668000000006,
+            53.459336,
+            53.026668,
+            53.23916800000001,
+            54.214667999999996
+          ],
+          "unit": "us/op",
+          "voice_activity": {
+            "duration_ms": 4000,
+            "has_speech": false,
+            "noise_floor_db": -100,
+            "peak_db": -100,
+            "voiced_ms": 0
+          },
+          "workload": {
+            "fixture": "digital silence",
+            "iterations_per_sample": 250,
+            "pcm_bytes": 128000,
+            "sample_rate": 16000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-0",
+          "samples_us": [
+            0.18708000000000002,
+            0.18833000000000003,
+            0.18833000000000003,
+            0.18833000000000003,
+            0.18875,
+            0.18791999999999998,
+            0.18709,
+            0.18875,
+            0.18834,
+            0.24209000000000003,
+            0.18833000000000003,
+            0.18833000000000003,
+            0.18875,
+            0.18666999999999997,
+            0.18791
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 0,
+            "dictionary_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 100,
+            "output_bytes": 98,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-0",
+          "samples_us": [
+            8.959,
+            8.125,
+            8.041,
+            7.791,
+            7.707999999999999,
+            7.167,
+            7.958000000000001,
+            8,
+            10.958,
+            7.7090000000000005,
+            13.375,
+            11.375,
+            16.042,
+            11.459,
+            10
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 0,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 0,
+            "existing_rows": 0,
+            "input_json_bytes": 81,
+            "iterations_per_sample": 1,
+            "rows": 0,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-2",
+          "samples_us": [
+            0.6575,
+            0.65708,
+            0.65833,
+            0.74125,
+            0.71,
+            0.6791699999999998,
+            0.6791600000000001,
+            0.6808299999999999,
+            0.67958,
+            0.66833,
+            0.66042,
+            0.66,
+            0.66042,
+            0.6620900000000001,
+            0.66125
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 1,
+            "dictionary_rows": 1,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 100,
+            "output_bytes": 293,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2",
+          "samples_us": [
+            105.5,
+            104.125,
+            93.667,
+            111.41699999999999,
+            139.166,
+            121.542,
+            173.625,
+            189.792,
+            220.875,
+            214.875,
+            211.208,
+            204.958,
+            239.875,
+            189.833,
+            174.75
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 2,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 0,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-2-100pct-duplicates",
+          "samples_us": [
+            17.833000000000002,
+            20.667,
+            16.291999999999998,
+            17.834,
+            36,
+            21,
+            17,
+            19.916999999999998,
+            18.541999999999998,
+            18.208,
+            16.125,
+            16.125,
+            18.083,
+            14.208,
+            16.834
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 1,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 1,
+            "existing_rows": 2,
+            "input_json_bytes": 210,
+            "iterations_per_sample": 1,
+            "rows": 2,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-20",
+          "samples_us": [
+            3.2775,
+            3.3,
+            3.3725,
+            3.38291,
+            3.31625,
+            3.2775,
+            4.31291,
+            3.3245799999999996,
+            3.30041,
+            3.3945800000000004,
+            3.2875,
+            3.2875,
+            3.29208,
+            3.28333,
+            3.2829099999999998
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 10,
+            "dictionary_rows": 10,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 100,
+            "output_bytes": 1835,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-20",
+          "samples_us": [
+            190,
+            183.125,
+            189.333,
+            168.334,
+            174,
+            174.25,
+            187.791,
+            163.125,
+            204.375,
+            311.875,
+            175.209,
+            166.208,
+            199.459,
+            190.5,
+            178.666
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 20,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 10,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 10,
+            "existing_rows": 0,
+            "input_json_bytes": 1212,
+            "iterations_per_sample": 1,
+            "rows": 20,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-1000",
+          "samples_us": [
+            143.25830000000002,
+            145.4791,
+            150.50420000000003,
+            151.0916,
+            146.25,
+            144.6875,
+            145.3333,
+            144.2875,
+            144.4208,
+            156.6875,
+            144.0416,
+            140.5167,
+            139.8,
+            142.3417,
+            146.81670000000003
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 500,
+            "dictionary_rows": 500,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 10,
+            "output_bytes": 85786,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-1000",
+          "samples_us": [
+            1980.083,
+            1906.583,
+            1785.5,
+            1699.541,
+            1731.7910000000002,
+            1676.9160000000002,
+            1723.75,
+            1715.25,
+            1868.833,
+            1749.75,
+            1753.125,
+            1692.791,
+            1666.375,
+            1636.5,
+            1647.916
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 500,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 500,
+            "existing_rows": 0,
+            "input_json_bytes": 55763,
+            "iterations_per_sample": 1,
+            "rows": 1000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/export-json-10000",
+          "samples_us": [
+            1383.0839999999998,
+            1393.7089999999998,
+            1376.334,
+            1390.084,
+            1416.4589999999998,
+            1446.9170000000001,
+            1384.375,
+            1390.25,
+            1388.542,
+            1388.25,
+            1409.542,
+            1427.792,
+            1398.083,
+            1389.791,
+            1395.5
+          ],
+          "unit": "us/op",
+          "workload": {
+            "correction_rows": 5000,
+            "dictionary_rows": 5000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "output_bytes": 856786,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000",
+          "samples_us": [
+            16128.875,
+            16197.957999999999,
+            16165.292000000001,
+            15579.166000000001,
+            15899.334,
+            16064.958,
+            15303.208,
+            15143.708,
+            14838.417,
+            15416.333,
+            16767.083,
+            16516.916999999998,
+            16845.25,
+            16632.125,
+            15764.584
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 10000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 0,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-100pct-duplicates",
+          "samples_us": [
+            11950.125,
+            12198.625,
+            12224.5,
+            12449.292000000001,
+            12309.292,
+            12007.125,
+            12484.25,
+            12268.958999999999,
+            12137.417,
+            12407.666,
+            12319.166,
+            12447.041000000001,
+            12100.292,
+            11847.167000000001,
+            11716.667
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 0,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 10000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        },
+        {
+          "id": "dictionary/import-json-10000-90pct-duplicates",
+          "samples_us": [
+            12984.291000000001,
+            12389.792,
+            13094.125,
+            13689.916,
+            13250.458999999999,
+            13360.75,
+            13440.375,
+            13222.125,
+            13350.625,
+            12966.041,
+            12662.791,
+            12824.5,
+            12592.541000000001,
+            12902.042000000001,
+            12877.5
+          ],
+          "unit": "us/op",
+          "workload": {
+            "accepted_rows": 1000,
+            "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+            "correction_rows": 5000,
+            "database": "fresh temporary SQLite WAL, default durability",
+            "dictionary_rows": 5000,
+            "existing_rows": 9000,
+            "input_json_bytes": 556763,
+            "iterations_per_sample": 1,
+            "rows": 10000,
+            "samples": 15,
+            "warmups": 5
+          }
+        }
+      ]
+    }
+  ],
+  "benchmarks": [
+    {
+      "id": "chinese/short",
+      "unit": "us/op",
+      "workload": {
+        "input_bytes": 86,
+        "iterations_per_sample": 100,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          5.705,
+          5.659159999999999,
+          5.65959
+        ],
+        "median_us": 5.65959,
+        "p10_us": 5.58958,
+        "p90_us": 6.021660000000001
+      },
+      "after": {
+        "process_medians_us": [
+          5.647080000000001,
+          5.67917,
+          5.69166
+        ],
+        "median_us": 5.67917,
+        "p10_us": 5.60333,
+        "p90_us": 5.92042
+      },
+      "change_percent": 0.34596145657195265
+    },
+    {
+      "id": "chinese/long",
+      "unit": "us/op",
+      "workload": {
+        "input_bytes": 5504,
+        "iterations_per_sample": 10,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          350.4375,
+          352.575,
+          353.96659999999997
+        ],
+        "median_us": 352.575,
+        "p10_us": 346.18330000000003,
+        "p90_us": 364.55
+      },
+      "after": {
+        "process_medians_us": [
+          357.05830000000003,
+          348.1625,
+          357.525
+        ],
+        "median_us": 357.05830000000003,
+        "p10_us": 346.7375,
+        "p90_us": 360.4084
+      },
+      "change_percent": 1.2715876054740338
+    },
+    {
+      "id": "chinese/no-han",
+      "unit": "us/op",
+      "workload": {
+        "input_bytes": 42,
+        "iterations_per_sample": 1000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          0.072292,
+          0.072291,
+          0.081167
+        ],
+        "median_us": 0.072292,
+        "p10_us": 0.072208,
+        "p90_us": 0.08129100000000002
+      },
+      "after": {
+        "process_medians_us": [
+          0.08391599999999999,
+          0.081084,
+          0.081
+        ],
+        "median_us": 0.081084,
+        "p10_us": 0.080917,
+        "p90_us": 0.08591700000000001
+      },
+      "change_percent": 12.161788302993436
+    },
+    {
+      "id": "stream/short-small-writes",
+      "unit": "us/op",
+      "workload": {
+        "events": 129,
+        "iterations_per_sample": 10,
+        "response_bytes": 6592,
+        "samples": 15,
+        "server_write_bytes": 128,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          204.2458,
+          201.9664,
+          218
+        ],
+        "median_us": 204.2458,
+        "p10_us": 181.7166,
+        "p90_us": 271.2958
+      },
+      "after": {
+        "process_medians_us": [
+          197.3376,
+          201.1376,
+          201.1334
+        ],
+        "median_us": 201.1334,
+        "p10_us": 186.6416,
+        "p90_us": 264.2207
+      },
+      "change_percent": -1.5238501844346386
+    },
+    {
+      "id": "stream/long-batched",
+      "unit": "us/op",
+      "workload": {
+        "events": 1025,
+        "iterations_per_sample": 10,
+        "response_bytes": 52288,
+        "samples": 15,
+        "server_write_bytes": 65536,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          663.8086999999999,
+          655.2459,
+          655.3417999999999
+        ],
+        "median_us": 655.3417999999999,
+        "p10_us": 617.9084,
+        "p90_us": 691.5917
+      },
+      "after": {
+        "process_medians_us": [
+          656.9875999999999,
+          623.4793,
+          643.7834
+        ],
+        "median_us": 643.7834,
+        "p10_us": 609.0373999999999,
+        "p90_us": 680.7583
+      },
+      "change_percent": -1.763720855284967
+    },
+    {
+      "id": "stream/stress-batched",
+      "unit": "us/op",
+      "workload": {
+        "events": 4097,
+        "iterations_per_sample": 10,
+        "response_bytes": 208960,
+        "samples": 15,
+        "server_write_bytes": 262144,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          2339.5415999999996,
+          2316.7791,
+          2360.6668
+        ],
+        "median_us": 2339.5415999999996,
+        "p10_us": 2295.204,
+        "p90_us": 2383.6665000000003
+      },
+      "after": {
+        "process_medians_us": [
+          2334.6041,
+          2321.0793000000003,
+          2383.4
+        ],
+        "median_us": 2334.6041,
+        "p10_us": 2301.7083000000002,
+        "p90_us": 2398.5625
+      },
+      "change_percent": -0.21104561679944345
+    },
+    {
+      "id": "voice/speech-4s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 250,
+        "pcm_bytes": 128000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          56.839836,
+          57.085668,
+          56.8105
+        ],
+        "median_us": 56.839836,
+        "p10_us": 56.452,
+        "p90_us": 58.649
+      },
+      "after": {
+        "process_medians_us": [
+          57.0205,
+          56.857831999999995,
+          57.4265
+        ],
+        "median_us": 57.0205,
+        "p10_us": 56.461832,
+        "p90_us": 58.358332000000004
+      },
+      "change_percent": 0.3178475039935069
+    },
+    {
+      "id": "voice/speech-60s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 16,
+        "pcm_bytes": 1920000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          883.9765625,
+          882.75,
+          894.046875
+        ],
+        "median_us": 883.9765625,
+        "p10_us": 877.6640625,
+        "p90_us": 901.6979375
+      },
+      "after": {
+        "process_medians_us": [
+          886.7995000000001,
+          883.8073125,
+          888.591125
+        ],
+        "median_us": 886.7995000000001,
+        "p10_us": 879.5286249999999,
+        "p90_us": 903.9088125000001
+      },
+      "change_percent": 0.3193452880714931
+    },
+    {
+      "id": "voice/speech-600s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 4096 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 1,
+        "pcm_bytes": 19200000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          8910.875,
+          8891.082999999999,
+          8865.125
+        ],
+        "median_us": 8891.082999999999,
+        "p10_us": 8778.5,
+        "p90_us": 9021.291000000001
+      },
+      "after": {
+        "process_medians_us": [
+          8879.207999999999,
+          8884.792000000001,
+          8913.625
+        ],
+        "median_us": 8884.792000000001,
+        "p10_us": 8811.708,
+        "p90_us": 9015.25
+      },
+      "change_percent": -0.07075628469555006
+    },
+    {
+      "id": "voice/quiet-4s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "LCG noise; 700ms amplitude 384 / 300ms amplitude 16 per second",
+        "iterations_per_sample": 250,
+        "pcm_bytes": 128000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          57.073,
+          56.77666800000001,
+          57.148668
+        ],
+        "median_us": 57.073,
+        "p10_us": 56.633336,
+        "p90_us": 57.879832
+      },
+      "after": {
+        "process_medians_us": [
+          56.80466800000001,
+          57.246668,
+          57.034
+        ],
+        "median_us": 57.034,
+        "p10_us": 56.542164,
+        "p90_us": 57.862168
+      },
+      "change_percent": -0.06833353774989837
+    },
+    {
+      "id": "voice/silence-4s",
+      "unit": "us/op",
+      "workload": {
+        "fixture": "digital silence",
+        "iterations_per_sample": 250,
+        "pcm_bytes": 128000,
+        "sample_rate": 16000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          53.623164,
+          53.995,
+          54.045332
+        ],
+        "median_us": 53.995,
+        "p10_us": 53.335663999999994,
+        "p90_us": 54.793332
+      },
+      "after": {
+        "process_medians_us": [
+          53.627832000000005,
+          53.5395,
+          53.344668
+        ],
+        "median_us": 53.5395,
+        "p10_us": 53.1255,
+        "p90_us": 53.991336000000004
+      },
+      "change_percent": -0.8435966293175334
+    },
+    {
+      "id": "dictionary/export-json-0",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 0,
+        "dictionary_rows": 0,
+        "input_json_bytes": 81,
+        "iterations_per_sample": 100,
+        "output_bytes": 98,
+        "rows": 0,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          0.48666,
+          0.49042,
+          0.48959
+        ],
+        "median_us": 0.48959,
+        "p10_us": 0.48375,
+        "p90_us": 0.53583
+      },
+      "after": {
+        "process_medians_us": [
+          0.18709,
+          0.1875,
+          0.18833000000000003
+        ],
+        "median_us": 0.1875,
+        "p10_us": 0.18666999999999997,
+        "p90_us": 0.18875
+      },
+      "change_percent": -61.702649155415756
+    },
+    {
+      "id": "dictionary/import-json-0",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 0,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 0,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 0,
+        "existing_rows": 0,
+        "input_json_bytes": 81,
+        "iterations_per_sample": 1,
+        "rows": 0,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          8.875,
+          10.042,
+          9.375
+        ],
+        "median_us": 9.375,
+        "p10_us": 8,
+        "p90_us": 12.292
+      },
+      "after": {
+        "process_medians_us": [
+          9.541,
+          8.209,
+          8.125
+        ],
+        "median_us": 8.209,
+        "p10_us": 7.707999999999999,
+        "p90_us": 11.583
+      },
+      "change_percent": -12.437333333333333
+    },
+    {
+      "id": "dictionary/export-json-2",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 1,
+        "dictionary_rows": 1,
+        "input_json_bytes": 210,
+        "iterations_per_sample": 100,
+        "output_bytes": 293,
+        "rows": 2,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          1.89625,
+          1.89625,
+          1.92
+        ],
+        "median_us": 1.89625,
+        "p10_us": 1.88959,
+        "p90_us": 1.975
+      },
+      "after": {
+        "process_medians_us": [
+          0.66375,
+          0.66541,
+          0.6620900000000001
+        ],
+        "median_us": 0.66375,
+        "p10_us": 0.66042,
+        "p90_us": 0.68625
+      },
+      "change_percent": -64.99670402109426
+    },
+    {
+      "id": "dictionary/import-json-2",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 2,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 1,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 1,
+        "existing_rows": 0,
+        "input_json_bytes": 210,
+        "iterations_per_sample": 1,
+        "rows": 2,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          100.75,
+          105.167,
+          110.375
+        ],
+        "median_us": 105.167,
+        "p10_us": 93.917,
+        "p90_us": 123.62500000000001
+      },
+      "after": {
+        "process_medians_us": [
+          145.625,
+          130.584,
+          174.75
+        ],
+        "median_us": 145.625,
+        "p10_us": 112.083,
+        "p90_us": 214.875
+      },
+      "change_percent": 38.47024256658458
+    },
+    {
+      "id": "dictionary/import-json-2-100pct-duplicates",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 0,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 1,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 1,
+        "existing_rows": 2,
+        "input_json_bytes": 210,
+        "iterations_per_sample": 1,
+        "rows": 2,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          14.125,
+          14.041,
+          13.917000000000002
+        ],
+        "median_us": 14.041,
+        "p10_us": 12.958,
+        "p90_us": 17
+      },
+      "after": {
+        "process_medians_us": [
+          18.333,
+          16.458000000000002,
+          17.834
+        ],
+        "median_us": 17.834,
+        "p10_us": 14.208,
+        "p90_us": 25.291
+      },
+      "change_percent": 27.01374545972508
+    },
+    {
+      "id": "dictionary/export-json-20",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 10,
+        "dictionary_rows": 10,
+        "input_json_bytes": 1212,
+        "iterations_per_sample": 100,
+        "output_bytes": 1835,
+        "rows": 20,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          12.44125,
+          12.771659999999999,
+          12.56875
+        ],
+        "median_us": 12.56875,
+        "p10_us": 12.37334,
+        "p90_us": 12.890419999999999
+      },
+      "after": {
+        "process_medians_us": [
+          3.38875,
+          3.45,
+          3.3
+        ],
+        "median_us": 3.38875,
+        "p10_us": 3.2875,
+        "p90_us": 3.50458
+      },
+      "change_percent": -73.0382894082546
+    },
+    {
+      "id": "dictionary/import-json-20",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 20,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 10,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 10,
+        "existing_rows": 0,
+        "input_json_bytes": 1212,
+        "iterations_per_sample": 1,
+        "rows": 20,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          204.208,
+          220,
+          159.583
+        ],
+        "median_us": 204.208,
+        "p10_us": 151.416,
+        "p90_us": 228.5
+      },
+      "after": {
+        "process_medians_us": [
+          146.958,
+          141.542,
+          183.125
+        ],
+        "median_us": 146.958,
+        "p10_us": 130.917,
+        "p90_us": 239.917
+      },
+      "change_percent": -28.035140640915145
+    },
+    {
+      "id": "dictionary/export-json-1000",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 500,
+        "dictionary_rows": 500,
+        "input_json_bytes": 55763,
+        "iterations_per_sample": 10,
+        "output_bytes": 85786,
+        "rows": 1000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          568.3542,
+          567.525,
+          582.9708
+        ],
+        "median_us": 568.3542,
+        "p10_us": 561.5625,
+        "p90_us": 595.0667
+      },
+      "after": {
+        "process_medians_us": [
+          139.8458,
+          140.2167,
+          144.6875
+        ],
+        "median_us": 140.2167,
+        "p10_us": 139.1916,
+        "p90_us": 148.8125
+      },
+      "change_percent": -75.32934567915571
+    },
+    {
+      "id": "dictionary/import-json-1000",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 1000,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 500,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 500,
+        "existing_rows": 0,
+        "input_json_bytes": 55763,
+        "iterations_per_sample": 1,
+        "rows": 1000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          2862.208,
+          2885,
+          2907.167
+        ],
+        "median_us": 2885,
+        "p10_us": 2798.0829999999996,
+        "p90_us": 2990.958
+      },
+      "after": {
+        "process_medians_us": [
+          2074.208,
+          2052.75,
+          1723.75
+        ],
+        "median_us": 2052.75,
+        "p10_us": 1692.791,
+        "p90_us": 2144.5840000000003
+      },
+      "change_percent": -28.847487001733107
+    },
+    {
+      "id": "dictionary/export-json-10000",
+      "unit": "us/op",
+      "workload": {
+        "correction_rows": 5000,
+        "dictionary_rows": 5000,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "output_bytes": 856786,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          5933.709,
+          5864.6669999999995,
+          5856.166
+        ],
+        "median_us": 5864.6669999999995,
+        "p10_us": 5720.709,
+        "p90_us": 6093.292
+      },
+      "after": {
+        "process_medians_us": [
+          1388.917,
+          1432,
+          1390.25
+        ],
+        "median_us": 1390.25,
+        "p10_us": 1379.8339999999998,
+        "p90_us": 1435.084
+      },
+      "change_percent": -76.29447673670133
+    },
+    {
+      "id": "dictionary/import-json-10000",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 10000,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 5000,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 5000,
+        "existing_rows": 0,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          26959.25,
+          27870.417,
+          27360
+        ],
+        "median_us": 27360,
+        "p10_us": 26146.75,
+        "p90_us": 28338.959
+      },
+      "after": {
+        "process_medians_us": [
+          14540.582999999999,
+          16394.875,
+          16064.958
+        ],
+        "median_us": 16064.958,
+        "p10_us": 14267.458,
+        "p90_us": 17069.334
+      },
+      "change_percent": -41.283048245614026
+    },
+    {
+      "id": "dictionary/import-json-10000-100pct-duplicates",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 0,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 5000,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 5000,
+        "existing_rows": 10000,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          11880.416,
+          12030.917,
+          12030.75
+        ],
+        "median_us": 12030.75,
+        "p10_us": 11650.5,
+        "p90_us": 12257.5
+      },
+      "after": {
+        "process_medians_us": [
+          12067.082999999999,
+          12026.125,
+          12224.5
+        ],
+        "median_us": 12067.082999999999,
+        "p10_us": 11723.832999999999,
+        "p90_us": 12350.5
+      },
+      "change_percent": 0.3020011221245511
+    },
+    {
+      "id": "dictionary/import-json-10000-90pct-duplicates",
+      "unit": "us/op",
+      "workload": {
+        "accepted_rows": 1000,
+        "boundary": "JSON parse and transactional commit; setup, seed and read-back excluded",
+        "correction_rows": 5000,
+        "database": "fresh temporary SQLite WAL, default durability",
+        "dictionary_rows": 5000,
+        "existing_rows": 9000,
+        "input_json_bytes": 556763,
+        "iterations_per_sample": 1,
+        "rows": 10000,
+        "samples": 15,
+        "warmups": 5
+      },
+      "before": {
+        "process_medians_us": [
+          13661.792000000001,
+          13756.166000000001,
+          13864.125
+        ],
+        "median_us": 13756.166000000001,
+        "p10_us": 13452.833,
+        "p90_us": 14186.832999999999
+      },
+      "after": {
+        "process_medians_us": [
+          12692.625,
+          12883.083,
+          12984.291000000001
+        ],
+        "median_us": 12883.083,
+        "p10_us": 12470.75,
+        "p90_us": 13280
+      },
+      "change_percent": -6.346848387842952
+    }
+  ]
+}

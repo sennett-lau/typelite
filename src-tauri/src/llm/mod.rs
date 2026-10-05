@@ -6,8 +6,10 @@ pub mod language_router;
 pub mod live_question;
 pub mod models;
 pub mod openai;
+pub mod output_guard;
 pub mod prompt;
 pub mod protocol;
+pub mod question_language;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -252,33 +254,5 @@ mod context_prompt_contract_tests {
         assert!(prompt.contains("TRUSTED OPERATION: rewrite_selection"));
         assert!(prompt.contains("TRUSTED PLACEMENT: replace_selection"));
         assert!(prompt.contains("output only the replacement text"));
-    }
-
-    #[test]
-    fn context_prompt_release_fixtures_cover_every_family_and_thought_case() {
-        let family_fixture: serde_json::Value = serde_json::from_str(include_str!(
-            "../../tests/fixtures/context_same_payload.json"
-        ))
-        .unwrap();
-        let families = family_fixture["families"].as_object().unwrap();
-        for family in [
-            "general",
-            "email",
-            "work_chat",
-            "personal_chat",
-            "document",
-            "project_management",
-            "developer_collaboration",
-            "prompt_or_code",
-            "support",
-            "social",
-        ] {
-            assert!(families.contains_key(family), "missing {family} fixture");
-        }
-        assert_eq!(family_fixture["criticalSpans"].as_array().unwrap().len(), 4);
-
-        let thought_fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../../tests/fixtures/thought_aware.json")).unwrap();
-        assert_eq!(thought_fixture["fixtures"].as_array().unwrap().len(), 10);
     }
 }

@@ -6,7 +6,6 @@ import {
   FileJson,
   FileSpreadsheet,
   Pencil,
-  Plus,
   Search,
   Trash2,
   Upload,
@@ -14,8 +13,6 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '../../stores/appStore'
 import {
-  addCorrectionRule,
-  addDictionaryEntry,
   commitDictionaryImport,
   exportDictionaryCsv,
   exportDictionaryJson,
@@ -32,6 +29,7 @@ import {
 } from '../../lib/tauri'
 import { toast } from '../toast-service'
 import { DictionaryImportDialog } from './DictionaryImportDialog'
+import { DictionaryAddForm } from './DictionaryAddForm'
 import { SegmentedControl } from './shared/SegmentedControl'
 import { Toggle } from './shared/Toggle'
 import { Group, Row } from '../ui/Group'
@@ -79,10 +77,6 @@ export function DictionaryPane() {
   const setCorrectionRules = useAppStore((state) => state.setCorrectionRules)
   const { t } = useTranslation()
   const [activeSection, setActiveSection] = useState<'words' | 'corrections'>('words')
-  const [word, setWord] = useState('')
-  const [pronunciation, setPronunciation] = useState('')
-  const [pattern, setPattern] = useState('')
-  const [replacement, setReplacement] = useState('')
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<EditingRow>(null)
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
@@ -137,19 +131,6 @@ export function DictionaryPane() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [closeExportMenu, exportMenuOpen])
 
-  const handleAdd = async () => {
-    if (!word.trim()) return
-    try {
-      await addDictionaryEntry(word.trim(), pronunciation.trim() || null)
-      setWord('')
-      setPronunciation('')
-      await refreshDictionary()
-    } catch (error) {
-      console.error('Failed to add entry:', error)
-      toast.error(t('dictionary.failedToAdd'))
-    }
-  }
-
   const handleRemove = async (id: number) => {
     try {
       await removeDictionaryEntry(id)
@@ -157,21 +138,6 @@ export function DictionaryPane() {
     } catch (error) {
       console.error('Failed to remove entry:', error)
       toast.error(t('dictionary.failedToRemove'))
-    }
-  }
-
-  const handleAddCorrection = async () => {
-    const nextPattern = pattern.trim()
-    const nextReplacement = replacement.trim()
-    if (!nextPattern || !nextReplacement) return
-    try {
-      await addCorrectionRule(nextPattern, nextReplacement)
-      setPattern('')
-      setReplacement('')
-      await refreshDictionary()
-    } catch (error) {
-      console.error('Failed to add correction rule:', error)
-      toast.error(t('dictionary.failedToAddCorrection'))
     }
   }
 
@@ -359,36 +325,10 @@ export function DictionaryPane() {
         </div>
       </div>
 
+      <DictionaryAddForm activeSection={activeSection} onAdded={refreshDictionary} />
+
       {activeSection === 'words' && (
         <>
-          <Group label={t('dictionary.addWord')}>
-            <Row>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  value={word}
-                  onChange={(event) => setWord(event.target.value)}
-                  placeholder={t('dictionary.word')}
-                  className="field min-w-[120px] flex-1"
-                />
-                <input
-                  value={pronunciation}
-                  onChange={(event) => setPronunciation(event.target.value)}
-                  placeholder={t('dictionary.pronunciationOptional')}
-                  className="field min-w-[120px] flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => void handleAdd()}
-                  disabled={!word.trim()}
-                  className="btn-accent"
-                >
-                  <Plus size={12} />
-                  {t('dictionary.add')}
-                </button>
-              </div>
-            </Row>
-          </Group>
-
           <Group label={t('dictionary.wordCount', { count: filteredDictionary.length })}>
             {filteredDictionary.length === 0 ? (
               <Row>
@@ -480,35 +420,6 @@ export function DictionaryPane() {
 
       {activeSection === 'corrections' && (
         <>
-          <Group label={t('dictionary.addCorrectionTitle')}>
-            <Row>
-              <div className="flex flex-wrap gap-2">
-                <input
-                  value={pattern}
-                  onChange={(event) => setPattern(event.target.value)}
-                  placeholder={t('dictionary.wrongPhrase')}
-                  className="field min-w-[120px] flex-1"
-                />
-                <input
-                  value={replacement}
-                  onChange={(event) => setReplacement(event.target.value)}
-                  placeholder={t('dictionary.correctPhrase')}
-                  className="field min-w-[120px] flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => void handleAddCorrection()}
-                  disabled={!pattern.trim() || !replacement.trim()}
-                  aria-label={t('dictionary.addCorrection')}
-                  className="btn-accent"
-                >
-                  <Plus size={12} />
-                  {t('dictionary.add')}
-                </button>
-              </div>
-            </Row>
-          </Group>
-
           <Group label={t('dictionary.correctionCount', { count: filteredCorrections.length })}>
             {filteredCorrections.length === 0 ? (
               <Row>

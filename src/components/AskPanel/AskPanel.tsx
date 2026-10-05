@@ -12,6 +12,7 @@ import {
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
+  setAskPanelHitRect,
 } from '../../lib/tauri'
 import type { AskDictationResult, AskDictationStartResult, AskPanelLimits } from '../../lib/tauri'
 import { NeedsLiveInfo } from './NeedsLiveInfo'
@@ -434,6 +435,32 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
     if (embedded || !panelShown || limits === null) return
     void Promise.resolve(resizeAskPanel(limits.maxWidth, limits.maxHeight)).catch(() => {})
   }, [embedded, panelShown, panelKey, limits])
+
+  // Click-through: the window is as large as the largest panel, so the app needs the panel's
+  // own rectangle to let clicks beside it reach the app behind. Read every frame while it is
+  // up, so size animations and the open animation are followed, and sent only when it changes.
+  useEffect(() => {
+    if (embedded || !panelShown) return
+    let frame = 0
+    let last = ''
+    const report = () => {
+      const element = panelRef.current
+      if (element) {
+        const box = element.getBoundingClientRect()
+        const rect = [box.x, box.y, box.width, box.height].map(Math.round)
+        const key = rect.join(',')
+        if (key !== last) {
+          last = key
+          void Promise.resolve(setAskPanelHitRect(rect[0], rect[1], rect[2], rect[3])).catch(
+            () => {},
+          )
+        }
+      }
+      frame = requestAnimationFrame(report)
+    }
+    frame = requestAnimationFrame(report)
+    return () => cancelAnimationFrame(frame)
+  }, [embedded, panelShown, panelKey])
 
   if (!embedded) {
     return (

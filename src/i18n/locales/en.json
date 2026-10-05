@@ -66,10 +66,8 @@
     "sourcesCount_other": "{{count}} sources",
     "hideSources": "Hide sources",
     "showSource": "Show source {{n}}",
-    "open": "Open",
-    "opened": "Opened",
-    "copyLink": "Copy link",
-    "linkCopied": "Copied",
+    "sourceOpened": "Source {{n}} opened",
+    "sourceLinkCopied": "Link of source {{n}} copied",
     "copySourceLink": "Copy link of source {{n}}",
     "openSource": "Open source {{n}}"
   },
@@ -102,6 +100,9 @@
     "notSet": "Not set",
     "change": "Change",
     "whatsNew": "What's New",
+    "whatsNewNewer": "Newer release",
+    "whatsNewOlder": "Older release",
+    "whatsNewPage": "{{page}} of {{total}}",
     "shortcuts": {
       "title": "Shortcuts",
       "dictate": "Dictate",
@@ -932,6 +933,14 @@
     "failed": "Could not start recording the shortcut: {{error}}"
   },
   "whatsNew": {
+    "askLanguage": "Ask anything answers in your question's language and script, even when the web sources are in another language.",
+    "presetsEverywhere": "Language presets now shape Dictate and Ask too, and Cantonese is recognised and written in Hong Kong characters.",
+    "dictatedRequests": "A request you dictate (\"please explain this in Cantonese\") is written down as you said it, never carried out in another language.",
+    "spokenNumbers": "AI polish writes spoken decimals and versions as digits (\"five point five\" → 5.5, \"Opus Five Point Five\" → Opus 5.5).",
+    "askClickThrough": "Clicks beside the Ask panel reach the app behind it.",
+    "sourceIcons": "Source cards show Open and Copy link as always-visible icons, so a stray click no longer opens or copies a link.",
+    "whatsNewPaging": "What's New shows one release at a time, with arrows to step through older ones.",
+    "lighterApp": "Lighter and faster: less work while recording, a cheaper speech check, and a quicker dictionary with large word lists.",
     "webSearch": "Ask anything can search the web for live questions (news, scores, schedules, prices) with SearXNG: Typelite sets it up on your Mac in one click, or uses your own server.",
     "askSources": "Answers from the web cite their sources: open the sources column beside the answer to see each page, open it or copy its link.",
     "autoUpdate": "Updates from GitHub Releases: Typelite downloads a new version in the background and asks you to restart. Only the version file is requested; turn it off in Settings → System.",

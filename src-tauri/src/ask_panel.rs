@@ -41,6 +41,11 @@ pub const CAPSULE_WINDOW_PADDING: f64 = 12.0;
 pub const PILL_BOTTOM_GAP: f64 = 16.0;
 /// Without a pill ever seen: its usual height (`PILL_HEIGHT` in `useCapsuleResize`).
 const DEFAULT_PILL_HEIGHT: f64 = 32.0;
+/// How often the cursor is checked against the panel while it is open (click-through).
+const CURSOR_POLL: std::time::Duration = std::time::Duration::from_millis(30);
+/// Room around the panel's reported rectangle that still catches clicks, so its edge and the
+/// first frames of a size change never drop a click on the panel itself.
+pub const HIT_SLOP: f64 = 4.0;
 
 /// A rectangle in global logical points (y grows downwards, as Tauri reports it).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -198,6 +203,22 @@ pub fn panel_window_frame(
     }
 }
 
+/// Whether the cursor at global `(x, y)` is over the panel. `window` is the Ask window's frame
+/// and `panel` the panel's rectangle inside it (window-local). Without a reported panel the whole
+/// window counts, so clicks are never lost before the page has laid out.
+pub fn cursor_over_panel(window: LogicalRect, panel: Option<LogicalRect>, x: f64, y: f64) -> bool {
+    let Some(panel) = panel else {
+        return window.contains(x, y);
+    };
+    LogicalRect {
+        x: window.x + panel.x - HIT_SLOP,
+        y: window.y + panel.y - HIT_SLOP,
+        width: panel.width + 2.0 * HIT_SLOP,
+        height: panel.height + 2.0 * HIT_SLOP,
+    }
+    .contains(x, y)
+}
+
 /// Whether the panel is open, where it hangs, and how large the page says it is.
 #[derive(Debug)]
 pub struct AskPanelState(Mutex<AskPanelInner>);
@@ -210,6 +231,12 @@ struct AskPanelInner {
     panel_height: f64,
     /// The pill's height when it was last seen, for placing the panel without a visible pill.
     last_pill_height: f64,
+    /// The window frame last applied, for the click-through hit test.
+    frame: Option<LogicalRect>,
+    /// The panel's rectangle inside the window, as the page last reported it.
+    hit_rect: Option<LogicalRect>,
+    /// True while a cursor tracker thread runs.
+    tracking: bool,
 }
 
 impl Default for AskPanelState {
@@ -220,6 +247,9 @@ impl Default for AskPanelState {
             panel_width: PANEL_WIDTH,
             panel_height: DEFAULT_PANEL_HEIGHT,
             last_pill_height: DEFAULT_PILL_HEIGHT,
+            frame: None,
+            hit_rect: None,
+            tracking: false,
         }))
     }
 }
@@ -242,6 +272,7 @@ impl AskPanelState {
         if !inner.open {
             inner.panel_width = PANEL_WIDTH;
             inner.panel_height = DEFAULT_PANEL_HEIGHT;
+            inner.hit_rect = None;
         }
         inner.open = true;
         inner.anchor = anchor;
@@ -273,7 +304,48 @@ impl AskPanelState {
         let mut inner = self.lock();
         let was_open = inner.open;
         inner.open = false;
+        inner.hit_rect = None;
         was_open
+    }
+
+    fn set_frame(&self, frame: LogicalRect) {
+        self.lock().frame = Some(frame);
+    }
+
+    /// The page reported where the panel is inside the window.
+    pub fn set_hit_rect(&self, rect: LogicalRect) {
+        let valid = |v: f64| v.is_finite() && v >= 0.0;
+        if [rect.x, rect.y, rect.width, rect.height]
+            .into_iter()
+            .all(valid)
+        {
+            self.lock().hit_rect = Some(rect);
+        }
+    }
+
+    /// Whether the cursor is over the panel; None while closed or before the window is placed.
+    fn cursor_over_panel(&self, x: f64, y: f64) -> Option<bool> {
+        let inner = self.lock();
+        if !inner.open {
+            return None;
+        }
+        Some(cursor_over_panel(inner.frame?, inner.hit_rect, x, y))
+    }
+
+    /// Claims the tracker; false when one already runs.
+    fn start_tracking(&self) -> bool {
+        let mut inner = self.lock();
+        !std::mem::replace(&mut inner.tracking, true)
+    }
+
+    /// Releases the tracker unless the panel opened again meanwhile; true when it stopped.
+    fn stop_tracking_if_closed(&self) -> bool {
+        let mut inner = self.lock();
+        if inner.open {
+            return false;
+        }
+        inner.tracking = false;
+        true
     }
 
     fn remember_pill_height(&self, height: f64) {
@@ -360,6 +432,9 @@ fn current_anchor(
 /// new size in the old place (it is centred on the pill, so that would be a sideways jump
 /// each time the sources column opens or closes). Same as `set_capsule_frame` in lib.rs.
 fn apply_frame(window: &tauri::WebviewWindow, frame: LogicalRect) {
+    if let Some(state) = window.try_state::<AskPanelState>() {
+        state.set_frame(frame);
+    }
     crate::overlay_window::set_frame(&window, frame.x, frame.y, frame.width, frame.height);
 }
 
@@ -376,7 +451,48 @@ pub fn show(app: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWindow> {
         apply_frame(&window, frame);
     }
     let _ = window.show();
+    track_cursor(app);
     Ok(window)
+}
+
+/// Click-through: the window is as large as the largest panel (so size changes never move it),
+/// but only the panel should catch clicks. While the panel is open this checks the cursor every
+/// `CURSOR_POLL` and lets clicks outside the panel fall through to the app behind
+/// (`setIgnoresMouseEvents:` on macOS). A window that ignores the mouse gets no events, so the
+/// page cannot do this itself.
+fn track_cursor(app: &tauri::AppHandle) {
+    if !app.state::<AskPanelState>().start_tracking() {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let mut ignoring = false;
+        loop {
+            let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) else {
+                break;
+            };
+            let state = app.state::<AskPanelState>();
+            let over = cursor_point(&window).and_then(|(x, y)| state.cursor_over_panel(x, y));
+            match over {
+                Some(over) => {
+                    if ignoring == over {
+                        ignoring = !over;
+                        let _ = window.set_ignore_cursor_events(ignoring);
+                    }
+                }
+                None if !state.is_open() => {
+                    if ignoring {
+                        let _ = window.set_ignore_cursor_events(false);
+                    }
+                    if state.stop_tracking_if_closed() {
+                        break;
+                    }
+                }
+                None => {}
+            }
+            std::thread::sleep(CURSOR_POLL);
+        }
+    });
 }
 
 /// Closes the panel (Escape, ✕, a new run, or after Insert). Returns true when it was open.
@@ -423,6 +539,18 @@ pub fn resize_ask_panel(app: tauri::AppHandle, width: f64, height: f64) {
     if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
         apply_frame(&window, frame);
     }
+}
+
+/// The page reports the panel's rectangle inside the window (CSS pixels = logical points), for
+/// click-through outside it.
+#[tauri::command]
+pub fn set_ask_panel_hit_rect(app: tauri::AppHandle, x: f64, y: f64, width: f64, height: f64) {
+    app.state::<AskPanelState>().set_hit_rect(LogicalRect {
+        x,
+        y,
+        width,
+        height,
+    });
 }
 
 /// The panel's Copy button. The page is never focused, so it cannot use the browser clipboard;
@@ -713,6 +841,40 @@ mod tests {
         assert_eq!(state.open(None), None);
         assert!(state.is_open());
         assert_eq!(state.set_panel_size(PANEL_WIDTH, 200.0), None);
+    }
+
+    #[test]
+    fn only_the_panel_catches_the_cursor_and_the_rest_clicks_through() {
+        let window = rect(500.0, 400.0, 1040.0, 475.0);
+        let panel = Some(rect(310.0, 300.0, 420.0, 160.0));
+        // On the panel, and just inside its slop.
+        assert!(cursor_over_panel(window, panel, 1000.0, 800.0));
+        assert!(cursor_over_panel(window, panel, 500.0 + 310.0 - 2.0, 800.0));
+        // The transparent sides and top of the window let clicks through.
+        assert!(!cursor_over_panel(window, panel, 560.0, 800.0));
+        assert!(!cursor_over_panel(window, panel, 1000.0, 450.0));
+        // Before the page reports, the whole window catches clicks.
+        assert!(cursor_over_panel(window, None, 560.0, 800.0));
+        assert!(!cursor_over_panel(window, None, 100.0, 100.0));
+    }
+
+    #[test]
+    fn the_hit_rect_is_dropped_when_the_panel_closes_or_opens_fresh() {
+        let state = AskPanelState::default();
+        let anchor = anchor_on_screen(rect(0.0, 0.0, 1512.0, 982.0), 36.0);
+        let frame = state.open(Some(anchor)).unwrap();
+        state.set_frame(frame);
+        state.set_hit_rect(rect(10.0, 10.0, 20.0, 20.0));
+        assert_eq!(
+            state.cursor_over_panel(frame.x + 100.0, frame.y + 100.0),
+            Some(false)
+        );
+        state.set_hit_rect(rect(f64::NAN, 0.0, 1.0, 1.0));
+        assert_eq!(state.lock().hit_rect, Some(rect(10.0, 10.0, 20.0, 20.0)));
+        state.close();
+        assert_eq!(state.cursor_over_panel(frame.x, frame.y), None);
+        state.open(Some(anchor));
+        assert_eq!(state.lock().hit_rect, None);
     }
 
     #[test]

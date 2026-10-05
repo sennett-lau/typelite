@@ -197,9 +197,12 @@ pub(crate) mod tests {
 
     /// A fresh, empty store in the temp folder.
     pub(crate) fn temp_store(name: &str) -> LibraryStore {
+        // A counter too: tests run in parallel and the clock can give two the same nanosecond.
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let dir = std::env::temp_dir().join(format!(
-            "typelite-language-presets-{name}-{}-{}",
+            "typelite-language-presets-{name}-{}-{}-{}",
             std::process::id(),
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

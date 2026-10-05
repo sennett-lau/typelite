@@ -90,10 +90,38 @@ npx eslint src/
 npx prettier --check src
 npm run docs:check                          # language guides and generated tables
 node scripts/language-presets.mjs --check   # language presets and index.json
+node scripts/benchmark-baseline.mjs --check # archived evidence and generated current baseline
 ```
 
 End-to-end tests against real servers are optional: `bash scripts/e2e.sh` (see
 `src-tauri/tests/e2e_services.rs` for the environment variables).
+
+Follow the [testing guidelines](docs/testing/README.md) when adding or reviewing tests: assert
+behavior and boundary contracts, use synthetic content, and identify the remaining coverage
+before removing a redundant case.
+
+### Performance changes
+
+Keep performance part of ongoing code review. Optimize measured costs, preserve behavior, and
+prefer the simplest change that delivers a repeatable benefit. Before refactoring a performance
+path, define its workload and capture a fresh measurement of the PR base; compare the same
+workloads afterward:
+
+```sh
+npm run bench:local -- --out output/benchmarks/before.json
+npm run bench:local -- --out output/benchmarks/after.json --compare output/benchmarks/before.json
+```
+
+Use [docs/benchmarks/](docs/benchmarks/README.md) for the rolling baseline, report format and
+baseline-update workflow. Each performance PR archives before/after samples, reports all workloads
+and any regressions, and includes its proposed baseline update. The baseline on the default
+branch advances when that PR merges; keep all previous reports. The
+[PR template](.github/pull_request_template.md) standardizes the review summary.
+
+This suite measures local overhead; the [inference benchmarks](docs/guides/benchmarks/README.md)
+measure real speech and AI servers separately. Changes without a relevant performance workload
+should state their expected impact rather than invent a timing claim. CI verifies baseline
+consistency; hardware-dependent speed thresholds are not part of the offline gate.
 
 ### Plans first
 
