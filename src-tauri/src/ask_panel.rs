@@ -16,6 +16,10 @@ pub const ASK_WINDOW_LABEL: &str = "ask";
 const CAPSULE_WINDOW_LABEL: &str = "capsule";
 /// Sent to the Ask window when the panel closes (Escape, a new run), so it drops its content.
 pub const PANEL_CLOSED_EVENT: &str = "ask:panel_closed";
+/// Plan `ask-hover`: the cursor over the panel, in window points (`{x, y}`), or `null` when it
+/// leaves. The window is never key and Typelite stays in the background, so WebKit sends the page
+/// no mouse moves and `:hover` never applies; the page applies hover from this instead.
+pub const POINTER_EVENT: &str = "ask:pointer";
 
 /// The panel's width for a short answer, without the window's shadow padding. A long answer
 /// or the open sources column make the page ask for more, up to `panel_limits`.
@@ -323,6 +327,12 @@ impl AskPanelState {
         }
     }
 
+    /// The cursor in the window's own points, when the window is placed.
+    fn point_in_window(&self, x: f64, y: f64) -> Option<(f64, f64)> {
+        let frame = self.lock().frame?;
+        Some((x - frame.x, y - frame.y))
+    }
+
     /// Whether the cursor is over the panel; None while closed or before the window is placed.
     fn cursor_over_panel(&self, x: f64, y: f64) -> Option<bool> {
         let inner = self.lock();
@@ -467,12 +477,23 @@ fn track_cursor(app: &tauri::AppHandle) {
     let app = app.clone();
     std::thread::spawn(move || {
         let mut ignoring = false;
+        let mut last_pointer: Option<(f64, f64)> = None;
         loop {
             let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) else {
                 break;
             };
             let state = app.state::<AskPanelState>();
-            let over = cursor_point(&window).and_then(|(x, y)| state.cursor_over_panel(x, y));
+            let cursor = cursor_point(&window);
+            let over = cursor.and_then(|(x, y)| state.cursor_over_panel(x, y));
+            let pointer = match (over, cursor) {
+                (Some(true), Some((x, y))) => state.point_in_window(x, y),
+                _ => None,
+            };
+            if pointer != last_pointer {
+                last_pointer = pointer;
+                let payload = pointer.map(|(x, y)| serde_json::json!({ "x": x, "y": y }));
+                let _ = app.emit_to(ASK_WINDOW_LABEL, POINTER_EVENT, payload);
+            }
             match over {
                 Some(over) => {
                     if ignoring == over {
@@ -517,6 +538,15 @@ pub fn is_open(app: &tauri::AppHandle) -> bool {
 }
 
 /// The page's ✕ button.
+/// Plan `ask-hover`: the hand cursor over a clickable part of the panel, the arrow elsewhere.
+/// WebKit sets no cursor in a window that is not key, so the page asks for it.
+#[tauri::command]
+pub fn set_ask_cursor(app: tauri::AppHandle, pointer: bool) {
+    if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
+        crate::overlay_window::set_cursor(&window, pointer);
+    }
+}
+
 #[tauri::command]
 pub fn close_ask_panel(app: tauri::AppHandle) {
     close(&app);

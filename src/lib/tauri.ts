@@ -700,6 +700,11 @@ export const ASK_STAGE_EVENT = 'ask:stage'
 export type AskStage = 'searching' | 'thinking'
 
 /** Plan `ask-web-search`: opens one of the answer's source links in the browser. */
+/** Plan `ask-hover`: the hand cursor (or the arrow) over the Ask panel. */
+export async function setAskCursor(pointer: boolean): Promise<void> {
+  return invoke('set_ask_cursor', { pointer })
+}
+
 export async function openAskSource(url: string): Promise<void> {
   return invoke('open_ask_source', { url })
 }
