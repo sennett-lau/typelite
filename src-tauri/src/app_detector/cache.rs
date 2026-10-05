@@ -80,6 +80,48 @@ pub struct ContextDetectorHandle {
     candidate_generation: Arc<AtomicU64>,
 }
 
+/// True when the frontmost app is still `expected`. Paste runs this before inserting.
+fn target_in_front(source: &dyn ContextSignalSource, expected: &TargetAppGuard) -> bool {
+    source
+        .collect()
+        .map(|signals| expected.matches(&TargetAppGuard::from(&signals)))
+        .unwrap_or(false)
+}
+
+/// Benchmarks only (`examples/benchmark_target_check.rs`): the paste path's "is the target app
+/// still in front?" check, against whatever app is frontmost when it starts.
+#[doc(hidden)]
+pub struct TargetCheckBenchmark {
+    source: Arc<dyn ContextSignalSource>,
+    guard: TargetAppGuard,
+}
+
+#[doc(hidden)]
+impl TargetCheckBenchmark {
+    pub fn new() -> Self {
+        let source = default_source();
+        let guard = source
+            .collect()
+            .map(|signals| TargetAppGuard::from(&signals))
+            .unwrap_or_default();
+        Self { source, guard }
+    }
+
+    pub fn guard(&self) -> (Option<u32>, Option<String>) {
+        (self.guard.process_id, self.guard.native_identity.clone())
+    }
+
+    pub fn check(&self) -> bool {
+        target_in_front(self.source.as_ref(), &self.guard)
+    }
+}
+
+impl Default for TargetCheckBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ContextDetectorHandle {
     pub fn start_default(mapping_store: UserAppMappingStore) -> Self {
         Self::start_with_mapping_store(
@@ -280,10 +322,7 @@ impl ContextDetectorHandle {
         if expected.is_empty() {
             return true;
         }
-        self.source
-            .collect()
-            .map(|signals| expected.matches(&TargetAppGuard::from(&signals)))
-            .unwrap_or(false)
+        target_in_front(self.source.as_ref(), expected)
     }
 
     pub fn restore_target_application(&self, expected: &TargetAppGuard) -> bool {
