@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
+import { setSiMode } from '../i18n/siMode'
 import { useAppStore } from '../stores/appStore'
 import type {
   AppConfig,
@@ -219,6 +220,7 @@ export function useTauriEvents() {
     )
     addListener<Partial<AppConfig>>('config:patch', (patch) => {
       applyPersistedConfigPatch(patch)
+      if (patch.si_mode !== undefined) setSiMode(patch.si_mode)
       if (patch.ui_language) {
         i18n.changeLanguage(patch.ui_language)
         localStorage.setItem('ui_language', patch.ui_language)
