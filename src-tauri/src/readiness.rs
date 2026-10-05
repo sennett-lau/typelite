@@ -60,7 +60,7 @@ fn not_ready_error(code: &str, pane: &str) -> UserError {
 #[tauri::command]
 pub fn open_settings_pane(app: tauri::AppHandle, pane: String) -> Result<(), String> {
     let pane = match pane.as_str() {
-        "stt" | "llm" | "general" | "search" => pane,
+        "stt" | "llm" | "general" | "search" | "translate" => pane,
         _ => return Err(format!("Unknown settings pane: {pane}")),
     };
     let window = app

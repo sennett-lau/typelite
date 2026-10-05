@@ -12,6 +12,9 @@ Superseded in part by
 [translation-language-presets](../2026-09-26-translation-language-presets/index.md)
 (2026-09-27: the "Always translate output" switch is removed from Settings → AI → Translation).
 
+Superseded in part by [settings-order](../2026-10-05-settings-order/index.md): Translation moves
+out of Settings → AI into its own Settings → Translate section.
+
 ## Goals
 
 - One-click local AI polish on Apple Silicon Macs: pick a model, it downloads, is checked and

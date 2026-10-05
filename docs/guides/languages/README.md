@@ -55,7 +55,7 @@ recording into it, but saves a detection pass and can help very short clips.
 
 ## Translation languages
 
-**Settings → AI → Translation** lists your languages (up to three), one row each:
+**Settings → Translate** lists your languages (up to three), one row each:
 
 - The **order** is the order the Switch language key and the pill follow. Drag a row by its
   ⋮⋮ handle to change it (or focus the handle and press ↑ / ↓).

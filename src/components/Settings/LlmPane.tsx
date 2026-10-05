@@ -11,10 +11,6 @@ import { EngineChoice } from '../Speech/SpeechEngineChoice'
 import { AI_SERVICE } from '../Speech/services'
 import { AppLogo } from '../AppLogo'
 import { ContextAdaptationApps } from './ContextAdaptationApps'
-import { openUrl } from '@tauri-apps/plugin-opener'
-import { LanguageRows } from './languages/LanguageRows'
-import { LANGUAGE_PRESETS_GUIDE_URL, useLibraryStatus } from './languages/languageLibrary'
-import { LanguageSheet } from './languages/LanguageSheet'
 import { AppStyleMappingDialog } from './AppStyleMappingDialog'
 import { ManageAppMappingsDialog } from './ManageAppMappingsDialog'
 
@@ -29,9 +25,8 @@ const STYLE_KEY: Record<PolishStyle, string> = {
 /**
  * Settings → AI (plan `ai-polish-setup`): "AI polish uses" (Built-in or your server or API key,
  * with their details), then Polish (clean-up switch, style cards, match the app, the last app and
- * browser access), Translation (one row per language with its instructions sheet, plan
- * `language-prompt-library`; the languages the Translate shortcut uses) and a collapsed Advanced
- * (selected text, custom instructions).
+ * browser access) and a collapsed Advanced (selected text, custom instructions). The translation
+ * languages moved to their own Settings → Translate pane (plan `settings-order`).
  */
 export function LlmPane() {
   const config = useAppStore((s) => s.config)
@@ -49,8 +44,6 @@ export function LlmPane() {
   const [appStyleDialogOpen, setAppStyleDialogOpen] = useState(false)
   const [manageMappingsOpen, setManageMappingsOpen] = useState(false)
   const [editingMapping, setEditingMapping] = useState<CustomAppMappingView | null>(null)
-  const [editingLanguage, setEditingLanguage] = useState<string | null>(null)
-  const libraryStatus = useLibraryStatus()
   const appStyleMenuButtonRef = useRef<HTMLButtonElement>(null)
   const showBrowserAccessHint = Boolean(
     config.polish_enabled &&
@@ -246,33 +239,6 @@ export function LlmPane() {
         )}
       </Group>
 
-      <Group
-        label={t('settings.groupTranslation')}
-        actions={
-          <button
-            type="button"
-            onClick={() =>
-              openUrl(LANGUAGE_PRESETS_GUIDE_URL).catch((error) =>
-                console.error('[settings] failed to open the guide', error),
-              )
-            }
-            className="link-button normal-case tracking-normal"
-          >
-            {t('translate.language.aboutPresets')}
-          </button>
-        }
-      >
-        {/* The languages the Translate shortcut translates into. There is no "Always
-            translate output" switch: Dictate never translates by itself (plan
-            `translation-language-presets`). */}
-        <LanguageRows
-          config={config}
-          status={libraryStatus}
-          onChange={(translation) => updateConfig({ translation })}
-          onEdit={setEditingLanguage}
-        />
-      </Group>
-
       <div className="mx-1 mt-4">
         <button
           type="button"
@@ -332,14 +298,6 @@ export function LlmPane() {
             setAppStyleDialogOpen(false)
             setEditingMapping(null)
           }}
-        />
-      )}
-
-      {editingLanguage && (
-        <LanguageSheet
-          code={editingLanguage}
-          status={libraryStatus}
-          onClose={() => setEditingLanguage(null)}
         />
       )}
 
