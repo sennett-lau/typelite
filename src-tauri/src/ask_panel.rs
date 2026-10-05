@@ -498,6 +498,11 @@ fn track_cursor(app: &tauri::AppHandle) {
                 Some(over) => {
                     if ignoring == over {
                         ignoring = !over;
+                        if ignoring {
+                            // Plan `ask-hover`: a window that ignores the mouse sends WebKit no
+                            // exit, so its own `:hover` would stay on the last element.
+                            crate::overlay_window::clear_web_hover(&window);
+                        }
                         let _ = window.set_ignore_cursor_events(ignoring);
                     }
                 }

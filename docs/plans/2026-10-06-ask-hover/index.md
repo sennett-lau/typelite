@@ -32,6 +32,10 @@ Status: building (2026-10-06)
   (`set_ask_cursor`), and AppKit sets it. A background app's cursor changes are ignored unless
   the window server's connection property `SetsCursorInBackground` is set; it is private API,
   widely used by utilities, set once, and harmless if refused (the cursor stays an arrow).
+- **Clear WebKit's own hover on leaving.** When the cursor leaves the panel the window starts
+  ignoring the mouse, so WebKit never sees the exit and its `:hover` stayed on the last card
+  (found in E2E). Just before that, the app sends the web view a mouse-moved event far outside
+  it, so WebKit's hit test clears the hover.
 - **Not making the panel key.** That would take keyboard focus from the user's app, which Insert
   and dictation rely on.
 

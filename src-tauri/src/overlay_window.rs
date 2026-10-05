@@ -255,6 +255,23 @@ pub fn set_cursor(window: &tauri::WebviewWindow, pointer: bool) {
     let _ = (window, pointer);
 }
 
+/// Tells the overlay's web view the mouse moved far outside it, so WebKit drops its `:hover`
+/// state. Call it before the window starts ignoring the mouse: from then on WebKit gets no exit
+/// event and would keep the last element hovered. Does nothing off macOS.
+pub fn clear_web_hover(window: &tauri::WebviewWindow) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = window.with_webview(|webview| {
+            // SAFETY: Tauri runs this on the main thread with the live WKWebView.
+            unsafe {
+                mac::send_mouse_moved_outside(webview.inner().cast(), webview.ns_window().cast())
+            };
+        });
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = window;
+}
+
 #[cfg(target_os = "macos")]
 mod mac {
     use super::{
@@ -768,6 +785,52 @@ mod mac {
             let _: () =
                 msg_send![window, setCollectionBehavior: overlay_collection_behavior(behavior)];
             let _: () = msg_send![window, setLevel: OVERLAY_WINDOW_LEVEL];
+        }
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct NSPoint {
+        x: f64,
+        y: f64,
+    }
+
+    // SAFETY: `NSPoint` is two `f64`s, which is `CGPoint`'s layout.
+    unsafe impl objc2::Encode for NSPoint {
+        const ENCODING: objc2::Encoding =
+            objc2::Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+    }
+
+    /// Plan `ask-hover`: delivers a mouse-moved event at a point far outside `web_view` to it,
+    /// so WebKit's hit test finds nothing and clears `:hover`.
+    ///
+    /// # Safety
+    /// Main thread; `web_view` is a live `WKWebView` in the live `ns_window`.
+    pub(super) unsafe fn send_mouse_moved_outside(
+        web_view: *mut AnyObject,
+        ns_window: *mut AnyObject,
+    ) {
+        if web_view.is_null() || ns_window.is_null() {
+            return;
+        }
+        /// `NSEventTypeMouseMoved`.
+        const MOUSE_MOVED: usize = 5;
+        let window_number: isize = msg_send![ns_window, windowNumber];
+        let null: *mut AnyObject = std::ptr::null_mut();
+        let event: *mut AnyObject = msg_send![
+            class!(NSEvent),
+            mouseEventWithType: MOUSE_MOVED,
+            location: NSPoint { x: -10_000.0, y: -10_000.0 },
+            modifierFlags: 0usize,
+            timestamp: 0.0f64,
+            windowNumber: window_number,
+            context: null,
+            eventNumber: 0isize,
+            clickCount: 0isize,
+            pressure: 0.0f32
+        ];
+        if !event.is_null() {
+            let _: () = msg_send![web_view, mouseMoved: event];
         }
     }
 
