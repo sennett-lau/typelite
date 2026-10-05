@@ -392,6 +392,7 @@
     "aiPolish": "AI",
     "scenes": "提示詞預設",
     "prompts": "提示詞",
+    "translatePane": "翻譯",
     "autoDetect": "自動檢測",
     "hotkey": "快捷鍵",
     "dictationHotkey": "開始聽寫",
