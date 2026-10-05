@@ -622,12 +622,17 @@ describe('Settings tab 切换', () => {
     renderSettings()
     const sections = [
       ['settings.general', 'settings.hotkey'],
+      ['settings.prompts', 'scenes.myScenes'],
+      ['settings.translatePane', 'settings.groupTranslation'],
+      ['settings.search', 'webSearch.group'],
       ['settings.speechRecognition', 'speech.spokenLanguage'],
       ['settings.aiPolish', 'settings.enableAiPolish'],
-      ['settings.prompts', 'scenes.myScenes'],
-      ['settings.search', 'webSearch.group'],
       ['settings.system', 'settings.launchAtStartup'],
     ]
+    // Plan `settings-order`: the tabs follow the three shortcuts, then the shared services.
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(
+      sections.map(([label]) => label),
+    )
     expect(screen.getByRole('tab', { name: 'settings.general' })).toHaveAttribute(
       'aria-selected',
       'true',

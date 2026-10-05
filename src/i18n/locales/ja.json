@@ -392,6 +392,7 @@
     "aiPolish": "AI",
     "scenes": "プロンプトプリセット",
     "prompts": "プロンプト",
+    "translatePane": "翻訳",
     "autoDetect": "自動検出",
     "hotkey": "ショートカット",
     "dictationHotkey": "音声入力を開始",
