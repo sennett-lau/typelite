@@ -933,6 +933,14 @@
     "failed": "无法开始录制快捷键：{{error}}"
   },
   "whatsNew": {
+    "askLanguage": "随便问会用你提问的语言和字体回答，即使网络来源是其他语言。",
+    "presetsEverywhere": "语言预设现在也作用于听写和随便问，并能识别粤语、以香港繁体字书写。",
+    "dictatedRequests": "你听写的请求（例如“请用粤语解释一下”）会按原话写下，不会被执行或换成另一种语言。",
+    "spokenNumbers": "AI 润色会把口述的小数和版本号写成数字（“five point five”→ 5.5，“Opus Five Point Five”→ Opus 5.5）。",
+    "askClickThrough": "点击随便问面板旁边的位置，会直接点到后面的应用。",
+    "sourceIcons": "来源卡片的“打开”和“复制链接”改为常驻图标，误点不再会打开或复制链接。",
+    "whatsNewPaging": "“新功能”每次显示一个版本，可用箭头查看更早的版本。",
+    "lighterApp": "更轻更快：录音时工作量更少，语音检测更省资源，词典在词条很多时也更快。",
     "webSearch": "随便问可以为需要最新信息的问题（新闻、比分、赛程、价格）用 SearXNG 搜索网络：Typelite 一键在你的 Mac 上安装它，也可以使用你自己的服务器。",
     "askSources": "来自网络的回答会标注来源：在回答旁打开来源栏，查看每个网页，打开它或复制链接。",
     "autoUpdate": "从 GitHub Releases 更新：Typelite 在后台下载新版本，并提示你重新启动。只会请求版本文件；可在「设置 → 系统」中关闭。",
