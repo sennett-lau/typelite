@@ -31,8 +31,7 @@ export function AboutPane() {
         <div className="min-w-0">
           <h1 className="page-title">{APP_NAME}</h1>
           <span className="mono-value">
-            {t('settings.versionLine', { version: APP_VERSION.replace(/^v/, '') })} ·{' '}
-            {t('settings.mit')}
+            {t('settings.versionLine', { version: APP_VERSION })} · {t('settings.mit')}
           </span>
         </div>
       </div>

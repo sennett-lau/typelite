@@ -316,6 +316,15 @@ async fn show_ask_window(
 mod tests {
     use super::*;
 
+    /// `package.json` is the one place the version is set (the UI and tauri.conf.json read it);
+    /// Cargo needs its own copy, which must match.
+    #[test]
+    fn cargo_version_matches_package_json() {
+        let package: serde_json::Value =
+            serde_json::from_str(include_str!("../../package.json")).unwrap();
+        assert_eq!(package["version"].as_str(), Some(env!("CARGO_PKG_VERSION")));
+    }
+
     fn text_mentions(text: &str, keywords: &[&str]) -> bool {
         let normalized = text.to_ascii_lowercase();
         keywords.iter().any(|keyword| normalized.contains(keyword))

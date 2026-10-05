@@ -67,10 +67,10 @@ jobs:
       - name: Version
         id: version
         run: |
-          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match the version in src-tauri/tauri.conf.json ($VERSION)."
+            echo "::error::Tag $GITHUB_REF_NAME does not match the version in package.json ($VERSION)."
             exit 1
           fi
 
