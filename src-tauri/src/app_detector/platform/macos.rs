@@ -30,7 +30,50 @@ pub(crate) fn restore_target_application(target: &TargetAppGuard) -> bool {
         .is_ok_and(|status| status.success())
 }
 
+/// Plan `native-target-check`: the frontmost app's process ID and bundle ID, read in-process
+/// from `NSWorkspace.frontmostApplication` (an `NSRunningApplication`). `collect` runs an
+/// AppleScript through System Events, about 200-300 ms per call, and paste checked the target
+/// app twice with it. AppKit updates this property on the main thread, which Tauri's run loop
+/// keeps running, so it is current when read from the pipeline's threads.
+fn frontmost_app_guard() -> Option<TargetAppGuard> {
+    use objc2::runtime::AnyObject;
+    use objc2::{class, msg_send};
+
+    objc2::rc::autoreleasepool(|_| unsafe {
+        let workspace: *mut AnyObject = msg_send![class!(NSWorkspace), sharedWorkspace];
+        if workspace.is_null() {
+            return None;
+        }
+        let app: *mut AnyObject = msg_send![workspace, frontmostApplication];
+        if app.is_null() {
+            return None;
+        }
+        let pid: i32 = msg_send![app, processIdentifier];
+        let bundle_id: *mut AnyObject = msg_send![app, bundleIdentifier];
+        let native_identity = if bundle_id.is_null() {
+            None
+        } else {
+            let utf8: *const std::ffi::c_char = msg_send![bundle_id, UTF8String];
+            (!utf8.is_null())
+                .then(|| {
+                    std::ffi::CStr::from_ptr(utf8)
+                        .to_string_lossy()
+                        .into_owned()
+                })
+                .filter(|value| !value.is_empty())
+        };
+        Some(TargetAppGuard {
+            process_id: u32::try_from(pid).ok(),
+            native_identity,
+        })
+    })
+}
+
 impl ContextSignalSource for MacOsContextSource {
+    fn front_app_guard(&self) -> Option<TargetAppGuard> {
+        frontmost_app_guard()
+    }
+
     fn collect(&self) -> Option<ContextSignals> {
         let output = Command::new("/usr/bin/osascript")
             .args(["-e", FRONT_APP_SCRIPT])

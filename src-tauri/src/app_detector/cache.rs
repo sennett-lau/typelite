@@ -83,9 +83,8 @@ pub struct ContextDetectorHandle {
 /// True when the frontmost app is still `expected`. Paste runs this before inserting.
 fn target_in_front(source: &dyn ContextSignalSource, expected: &TargetAppGuard) -> bool {
     source
-        .collect()
-        .map(|signals| expected.matches(&TargetAppGuard::from(&signals)))
-        .unwrap_or(false)
+        .front_app_guard()
+        .is_some_and(|current| expected.matches(&current))
 }
 
 /// Benchmarks only (`examples/benchmark_target_check.rs`): the paste path's "is the target app
