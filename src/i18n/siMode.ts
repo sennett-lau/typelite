@@ -13,6 +13,14 @@ const REPLACEMENTS: [RegExp, string][] = [
   [/\bArtificial intelligence\b/g, 'Super intelligence'],
   [/\bartificial intelligence\b/g, 'super intelligence'],
   [/人工智能/g, '超级智能'],
+  // Plan `ui-languages`: the other interface languages. Spanish and French write AI as "IA",
+  // German as "KI".
+  [/人工智慧/g, '超級智慧'],
+  [/人工知能/g, '超知能'],
+  [/\b(IA|KI)\b/g, 'SI'],
+  [/inteligencia artificial/gi, 'superinteligencia'],
+  [/intelligence artificielle/gi, 'superintelligence'],
+  [/künstliche Intelligenz/gi, 'Superintelligenz'],
 ]
 
 export function toSuperIntelligence(text: string): string {

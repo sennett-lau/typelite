@@ -1,11 +1,6 @@
 import { version } from '../../package.json'
 
 // App metadata
-export const UI_LANGUAGES = [
-  { value: 'en', label: 'English' },
-  { value: 'zh', label: '中文' },
-] as const
-
 export const APP_NAME = 'Typelite'
 /**
  * The app's version, without a leading "v". `package.json` is the one place it is set: Tauri

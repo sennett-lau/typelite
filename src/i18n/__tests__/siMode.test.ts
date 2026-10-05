@@ -13,6 +13,8 @@ describe('SI mode (plan `si-mode`)', () => {
       'Super intelligence and super intelligence',
     )
     expect(toSuperIntelligence('AI 润色，人工智能')).toBe('SI 润色，超级智能')
+    expect(toSuperIntelligence('人工智慧、人工知能')).toBe('超級智慧、超知能')
+    expect(toSuperIntelligence('Pulido con IA; KI-Glättung')).toBe('Pulido con SI; SI-Glättung')
   })
 
   it('changes translated text only while the switch is on', async () => {
@@ -25,10 +27,15 @@ describe('SI mode (plan `si-mode`)', () => {
     expect(i18n.t('home.aiPolish')).toBe('AI Polish')
   })
 
-  it('leaves its own hint readable', () => {
-    setSiMode(true)
-    expect(i18n.t('settings.siModeHint')).toBe(
-      i18n.getResource('en', 'translation', 'settings.siModeHint'),
-    )
-  })
+  it.each(['en', 'zh', 'zh-Hant', 'es', 'fr', 'de', 'ja'])(
+    'leaves its own hint readable in %s',
+    async (language) => {
+      await i18n.changeLanguage(language)
+      setSiMode(true)
+      expect(i18n.t('settings.siModeHint')).toBe(
+        i18n.getResource(language, 'translation', 'settings.siModeHint'),
+      )
+      await i18n.changeLanguage('en')
+    },
+  )
 })

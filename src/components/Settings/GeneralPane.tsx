@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from 'i18next'
+import { invoke } from '@tauri-apps/api/core'
 import { MessageCircle } from 'lucide-react'
 import { isMacPlatform, useAppStore } from '../../stores/appStore'
 import type { HotkeyMode, OutputMode, ShortcutBinding } from '../../stores/appStore'
@@ -18,6 +20,7 @@ import { ShortcutBindingList } from './ShortcutBindingList'
 import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
+import { UI_LANGUAGES } from '../../i18n/languages'
 import { MAX_TRANSLATION_TARGETS, targetLanguageLabel } from '../../lib/constants'
 
 const MAC_ACCESSIBILITY_HOTKEY_ERROR = 'Accessibility permission may be denied'
@@ -163,8 +166,34 @@ export function GeneralPane() {
       insertion_strategy: outputMode === 'clipboard' ? 'clipboardPaste' : 'auto',
     })
 
+  // Plan `ui-languages`: moved here from About.
+  const currentLang = config.ui_language || i18n.language || 'en'
+  const selectLanguage = (value: string) => {
+    i18n.changeLanguage(value)
+    localStorage.setItem('ui_language', value)
+    updateConfig({ ui_language: value })
+    invoke('refresh_tray_labels').catch(() => {})
+  }
+
   return (
     <div>
+      <Group>
+        <Row label={t('settings.language')}>
+          <select
+            aria-label={t('settings.language')}
+            value={currentLang}
+            onChange={(event) => selectLanguage(event.target.value)}
+            className="popup"
+          >
+            {UI_LANGUAGES.map((language) => (
+              <option key={language.value} value={language.value}>
+                {language.label}
+              </option>
+            ))}
+          </select>
+        </Row>
+      </Group>
+
       <Group
         label={t('settings.hotkey')}
         actions={

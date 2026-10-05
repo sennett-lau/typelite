@@ -1,26 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import { invoke } from '@tauri-apps/api/core'
-import i18n from '../../i18n'
 import { ExternalLink } from 'lucide-react'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { useAppStore } from '../../stores/appStore'
-import { APP_NAME, APP_VERSION, APP_REPO_URL, UI_LANGUAGES } from '../../lib/constants'
+import { APP_NAME, APP_VERSION, APP_REPO_URL } from '../../lib/constants'
 import appIcon from '../../../src-tauri/icons/app-icon.svg'
 import { Group, Row } from '../ui/Group'
 
 export function AboutPane() {
   const { t } = useTranslation()
-  const config = useAppStore((s) => s.config)
-  const updateConfig = useAppStore((s) => s.updateConfig)
-
-  const currentLang = config.ui_language || i18n.language || 'en'
-
-  const handleSelectLanguage = (value: string) => {
-    i18n.changeLanguage(value)
-    localStorage.setItem('ui_language', value)
-    updateConfig({ ui_language: value })
-    invoke('refresh_tray_labels').catch(() => {})
-  }
 
   return (
     <div className="text-[13px]">
@@ -47,20 +33,6 @@ export function AboutPane() {
       </p>
 
       <Group>
-        <Row label={t('settings.language')}>
-          <select
-            aria-label={t('settings.language')}
-            value={currentLang}
-            onChange={(event) => handleSelectLanguage(event.target.value)}
-            className="popup"
-          >
-            {UI_LANGUAGES.map((lang) => (
-              <option key={lang.value} value={lang.value}>
-                {lang.label}
-              </option>
-            ))}
-          </select>
-        </Row>
         <Row label={t('settings.github')}>
           <button
             type="button"
