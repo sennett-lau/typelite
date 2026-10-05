@@ -711,8 +711,8 @@ mod tests {
     fn csv_parser_handles_bom_crlf_quoted_commas_and_newlines() {
         let input = concat!(
             "\u{feff}type,word,pronunciation,wrong_phrase,corrected_phrase,enabled\r\n",
-            "dictionary,\"Open,Typeless\",\"open\r\ntypeless\",,,true\r\n",
-            "correction,,,\"open, type less\",Typelite,true\r\n"
+            "dictionary,\"Type,Lite\",\"type\r\nlite\",,,true\r\n",
+            "correction,,,\"type, light\",Typelite,true\r\n"
         );
 
         let parsed = parse_dictionary_import(input.as_bytes(), ImportFormat::Csv).unwrap();
@@ -722,14 +722,14 @@ mod tests {
         assert_eq!(
             parsed.rows[0],
             ParsedDictionaryRow::Dictionary {
-                word: "Open,Typeless".to_string(),
-                pronunciation: Some("open\r\ntypeless".to_string()),
+                word: "Type,Lite".to_string(),
+                pronunciation: Some("type\r\nlite".to_string()),
             }
         );
         assert_eq!(
             parsed.rows[1],
             ParsedDictionaryRow::Correction {
-                pattern: "open, type less".to_string(),
+                pattern: "type, light".to_string(),
                 replacement: "Typelite".to_string(),
                 enabled: true,
             }
