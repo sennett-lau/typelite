@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
 import {
@@ -9,6 +9,7 @@ import {
   restartToUpdate,
 } from '../../lib/tauri'
 import { downloadPercent, useUpdateStatus } from '../../lib/updates'
+import { APP_VERSION } from '../../lib/constants'
 import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
 
@@ -93,13 +94,6 @@ function ResetSpeedStatsRow() {
 function UpdateCheckRow() {
   const { t } = useTranslation()
   const [status, setStatus] = useUpdateStatus()
-  const [version, setVersion] = useState('')
-  useEffect(() => {
-    import('@tauri-apps/api/app')
-      .then(({ getVersion }) => getVersion())
-      .then(setVersion)
-      .catch(() => {})
-  }, [])
 
   const run = (action: () => Promise<typeof status>) => {
     action()
@@ -126,7 +120,7 @@ function UpdateCheckRow() {
 
   return (
     <Row
-      label={t('updates.version', { version: version || '…' })}
+      label={t('updates.version', { version: APP_VERSION })}
       help={line ?? undefined}
       testId="update-check-row"
     >
