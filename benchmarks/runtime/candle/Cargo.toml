@@ -1,0 +1,26 @@
+[package]
+name = "candle-bench"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Pure-Rust (candle) Whisper and Qwen3 workers for the runtime A/B benchmark; not part of the app"
+license = "MIT"
+
+# Standalone: not a member of the app's build.
+[workspace]
+
+[[bin]]
+name = "whisper"
+path = "src/main.rs"
+
+[dependencies]
+candle-core = { version = "0.11", features = ["metal"] }
+candle-nn = { version = "0.11", features = ["metal"] }
+candle-transformers = { version = "0.11", features = ["metal"] }
+tokenizers = { version = "0.22", default-features = false, features = ["onig"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "thin"

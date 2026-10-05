@@ -13,6 +13,8 @@ application-overhead baseline.
 | [Baseline data](baseline.json) | Raw samples and provenance, usable with the benchmark runner's `--compare`. |
 | [Methodology](methodology.md) | Workloads, timing boundaries, statistics and limitations. |
 | [Report template](REPORT_TEMPLATE.md) | Standard report for each performance PR. |
+| [Pure-Rust inference](reports/2026-10-05-rust-inference/README.md) | candle against whisper.cpp and llama.cpp: speech, AI polish, memory. |
+| [Rust inference decision](decisions/2026-10-05-rust-inference.md) | Why the C++ engines stay and when to revisit. |
 | [Dictionary work](reports/2026-10-03-dictionary-work/README.md) | Isolated Add drafts, reused INSERTs and borrowed JSON export. |
 | [Speech-check memory](reports/2026-10-03-voice-check-memory/README.md) | Direct PCM analysis and one window-level buffer. |
 | [Waveform frame work](reports/2026-10-03-waveform-work/README.md) | Fewer repeated style writes and bounded resume work. |
