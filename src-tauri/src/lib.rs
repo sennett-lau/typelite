@@ -1490,6 +1490,7 @@ pub fn run() {
             search_server::update_builtin_search,
             search_server::remove_builtin_search,
             ask_panel::close_ask_panel,
+            ask_panel::set_ask_cursor,
             ask_panel::resize_ask_panel,
             ask_panel::set_ask_panel_hit_rect,
             ask_panel::ask_panel_limits,

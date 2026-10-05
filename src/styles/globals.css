@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Plan `ask-hover`: the Ask window gets no mouse moves (never key, app in the background), so its
+   page marks the element under the cursor with `.is-hover`; Tailwind's `hover:` matches it too. */
+@custom-variant hover (&:hover, &.is-hover);
+
 /*
  * Theme: plan `ui-revamp`. Light values live in @theme; `.dark` (set on <html> by
  * src/hooks/useTheme.ts) switches to the "Aurora" dark mode. Components use these tokens through
@@ -2487,7 +2491,8 @@ body,
   transition: background-color 0.18s ease;
 }
 .ask-sources-summary:hover,
-.ask-sources-summary[aria-expanded='true'] {
+.ask-sources-summary[aria-expanded='true'],
+.ask-sources-summary.is-hover {
   background: rgba(255, 255, 255, 0.18);
 }
 .ask-sources-stack {
@@ -2556,7 +2561,8 @@ body,
   cursor: pointer;
 }
 .ask-source-card:hover,
-.ask-source-card.is-highlighted {
+.ask-source-card.is-highlighted,
+.ask-source-card.is-hover {
   background: rgba(255, 255, 255, 0.08);
 }
 .ask-source-site {
@@ -2619,7 +2625,8 @@ body,
   color: #fff;
   cursor: pointer;
 }
-.ask-source-action:hover {
+.ask-source-action:hover,
+.ask-source-action.is-hover {
   background: rgba(70, 70, 78, 0.98);
 }
 .ask-source-action.is-done {
@@ -2651,7 +2658,8 @@ body,
   vertical-align: 2px;
   cursor: pointer;
 }
-.ask-glass-cite:hover {
+.ask-glass-cite:hover,
+.ask-glass-cite.is-hover {
   background: rgba(255, 255, 255, 0.32);
 }
 .ask-glass-hint {
@@ -2679,7 +2687,8 @@ body,
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
 }
-.ask-glass-close:hover {
+.ask-glass-close:hover,
+.ask-glass-close.is-hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
@@ -2699,7 +2708,8 @@ body,
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-.ask-glass-button:hover {
+.ask-glass-button:hover,
+.ask-glass-button.is-hover {
   background: rgba(255, 255, 255, 0.2);
 }
 .ask-glass-button:disabled {
@@ -2710,7 +2720,8 @@ body,
   background: var(--color-aurora-a);
   color: var(--color-pill-chip-text);
 }
-.ask-glass-button-primary:hover {
+.ask-glass-button-primary:hover,
+.ask-glass-button-primary.is-hover {
   background: color-mix(in srgb, var(--color-aurora-a) 85%, #fff);
 }
 .ask-glass-button:focus-visible,
