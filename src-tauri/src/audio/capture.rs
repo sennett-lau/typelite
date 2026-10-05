@@ -284,15 +284,46 @@ pub struct ResolvedInputDevice {
     pub requested_device_missing: bool,
 }
 
+/// Plan `mic-device-cache`: the device last found for a requested name. Listing every device
+/// and reading its name took 266-286 ms on each recording start with a chosen microphone, time
+/// in which the first words were lost; asking the remembered device for its name is one
+/// CoreAudio property read.
+static LAST_FOUND_DEVICE: Mutex<Option<(String, cpal::Device)>> = Mutex::new(None);
+
+/// The remembered device when it was found for `requested` and still has that name. An unplugged
+/// device fails the name read, and a different device that took its id has another name; either
+/// way the caller lists the devices again.
+fn reuse_if_same_name<D: Clone>(
+    remembered: Option<&(String, D)>,
+    requested: &str,
+    current_name: impl FnOnce(&D) -> Option<String>,
+) -> Option<D> {
+    let (name, device) = remembered.filter(|(name, _)| name == requested)?;
+    (current_name(device).as_deref().map(str::trim) == Some(name.as_str())).then(|| device.clone())
+}
+
 /// Find the requested microphone on `host`, falling back to the system default.
 ///
-/// `host.input_devices()` asks CoreAudio for every device that has input channels. The first call
-/// after launch can take a few hundred milliseconds, so call this off the UI thread.
+/// `host.input_devices()` asks CoreAudio for every device that has input channels, a few hundred
+/// milliseconds, so the device found is remembered for the next call. Call this off the UI thread.
 pub fn resolve_input_device(
     host: &cpal::Host,
     requested: Option<&str>,
 ) -> Result<ResolvedInputDevice> {
     let requested = normalize_requested_device(requested);
+    if let Some(requested) = requested {
+        let mut remembered = LAST_FOUND_DEVICE.lock().unwrap_or_else(|e| e.into_inner());
+        match reuse_if_same_name(remembered.as_ref(), requested, |device| device.name().ok()) {
+            Some(device) => {
+                return Ok(ResolvedInputDevice {
+                    device,
+                    name: requested.to_string(),
+                    requested_device_missing: false,
+                })
+            }
+            None => *remembered = None,
+        }
+    }
     let candidates: Vec<(Option<String>, cpal::Device)> = match requested {
         Some(_) => match host.input_devices() {
             Ok(devices) => devices.map(|device| (device.name().ok(), device)).collect(),
@@ -315,6 +346,10 @@ pub fn resolve_input_device(
         .device
         .name()
         .unwrap_or_else(|_| "Unknown microphone".to_string());
+    if let (Some(requested), false) = (requested, selection.requested_device_missing) {
+        *LAST_FOUND_DEVICE.lock().unwrap_or_else(|e| e.into_inner()) =
+            Some((requested.to_string(), selection.device.clone()));
+    }
     Ok(ResolvedInputDevice {
         device: selection.device,
         name,
@@ -471,6 +506,39 @@ fn run_capture(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remembered_device_is_reused_only_for_the_same_name() {
+        let remembered = ("USB Mic".to_string(), 7);
+        let name = |n: &'static str| move |_: &i32| Some(n.to_string());
+        assert_eq!(
+            reuse_if_same_name(Some(&remembered), "USB Mic", name("USB Mic")),
+            Some(7)
+        );
+        assert_eq!(
+            reuse_if_same_name(Some(&remembered), "USB Mic", name(" USB Mic ")),
+            Some(7)
+        );
+        // Another microphone was chosen in Settings.
+        assert_eq!(
+            reuse_if_same_name(Some(&remembered), "Desk Mic", name("USB Mic")),
+            None
+        );
+        // The device id now belongs to a different device.
+        assert_eq!(
+            reuse_if_same_name(Some(&remembered), "USB Mic", name("Other")),
+            None
+        );
+        // Unplugged: the name cannot be read.
+        assert_eq!(
+            reuse_if_same_name(Some(&remembered), "USB Mic", |_: &i32| None),
+            None
+        );
+        assert_eq!(
+            reuse_if_same_name(None::<&(String, i32)>, "USB Mic", name("USB Mic")),
+            None
+        );
+    }
     use std::time::Duration;
 
     #[test]
