@@ -117,3 +117,11 @@ the timed workloads and are stored separately in `quality`; they are not part of
 the warm latency summary. A failed run has no `finished_at` and the summarizer
 rejects it. The local-overhead baseline promotion command intentionally does not
 consume this separate schema.
+
+## Built-in speech A/B (`cpp_speech_ab.py`)
+
+Compares two release builds of `examples/benchmark_speech` on all fixtures in
+`fixtures/manifest.json`, in alternating fresh processes, with auto language detection as in the
+app. Standard-library Python only. See
+[the whisper encoder window report](../../docs/benchmarks/reports/2026-10-05-whisper-audio-ctx/README.md)
+for the commands.
