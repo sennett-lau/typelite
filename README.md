@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://sennett-lau.github.io/typelite/">Website</a> ·
+  <a href="https://typelite.sennettlau.me/">Website</a> ·
   <a href="https://github.com/sennett-lau/typelite/releases">Download</a> ·
   <a href="docs/guides/README.md">Guides</a>
 </p>
