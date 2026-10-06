@@ -936,6 +936,15 @@
     "failed": "No se pudo empezar a grabar el atajo: {{error}}"
   },
   "whatsNew": {
+    "fasterSpeech": "El reconocimiento de voz integrado es casi el doble de rápido en dictados cortos: ya no procesa 30 segundos de silencio tras cada clip.",
+    "fasterPaste": "El resultado se pega medio segundo antes: comprobar que tu app sigue al frente ya no usa AppleScript.",
+    "fasterMic": "Con un micrófono elegido en Ajustes, la grabación empieza unos 0,3 segundos antes y no se pierden tus primeras palabras.",
+    "uiLanguages": "La interfaz ahora también está en 繁體中文, Español, Français, Deutsch y 日本語. Elígela en Ajustes → General.",
+    "translatePane": "La traducción tiene su propio panel en Ajustes, que ahora sigue los tres atajos: Dictar, Traducir, Preguntar.",
+    "askHover": "Las fuentes, citas y botones de Preguntar se resaltan bajo el puntero y muestran la mano.",
+    "siMode": "Modo superinteligencia (Ajustes → Sistema): un interruptor de broma que asciende la inteligencia de tipo artificial al tipo súper.",
+    "plainSpaces": "El texto pulido pega espacios normales, nunca espacios de no separación invisibles.",
+    "aboutPage": "Acerca de muestra la versión real y el icono de la app.",
     "askLanguage": "Pregunta lo que sea responde en el idioma y la escritura de tu pregunta, aunque las fuentes web estén en otro idioma.",
     "presetsEverywhere": "Los preajustes de idioma ahora también influyen en Dictar y Preguntar, y el cantonés se reconoce y se escribe con caracteres de Hong Kong.",
     "dictatedRequests": "Una petición que dictas (\"explica esto en cantonés, por favor\") se escribe tal como la dijiste, nunca se ejecuta en otro idioma.",
