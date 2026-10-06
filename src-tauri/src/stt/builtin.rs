@@ -28,6 +28,29 @@ const MIN_SAMPLES: usize = 16_000 + 1_600;
 /// A segment is dropped as "probably not speech" when whisper's no-speech probability is above
 /// this and its tokens' average log-probability is below [`LOGPROB_THRESHOLD`]. Both are the
 /// values OpenAI's Whisper uses for the same rule.
+/// Whisper's encoder window: 1500 frames for 30 s of audio, 50 frames per second.
+const FULL_AUDIO_CTX: usize = 1500;
+const FRAMES_PER_SECOND: usize = 50;
+/// Smallest encoder window (about 15 s). large-v3-turbo was trained on full 30 s windows; with a
+/// window close to the clip's length it garbled short clips and Cantonese and dropped the
+/// Chinese half of a mixed clip. 768 frames, and at least 1.5 times the clip, kept every
+/// benchmark transcript (docs/benchmarks/reports/2026-10-05-whisper-audio-ctx).
+const MIN_AUDIO_CTX: usize = 768;
+
+/// Plan `whisper-audio-ctx`: the encoder window for a clip. Whisper encodes a full 30 s window
+/// even for a 3 s dictation, and the encoder is most of the work; a window sized to the clip
+/// skips most of the padding. Returns 0 (whisper's default, the full window) for 30 s or more, where
+/// whisper slides a full window over the audio, and once 1.5 times the clip reaches 30 s.
+fn audio_ctx_for(samples: usize) -> i32 {
+    let frames = samples.div_ceil(16_000 / FRAMES_PER_SECOND);
+    let ctx = (frames * 3 / 2).max(MIN_AUDIO_CTX).div_ceil(64) * 64;
+    if ctx >= FULL_AUDIO_CTX {
+        0
+    } else {
+        ctx as i32
+    }
+}
+
 pub const NO_SPEECH_THRESHOLD: f32 = 0.6;
 pub const LOGPROB_THRESHOLD: f32 = -1.0;
 
@@ -199,6 +222,7 @@ impl LocalWhisper {
         params.set_language(language.or(Some("auto")));
         params.set_translate(false);
         params.set_no_context(true);
+        params.set_audio_ctx(audio_ctx_for(samples.len()));
         params.set_no_timestamps(true);
         params.set_print_special(false);
         params.set_print_progress(false);
@@ -508,6 +532,19 @@ impl SttProvider for BuiltinProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audio_ctx_is_at_least_15_s_and_one_and_a_half_clips() {
+        // Short clips get the minimum window.
+        assert_eq!(audio_ctx_for(MIN_SAMPLES), 768);
+        assert_eq!(audio_ctx_for(10 * 16_000), 768);
+        // 12 s = 600 frames, times 1.5 = 900, rounded up to 960.
+        assert_eq!(audio_ctx_for(12 * 16_000), 960);
+        // From 20 s on, 1.5 times the clip reaches the full window.
+        assert_eq!(audio_ctx_for(19 * 16_000), 1472);
+        assert_eq!(audio_ctx_for(20 * 16_000), 0);
+        assert_eq!(audio_ctx_for(120 * 16_000), 0);
+    }
 
     #[test]
     fn segments_whisper_thinks_are_not_speech_are_dropped() {

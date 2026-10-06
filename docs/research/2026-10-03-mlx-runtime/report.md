@@ -10,9 +10,9 @@ evaluate a native speech integration with real recordings, not evidence that all
 of Typelite should switch runtimes. The Python text prototype does not establish
 a useful latency win on the tested Qwen3-1.7B workloads.
 
-See the [decision and reopening conditions](../../decisions/2026-10-03-mlx-runtime.md),
-[plan](../../../plans/2026-10-03-mlx-runtime-evaluation/index.md) and
-[reproduction instructions](../../../../benchmarks/runtime/README.md).
+See the [decision and reopening conditions](index.md),
+[plan](../../plans/2026-10-03-mlx-runtime-evaluation/index.md) and
+[reproduction instructions](../../../benchmarks/runtime/README.md).
 
 ## Scope and provenance
 
@@ -34,7 +34,7 @@ See the [decision and reopening conditions](../../decisions/2026-10-03-mlx-runti
   mlx-lm 0.32.0 / MLX 0.32.3, one active request and one prompt-cache entry.
   Both use Qwen3-1.7B, respectively Q4_K_M and MLX affine 4-bit/group size 64.
 - [Environment and model hashes](environment.json) identify files, revisions and
-  runtime versions; [Python dependencies](../../../../benchmarks/runtime/requirements.txt)
+  runtime versions; [Python dependencies](../../../benchmarks/runtime/requirements.txt)
   pin the experimental environment. These dependencies are not added to the app.
 
 Different quantizations do not have identical weights or output lengths. These

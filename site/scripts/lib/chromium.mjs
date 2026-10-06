@@ -3,7 +3,7 @@
 //
 //   const browser = await launch()
 //   const page = await browser.newPage({ width: 1200, height: 800, scale: 2, dark: true })
-//   await page.goto('http://localhost:5173/typelite/')
+//   await page.goto('http://localhost:5173/')
 //   await page.screenshot('out.png', { selector: '#demo' })
 //   await browser.close()
 

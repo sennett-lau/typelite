@@ -316,6 +316,15 @@ async fn show_ask_window(
 mod tests {
     use super::*;
 
+    /// `package.json` is the one place the version is set (the UI and tauri.conf.json read it);
+    /// Cargo needs its own copy, which must match.
+    #[test]
+    fn cargo_version_matches_package_json() {
+        let package: serde_json::Value =
+            serde_json::from_str(include_str!("../../package.json")).unwrap();
+        assert_eq!(package["version"].as_str(), Some(env!("CARGO_PKG_VERSION")));
+    }
+
     fn text_mentions(text: &str, keywords: &[&str]) -> bool {
         let normalized = text.to_ascii_lowercase();
         keywords.iter().any(|keyword| normalized.contains(keyword))
@@ -1481,6 +1490,7 @@ pub fn run() {
             search_server::update_builtin_search,
             search_server::remove_builtin_search,
             ask_panel::close_ask_panel,
+            ask_panel::set_ask_cursor,
             ask_panel::resize_ask_panel,
             ask_panel::set_ask_panel_hit_rect,
             ask_panel::ask_panel_limits,

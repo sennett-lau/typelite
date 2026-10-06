@@ -30,6 +30,10 @@ fn config_patch_between(previous: &storage::AppConfig, next: &storage::AppConfig
     if previous.ui_language != next.ui_language {
         patch.insert("ui_language".to_string(), json!(next.ui_language));
     }
+    // Plan `si-mode`: the pill and Ask windows switch their text too.
+    if previous.si_mode != next.si_mode {
+        patch.insert("si_mode".to_string(), json!(next.si_mode));
+    }
     if previous.show_in_dock != next.show_in_dock {
         patch.insert("show_in_dock".to_string(), json!(next.show_in_dock));
     }

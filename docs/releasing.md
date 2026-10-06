@@ -51,10 +51,11 @@ The release notes come from What's New for that version
 ### A new line (`X.Y.0`)
 
 1. On a short-lived branch `release/prepare-X.Y.0` from `main`: **bump the version** to `X.Y.0`
-   in all three places, and keep them equal:
-   - `package.json` (`version`)
-   - `src-tauri/tauri.conf.json` (`version`)
-   - `src-tauri/Cargo.toml` (`[package] version`; `cargo build` updates `Cargo.lock`)
+   in both places, and keep them equal:
+   - `package.json` (`version`): the app's version. The UI (`APP_VERSION`) and Tauri
+     (`tauri.conf.json` → `"version": "../package.json"`) read it from here.
+   - `src-tauri/Cargo.toml` (`[package] version`; `cargo build` updates `Cargo.lock`). A test
+     fails when it differs from `package.json`.
 2. **Update What's New**: add an entry for `X.Y.0` at the top of `src/lib/whatsNew.ts`, with
    English strings in `src/i18n/locales/en.json` and Chinese strings in `zh.json`.
 3. Merge it to `main` through a pull request, with the offline gate passing.
@@ -72,7 +73,7 @@ The release notes come from What's New for that version
 1. Get the fixes onto `release/X.Y`: cherry-picks from `main`, or hotfix pull requests against
    `release/X.Y` (see above).
 2. On `release/X.Y` (through a pull request against it): bump the version to `X.Y.Z+1` in the
-   three places and add its What's New entry. Add the same entry to `main` in a pull request.
+   two places and add its What's New entry. Add the same entry to `main` in a pull request.
 3. **Tag the release branch:**
 
    ```sh
@@ -83,7 +84,7 @@ The release notes come from What's New for that version
 
 ### Both
 
-- The workflow stops early if the tag does not match the version in `tauri.conf.json`.
+- The workflow stops early if the tag does not match the version in `package.json`.
 - **Review the draft** under Releases: download the DMG, check it against `SHA256SUMS.txt`,
   install it on a clean account if you can, and read the notes. Then press **Publish release**.
 - If the build fails (or the draft needs another fix) before it is published: cancel the run,

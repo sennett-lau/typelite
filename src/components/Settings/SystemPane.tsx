@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../stores/appStore'
+import { setSiMode } from '../../i18n/siMode'
 import {
   checkForUpdate,
   clearRunTimings,
@@ -9,6 +10,7 @@ import {
   restartToUpdate,
 } from '../../lib/tauri'
 import { downloadPercent, useUpdateStatus } from '../../lib/updates'
+import { APP_VERSION } from '../../lib/constants'
 import { Group, Row } from '../ui/Group'
 import { Toggle } from './shared/Toggle'
 
@@ -93,13 +95,6 @@ function ResetSpeedStatsRow() {
 function UpdateCheckRow() {
   const { t } = useTranslation()
   const [status, setStatus] = useUpdateStatus()
-  const [version, setVersion] = useState('')
-  useEffect(() => {
-    import('@tauri-apps/api/app')
-      .then(({ getVersion }) => getVersion())
-      .then(setVersion)
-      .catch(() => {})
-  }, [])
 
   const run = (action: () => Promise<typeof status>) => {
     action()
@@ -126,7 +121,7 @@ function UpdateCheckRow() {
 
   return (
     <Row
-      label={t('updates.version', { version: version || '…' })}
+      label={t('updates.version', { version: APP_VERSION })}
       help={line ?? undefined}
       testId="update-check-row"
     >
@@ -186,6 +181,18 @@ export function SystemPane() {
             checked={config.show_in_dock}
             onChange={(checked) => updateConfig({ show_in_dock: checked })}
             label={t('settings.showInDock')}
+            hideLabel
+          />
+        </Row>
+        {/* Plan `si-mode`. */}
+        <Row label={t('settings.siMode')} help={t('settings.siModeHint')}>
+          <Toggle
+            checked={config.si_mode}
+            onChange={(checked) => {
+              setSiMode(checked)
+              updateConfig({ si_mode: checked })
+            }}
+            label={t('settings.siMode')}
             hideLabel
           />
         </Row>

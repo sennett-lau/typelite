@@ -242,6 +242,36 @@ pub fn set_frame(window: &tauri::WebviewWindow, x: f64, y: f64, width: f64, heig
     });
 }
 
+/// Shows the hand cursor (`pointer`) or the arrow over an overlay. An overlay is never the key
+/// window and Typelite stays in the background, so WebKit's CSS `cursor` never applies there;
+/// see `mac::set_cursor`. Does nothing off macOS, where the webview sets the cursor itself.
+pub fn set_cursor(window: &tauri::WebviewWindow, pointer: bool) {
+    #[cfg(target_os = "macos")]
+    {
+        // SAFETY: AppKit cursor calls, on the main thread.
+        let _ = window.run_on_main_thread(move || unsafe { mac::set_cursor(pointer) });
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = (window, pointer);
+}
+
+/// Tells the overlay's web view the mouse moved far outside it, so WebKit drops its `:hover`
+/// state. Call it before the window starts ignoring the mouse: from then on WebKit gets no exit
+/// event and would keep the last element hovered. Does nothing off macOS.
+pub fn clear_web_hover(window: &tauri::WebviewWindow) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = window.with_webview(|webview| {
+            // SAFETY: Tauri runs this on the main thread with the live WKWebView.
+            unsafe {
+                mac::send_mouse_moved_outside(webview.inner().cast(), webview.ns_window().cast())
+            };
+        });
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = window;
+}
+
 #[cfg(target_os = "macos")]
 mod mac {
     use super::{
@@ -756,6 +786,97 @@ mod mac {
                 msg_send![window, setCollectionBehavior: overlay_collection_behavior(behavior)];
             let _: () = msg_send![window, setLevel: OVERLAY_WINDOW_LEVEL];
         }
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct NSPoint {
+        x: f64,
+        y: f64,
+    }
+
+    // SAFETY: `NSPoint` is two `f64`s, which is `CGPoint`'s layout.
+    unsafe impl objc2::Encode for NSPoint {
+        const ENCODING: objc2::Encoding =
+            objc2::Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+    }
+
+    /// Plan `ask-hover`: delivers a mouse-moved event at a point far outside `web_view` to it,
+    /// so WebKit's hit test finds nothing and clears `:hover`.
+    ///
+    /// # Safety
+    /// Main thread; `web_view` is a live `WKWebView` in the live `ns_window`.
+    pub(super) unsafe fn send_mouse_moved_outside(
+        web_view: *mut AnyObject,
+        ns_window: *mut AnyObject,
+    ) {
+        if web_view.is_null() || ns_window.is_null() {
+            return;
+        }
+        /// `NSEventTypeMouseMoved`.
+        const MOUSE_MOVED: usize = 5;
+        let window_number: isize = msg_send![ns_window, windowNumber];
+        let null: *mut AnyObject = std::ptr::null_mut();
+        let event: *mut AnyObject = msg_send![
+            class!(NSEvent),
+            mouseEventWithType: MOUSE_MOVED,
+            location: NSPoint { x: -10_000.0, y: -10_000.0 },
+            modifierFlags: 0usize,
+            timestamp: 0.0f64,
+            windowNumber: window_number,
+            context: null,
+            eventNumber: 0isize,
+            clickCount: 0isize,
+            pressure: 0.0f32
+        ];
+        if !event.is_null() {
+            let _: () = msg_send![web_view, mouseMoved: event];
+        }
+    }
+
+    #[link(name = "CoreGraphics", kind = "framework")]
+    extern "C" {
+        fn _CGSDefaultConnection() -> i32;
+        fn CGSSetConnectionProperty(
+            connection: i32,
+            target: i32,
+            key: *const c_void,
+            value: *const c_void,
+        ) -> i32;
+    }
+
+    #[link(name = "CoreFoundation", kind = "framework")]
+    extern "C" {
+        static kCFBooleanTrue: *const c_void;
+    }
+
+    /// Plan `ask-hover`: sets the hand or arrow cursor. macOS shows only the active app's cursor
+    /// changes; the window server's private connection property `SetsCursorInBackground`
+    /// (set once) lets this background app change it while the pointer is over its panel.
+    /// If the property is refused, the call is harmless and the cursor stays an arrow.
+    ///
+    /// # Safety
+    /// Must run on the main thread.
+    pub(super) unsafe fn set_cursor(pointer: bool) {
+        static BACKGROUND_CURSOR: OnceLock<()> = OnceLock::new();
+        BACKGROUND_CURSOR.get_or_init(|| {
+            let key: *mut AnyObject = msg_send![
+                class!(NSString),
+                stringWithUTF8String: c"SetsCursorInBackground".as_ptr()
+            ];
+            let connection = _CGSDefaultConnection();
+            let status =
+                CGSSetConnectionProperty(connection, connection, key.cast(), kCFBooleanTrue);
+            if status != 0 {
+                tracing::debug!("SetsCursorInBackground refused ({status})");
+            }
+        });
+        let cursor: *mut AnyObject = if pointer {
+            msg_send![class!(NSCursor), pointingHandCursor]
+        } else {
+            msg_send![class!(NSCursor), arrowCursor]
+        };
+        let _: () = msg_send![cursor, set];
     }
 }
 

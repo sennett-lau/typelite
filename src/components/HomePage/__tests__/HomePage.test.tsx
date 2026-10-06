@@ -291,7 +291,7 @@ describe("What's New data", () => {
   it('lists releases newest first, from 1.0.0, with text for every change in both languages', async () => {
     const { WHATS_NEW } =
       await vi.importActual<typeof import('../../../lib/whatsNew')>('../../../lib/whatsNew')
-    expect(WHATS_NEW[0].version).toBe('1.1.1')
+    expect(WHATS_NEW[0].version).toBe('1.1.2')
     expect(WHATS_NEW[WHATS_NEW.length - 1].version).toBe('1.0.0')
     const lookup = (messages: Record<string, unknown>, key: string) =>
       (messages.whatsNew as Record<string, string>)[key]

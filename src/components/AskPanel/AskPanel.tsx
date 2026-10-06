@@ -12,12 +12,14 @@ import {
   startAskDictation,
   stopAskDictation,
   takePendingAskMessage,
+  setAskCursor,
   setAskPanelHitRect,
 } from '../../lib/tauri'
 import type { AskDictationResult, AskDictationStartResult, AskPanelLimits } from '../../lib/tauri'
 import { NeedsLiveInfo } from './NeedsLiveInfo'
 import { AskAnswerPanel, type AskPanelContent } from './AskAnswerPanel'
 import { FALLBACK_LIMITS } from './liveSearch'
+import { moveHover, POINTER_EVENT, type PointerHover } from './pointerHover'
 
 interface AskPanelProps {
   embedded?: boolean
@@ -194,6 +196,7 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
     if (embedded) return
 
     let cancelled = false
+    let hover: PointerHover = { target: null, pointer: false }
     const unlisteners: Array<() => void> = []
     const applyPendingMessage = async () => {
       const pending = await takePendingAskMessage()
@@ -225,6 +228,14 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
           // content.
           listen(ASK_PANEL_CLOSED_EVENT, () => {
             if (!cancelled) clearStandalone(true)
+          }),
+          listen<{ x: number; y: number } | null>(POINTER_EVENT, (event) => {
+            if (cancelled) return
+            const point = event.payload
+            const target = point ? document.elementFromPoint(point.x, point.y) : null
+            hover = moveHover(hover, target, (pointer) => {
+              setAskCursor(pointer).catch(() => {})
+            })
           }),
         ]),
       )

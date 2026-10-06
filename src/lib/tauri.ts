@@ -700,6 +700,11 @@ export const ASK_STAGE_EVENT = 'ask:stage'
 export type AskStage = 'searching' | 'thinking'
 
 /** Plan `ask-web-search`: opens one of the answer's source links in the browser. */
+/** Plan `ask-hover`: the hand cursor (or the arrow) over the Ask panel. */
+export async function setAskCursor(pointer: boolean): Promise<void> {
+  return invoke('set_ask_cursor', { pointer })
+}
+
 export async function openAskSource(url: string): Promise<void> {
   return invoke('open_ask_source', { url })
 }
@@ -1017,7 +1022,9 @@ export async function setShortcutTourState(state: {
 }
 
 /** Shows the main window on a Settings pane (the capsule's "Set up" button). */
-export async function openSettingsPane(pane: 'stt' | 'llm' | 'search'): Promise<void> {
+export async function openSettingsPane(
+  pane: 'stt' | 'llm' | 'search' | 'translate',
+): Promise<void> {
   return invoke('open_settings_pane', { pane })
 }
 

@@ -1,17 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import packageJson from '../../../package.json'
+import tauriConfig from '../../../src-tauri/tauri.conf.json'
+import { APP_VERSION } from '../constants'
 
-afterEach(() => {
-  vi.unstubAllEnvs()
-  vi.resetModules()
-})
+describe('app version', () => {
+  it('comes from package.json, the one place it is set', () => {
+    expect(APP_VERSION).toBe(packageJson.version)
+    expect(APP_VERSION).toMatch(/^\d+\.\d+\.\d+/)
+  })
 
-describe('release version wiring', () => {
-  it.each(['v9.8.7', 'v9.8.8-beta.1'])('exposes the injected build version %s', async (version) => {
-    vi.stubEnv('VITE_APP_VERSION', version)
-    vi.resetModules()
-
-    const { APP_VERSION } = await import('../constants')
-
-    expect(APP_VERSION).toBe(version)
+  it('is what Tauri builds the app with', () => {
+    expect(tauriConfig.version).toBe('../package.json')
   })
 })

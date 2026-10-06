@@ -1,0 +1,329 @@
+{
+  "recorded_at": "2026-10-05T10:11:24Z",
+  "machine": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "processor": "arm"
+  },
+  "binaries": {
+    "before": "7ac4d80e2edbb19d99d154405c9972cb1a75384cdfbc51cd1a2f427f318c2f7b",
+    "after": "7e1f69f1f92da7dd026ca3b9c3b30f91f6fe9cb3daa87ae2302d7afe2e150350"
+  },
+  "model": {
+    "file": "ggml-large-v3-turbo-q5_0.bin",
+    "sha256": "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2"
+  },
+  "rounds": 1,
+  "warm": 3,
+  "summary": {
+    "en": {
+      "before": {
+        "median_ms": 2155.938958,
+        "p10_ms": 2154.0839579999997,
+        "p90_ms": 2155.9420244000003,
+        "first_ms_median": 2214.4832499999998,
+        "error_rate": 0.21428571428571427,
+        "texts": [
+          "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "after": {
+        "median_ms": 1042.933583,
+        "p10_ms": 1041.2479502,
+        "p90_ms": 1043.5647502,
+        "first_ms_median": 1657.9732090000002,
+        "error_rate": 0.21428571428571427,
+        "texts": [
+          "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "change_pct": -51.62508756892179
+    },
+    "yue": {
+      "before": {
+        "median_ms": 2159.867917,
+        "p10_ms": 2158.7040506000003,
+        "p90_ms": 2160.7908834,
+        "first_ms_median": 2168.167208,
+        "error_rate": 0.3333333333333333,
+        "texts": [
+          "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+        ]
+      },
+      "after": {
+        "median_ms": 1041.612584,
+        "p10_ms": 1039.0951504,
+        "p90_ms": 1043.9231496,
+        "first_ms_median": 1041.007584,
+        "error_rate": 0.2857142857142857,
+        "texts": [
+          "我明天下週四點開會,記得幫我準備份報告,謝謝!"
+        ]
+      },
+      "change_pct": -51.774246202667214
+    },
+    "mixed": {
+      "before": {
+        "median_ms": 2234.5177089999997,
+        "p10_ms": 2230.4178082,
+        "p90_ms": 2236.0230082,
+        "first_ms_median": 2233.259333,
+        "error_rate": 0.2,
+        "texts": [
+          "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "after": {
+        "median_ms": 1109.518042,
+        "p10_ms": 1108.5226083999999,
+        "p90_ms": 1109.9904748,
+        "first_ms_median": 1105.0891250000002,
+        "error_rate": 0.2,
+        "texts": [
+          "我明天下周四點開會,記得幫我準備份報告,唔該曬。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+        ]
+      },
+      "change_pct": -50.346419832289634
+    },
+    "silence": {
+      "before": {
+        "median_ms": 2101.185208,
+        "p10_ms": 2098.7517752000003,
+        "p90_ms": 2147.8595416,
+        "first_ms_median": 2100.618792,
+        "error_rate": null,
+        "texts": [
+          "you"
+        ]
+      },
+      "after": {
+        "median_ms": 988.2961660000001,
+        "p10_ms": 987.7860668000001,
+        "p90_ms": 989.5399004,
+        "first_ms_median": 988.800791,
+        "error_rate": null,
+        "texts": [
+          "you"
+        ]
+      },
+      "change_pct": -52.96482374627492
+    },
+    "en-short": {
+      "before": {
+        "median_ms": 2446.605083,
+        "p10_ms": 2269.7215166,
+        "p90_ms": 2454.1784166,
+        "first_ms_median": 2111.626667,
+        "error_rate": 0.0,
+        "texts": [
+          "Send it now."
+        ]
+      },
+      "after": {
+        "median_ms": 1087.108583,
+        "p10_ms": 1047.3449166,
+        "p90_ms": 1129.0769838,
+        "first_ms_median": 999.165666,
+        "error_rate": 0.0,
+        "texts": [
+          "Send it now."
+        ]
+      },
+      "change_pct": -55.56665068041959
+    },
+    "en-long": {
+      "before": {
+        "median_ms": 2449.9744579999997,
+        "p10_ms": 2411.5551916000004,
+        "p90_ms": 2533.7934916,
+        "first_ms_median": 2508.737,
+        "error_rate": 0.01639344262295082,
+        "texts": [
+          "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+        ]
+      },
+      "after": {
+        "median_ms": 1747.646834,
+        "p10_ms": 1726.7421668,
+        "p90_ms": 1770.2656668000002,
+        "first_ms_median": 1600.362458,
+        "error_rate": 0.01639344262295082,
+        "texts": [
+          "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+        ]
+      },
+      "change_pct": -28.66673249211482
+    }
+  },
+  "runs": {
+    "before": [
+      {
+        "load_ms": 297.760625,
+        "fixtures": {
+          "en": {
+            "first_ms": 2214.4832499999998,
+            "warm_ms": [
+              2155.9427910000004,
+              2155.938958,
+              2153.620208
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 2168.167208,
+            "warm_ms": [
+              2161.021625,
+              2159.867917,
+              2158.4130840000003
+            ],
+            "texts": [
+              "我明天下午4點開會,記得幫我準備份報告,麻煩!"
+            ],
+            "language": "zh",
+            "error_rate": 0.3333333333333333
+          },
+          "mixed": {
+            "first_ms": 2233.259333,
+            "warm_ms": [
+              2234.5177089999997,
+              2236.399333,
+              2229.392833
+            ],
+            "texts": [
+              "我明天下周四點開會, 記得幫我準備份報告, 唔該曬。 Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 2100.618792,
+            "warm_ms": [
+              2101.185208,
+              2159.528125,
+              2098.143417
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 2111.626667,
+            "warm_ms": [
+              2225.500625,
+              2446.605083,
+              2456.07175
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 2508.737,
+            "warm_ms": [
+              2401.9503750000003,
+              2449.9744579999997,
+              2554.74825
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      }
+    ],
+    "after": [
+      {
+        "load_ms": 405.11508299999997,
+        "fixtures": {
+          "en": {
+            "first_ms": 1657.9732090000002,
+            "warm_ms": [
+              1043.722542,
+              1040.826542,
+              1042.933583
+            ],
+            "texts": [
+              "Can we move the meeting to 4 p.m. tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.21428571428571427
+          },
+          "yue": {
+            "first_ms": 1041.007584,
+            "warm_ms": [
+              1044.500791,
+              1041.612584,
+              1038.465792
+            ],
+            "texts": [
+              "我明天下週四點開會,記得幫我準備份報告,謝謝!"
+            ],
+            "language": "zh",
+            "error_rate": 0.2857142857142857
+          },
+          "mixed": {
+            "first_ms": 1105.0891250000002,
+            "warm_ms": [
+              1109.518042,
+              1108.2737499999998,
+              1110.108583
+            ],
+            "texts": [
+              "我明天下周四點開會,記得幫我準備份報告,唔該曬。 Can we move the meeting to 4 p.m tomorrow? I'll send the agenda tonight."
+            ],
+            "language": "en",
+            "error_rate": 0.2
+          },
+          "silence": {
+            "first_ms": 988.800791,
+            "warm_ms": [
+              989.850834,
+              988.2961660000001,
+              987.658542
+            ],
+            "texts": [
+              "you"
+            ],
+            "language": "en",
+            "error_rate": null
+          },
+          "en-short": {
+            "first_ms": 999.165666,
+            "warm_ms": [
+              1037.404,
+              1087.108583,
+              1139.5690840000002
+            ],
+            "texts": [
+              "Send it now."
+            ],
+            "language": "en",
+            "error_rate": 0.0
+          },
+          "en-long": {
+            "first_ms": 1600.362458,
+            "warm_ms": [
+              1775.9203750000001,
+              1747.646834,
+              1721.516
+            ],
+            "texts": [
+              "Thanks for the update on the release. I looked at the three open pool requests this morning, and I think the language change should go in first, because the settings change touches the same files. After that we can merge the reorder, run the full test suite again, and tag the patch release on Friday afternoon if nothing else comes up."
+            ],
+            "language": "en",
+            "error_rate": 0.01639344262295082
+          }
+        }
+      }
+    ]
+  }
+}

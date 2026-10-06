@@ -9,7 +9,8 @@ import { LlmPane } from './LlmPane'
 import { ScenesPane } from './ScenesPane'
 import { SystemPane } from './SystemPane'
 import { SearchPane } from './SearchPane'
-import { AlignLeft, Globe, Mic, Monitor, Settings as Gear, Sparkles } from 'lucide-react'
+import { TranslatePane } from './TranslatePane'
+import { AlignLeft, Globe, Languages, Mic, Monitor, Settings as Gear, Sparkles } from 'lucide-react'
 import { DirtyBar } from './shared/DirtyBar'
 import { useDirtyConfig } from './shared/useDirtyConfig'
 
@@ -19,11 +20,14 @@ import { useDirtyConfig } from './shared/useDirtyConfig'
  */
 const PANES = [
   { id: 'general', labelKey: 'settings.general', Icon: Gear },
+  // Plan `settings-order`: the next three follow the three shortcuts, Dictate (prompts),
+  // Translate (translation languages) and Ask anything (web search, plan `ask-web-search`).
+  // The services they share (speech, AI) come after them.
+  { id: 'scenes', labelKey: 'settings.prompts', Icon: AlignLeft },
+  { id: 'translate', labelKey: 'settings.translatePane', Icon: Languages },
+  { id: 'search', labelKey: 'settings.search', Icon: Globe },
   { id: 'stt', labelKey: 'settings.speechRecognition', Icon: Mic },
   { id: 'llm', labelKey: 'settings.aiPolish', Icon: Sparkles },
-  { id: 'scenes', labelKey: 'settings.prompts', Icon: AlignLeft },
-  // Plan `ask-web-search`: the search provider Ask uses for live questions.
-  { id: 'search', labelKey: 'settings.search', Icon: Globe },
   { id: 'system', labelKey: 'settings.system', Icon: Monitor },
 ] as const
 
@@ -95,10 +99,11 @@ export function Settings() {
         transition={{ duration: 0.1, ease: 'easeOut' }}
       >
         {activePane === 'general' && <GeneralPane />}
+        {activePane === 'scenes' && <ScenesPane />}
+        {activePane === 'translate' && <TranslatePane />}
+        {activePane === 'search' && <SearchPane />}
         {activePane === 'stt' && <SttPane />}
         {activePane === 'llm' && <LlmPane />}
-        {activePane === 'scenes' && <ScenesPane />}
-        {activePane === 'search' && <SearchPane />}
         {activePane === 'system' && <SystemPane />}
       </motion.div>
     </PageFrame>

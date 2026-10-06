@@ -485,38 +485,5 @@ describe('LlmPane', () => {
       expect(await screen.findByRole('dialog', { name: 'Manage app mappings' })).toBeVisible()
       expect(screen.queryByText('Gmail')).not.toBeInTheDocument()
     })
-
-    it('shows one row per translation language', () => {
-      mockAppStore.config.translation = { targets: ['en'], active_target: 'en' }
-
-      render(<LlmPane />)
-      const list = screen.getByRole('list', { name: 'Translation languages' })
-      expect(within(list).getAllByRole('listitem')).toHaveLength(1)
-      // A single language stays single: no padding with other languages.
-      expect(mockAppStore.updateConfig).not.toHaveBeenCalled()
-    })
-
-    // Plan `translation-language-presets` (2026-09-27): no "Always translate output" switch.
-    // The Translation group holds only the languages the Translate shortcut uses.
-    it('has no always-translate switch, only the languages list', () => {
-      render(<LlmPane />)
-
-      const group = screen.getByRole('region', { name: 'Translation' })
-      const list = within(group).getByRole('list', { name: 'Translation languages' })
-      expect(within(list).getAllByRole('listitem')).toHaveLength(3)
-      // The only switches left are the languages' own on/off switches.
-      const switches = within(group).getAllByRole('switch')
-      expect(switches).toHaveLength(3)
-      for (const toggle of switches) expect(list).toContainElement(toggle)
-      expect(screen.queryByText('Always translate output')).not.toBeInTheDocument()
-    })
-
-    it('links the Translation group to the language presets guide', () => {
-      render(<LlmPane />)
-      fireEvent.click(screen.getByRole('button', { name: 'About language presets' }))
-      expect(openUrl).toHaveBeenCalledWith(
-        'https://github.com/sennett-lau/typelite/blob/main/docs/guides/languages/README.md#language-presets',
-      )
-    })
   })
 })

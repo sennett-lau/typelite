@@ -21,6 +21,51 @@ struct TrayLabels {
 
 fn get_tray_labels(lang: &str) -> TrayLabels {
     match lang {
+        "zh-Hant" => TrayLabels {
+            show_window: "顯示視窗",
+            hide_window: "隱藏視窗",
+            start_recording: "開始錄音",
+            stop_recording: "停止錄音",
+            settings: "設定",
+            about: "關於 Typelite",
+            quit: "結束",
+        },
+        "es" => TrayLabels {
+            show_window: "Mostrar ventana",
+            hide_window: "Ocultar ventana",
+            start_recording: "Empezar a grabar",
+            stop_recording: "Detener grabación",
+            settings: "Ajustes",
+            about: "Acerca de Typelite",
+            quit: "Salir",
+        },
+        "fr" => TrayLabels {
+            show_window: "Afficher la fenêtre",
+            hide_window: "Masquer la fenêtre",
+            start_recording: "Démarrer l’enregistrement",
+            stop_recording: "Arrêter l’enregistrement",
+            settings: "Réglages",
+            about: "À propos de Typelite",
+            quit: "Quitter",
+        },
+        "de" => TrayLabels {
+            show_window: "Fenster anzeigen",
+            hide_window: "Fenster ausblenden",
+            start_recording: "Aufnahme starten",
+            stop_recording: "Aufnahme beenden",
+            settings: "Einstellungen",
+            about: "Über Typelite",
+            quit: "Beenden",
+        },
+        "ja" => TrayLabels {
+            show_window: "ウインドウを表示",
+            hide_window: "ウインドウを隠す",
+            start_recording: "録音を開始",
+            stop_recording: "録音を停止",
+            settings: "設定",
+            about: "Typelite について",
+            quit: "終了",
+        },
         "zh" => TrayLabels {
             show_window: "显示窗口",
             hide_window: "隐藏窗口",
@@ -134,7 +179,7 @@ mod tests {
     /// (open the main window, Settings, quit) must be in the tray menu too.
     #[test]
     fn tray_labels_cover_the_capsule_menu_actions() {
-        for lang in ["en", "zh"] {
+        for lang in ["en", "zh", "zh-Hant", "es", "fr", "de", "ja"] {
             let labels = get_tray_labels(lang);
             assert!(!labels.show_window.is_empty());
             assert!(!labels.settings.is_empty());

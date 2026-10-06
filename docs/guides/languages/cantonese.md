@@ -56,7 +56,7 @@ was said.
    `http://127.0.0.1:8180/v1` (or that computer's address), model `qwen3-asr`, no API key, and
    leave **Spoken language** on **Auto-detect**. Press **Test**, then **Save**.
 
-3. **Choose the Cantonese preset:** **Settings → AI → Translation**, add Chinese (Traditional,
+3. **Choose the Cantonese preset:** **Settings → Translate**, add Chinese (Traditional,
    Hong Kong) if it is not in your list, press **Edit**, then **Browse presets** and use
    **Cantonese (Hong Kong)**. Without the preset Typelite cannot tell that you spoke Cantonese, and
    neither the Cantonese notes nor the Hong Kong characters (next step) are applied.
