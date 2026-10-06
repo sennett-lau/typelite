@@ -936,6 +936,15 @@
     "failed": "Die Aufnahme des Kurzbefehls konnte nicht gestartet werden: {{error}}"
   },
   "whatsNew": {
+    "fasterSpeech": "Die eingebaute Spracherkennung ist bei kurzen Diktaten etwa doppelt so schnell: Sie verarbeitet nicht mehr 30 Sekunden Stille nach jeder Aufnahme.",
+    "fasterPaste": "Ergebnisse werden etwa eine halbe Sekunde früher eingefügt: Die Prüfung, ob deine App noch vorne ist, nutzt kein AppleScript mehr.",
+    "fasterMic": "Mit einem in den Einstellungen gewählten Mikrofon startet die Aufnahme etwa 0,3 Sekunden früher, sodass deine ersten Worte nicht fehlen.",
+    "uiLanguages": "Die Oberfläche gibt es jetzt auch auf 繁體中文, Español, Français, Deutsch und 日本語. Wähle sie unter Einstellungen → Allgemein.",
+    "translatePane": "Übersetzen hat einen eigenen Bereich in den Einstellungen, die jetzt den drei Kurzbefehlen folgen: Diktieren, Übersetzen, Fragen.",
+    "askHover": "Quellen, Zitate und Schaltflächen bei „Frag etwas“ werden unter dem Zeiger hervorgehoben und zeigen die Hand.",
+    "siMode": "Superintelligenz-Modus (Einstellungen → System): ein Spaßschalter, der Intelligenz der künstlichen Art zur Super-Art befördert.",
+    "plainSpaces": "Geglätteter Text fügt normale Leerzeichen ein, nie unsichtbare geschützte Leerzeichen.",
+    "aboutPage": "„Über“ zeigt die echte Version und das App-Symbol.",
     "askLanguage": "Frag alles antwortet in der Sprache und Schrift deiner Frage, auch wenn die Webquellen in einer anderen Sprache sind.",
     "presetsEverywhere": "Sprachvoreinstellungen prägen jetzt auch Diktieren und Fragen, und Kantonesisch wird erkannt und in Hongkong-Schriftzeichen geschrieben.",
     "dictatedRequests": "Eine diktierte Bitte („bitte erklär das auf Kantonesisch“) wird so aufgeschrieben, wie du sie gesagt hast, und nie in einer anderen Sprache ausgeführt.",

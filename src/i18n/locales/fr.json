@@ -936,6 +936,15 @@
     "failed": "Impossible de commencer l’enregistrement du raccourci : {{error}}"
   },
   "whatsNew": {
+    "fasterSpeech": "La reconnaissance vocale intégrée est environ deux fois plus rapide pour les dictées courtes : elle ne traite plus 30 secondes de silence après chaque extrait.",
+    "fasterPaste": "Le résultat est collé environ une demi-seconde plus tôt : vérifier que votre app est toujours au premier plan n’utilise plus AppleScript.",
+    "fasterMic": "Avec un micro choisi dans les Réglages, l’enregistrement démarre environ 0,3 seconde plus tôt : vos premiers mots ne sont plus coupés.",
+    "uiLanguages": "L’interface existe désormais aussi en 繁體中文, Español, Français, Deutsch et 日本語. Choisissez-la dans Réglages → Général.",
+    "translatePane": "La traduction a son propre panneau de Réglages, qui suivent désormais les trois raccourcis : Dicter, Traduire, Demander.",
+    "askHover": "Les sources, citations et boutons de Demander s’illuminent sous le pointeur et affichent la main.",
+    "siMode": "Mode superintelligence (Réglages → Système) : un interrupteur pour rire qui promeut l’intelligence de type artificiel au rang de super.",
+    "plainSpaces": "Le texte retouché colle des espaces ordinaires, jamais d’espaces insécables invisibles.",
+    "aboutPage": "À propos affiche la vraie version et l’icône de l’app.",
     "askLanguage": "Demander n’importe quoi répond dans la langue et l’écriture de votre question, même quand les sources web sont dans une autre langue.",
     "presetsEverywhere": "Les préréglages de langue façonnent désormais aussi Dicter et Demander, et le cantonais est reconnu et écrit en caractères de Hong Kong.",
     "dictatedRequests": "Une demande que vous dictez (« explique ça en cantonais ») est écrite telle que vous l’avez dite, jamais exécutée dans une autre langue.",
