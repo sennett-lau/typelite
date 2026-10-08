@@ -61,6 +61,7 @@
     "couldNotReplace": "Cette app n’a pas permis le remplacement. Le résultat est dans votre presse-papiers.",
     "tryReplacingAgain": "Réessayer de remplacer",
     "errorTitle": "Un problème est survenu",
+    "unconfirmed": "Impossible de confirmer une réponse à partir des résultats de recherche. Consultez les sources.",
     "sources": "Sources",
     "sourcesCount_one": "{{count}} source",
     "sourcesCount_other": "{{count}} sources",

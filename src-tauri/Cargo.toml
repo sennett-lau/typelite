@@ -53,6 +53,8 @@ unicode-normalization = "0.1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = "0.4"
 url = "2"
+# Plan `ask-read-pages`: finds dates in web answers and page text (MIT/Apache-2.0).
+regex = "1"
 # Plan `qwen-cloud-speech`: Qwen Cloud takes the recording as a base64 data URI inside JSON.
 base64 = "0.22"
 tauri-plugin-process = "2"
