@@ -1,0 +1,5 @@
+audio/
+items.json
+stt-*.json
+polish-*.json
+__pycache__/
