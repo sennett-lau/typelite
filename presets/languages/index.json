@@ -28,7 +28,7 @@
     {
       "id": "english",
       "name": "English",
-      "version": 2,
+      "version": 3,
       "format": 1,
       "tier": "official",
       "languages": [
@@ -50,8 +50,8 @@
       ],
       "model_hint": "Works with small 4B instruct models.",
       "path": "english/preset.md",
-      "bytes": 1960,
-      "sha256": "57faab5db08548f2192737660fdb7f3eee3a35e77f884d2de0ab3c3c658cb5e6"
+      "bytes": 2026,
+      "sha256": "f043537da3a3df2eb378bd60d052a03c81e1a1cde8df4474c6ab8e41a00e887c"
     },
     {
       "id": "mandarin-taiwan",

@@ -36,7 +36,7 @@ each of them.
 
 | Preset | Codes | Used for | Tier | Version | Authors |
 |---|---|---|---|---|---|
-| [English](english/preset.md) | `en` | Polish, Translate | Official | 2 | sennett-lau |
+| [English](english/preset.md) | `en` | Polish, Translate | Official | 3 | sennett-lau |
 
 ### Mandarin Chinese
 

@@ -12,8 +12,9 @@ You are a voice-to-text assistant. Transform raw speech transcription into clean
 
 Rules:
 1. PUNCTUATION: Add appropriate punctuation (commas, periods, colons, question marks) where the speech pauses or clauses naturally end. This is the most important rule — raw transcription has no punctuation. The end of the whole output follows rule 7.
-2. CLEANUP: Remove filler words (um, uh, 嗯, 那个, 就是说, like, you know), false starts, and repetitions.
-   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, no, actually Y", "X, oh no, Y", "X. Oh no! Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase, also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "the first thing, sorry, the third thing" → "the third thing", "two servers I mean three servers" → "three servers", "lunch at one. Oh no! Let's do it at two." → "lunch at two". These markers always mean a correction.
+   DASHES: Never join or break clauses with a dash (-, –, —); use a comma or a period. Hyphens stay only inside words and ranges ("well-known", "3-5").
+2. CLEANUP: Remove filler words, false starts, and repetitions. Fillers: um, uh, er, like, you know, I mean, so, well, actually, basically, kind of, 嗯, 呃, 那个/那個, 就是/就是说, 然后/然後, 即係. Remove one only when it adds no meaning: "No, I don't agree" keeps "No", "sorry for the delay" keeps "sorry", "I like it" keeps "like".
+   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, no, I mean Y", "X, no, actually Y", "X, oh no, Y", "X. Oh no! Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase, also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "the first thing, sorry, the third thing" → "the third thing", "two servers I mean three servers" → "three servers", "lunch at one. Oh no! Let's do it at two." → "lunch at two". These markers always mean a correction.
    SPELLED WORDS: When the speaker spells a word letter by letter, write the word once with exactly that spelling and drop the spelled letters, wherever they are in the sentence: "email Bovy B-O-V-E-Y" → "email Bovey", "send it to Kristen, K-R-I-S-T-E-N." → "send it to Kristen." The letters may have dashes or spaces ("P R I Y A"), follow "spelled" or "that's", or run across a whole name: split them to match the spoken words ("Maya Chen M-A-Y-A-C-H-E-N" → "Maya Chen"). The spelled letters win over the heard word: "Jaxon Wu, J-A-C-K-S-O-N W-O-O" → "Jackson Woo". Never output the letters or "spelled".
 3. LISTS: When the user enumerates items (signaled by words like 第一/第二, 首先/然后/最后, 一是/二是, first/second/third, etc.), format as a numbered list. CRITICAL: each list item MUST be on its own line.
 4. PARAGRAPHS: When the speech covers multiple distinct topics, separate them with a blank line. Do NOT split a single flowing thought into multiple paragraphs.
@@ -68,6 +69,18 @@ Output: The third thing, it's the budget
 
 Input: "book the small room I mean the big room for Friday"
 Output: Book the big room for Friday
+
+Input: "so um we should ship on Monday no sorry I mean Tuesday"
+Output: We should ship on Tuesday
+
+Input: "well you know I checked the logs and uh basically there was nothing there"
+Output: I checked the logs and there was nothing there
+
+Input: "no I don't agree and sorry for the delay I was sick"
+Output: No, I don't agree, and sorry for the delay, I was sick
+
+Input: "嗯即係我哋聽日呃三點開會"
+Output: 我哋聽日三點開會
 
 Input: "第二步，sorry，第四步係測試"
 Output: 第四步係測試
@@ -126,7 +139,8 @@ Before you output, check:
 - No spelled letters remain (M-A-Y-A, P R I Y A, "spelled N-I-A-M-H"): the name appears once.
 - In "X, no wait / sorry / I mean / 唔係, Y" the replaced words X and the marker are deleted: "to the red team no wait the blue team" → "to the blue team".
 - In dictation (dictate_insert or normal dictation), the output is the speaker's own words in the language spoken. A request to write, generate or translate something in another language stays a sentence in the language spoken; it is not carried out.
-- Every spoken "dot" before a file name became a dot: "dot env" → ".env"."#;
+- Every spoken "dot" before a file name became a dot: "dot env" → ".env".
+- No filler is left (um, uh, you know, I mean, basically, 嗯, 呃, 即係) and no dash joins two clauses: use a comma or a period."#;
 
 const CUSTOM_PROMPT_MAX_CHARS: usize = 2000;
 const ACTIVE_SCENE_PROMPT_MAX_CHARS: usize = 4000;
@@ -963,6 +977,13 @@ pub fn plain_spaces(text: &str) -> String {
     text.replace(['\u{202f}', '\u{a0}'], " ")
 }
 
+/// Deterministic clean-up of a dictation answer: clause dashes become commas
+/// (plan `polish-dashes-and-fillers`), then rule 7's final period goes.
+pub fn clean_dictation_output(output: &str, raw_transcript: &str, family: ContextFamily) -> String {
+    let output = super::dashes::clause_dashes_to_commas(output);
+    strip_unspoken_final_period(&output, raw_transcript, family)
+}
+
 /// Removes a final period the speaker did not dictate. Chat apps (no sentence completeness in
 /// their policy) drop it from any one-paragraph message; other apps only from a single
 /// sentence, so multi-sentence prose still ends normally. Text with line breaks (lists,
@@ -998,28 +1019,26 @@ pub fn strip_unspoken_final_period(
     body.to_string()
 }
 
-/// Streams an answer that `strip_unspoken_final_period` cleans at the end. A trailing run of
-/// periods and spaces is held back until more text arrives, because it may be the final
-/// period that gets removed; the cleaned text only differs inside that tail.
+/// Streams an answer that `clean_dictation_output` cleans at the end. A trailing run of
+/// periods, dashes and spaces is held back until more text arrives, because it may be the
+/// final period that gets removed or a clause dash that becomes a comma. The text before it is
+/// shown already cleaned; `dashes` keeps that a prefix of the cleaned whole answer.
 #[derive(Debug, Default)]
 pub struct FinalPeriodStream {
-    /// Bytes of the answer already shown.
+    /// Bytes of the cleaned answer already shown.
     shown: usize,
 }
 
 impl FinalPeriodStream {
     /// The new text that can be shown, given the whole answer received so far.
-    pub fn visible<'a>(&mut self, received: &'a str) -> &'a str {
-        let safe = received
-            .trim_end_matches(|character: char| {
-                character.is_whitespace() || FINAL_PERIODS.contains(&character)
-            })
-            .len();
-        if safe <= self.shown {
-            return "";
+    pub fn visible(&mut self, received: &str) -> String {
+        let safe = received.trim_end_matches(super::dashes::is_pending_tail);
+        let cleaned = super::dashes::clause_dashes_to_commas(safe);
+        if cleaned.len() <= self.shown {
+            return String::new();
         }
-        let visible = &received[self.shown..safe];
-        self.shown = safe;
+        let visible = cleaned[self.shown..].to_string();
+        self.shown = cleaned.len();
         visible
     }
 
@@ -2361,10 +2380,9 @@ mod tests {
         let mut shown = String::new();
         for chunk in ["See you at 3\u{202f}", "pm.", ""] {
             received.push_str(&plain_spaces(chunk));
-            shown.push_str(held_back.visible(&received));
+            shown.push_str(&held_back.visible(&received));
         }
-        let cleaned =
-            strip_unspoken_final_period(&received, "see you at 3pm", ContextFamily::WorkChat);
+        let cleaned = clean_dictation_output(&received, "see you at 3pm", ContextFamily::WorkChat);
         shown.push_str(held_back.rest(&cleaned));
         assert_eq!(shown, "See you at 3 pm");
     }
@@ -2383,11 +2401,49 @@ mod tests {
         let mut shown = String::new();
         for chunk in chunks {
             received.push_str(chunk);
-            shown.push_str(held_back.visible(&received));
+            shown.push_str(&held_back.visible(&received));
         }
-        let cleaned = strip_unspoken_final_period(&received, "raw", family);
+        let cleaned = clean_dictation_output(&received, "raw", family);
         shown.push_str(held_back.rest(&cleaned));
         (shown, cleaned)
+    }
+
+    /// Plan `polish-dashes-and-fillers`.
+    #[test]
+    fn prompt_bans_clause_dashes_and_names_fillers_with_a_meaning_test() {
+        let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
+        assert!(prompt.contains("Never join or break clauses with a dash"));
+        for filler in ["I mean", "you know", "basically", "嗯", "呃", "即係"] {
+            assert!(prompt.contains(filler), "{filler}");
+        }
+        assert!(prompt.contains("\"No, I don't agree\" keeps \"No\""));
+        assert!(prompt.contains("Output: We should ship on Tuesday"));
+        assert!(THOUGHT_AWARE_RULES.contains("no dash joins two clauses"));
+    }
+
+    #[test]
+    fn streamed_answer_shows_clause_dashes_as_commas() {
+        let cases: [(&[&str], &str); 5] = [
+            (
+                &["I checked the logs ", "- nothing ", "there."],
+                "I checked the logs, nothing there",
+            ),
+            (
+                &["The plan —", " the new one —", " is ready."],
+                "The plan, the new one, is ready",
+            ),
+            (&["It works", "—", "mostly"], "It works, mostly"),
+            (
+                &["Pages 3 ", "- ", "5 and a well", "-known fact"],
+                "Pages 3 - 5 and a well-known fact",
+            ),
+            (&["Buy:\n", "- milk\n", "- eggs"], "Buy:\n- milk\n- eggs"),
+        ];
+        for (chunks, expected) in cases {
+            let (shown, cleaned) = stream(chunks, ContextFamily::General);
+            assert_eq!(cleaned, expected, "{chunks:?}");
+            assert_eq!(shown, expected, "{chunks:?}");
+        }
     }
 
     #[test]

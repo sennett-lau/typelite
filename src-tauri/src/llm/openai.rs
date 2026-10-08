@@ -181,15 +181,15 @@ impl LlmProvider for OpenAiProvider {
 
         let response = response.ok_or_else(|| last_error.unwrap())?;
 
-        // Prompt rule 7 (no final period), applied again to the answer because small models
-        // ignore it. See `prompt::strip_unspoken_final_period`.
+        // Prompt rule 7 (no final period) and the no-dash rule, applied again to dictation
+        // answers because small models ignore them. See `prompt::clean_dictation_output`.
         let strip_final_period =
             prompt::final_period_rule_applies(req.voice_intent.kind, has_selected_text);
         // Every answer gets plain spaces (see `prompt::plain_spaces`).
         let finish = |text: &str| {
             let text = prompt::plain_spaces(text);
             if strip_final_period {
-                prompt::strip_unspoken_final_period(&text, &req.raw_text, req.context.family)
+                prompt::clean_dictation_output(&text, &req.raw_text, req.context.family)
             } else {
                 text
             }
@@ -228,7 +228,7 @@ impl LlmProvider for OpenAiProvider {
                             if strip_final_period {
                                 let visible = held_back.visible(&full_text);
                                 if !visible.is_empty() {
-                                    callback(visible);
+                                    callback(&visible);
                                 }
                             } else {
                                 callback(&content);
