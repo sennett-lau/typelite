@@ -69,7 +69,9 @@
     "sourceOpened": "已打开来源 {{n}}",
     "sourceLinkCopied": "已复制来源 {{n}} 的链接",
     "copySourceLink": "复制来源 {{n}} 的链接",
-    "openSource": "打开来源 {{n}}"
+    "openSource": "打开来源 {{n}}",
+    "translatedTo": "已翻译成{{language}}",
+    "translation": "翻译"
   },
   "errors": {
     "stt_timeout": "语音服务在 {{details}} 内没有响应。请确认服务正在运行，或换用更快的服务。",

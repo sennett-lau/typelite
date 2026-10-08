@@ -55,6 +55,25 @@ impl VoiceIntentRouter {
         if request.mode == VoiceMode::Translate {
             return route_translate_mode(&request);
         }
+        // Plan `translate-selection-panel`: on a highlight, "translate to English" (or just
+        // "translate this") from Ask shows the translation in the Ask panel. It never replaces
+        // the highlight on its own; the panel offers that. Checked before the command grammar,
+        // which only knows "translate this to …" and only in English and Chinese.
+        if request.mode == VoiceMode::Ask
+            && request.has_selected_text
+            && request.flags.translate_selection
+            && language::is_selection_translation_request(request.utterance)
+        {
+            return intent(
+                VoiceIntentKind::TranslateSelection,
+                VoiceOutputPlacement::PopupAnswer,
+                1.0,
+                None,
+                None,
+                None,
+                None,
+            );
+        }
         if request.utterance.trim().is_empty() {
             return fallback_intent(
                 request.mode,
@@ -200,23 +219,9 @@ fn route_ask(
     view: &NormalizedUtterance<'_>,
 ) -> VoiceIntent {
     if request.has_selected_text {
-        // Plan `ask-translate-and-live-questions`: "translate this into Japanese" on a selection
-        // replaces it with the translation. Only when the language is one Typelite knows, so the
-        // target is exact; anything else stays a nondestructive answer.
-        if request.flags.translate_selection
-            && grammar::matches_translation(locale, view)
-            && language::spoken_translation_target(request.utterance, &[]).is_some()
-        {
-            return intent(
-                VoiceIntentKind::TranslateSelection,
-                VoiceOutputPlacement::ReplaceSelection,
-                grammar::exact_confidence(view),
-                None,
-                None,
-                Some(locale),
-                None,
-            );
-        }
+        // Translation requests were handled in `route` (plan `translate-selection-panel`); a
+        // "translate this into …" that reaches here named a language Typelite cannot map, so it
+        // stays a nondestructive answer.
         // An edit instruction ("make this shorter", "改短一点", "fix the grammar") replaces the
         // selection too. Questions about it ("what does this mean", "summarise this",
         // "解释一下") are not edits and stay answers in the panel.
@@ -670,8 +675,16 @@ mod tests {
     }
 
     #[test]
-    fn ask_with_selection_translates_in_place_when_a_known_language_is_named() {
+    fn ask_with_selection_shows_the_translation_in_the_panel() {
+        // Plan `translate-selection-panel`: the translation shows in the Ask panel; the
+        // highlight is never replaced by Ask on its own.
         for (utterance, language) in [
+            ("translate to English", "en"),
+            ("translate this", "en"),
+            ("what does this say in Japanese", "en"),
+            ("翻译成英文", "zh"),
+            ("翻譯一下", "zh-hk"),
+            ("英語に翻訳して", "ja"),
             ("translate this into Japanese", "en"),
             ("translate this to Hong Kong Chinese", "en"),
             ("translate the selection into Taiwanese Chinese", "en"),
@@ -689,8 +702,28 @@ mod tests {
                 VoiceIntentKind::TranslateSelection,
                 "{utterance}"
             );
-            assert_eq!(routed.placement, VoiceOutputPlacement::ReplaceSelection);
+            assert_eq!(routed.placement, VoiceOutputPlacement::PopupAnswer);
         }
+        // A language Typelite cannot map stays an ordinary answer about the highlight.
+        let routed = VoiceIntentRouter::route(request(
+            VoiceMode::Ask,
+            "translate this to Klingon",
+            true,
+            SpeechLanguageMode::Explicit("en"),
+        ));
+        assert_eq!(routed.kind, VoiceIntentKind::AskSelection);
+        // The routing setting turns it off.
+        let mut off = request(
+            VoiceMode::Ask,
+            "translate to English",
+            true,
+            SpeechLanguageMode::Explicit("en"),
+        );
+        off.flags.translate_selection = false;
+        assert_ne!(
+            VoiceIntentRouter::route(off).kind,
+            VoiceIntentKind::TranslateSelection
+        );
         // Negated or reported commands stay answers.
         for utterance in [
             "please don't translate this to French",
@@ -948,13 +981,16 @@ mod tests {
             *counts.entry(format!("{:?}", result.kind)).or_default() += 1;
             if case.destructive_blocker {
                 blockers += 1;
-                if matches!(
-                    result.kind,
-                    VoiceIntentKind::DraftInsert
-                        | VoiceIntentKind::RewriteSelection
-                        | VoiceIntentKind::TranslateSelection
-                        | VoiceIntentKind::Search
-                ) {
+                // A translation shown in the panel changes nothing in the app.
+                if result.placement != VoiceOutputPlacement::PopupAnswer
+                    && matches!(
+                        result.kind,
+                        VoiceIntentKind::DraftInsert
+                            | VoiceIntentKind::RewriteSelection
+                            | VoiceIntentKind::TranslateSelection
+                            | VoiceIntentKind::Search
+                    )
+                {
                     destructive_false_positives += 1;
                 }
             }

@@ -331,7 +331,10 @@ fn request_translation(
             &config.translation.targets,
         );
         let spoken = source == crate::voice_intent::language::TargetSource::Speech;
-        if spoken || config.translate_enabled {
+        // Plan `translate-selection-panel`: an Ask translation for the panel always translates,
+        // into the active translation language when no language was named.
+        let for_panel = intent.placement == crate::voice_intent::VoiceOutputPlacement::PopupAnswer;
+        if spoken || for_panel || config.translate_enabled {
             tracing::info!(
                 "Selection translation target: {} (from {})",
                 target,
@@ -939,6 +942,9 @@ struct PipelineVoiceExecutionBackend<'a> {
     config: &'a storage::AppConfig,
     already_copied: bool,
     popup_fallback_enabled: bool,
+    /// Plan `translate-selection-panel`: the Ask caller shows this result in its panel (an Ask
+    /// translation of a highlight), so "showing" it here is a no-op that succeeds.
+    answer_shown_by_caller: bool,
     copy_pill: Option<crate::copy_pill::CopyPillRun>,
 }
 
@@ -993,6 +999,9 @@ impl crate::voice_intent::executor::VoiceExecutionBackend for PipelineVoiceExecu
     }
 
     async fn popup_answer(&mut self, text: &str) -> std::result::Result<(), String> {
+        if self.answer_shown_by_caller {
+            return Ok(());
+        }
         if !self.popup_fallback_enabled {
             return Err("popup fallback is owned by the Ask caller".to_string());
         }
@@ -2778,6 +2787,9 @@ impl PipelineHandle {
                     config,
                     already_copied: false,
                     popup_fallback_enabled,
+                    answer_shown_by_caller: !popup_fallback_enabled
+                        && voice_intent.placement
+                            == crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
                     copy_pill: polished_copy_pill,
                 };
                 let execution = crate::voice_intent::executor::execute_voice_intent(
@@ -3999,6 +4011,37 @@ mod tests {
             request_translation(&intent, "make it shorter", &config),
             (true, "ja".to_string())
         );
+    }
+
+    #[test]
+    fn ask_panel_translation_uses_the_named_language_else_the_active_one() {
+        // Plan `translate-selection-panel`: an Ask run never sets `translate_enabled`, yet its
+        // translation for the panel still translates.
+        let mut config = storage::AppConfig::default();
+        config.translation.active_target = "ja".to_string();
+        assert!(!config.translate_enabled);
+        for (speech, expected) in [
+            ("translate to English", "en"),
+            ("翻譯成廣東話", "zh-Hant-HK"),
+            ("translate this", "ja"),
+        ] {
+            let intent = route_pipeline_voice_intent(
+                crate::voice_intent::VoiceMode::Ask,
+                speech,
+                Some("選択したテキスト"),
+                &config,
+            );
+            assert_eq!(
+                intent.placement,
+                crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
+                "{speech}"
+            );
+            assert_eq!(
+                request_translation(&intent, speech, &config),
+                (true, expected.to_string()),
+                "{speech}"
+            );
+        }
     }
 
     #[test]

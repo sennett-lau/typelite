@@ -245,6 +245,52 @@ describe('AskAnswerPanel', () => {
     )
   })
 
+  // Plan `translate-selection-panel`.
+  it('shows a translation of the highlight with Copy and Replace the highlight', async () => {
+    renderPanel(
+      result({
+        question: 'Translate to English',
+        answer: 'The meeting is moved to Friday.',
+        intent: 'translate_selection',
+        output: 'translation',
+        usedSelectedText: true,
+        translationTarget: 'en',
+      }),
+    )
+
+    expect(screen.getByTestId('ask-panel-question').textContent).toBe('Translated to English')
+    expect(screen.getByTestId('ask-panel-translation').textContent).toBe(
+      'The meeting is moved to Friday.',
+    )
+    // Nothing was copied or replaced yet.
+    expect(copyAskText).not.toHaveBeenCalled()
+    expect(insertAskText).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    await waitFor(() => expect(copyAskText).toHaveBeenCalledWith('The meeting is moved to Friday.'))
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeDefined()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replace the highlight' }))
+    await waitFor(() =>
+      expect(insertAskText).toHaveBeenCalledWith('The meeting is moved to Friday.'),
+    )
+  })
+
+  it('names the translation language in the UI language', async () => {
+    await i18n.changeLanguage('zh-Hant')
+    renderPanel(
+      result({
+        question: '翻譯成廣東話',
+        answer: '會議改咗去星期五。',
+        intent: 'translate_selection',
+        output: 'translation',
+        usedSelectedText: true,
+        translationTarget: 'zh-Hant-HK',
+      }),
+    )
+    expect(screen.getByTestId('ask-panel-question').textContent).toMatch(/^已翻譯成/)
+  })
+
   it('offers Answer anyway for a question that needs live information', () => {
     const { onAnswerAnyway } = renderPanel(
       result({

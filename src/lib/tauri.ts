@@ -617,6 +617,9 @@ export type AskResultOutput =
   // Plan `ask-translate-and-live-questions`: the question needs live information; the panel offers
   // Answer anyway.
   | 'needsLiveInfo'
+  // Plan `translate-selection-panel`: the highlight's translation, shown in the panel with Copy
+  // and Replace the highlight.
+  | 'translation'
 
 export interface AskDictationResult {
   question: string
@@ -635,6 +638,8 @@ export interface AskDictationResult {
   sources?: AskSource[]
   /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
   liveSearch?: LiveSearchState | null
+  /** Plan `translate-selection-panel`: for `translation`, the language code it went into. */
+  translationTarget?: string | null
 }
 
 /** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */

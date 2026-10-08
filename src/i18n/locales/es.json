@@ -69,7 +69,9 @@
     "sourceOpened": "Fuente {{n}} abierta",
     "sourceLinkCopied": "Enlace de la fuente {{n}} copiado",
     "copySourceLink": "Copiar enlace de la fuente {{n}}",
-    "openSource": "Abrir fuente {{n}}"
+    "openSource": "Abrir fuente {{n}}",
+    "translatedTo": "Traducción: {{language}}",
+    "translation": "Traducción"
   },
   "errors": {
     "stt_timeout": "El servidor de voz no respondió en {{details}}. Comprueba que está en marcha o prueba un servidor más rápido.",
