@@ -573,7 +573,27 @@
     "polishStyleCleanDetail": "標準",
     "polishStyleStructuredDetail": "箇条書き",
     "polishStyleProfessionalDetail": "フォーマル",
-    "search": "検索"
+    "search": "検索",
+    "handsFree": {
+      "title": "ハンズフリー",
+      "enable": "ハンズフリーモード",
+      "enableHelp": "「Hey {{name}}」と言ってから、続けて依頼を話します。オンの間はマイクが開いたままなので、macOS にマイクのインジケータが表示されます。ウェイクフレーズの前は何も送信されません。",
+      "wakeName": "ウェイク名",
+      "wakeNameHelp": "「Hey」の後に言う名前",
+      "sensitivity": "感度",
+      "sensitivityHelp": "高いほど反応しやすくなりますが、誤って反応することがあります",
+      "low": "低",
+      "normal": "標準",
+      "high": "高",
+      "needsModel": "ハンズフリーには小さな音声モデル（{{size}} MB）が必要です。",
+      "download": "ダウンロード",
+      "downloading": "ウェイクモデルをダウンロード中… {{percent}}%",
+      "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
+      "cancel": "キャンセル",
+      "listening": "「Hey {{name}}」を待っています",
+      "micError": "マイクを開けませんでした。",
+      "requests": "「Hey {{name}}」の後に、質問する、「translate …」と言う、または「type …」と言ってアプリに入力できます。話し終えて間を置くと録音が止まります。"
+    }
   },
   "contextFamilies": {
     "email": "メール",

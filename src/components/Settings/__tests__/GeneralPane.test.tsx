@@ -18,6 +18,22 @@ vi.mock('@tauri-apps/api/event', () => ({
 }))
 
 vi.mock('../../../lib/tauri', () => ({
+  HANDS_FREE_SETUP_EVENT: 'hands-free:setup',
+  getHandsFreeStatus: vi.fn().mockResolvedValue({
+    listener: 'off',
+    modelInstalled: false,
+    modelSizeBytes: 59707625,
+    setup: {
+      modelId: null,
+      phase: 'idle',
+      downloadedBytes: 0,
+      totalBytes: 0,
+      bytesPerSecond: 0,
+      error: null,
+    },
+  }),
+  downloadHandsFreeModel: vi.fn().mockResolvedValue(undefined),
+  cancelHandsFreeModelDownload: vi.fn().mockResolvedValue(true),
   getPlatformCapabilities: vi.fn().mockResolvedValue({
     os: 'macos',
     sessionType: 'unknown',

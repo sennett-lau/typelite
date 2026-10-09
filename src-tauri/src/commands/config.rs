@@ -272,6 +272,18 @@ pub async fn update_config(
     if patch.get("show_in_dock").is_some() {
         crate::apply_dock_visibility(&app, config.show_in_dock);
     }
+    // Plan `hands-free-mode`: start, restart or stop the wake-phrase listener.
+    if ["hands_free", "input_device", "max_recording_seconds"]
+        .iter()
+        .any(|key| patch.get(key).is_some())
+    {
+        let hands_free_app = app.clone();
+        let hands_free_config = config.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::hands_free::runtime::apply(&hands_free_app, &hands_free_config);
+            crate::refresh_tray(&hands_free_app);
+        });
+    }
     // Plan `ai-polish-setup`: start the built-in AI server when Built-in AI became the engine in
     // use, stop it when another engine was picked.
     crate::llm::builtin::sync_with_config(&config);

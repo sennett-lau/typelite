@@ -913,6 +913,13 @@ struct PolishTextOutcome {
     error_code: Option<String>,
 }
 
+/// Plan `hands-free-mode`: a "type …" request dictated into the focused app.
+pub(crate) struct HandsFreeDictation {
+    pub text: String,
+    /// The output report; `None` when AI polish is off (the text was pasted as is).
+    pub execution: Option<crate::voice_intent::executor::VoiceExecutionResult>,
+}
+
 pub(crate) struct AskVoiceDraftOutcome {
     pub text: String,
     pub execution: crate::voice_intent::executor::VoiceExecutionResult,
@@ -3012,6 +3019,67 @@ impl PipelineHandle {
             text: outcome.final_text,
             execution,
             llm_elapsed: outcome.llm_elapsed,
+        })
+    }
+
+    /// Plan `hands-free-mode`: dictates `text` (a hands-free request without its "type" prefix)
+    /// into the app that had focus when the request started, with the same polish and output as
+    /// the Dictate shortcut.
+    pub(crate) async fn run_hands_free_dictation(
+        &self,
+        config: &storage::AppConfig,
+        app_ctx: &RecordingContext,
+        text: &str,
+    ) -> std::result::Result<HandsFreeDictation, String> {
+        let voice_intent = crate::voice_intent::VoiceIntent::from_parts(
+            crate::voice_intent::VoiceIntentKind::DictateInsert,
+            crate::voice_intent::VoiceOutputPlacement::InsertAtCursor,
+            1.0,
+            None,
+            None,
+            None,
+            None,
+        )
+        .map_err(|error| error.to_string())?;
+        if self.current_state() != PipelineState::Idle {
+            return Err("Another voice operation is already active".to_string());
+        }
+        self.abort_flag.store(false, Ordering::SeqCst);
+        let dictionary_store = self.app_handle.state::<storage::DictionaryStore>();
+        let dictionary_words = dictionary_store.words().await;
+        let correction_rules = dictionary_store
+            .enabled_correction_rules()
+            .await
+            .into_iter()
+            .map(|rule| llm::CorrectionRule {
+                id: rule.id,
+                pattern: rule.pattern,
+                replacement: rule.replacement,
+                enabled: rule.enabled,
+            })
+            .collect::<Vec<_>>();
+        let outcome = self
+            .polish_text(PolishTextInput {
+                raw_text: text,
+                voice_mode: crate::voice_intent::VoiceMode::Dictate,
+                config,
+                app_ctx,
+                dictionary_words,
+                correction_rules,
+                selected_text: None,
+                voice_intent,
+                popup_fallback_enabled: false,
+                copy_pill: None,
+                detected_language: None,
+            })
+            .await;
+        self.set_state(PipelineState::Idle);
+        if let Some(code) = outcome.error_code {
+            return Err(outcome.output_error.unwrap_or(code));
+        }
+        Ok(HandsFreeDictation {
+            text: outcome.final_text,
+            execution: outcome.voice_execution,
         })
     }
 

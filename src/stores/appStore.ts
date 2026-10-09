@@ -400,6 +400,14 @@ export function isDefaultLanguageSettings(settings: TranslationLanguageSettings)
   )
 }
 
+/** Plan `hands-free-mode`: Settings → General → Hands-free mode. */
+export interface HandsFreeConfig {
+  enabled: boolean
+  /** The name after "Hey" ("Sam"). */
+  wake_name: string
+  sensitivity: 'low' | 'normal' | 'high'
+}
+
 export interface AppConfig {
   speech_presets: SpeechPreset[]
   active_speech_preset_id: string
@@ -452,6 +460,8 @@ export interface AppConfig {
   mute_output_while_recording: boolean
   /** Plan `auto-update`: check for, download and offer updates by itself (on by default). */
   auto_update: boolean
+  /** Plan `hands-free-mode`: say "Hey Sam" instead of pressing a shortcut (off by default). */
+  hands_free: HandsFreeConfig
   /** Version of the built-in preset templates in this config (backend migration marker). */
   builtin_presets_version: number
   /** The three-shortcut tour (onboarding Dictate, Translate, Ask steps) was finished. */
@@ -1303,6 +1313,7 @@ const defaultConfig: AppConfig = {
   show_in_dock: true,
   mute_output_while_recording: false,
   auto_update: true,
+  hands_free: { enabled: false, wake_name: 'Sam', sensitivity: 'normal' },
   builtin_presets_version: 1,
   shortcut_tour_completed: false,
   shortcut_tour_prompt_dismissed: false,

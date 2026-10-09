@@ -573,7 +573,27 @@
     "polishStyleCleanDetail": "預設",
     "polishStyleStructuredDetail": "列表",
     "polishStyleProfessionalDetail": "正式",
-    "search": "搜尋"
+    "search": "搜尋",
+    "handsFree": {
+      "title": "免提",
+      "enable": "免提模式",
+      "enableHelp": "先說「Hey {{name}}」，再說出你的請求。開啟後麥克風會一直開著，所以 macOS 會顯示麥克風指示燈。說出喚醒詞之前，不會傳送任何內容。",
+      "wakeName": "喚醒名字",
+      "wakeNameHelp": "你在「Hey」之後說的名字",
+      "sensitivity": "靈敏度",
+      "sensitivityHelp": "越高越容易喚醒，但也可能誤喚醒",
+      "low": "低",
+      "normal": "標準",
+      "high": "高",
+      "needsModel": "免提模式需要一個小型語音模型（{{size}} MB）。",
+      "download": "下載",
+      "downloading": "正在下載喚醒模型… {{percent}}%",
+      "downloadFailed": "下載失敗，請再試一次。",
+      "cancel": "取消",
+      "listening": "正在聆聽「Hey {{name}}」",
+      "micError": "無法開啟麥克風。",
+      "requests": "說出「Hey {{name}}」後，可以提問、說「翻譯 …」，或說「打 …」把文字寫入 App。停頓時錄音會自動結束。"
+    }
   },
   "contextFamilies": {
     "email": "郵件",

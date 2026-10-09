@@ -12,6 +12,7 @@ met, and say which one.
 |---|---|---|---|---|
 | 2026-10-03 | [mlx-runtime](2026-10-03-mlx-runtime/index.md) | Run built-in speech and AI on Apple's MLX instead of whisper.cpp / llama.cpp? | **Deferred.** Speech 24–25% faster in a Python prototype, not enough evidence to switch; text: no useful gain | Real-dictation corpus and a native integration prototype |
 | 2026-10-05 | [rust-inference](2026-10-05-rust-inference/index.md) | Replace whisper.cpp / llama.cpp with pure-Rust inference (candle)? | **Rejected.** AI polish 2.3–2.4× slower and changed an answer's language; long dictations ~50% slower; F32-only speech model (3.2 GB vs 574 MB) | Quantized large Whisper, Whisper decoder KV cache, and Q4_K Metal within 20% of llama.cpp |
+| 2026-10-09 | [wake-word](2026-10-09-wake-word/index.md) | Detect "Hey Sam" with an own VAD + Whisper on segments, a trained keyword model, or an external engine? | **Adopted** own VAD + Whisper base on ≤2 s segments: 26/27 wakes, 0/47 false, 37 ms per check | Real-voice false rejects >10%, >1 false wake/day, >3% CPU in talk, or an ONNX runtime arrives |
 
 Outcomes: **Adopted** (shipped or planned), **Rejected** (do not pursue), **Deferred**
 (promising, needs the listed evidence).

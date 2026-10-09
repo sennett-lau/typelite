@@ -1180,6 +1180,8 @@ pub struct AppConfig {
     /// Plan `auto-update`: check GitHub for a new version at start and every few hours, download
     /// it in the background and ask to restart. On by default; off means only Check for updates.
     pub auto_update: bool,
+    /// Plan `hands-free-mode`: wake phrase ("Hey Sam") instead of a shortcut. Off by default.
+    pub hands_free: crate::hands_free::HandsFreeConfig,
 }
 
 impl Default for AppConfig {
@@ -1231,6 +1233,7 @@ impl Default for AppConfig {
             shortcut_tour_prompt_dismissed: false,
             measure_typing_speed: true,
             web_search: crate::web_search::WebSearchConfig::default(),
+            hands_free: crate::hands_free::HandsFreeConfig::default(),
         }
     }
 }
@@ -1739,6 +1742,7 @@ impl AppConfig {
 
     pub(crate) fn normalize_values(&mut self) {
         self.normalize_presets();
+        self.hands_free.normalize();
         self.polish_style = normalize_polish_style(&self.polish_style).to_string();
         self.polish_custom_prompt = sanitize_polish_custom_prompt(&self.polish_custom_prompt);
         self.polish_chinese_script =
