@@ -61,6 +61,7 @@
     "couldNotReplace": "This app didn't allow the replacement. The result is on your clipboard.",
     "tryReplacingAgain": "Try replacing again",
     "errorTitle": "Something went wrong",
+    "unconfirmed": "Couldn’t confirm an answer from the search results. Check the sources.",
     "sources": "Sources",
     "sourcesCount_one": "{{count}} source",
     "sourcesCount_other": "{{count}} sources",

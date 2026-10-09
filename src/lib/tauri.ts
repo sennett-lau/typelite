@@ -634,7 +634,11 @@ export interface AskDictationResult {
   /** Plan `ask-web-search`: the web pages a live answer came from (empty without a search). */
   sources?: AskSource[]
   /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
-  liveSearch?: LiveSearchState | null
+  liveSearch?: LiveSearchState | null /**
+   * Plan `ask-read-pages`: the web search worked, but no answer could be confirmed from it.
+   * `answer` is empty; the panel says so and shows `sources`.
+   */
+  unconfirmed?: boolean
 }
 
 /** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */

@@ -61,6 +61,7 @@
     "couldNotReplace": "Diese App hat das Ersetzen nicht zugelassen. Das Ergebnis ist in deiner Zwischenablage.",
     "tryReplacingAgain": "Erneut ersetzen",
     "errorTitle": "Etwas ist schiefgelaufen",
+    "unconfirmed": "Aus den Suchergebnissen ließ sich keine Antwort bestätigen. Sieh dir die Quellen an.",
     "sources": "Quellen",
     "sourcesCount_one": "{{count}} Quelle",
     "sourcesCount_other": "{{count}} Quellen",

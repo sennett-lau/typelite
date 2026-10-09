@@ -61,6 +61,7 @@
     "couldNotReplace": "Esta app no permitió el reemplazo. El resultado está en tu portapapeles.",
     "tryReplacingAgain": "Intentar reemplazar de nuevo",
     "errorTitle": "Algo salió mal",
+    "unconfirmed": "No se pudo confirmar una respuesta con los resultados de búsqueda. Revisa las fuentes.",
     "sources": "Fuentes",
     "sourcesCount_one": "{{count}} fuente",
     "sourcesCount_other": "{{count}} fuentes",
