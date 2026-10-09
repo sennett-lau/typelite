@@ -61,6 +61,7 @@
     "couldNotReplace": "このアプリでは置き換えができませんでした。結果はクリップボードにあります。",
     "tryReplacingAgain": "もう一度置き換える",
     "errorTitle": "問題が発生しました",
+    "unconfirmed": "検索結果から答えを確認できませんでした。情報源を確認してください。",
     "sources": "出典",
     "sourcesCount_one": "{{count}} 件の出典",
     "sourcesCount_other": "{{count}} 件の出典",

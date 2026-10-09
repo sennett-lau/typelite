@@ -529,7 +529,17 @@ export function AskAnswerPanel({
     body = (
       <>
         <div className="ask-glass-answer" data-testid="ask-panel-answer">
-          <AnswerText text={text} sources={sources} onCite={showSource} onHover={setHighlighted} />
+          {result?.unconfirmed ? (
+            // Plan `ask-read-pages`: the search worked but its answer was not confirmed.
+            <span data-testid="ask-panel-unconfirmed">{t('askPanel.unconfirmed')}</span>
+          ) : (
+            <AnswerText
+              text={text}
+              sources={sources}
+              onCite={showSource}
+              onHover={setHighlighted}
+            />
+          )}
         </div>
         {result?.mayBeOutOfDate && (
           <p className="ask-glass-note text-white/55">{t('ask.outOfDateNote')}</p>

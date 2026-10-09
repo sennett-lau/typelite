@@ -61,6 +61,7 @@
     "couldNotReplace": "此应用不允许替换，结果已在剪贴板上。",
     "tryReplacingAgain": "再次尝试替换",
     "errorTitle": "出了点问题",
+    "unconfirmed": "无法从搜索结果中确认答案。请查看来源。",
     "sources": "来源",
     "sourcesCount_one": "{{count}} 个来源",
     "sourcesCount_other": "{{count}} 个来源",

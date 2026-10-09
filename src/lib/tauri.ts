@@ -638,6 +638,11 @@ export interface AskDictationResult {
   sources?: AskSource[]
   /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
   liveSearch?: LiveSearchState | null
+  /**
+   * Plan `ask-read-pages`: the web search worked, but no answer could be confirmed from it.
+   * `answer` is empty; the panel says so and shows `sources`.
+   */
+  unconfirmed?: boolean
   /** Plan `translate-selection-panel`: for `translation`, the language code it went into. */
   translationTarget?: string | null
 }

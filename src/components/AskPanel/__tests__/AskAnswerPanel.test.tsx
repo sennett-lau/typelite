@@ -92,6 +92,25 @@ describe('AskAnswerPanel', () => {
     expect(screen.queryByRole('button', { name: 'Replace the highlight' })).toBeNull()
   })
 
+  it('shows the sources, not the live-information dead end, for an unconfirmed web answer', () => {
+    renderPanel(
+      result({
+        question: 'when is the next F1 race',
+        answer: '',
+        unconfirmed: true,
+        sources: [
+          { number: 1, title: 'F1 Schedule', url: 'https://a.example/', snippet: '' },
+          { number: 2, title: 'Calendar', url: 'https://b.example/', snippet: '' },
+        ],
+      }),
+    )
+    expect(screen.getByTestId('ask-panel-unconfirmed').textContent).toBe(
+      'Couldn’t confirm an answer from the search results. Check the sources.',
+    )
+    expect(screen.queryByTestId('ask-needs-live-info')).toBeNull()
+    expect(screen.getByTestId('ask-panel-sources-summary').textContent).toContain('2 sources')
+  })
+
   it('shows sources in a column: summary, citation, open and copy link', async () => {
     renderPanel(
       result({

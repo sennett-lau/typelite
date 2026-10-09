@@ -61,6 +61,7 @@
     "couldNotReplace": "此應用不允許替換，結果已在剪貼簿上。",
     "tryReplacingAgain": "再次嘗試替換",
     "errorTitle": "出了點問題",
+    "unconfirmed": "無法從搜尋結果中確認答案。請查看來源。",
     "sources": "來源",
     "sourcesCount_one": "{{count}} 個來源",
     "sourcesCount_other": "{{count}} 個來源",
