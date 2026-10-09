@@ -70,7 +70,9 @@
     "sourceOpened": "出典 {{n}} を開きました",
     "sourceLinkCopied": "出典 {{n}} のリンクをコピーしました",
     "copySourceLink": "出典 {{n}} のリンクをコピー",
-    "openSource": "出典 {{n}} を開く"
+    "openSource": "出典 {{n}} を開く",
+    "translatedTo": "{{language}}に翻訳",
+    "translation": "翻訳"
   },
   "errors": {
     "stt_timeout": "音声サーバが {{details}} 以内に応答しませんでした。起動しているか確認するか、より速いサーバをお試しください。",
@@ -460,8 +462,8 @@
     "askAnything": "なんでも質問",
     "askAnythingDesc": "声で質問し、一度で回答。チャット履歴は残りません。",
     "tryAsk": "質問を試す",
-    "selectedTextContext": "質問と整形で選択テキストを使う",
-    "selectedTextContextDesc": "質問と整形で、選択したテキストを要約・書き直し・翻訳できます。AI のトークンを多く使います。",
+    "selectedTextContext": "音声入力で選択テキストを使う",
+    "selectedTextContextDesc": "音声入力が選択範囲を読み取り、文脈として AI に送ります。選択したまま「短くして」などと言えます。AI のトークンを多く使います。質問と翻訳は常に選択範囲を読み取ります。",
     "targetLanguage": "翻訳先",
     "aboutDescription": "オープンソースの AI 音声入力ツール。話すだけで書ける — 声をその場で整ったテキストに変えます。",
     "openSource": "オープンソース",

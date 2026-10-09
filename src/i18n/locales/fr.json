@@ -70,7 +70,9 @@
     "sourceOpened": "Source {{n}} ouverte",
     "sourceLinkCopied": "Lien de la source {{n}} copié",
     "copySourceLink": "Copier le lien de la source {{n}}",
-    "openSource": "Ouvrir la source {{n}}"
+    "openSource": "Ouvrir la source {{n}}",
+    "translatedTo": "Traduction : {{language}}",
+    "translation": "Traduction"
   },
   "errors": {
     "stt_timeout": "Le serveur vocal n’a pas répondu dans les {{details}}. Vérifiez qu’il fonctionne, ou essayez un serveur plus rapide.",
@@ -460,8 +462,8 @@
     "askAnything": "Demander n’importe quoi",
     "askAnythingDesc": "Question vocale, réponse unique. Aucun historique de discussion.",
     "tryAsk": "Essayer Demander",
-    "selectedTextContext": "Utiliser le texte sélectionné dans Demander/le polissage",
-    "selectedTextContextDesc": "Permet à Demander et au polissage de résumer, réécrire ou traduire le texte sélectionné. Utilise plus de jetons d’IA.",
+    "selectedTextContext": "Utiliser le texte sélectionné en dictée",
+    "selectedTextContextDesc": "La dictée lit la sélection et l’envoie à l’IA comme contexte, pour que vous puissiez dire « raccourcis ceci » dessus. Utilise plus de jetons d’IA. Demander et Traduire lisent toujours la sélection.",
     "targetLanguage": "Traduire en",
     "aboutDescription": "Outil de saisie vocale par IA open source. Parlez pour écrire — transformez votre voix en texte soigné en temps réel.",
     "openSource": "Open source",

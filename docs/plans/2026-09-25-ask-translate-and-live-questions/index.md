@@ -9,6 +9,9 @@ Status: agreed — 2026-09-25
 Superseded by `ask-web-search` for web search (the "Later: web search" section and the
 non-goal below).
 
+Superseded by `translate-selection-panel` for Ask translations of a highlight: they show in
+the Ask panel instead of replacing the selection.
+
 ## Goals
 
 - Highlight text anywhere, then translate it in place into a chosen language, never a silent

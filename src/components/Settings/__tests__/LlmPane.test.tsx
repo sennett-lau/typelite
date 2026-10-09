@@ -306,7 +306,7 @@ describe('LlmPane', () => {
       expect(screen.queryByText('Custom instructions')).not.toBeInTheDocument()
       fireEvent.click(toggle)
       expect(
-        screen.getByRole('switch', { name: 'Use selected text in Ask/polish' }),
+        screen.getByRole('switch', { name: 'Use selected text when dictating' }),
       ).toBeInTheDocument()
       fireEvent.change(screen.getByRole('textbox', { name: 'Custom polish instructions' }), {
         target: { value: 'Keep a concise professional tone.' },
@@ -322,7 +322,7 @@ describe('LlmPane', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Advanced' }))
       expect(
-        screen.getByRole('switch', { name: 'Use selected text in Ask/polish' }),
+        screen.getByRole('switch', { name: 'Use selected text when dictating' }),
       ).toBeInTheDocument()
       expect(screen.queryByRole('textbox', { name: 'Custom polish instructions' })).toBeNull()
     })

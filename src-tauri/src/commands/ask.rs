@@ -76,6 +76,10 @@ pub enum AskResultOutput {
     /// could not look it up (no search provider, or the search failed; see `live_search`). The
     /// panel offers "Answer anyway" (see `answer_ask_anyway`) and Close; `answer` is empty.
     NeedsLiveInfo,
+    /// Plan `translate-selection-panel`: the translation of the highlight, shown in the panel
+    /// (into `translation_target`). The highlight is unchanged; the panel offers Copy and
+    /// Replace the highlight.
+    Translation,
 }
 
 /// Plan `ask-web-search`: why a live question was not answered from the web.
@@ -366,6 +370,8 @@ pub struct AskDictationResult {
     /// Plan `ask-read-pages`: the web search worked but its answer could not be confirmed from
     /// the sources. `answer` is empty; the panel says so and shows `sources`.
     unconfirmed: bool,
+    /// Plan `translate-selection-panel`: for `Translation`, the language code it went into.
+    translation_target: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -457,6 +463,16 @@ impl AskDictationResultMetadata {
     fn from_draft_execution(
         execution: &crate::voice_intent::executor::VoiceExecutionResult,
     ) -> Self {
+        // Plan `translate-selection-panel`: a translation meant for the panel.
+        if execution.requested_placement == crate::voice_intent::VoiceOutputPlacement::PopupAnswer
+            && execution.actual_placement
+                == Some(crate::voice_intent::VoiceOutputPlacement::PopupAnswer)
+        {
+            return Self {
+                output: AskResultOutput::Translation,
+                ..Self::popup(true, false)
+            };
+        }
         let output = if execution.status
             == crate::voice_intent::executor::VoiceExecutionStatus::Completed
             && matches!(
@@ -509,7 +525,14 @@ impl AskDictationResult {
             sources: metadata.sources,
             live_search: metadata.live_search,
             unconfirmed: metadata.unconfirmed,
+            translation_target: None,
         }
+    }
+
+    /// Plan `translate-selection-panel`: notes the language a panel translation went into.
+    pub(crate) fn with_translation_target(mut self, target: String) -> Self {
+        self.translation_target = Some(target);
+        self
     }
 
     pub(crate) fn should_show_window(&self) -> bool {
@@ -660,6 +683,18 @@ fn sanitize_selected_text_for_ask(selected_text: &str) -> Option<SanitizedSelect
         text: trimmed.chars().take(ASK_MAX_SELECTED_TEXT_CHARS).collect(),
         truncated: original_chars > ASK_MAX_SELECTED_TEXT_CHARS,
     })
+}
+
+/// Plan `translate-selection-panel`: the language an Ask translation went into, as the pipeline
+/// chose it (`request_translation`): the language named in `question`, else the active
+/// translation language.
+fn panel_translation_target(question: &str, config: &storage::AppConfig) -> String {
+    crate::voice_intent::language::resolve_selection_translation_target(
+        question,
+        &config.translation.active_target,
+        &config.translation.targets,
+    )
+    .0
 }
 
 pub fn route_ask_intent(
@@ -1406,7 +1441,13 @@ pub(crate) async fn start_reserved_ask_dictation(
         let recording_context = app
             .state::<crate::app_detector::ContextDetectorHandle>()
             .snapshot_for_recording_enabled(config.context_adaptation_enabled);
-        let selected_text = if include_selected_text && config.selected_text_enabled {
+        // Plan `translate-selection-panel`: Ask always reads the highlight (the setting only
+        // covers Dictate). `include_selected_text` is false for the in-app Ask window.
+        let selected_text = if include_selected_text
+            && crate::selection::should_capture_selection(
+                VoiceMode::Ask,
+                config.selected_text_enabled,
+            ) {
             tokio::task::block_in_place(crate::selection::capture_selected_text)
         } else {
             None
@@ -1853,7 +1894,10 @@ pub async fn stop_ask_dictation(
                 | VoiceIntentKind::TranslateSelection
         ) {
             failure_code = "llm_failed";
-            pastes = true;
+            // Plan `translate-selection-panel`: an Ask translation goes to the panel, not the app.
+            let for_panel =
+                voice_intent.placement == crate::voice_intent::VoiceOutputPlacement::PopupAnswer;
+            pastes = !for_panel;
             let draft_started = std::time::Instant::now();
             let draft = app
                 .state::<crate::pipeline::PipelineHandle>()
@@ -1878,12 +1922,17 @@ pub async fn stop_ask_dictation(
                 *timing = crate::pipeline::config_for_run_timing(timing, used_preset).into_owned();
             }
             let draft = draft?;
-            return Ok(AskDictationResult::new(
+            let result = AskDictationResult::new(
                 question,
                 draft.text,
                 voice_intent.kind,
                 AskDictationResultMetadata::from_draft_execution(&draft.execution),
-            ));
+            );
+            if result.output == AskResultOutput::Translation {
+                let target = panel_translation_target(&result.question, &config);
+                return Ok(result.with_translation_target(target));
+            }
+            return Ok(result);
         }
 
         failure_code = "llm_failed";
@@ -2162,17 +2211,25 @@ mod tests {
     }
 
     #[test]
-    fn ask_translate_this_into_a_language_replaces_the_selection() {
+    fn ask_translation_of_a_highlight_shows_in_the_panel() {
+        // Plan `translate-selection-panel`.
         let flags = crate::voice_intent::VoiceRoutingFlags::default();
         for question in [
             "translate this to French",
+            "Translate to English.",
             "translate this into Traditional Chinese",
             "把這段翻譯成台灣中文",
+            "翻译一下",
         ] {
             let route = route_ask_intent(question, true, None, flags);
             assert_eq!(
                 route.kind,
                 VoiceIntentKind::TranslateSelection,
+                "{question}"
+            );
+            assert_eq!(
+                route.placement,
+                crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
                 "{question}"
             );
         }
@@ -2186,10 +2243,10 @@ mod tests {
             VoiceIntentKind::AskSelection
         );
 
-        let replaced = crate::voice_intent::executor::VoiceExecutionResult {
+        let shown = crate::voice_intent::executor::VoiceExecutionResult {
             intent_kind: VoiceIntentKind::TranslateSelection,
-            requested_placement: crate::voice_intent::VoiceOutputPlacement::ReplaceSelection,
-            actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::ReplaceSelection),
+            requested_placement: crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
+            actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::PopupAnswer),
             status: crate::voice_intent::executor::VoiceExecutionStatus::Completed,
             fallback_reason: None,
         };
@@ -2197,28 +2254,29 @@ mod tests {
             "translate this to French".to_string(),
             "Bonjour".to_string(),
             VoiceIntentKind::TranslateSelection,
-            AskDictationResultMetadata::from_draft_execution(&replaced),
-        );
-        assert!(!result.should_show_window());
-
-        let lost = crate::voice_intent::executor::VoiceExecutionResult {
-            actual_placement: None,
-            status: crate::voice_intent::executor::VoiceExecutionStatus::CopiedFallback,
-            fallback_reason: Some(
-                crate::voice_intent::executor::VoiceExecutionFallbackReason::SelectionLost,
-            ),
-            ..replaced
-        };
-        let result = AskDictationResult::new(
-            "translate this to French".to_string(),
-            "Bonjour".to_string(),
-            VoiceIntentKind::TranslateSelection,
-            AskDictationResultMetadata::from_draft_execution(&lost),
-        );
+            AskDictationResultMetadata::from_draft_execution(&shown),
+        )
+        .with_translation_target("fr".to_string());
         assert!(result.should_show_window());
         let value = serde_json::to_value(&result).unwrap();
-        assert_eq!(value["output"], "copiedFallback");
+        assert_eq!(value["output"], "translation");
         assert_eq!(value["usedSelectedText"], true);
+        assert_eq!(value["translationTarget"], "fr");
+    }
+
+    #[test]
+    fn panel_translation_target_is_the_named_language_else_the_active_one() {
+        let mut config = storage::AppConfig::default();
+        config.translation.active_target = "ja".to_string();
+        assert_eq!(
+            panel_translation_target("translate to English", &config),
+            "en"
+        );
+        assert_eq!(
+            panel_translation_target("翻譯成廣東話", &config),
+            "zh-Hant-HK"
+        );
+        assert_eq!(panel_translation_target("translate this", &config), "ja");
     }
 
     #[test]

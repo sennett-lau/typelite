@@ -391,6 +391,12 @@ fn append_voice_operation_prompt(
             prompt.push_str(
                 "\nThis is an explicit selected-text transformation: output only the replacement text.",
             );
+            // Plan `translate-selection-panel`: a translation covers the whole highlight.
+            if intent.kind == VoiceIntentKind::TranslateSelection {
+                prompt.push_str(
+                    "\nTranslate the whole selected text, every sentence; do not summarise, shorten or explain it.",
+                );
+            }
         }
         VoiceIntentKind::AskSelection => {
             if has_selected_text {
