@@ -69,9 +69,7 @@
     "sourceOpened": "出典 {{n}} を開きました",
     "sourceLinkCopied": "出典 {{n}} のリンクをコピーしました",
     "copySourceLink": "出典 {{n}} のリンクをコピー",
-    "openSource": "出典 {{n}} を開く",
-    "copySelection": "選択部分をコピー",
-    "selectionCopied": "選択部分をコピーしました"
+    "openSource": "出典 {{n}} を開く"
   },
   "errors": {
     "stt_timeout": "音声サーバが {{details}} 以内に応答しませんでした。起動しているか確認するか、より速いサーバをお試しください。",

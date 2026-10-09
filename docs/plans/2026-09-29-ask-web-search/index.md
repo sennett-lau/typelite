@@ -10,9 +10,6 @@ now pointing to Settings.
 
 Status: building — 2026-10-02
 
-Partly superseded by `ask-panel-select-text`: an answer shows "Copy selection" while text in it
-is highlighted.
-
 This plan replaces the "Later: web search" section and the "no web search" non-goal of plan
 `ask-translate-and-live-questions`: the default is a self-hosted SearXNG, not a hosted service.
 

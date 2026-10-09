@@ -69,9 +69,7 @@
     "sourceOpened": "Quelle {{n}} geöffnet",
     "sourceLinkCopied": "Link von Quelle {{n}} kopiert",
     "copySourceLink": "Link von Quelle {{n}} kopieren",
-    "openSource": "Quelle {{n}} öffnen",
-    "copySelection": "Auswahl kopieren",
-    "selectionCopied": "Auswahl kopiert"
+    "openSource": "Quelle {{n}} öffnen"
   },
   "errors": {
     "stt_timeout": "Der Sprachserver hat nicht innerhalb von {{details}} geantwortet. Prüfe, ob er läuft, oder versuche einen schnelleren Server.",

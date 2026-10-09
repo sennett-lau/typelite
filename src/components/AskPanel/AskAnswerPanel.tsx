@@ -383,12 +383,9 @@ export function AskAnswerPanel({
     setHighlighted(n)
   }, [])
 
-  // Plan `ask-panel-select-text`: the panel is never key, so ⌘C goes to the user's app, not
-  // here. A highlight inside the panel shows "Copy selection", which copies through the app.
+  // Plan `ask-panel-select-text`: text in the panel can be highlighted and copied with ⌘C.
   const panelRef = useRef<HTMLElement | null>(null)
   const selected = useSelectionWithin(panelRef)
-  const [selectionCopied, setSelectionCopied] = useState(false)
-  useEffect(() => setSelectionCopied(false), [selected])
 
   // The couldn't-replace result's button: its text is already on the clipboard; pressing it
   // copies again (only the highlighted part when there is one).
@@ -397,13 +394,6 @@ export function AskAnswerPanel({
     if (!value) return
     copyAskText(value).catch(() => {})
   }, [selected, text])
-
-  const copySelection = useCallback(() => {
-    if (!selected) return
-    copyAskText(selected)
-      .then(() => setSelectionCopied(true))
-      .catch(() => {})
-  }, [selected])
 
   const insert = useCallback(() => {
     if (!text || inserting) return
@@ -573,17 +563,6 @@ export function AskAnswerPanel({
           <span className="ask-glass-hint">
             <KeyCap name="Escape" className="" /> {t('askPanel.escToClose')}
           </span>
-          {selected && !couldNotReplace && (
-            <button
-              type="button"
-              className="ask-glass-button"
-              onClick={copySelection}
-              data-testid="ask-panel-copy-selection"
-            >
-              {t(selectionCopied ? 'askPanel.selectionCopied' : 'askPanel.copySelection')}
-              {selectionCopied && <Check size={12} aria-hidden="true" />}
-            </button>
-          )}
           {actions}
         </div>
       </div>

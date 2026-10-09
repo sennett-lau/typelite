@@ -69,9 +69,7 @@
     "sourceOpened": "Source {{n}} ouverte",
     "sourceLinkCopied": "Lien de la source {{n}} copié",
     "copySourceLink": "Copier le lien de la source {{n}}",
-    "openSource": "Ouvrir la source {{n}}",
-    "copySelection": "Copier la sélection",
-    "selectionCopied": "Sélection copiée"
+    "openSource": "Ouvrir la source {{n}}"
   },
   "errors": {
     "stt_timeout": "Le serveur vocal n’a pas répondu dans les {{details}}. Vérifiez qu’il fonctionne, ou essayez un serveur plus rapide.",

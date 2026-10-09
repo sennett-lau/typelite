@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import globalsCss from '../../../styles/globals.css?raw'
 import i18n from '../../../i18n'
@@ -100,16 +100,13 @@ describe('selectable answer', () => {
     expect(rule?.[1]).toContain('user-select: text')
   })
 
-  it('shows Copy selection only for a highlight and copies just that part', async () => {
+  it('a highlight in an answer adds no button (⌘C copies it)', () => {
     render(<AskAnswerPanel content={content()} onClose={vi.fn()} onAnswerAnyway={vi.fn()} />)
-    expect(screen.queryByTestId('ask-panel-copy-selection')).toBeNull()
-
     select(screen.getByTestId('ask-panel-answer'), ANSWER.indexOf('same effect'), 11)
-    const button = screen.getByTestId('ask-panel-copy-selection')
-    expect(button.textContent).toBe('Copy selection')
-    fireEvent.click(button)
-    expect(copyAskText).toHaveBeenCalledWith('same effect')
-    await waitFor(() => expect(button.textContent).toBe('Selection copied'))
+    expect(screen.queryAllByRole('button').map((b) => b.textContent)).not.toContain(
+      'Copy selection',
+    )
+    expect(copyAskText).not.toHaveBeenCalled()
   })
 
   it('the could-not-replace Copy button copies the highlight, else the whole answer', () => {
