@@ -1964,7 +1964,17 @@ impl PipelineHandle {
             .unwrap_or_else(|e| e.into_inner())
             .clone()
             .unwrap_or_default();
-        let selected_text = if config_data.selected_text_enabled {
+        // Plan `translate-selection-panel`: Translate always reads the highlight; Dictate only
+        // with "Use selected text as polish context" on.
+        let run_voice_mode = self
+            .preloaded_voice_mode
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .unwrap_or(crate::voice_intent::VoiceMode::Dictate);
+        let selected_text = if crate::selection::should_capture_selection(
+            run_voice_mode,
+            config_data.selected_text_enabled,
+        ) {
             tokio::time::sleep(std::time::Duration::from_millis(
                 SELECTED_TEXT_CAPTURE_DELAY_MS,
             ))

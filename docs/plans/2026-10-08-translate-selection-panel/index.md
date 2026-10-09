@@ -6,7 +6,7 @@ Typeless. The highlight is not touched; the panel offers **Copy** and **Replace 
 This changes how Ask handles translation requests on a highlight. Before this plan Ask replaced
 the highlight with the translation.
 
-Status: building (2026-10-08)
+Status: building (2026-10-09)
 
 Supersedes one decision of
 [ask-translate-and-live-questions](../2026-09-25-ask-translate-and-live-questions/index.md):
@@ -40,6 +40,8 @@ Supersedes one decision of
 | With no known language, only a bare request ("translate this", "翻译一下") uses the active language | "Translate this to Klingon" must not quietly go into another language; it stays an Ask answer. |
 | Replace the highlight uses the panel's existing paste (`insert_ask_text`) | The panel never takes focus, so the highlight is still selected and ⌘V replaces it, as "Try replacing again" already does. |
 | The `translate_selection` routing setting still turns it off | Same switch as before. |
+| Ask and Translate always read the highlight; the "selected text" setting now covers only Dictate | With the setting off by default, Ask never saw the highlight (found in the first end-to-end test). |
+| The ⌘C waits for modifier keys to be released, then polls the clipboard for up to 500 ms | A held Ask key turned ⌘C into another shortcut, and browsers can copy slower than 100 ms. |
 
 ## Parts
 
@@ -47,6 +49,7 @@ Supersedes one decision of
 |---|---|
 | [behaviour.md](behaviour.md) | What the user does and sees, phrases recognised, the panel. |
 | [architecture.md](architecture.md) | Routing, the pipeline call, result fields, privacy and logs. |
+| [selection-capture.md](selection-capture.md) | When and how the highlight is read, permissions, log line. |
 
 ## Open questions
 

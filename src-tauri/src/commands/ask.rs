@@ -1384,7 +1384,13 @@ pub(crate) async fn start_reserved_ask_dictation(
         let recording_context = app
             .state::<crate::app_detector::ContextDetectorHandle>()
             .snapshot_for_recording_enabled(config.context_adaptation_enabled);
-        let selected_text = if include_selected_text && config.selected_text_enabled {
+        // Plan `translate-selection-panel`: Ask always reads the highlight (the setting only
+        // covers Dictate). `include_selected_text` is false for the in-app Ask window.
+        let selected_text = if include_selected_text
+            && crate::selection::should_capture_selection(
+                VoiceMode::Ask,
+                config.selected_text_enabled,
+            ) {
             tokio::task::block_in_place(crate::selection::capture_selected_text)
         } else {
             None
