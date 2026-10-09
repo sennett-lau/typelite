@@ -32,7 +32,9 @@ import { useAiSetupStore } from '../stores/aiSetupStore'
 import {
   ASK_SELECTION_PREVIEW_EVENT,
   ASK_STAGE_EVENT,
+  ASK_COMMAND_EVENT,
   type AskStage,
+  type VoiceCommandPill,
   type SpeechSetupStatus,
 } from '../lib/tauri'
 import { TYPING_NUDGE_EVENT } from '../lib/speedStats'
@@ -167,6 +169,10 @@ export function useTauriEvents() {
     // Plan `ask-web-search`: "Searching the web…" while Ask searches.
     addListener<AskStage>(ASK_STAGE_EVENT, (stage) =>
       useAppStore.getState().setAskStage(stage === 'searching' ? 'searching' : 'thinking'),
+    )
+    // Plan `voice-commands`: "Opening Safari" in the Ask pill.
+    addListener<VoiceCommandPill>(ASK_COMMAND_EVENT, (command) =>
+      useAppStore.getState().setAskCommand(command),
     )
     addListener<string>('pipeline:target_app', setTargetApp)
     addListener<InsertResult>('pipeline:insert_result', (result) => {

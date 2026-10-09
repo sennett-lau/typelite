@@ -19,6 +19,8 @@ pub enum VoiceIntentKind {
     AskSelection,
     OpenQuestion,
     Search,
+    /// Plan `voice-commands`: an instruction to operate the Mac ("open Safari").
+    Command,
 }
 
 impl VoiceIntentKind {
@@ -32,6 +34,7 @@ impl VoiceIntentKind {
             Self::AskSelection => "ask_selection",
             Self::OpenQuestion => "open_question",
             Self::Search => "search",
+            Self::Command => "command",
         }
     }
 }
@@ -193,7 +196,7 @@ impl VoiceIntent {
             VoiceIntentKind::AskSelection | VoiceIntentKind::OpenQuestion => {
                 VoiceOutputPlacement::PopupAnswer
             }
-            VoiceIntentKind::Search => VoiceOutputPlacement::OpenUrl,
+            VoiceIntentKind::Search | VoiceIntentKind::Command => VoiceOutputPlacement::OpenUrl,
         };
         if placement != required_placement {
             return Err(VoiceIntentError::InvalidPlacement);

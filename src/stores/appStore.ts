@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { MAX_TRANSLATION_TARGETS, canonicalTranslationCode } from '../lib/constants'
 import { compactKeyLabel, fullKeyLabel } from '../lib/keyLabels'
-import type { WebSearchConfig } from '../lib/tauri'
+import type { VoiceCommandPill, WebSearchConfig } from '../lib/tauri'
 
 export type PipelineState =
   | 'idle'
@@ -468,6 +468,8 @@ export interface AppConfig {
    * section (Settings -> AI polish), not the Save bar.
    */
   web_search: WebSearchConfig
+  /** Plan `voice-commands`: Ask also carries out spoken commands ("open Safari"). Off by default. */
+  voice_commands_enabled: boolean
 }
 
 /** A Settings pane a setup message can open. */
@@ -514,6 +516,9 @@ interface AppState {
    */
   askSearched: boolean
   setAskStage: (stage: 'searching' | 'thinking') => void
+  /** Plan `voice-commands`: the command the Ask pill is carrying out ("Opening Safari"). */
+  askCommand: VoiceCommandPill | null
+  setAskCommand: (command: VoiceCommandPill | null) => void
 
   // Recording
   audioVolume: number
@@ -1308,6 +1313,7 @@ const defaultConfig: AppConfig = {
   shortcut_tour_prompt_dismissed: false,
   measure_typing_speed: true,
   web_search: { provider: 'none', base_url: '' },
+  voice_commands_enabled: false,
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -1320,7 +1326,14 @@ export const useAppStore = create<AppState>((set) => ({
   askStage: 'thinking',
   askSearched: false,
   setAskStage: (askStage) =>
-    set((s) => ({ askStage, askSearched: s.askSearched || askStage === 'searching' })),
+    set((s) => ({
+      askStage,
+      askSearched: s.askSearched || askStage === 'searching',
+      // A new Ask run starts with "thinking": drop the last command's label.
+      askCommand: askStage === 'thinking' ? null : s.askCommand,
+    })),
+  askCommand: null,
+  setAskCommand: (askCommand) => set({ askCommand }),
 
   audioVolume: 0,
   setAudioVolume: (audioVolume) => set({ audioVolume }),

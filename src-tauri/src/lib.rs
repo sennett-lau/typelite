@@ -27,6 +27,7 @@ pub mod stt;
 pub mod timing;
 pub mod tray;
 pub mod updates;
+pub mod voice_commands;
 pub mod voice_intent;
 pub mod web_search;
 
@@ -1475,6 +1476,8 @@ pub fn run() {
             commands::ask::start_ask_dictation,
             commands::ask::stop_ask_dictation,
             commands::ask::start_ask_flow,
+            voice_commands::confirm_voice_command,
+            voice_commands::cancel_voice_command,
             commands::ask::stop_ask_flow,
             commands::ask::abort_ask_dictation,
             commands::ask::take_pending_ask_message,

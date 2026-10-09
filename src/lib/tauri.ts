@@ -594,6 +594,8 @@ export type VoiceIntentKind =
   | 'ask_selection'
   | 'open_question'
   | 'search'
+  // Plan `voice-commands`.
+  | 'command'
 
 export type VoiceOutputPlacement =
   | 'insert_at_cursor'
@@ -617,6 +619,8 @@ export type AskResultOutput =
   // Plan `ask-translate-and-live-questions`: the question needs live information; the panel offers
   // Answer anyway.
   | 'needsLiveInfo'
+  // Plan `voice-commands`: a spoken command ran or could not; see `voiceCommand`.
+  | 'voiceCommand'
 
 export interface AskDictationResult {
   question: string
@@ -635,6 +639,53 @@ export interface AskDictationResult {
   sources?: AskSource[]
   /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
   liveSearch?: LiveSearchState | null
+  /** Plan `voice-commands`: the command's outcome (only for `voiceCommand`). */
+  voiceCommand?: VoiceCommandOutcome | null
+}
+
+/** Plan `voice-commands`: what a spoken command does. */
+export type VoiceCommandAction =
+  | 'open_app'
+  | 'switch_to'
+  | 'hide_app'
+  | 'quit_app'
+  | 'open_url'
+  | 'open_folder'
+  | 'run_shortcut'
+
+export type VoiceCommandStatus =
+  | 'done'
+  | 'needsConfirm'
+  | 'noMatch'
+  | 'ambiguous'
+  | 'notRunning'
+  | 'invalidUrl'
+  | 'failed'
+
+export interface VoiceCommandOutcome {
+  action: VoiceCommandAction
+  status: VoiceCommandStatus
+  /** The app's real name when found, otherwise what was heard. */
+  target: string
+  candidates: string[]
+  confirmToken: string | null
+}
+
+/** Plan `voice-commands`: sent while a command runs, so the pill says "Opening Safari". */
+export const ASK_COMMAND_EVENT = 'ask:command'
+export interface VoiceCommandPill {
+  action: VoiceCommandAction
+  target: string
+}
+
+/** Plan `voice-commands`: Confirm in the panel (quits the app); closes the panel. */
+export async function confirmVoiceCommand(token: string): Promise<void> {
+  return invoke('confirm_voice_command', { token })
+}
+
+/** Plan `voice-commands`: Cancel in the panel; closes the panel. */
+export async function cancelVoiceCommand(): Promise<void> {
+  return invoke('cancel_voice_command')
 }
 
 /** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */

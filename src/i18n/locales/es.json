@@ -1231,5 +1231,28 @@
     "restart": "Reiniciar para actualizar",
     "failed": "La actualización no funcionó: {{message}}",
     "disabled": "La versión de desarrollo no se actualiza sola."
+  },
+  "voiceCommands": {
+    "setting": "Comandos de voz",
+    "settingHint": "Con Pregunta lo que sea, di un comando como «abre Safari» o «cambia a Slack» para abrir, cambiar a, ocultar o cerrar una app. Antes de cerrar, pregunta.",
+    "pill": {
+      "open_app": "Abriendo {{target}}",
+      "switch_to": "Cambiando a {{target}}",
+      "hide_app": "Ocultando {{target}}",
+      "quit_app": "Cerrando {{target}}",
+      "open_url": "Abriendo {{target}}",
+      "open_folder": "Abriendo {{target}}",
+      "run_shortcut": "Ejecutando {{target}}"
+    },
+    "noApp": "No hay ninguna app llamada «{{target}}».",
+    "noShortcut": "No hay ningún atajo llamado «{{target}}».",
+    "noFolder": "Typelite solo puede abrir Descargas, Escritorio, Documentos o Aplicaciones.",
+    "ambiguous": "Varias apps coinciden con «{{target}}»: {{candidates}}. Di el nombre completo.",
+    "notRunning": "{{target}} no está abierta.",
+    "invalidUrl": "«{{target}}» no es una dirección web que Typelite pueda abrir.",
+    "failed": "macOS no ejecutó el comando.",
+    "confirmQuit": "¿Cerrar {{target}}? Puede pedirte que guardes el trabajo sin guardar.",
+    "confirmQuitButton": "Cerrar {{target}}",
+    "cancel": "Cancelar"
   }
 }

@@ -1,18 +1,30 @@
 import { useTranslation } from 'react-i18next'
-import { Globe, MessageCircle } from 'lucide-react'
+import { Globe, MessageCircle, Zap } from 'lucide-react'
+import type { VoiceCommandPill } from '../../lib/tauri'
 import { CapsuleWorking } from './CapsuleWorking'
 
 /**
  * Ask is waiting for the AI's answer, or (plan `ask-web-search`) searching the web for a live
- * question first.
+ * question first, or (plan `voice-commands`) carrying out a spoken command ("Opening Safari").
  */
-export function CapsuleAskThinking({ searching }: { searching: boolean }) {
+export function CapsuleAskThinking({
+  searching,
+  command = null,
+}: {
+  searching: boolean
+  command?: VoiceCommandPill | null
+}) {
   const { t } = useTranslation()
-  const Icon = searching ? Globe : MessageCircle
+  const Icon = command ? Zap : searching ? Globe : MessageCircle
+  const label = command
+    ? t(`voiceCommands.pill.${command.action}`, { target: command.target })
+    : searching
+      ? t('ask.searchingWeb')
+      : t('ask.thinking')
 
   return (
     <CapsuleWorking
-      label={searching ? t('ask.searchingWeb') : t('ask.thinking')}
+      label={label}
       icon={
         <>
           <Icon size={12} className="shrink-0 text-white/90" aria-hidden="true" />

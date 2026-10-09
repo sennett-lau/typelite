@@ -216,6 +216,7 @@ export function Capsule() {
   useCapsuleResize(doneFlash, rootRef)
   const askSearching = useAppStore((s) => s.askSearched)
   const askSearchingNow = useAppStore((s) => s.askStage === 'searching')
+  const askCommand = useAppStore((s) => s.askCommand)
 
   const liveState = getCapsuleState(
     pipelineState,
@@ -227,7 +228,7 @@ export function Capsule() {
   )
   // Ask's thinking state while it searches the web has the wider pill, as the window does.
   const liveSize = getPillSize(
-    liveState === 'ask_thinking' && askSearching ? 'ask_searching' : liveState,
+    liveState === 'ask_thinking' && (askSearching || askCommand) ? 'ask_searching' : liveState,
     activeVoiceMode,
     errorHasAction,
     translatePill,
@@ -437,7 +438,9 @@ export function Capsule() {
             {capsuleState === 'ask_recording' && (
               <CapsuleAskRecording selectionPreview={askSelectionPreview} />
             )}
-            {capsuleState === 'ask_thinking' && <CapsuleAskThinking searching={askSearchingNow} />}
+            {capsuleState === 'ask_thinking' && (
+              <CapsuleAskThinking searching={askSearchingNow} command={askCommand} />
+            )}
             {capsuleState === 'error' && (
               <CapsuleError
                 message={shown.current.error}

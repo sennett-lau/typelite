@@ -279,6 +279,7 @@ fn feature_enabled(kind: VoiceIntentKind, flags: VoiceRoutingFlags) -> bool {
         | VoiceIntentKind::TranslateInsert
         | VoiceIntentKind::AskSelection
         | VoiceIntentKind::OpenQuestion => true,
+        VoiceIntentKind::Command => false,
     }
 }
 
@@ -394,6 +395,7 @@ mod tests {
                 Some(SearchProvider::Google),
                 Some("rust".to_string()),
             ),
+            VoiceIntentKind::Command => (VoiceOutputPlacement::OpenUrl, None, None),
         };
         VoiceIntent::from_parts(
             kind,
