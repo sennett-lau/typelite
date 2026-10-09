@@ -523,6 +523,8 @@ fn track_cursor(app: &tauri::AppHandle) {
 
 /// Closes the panel (Escape, ✕, a new run, or after Insert). Returns true when it was open.
 pub fn close(app: &tauri::AppHandle) -> bool {
+    // Plan `voice-commands`: closing the panel (Escape too) cancels a quit waiting for Confirm.
+    crate::voice_commands::clear_pending();
     let Some(state) = app.try_state::<AskPanelState>() else {
         return false;
     };

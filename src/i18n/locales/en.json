@@ -1231,5 +1231,28 @@
     "restart": "Restart to update",
     "failed": "The update did not work: {{message}}",
     "disabled": "The development build does not update itself."
+  },
+  "voiceCommands": {
+    "setting": "Voice commands",
+    "settingHint": "With Ask Anything, say a command such as “open Safari” or “switch to Slack” to open, switch to, hide or quit an app. Quitting asks first.",
+    "pill": {
+      "open_app": "Opening {{target}}",
+      "switch_to": "Switching to {{target}}",
+      "hide_app": "Hiding {{target}}",
+      "quit_app": "Quitting {{target}}",
+      "open_url": "Opening {{target}}",
+      "open_folder": "Opening {{target}}",
+      "run_shortcut": "Running {{target}}"
+    },
+    "noApp": "No app called “{{target}}”.",
+    "noShortcut": "No Shortcut called “{{target}}”.",
+    "noFolder": "Typelite can only open Downloads, Desktop, Documents or Applications.",
+    "ambiguous": "Several apps match “{{target}}”: {{candidates}}. Say the full name.",
+    "notRunning": "{{target}} is not running.",
+    "invalidUrl": "“{{target}}” is not a web address Typelite can open.",
+    "failed": "macOS did not carry out the command.",
+    "confirmQuit": "Quit {{target}}? Unsaved work may ask to be saved.",
+    "confirmQuitButton": "Quit {{target}}",
+    "cancel": "Cancel"
   }
 }

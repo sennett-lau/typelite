@@ -20,6 +20,7 @@ import { ShortcutBindingList } from './ShortcutBindingList'
 import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
+import { VoiceCommandsRow } from './VoiceCommandsRow'
 import { UI_LANGUAGES } from '../../i18n/languages'
 import { MAX_TRANSLATION_TARGETS, targetLanguageLabel } from '../../lib/constants'
 
@@ -265,6 +266,11 @@ export function GeneralPane() {
               <MessageCircle size={13} />
             </button>
           }
+        />
+        {/* Plan `voice-commands`: Ask also carries out simple spoken commands. */}
+        <VoiceCommandsRow
+          enabled={config.voice_commands_enabled ?? false}
+          onChange={(voice_commands_enabled) => updateConfig({ voice_commands_enabled })}
         />
         {/* Escape is fixed (plan `pill-follows-cursor-and-escape`), so this row only informs. */}
         <Row

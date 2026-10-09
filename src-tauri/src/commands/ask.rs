@@ -76,6 +76,8 @@ pub enum AskResultOutput {
     /// could not look it up (no search provider, or the search failed; see `live_search`). The
     /// panel offers "Answer anyway" (see `answer_ask_anyway`) and Close; `answer` is empty.
     NeedsLiveInfo,
+    /// Plan `voice-commands`: a spoken command ran (or could not); see `voice_command`.
+    VoiceCommand,
 }
 
 /// Plan `ask-web-search`: why a live question was not answered from the web.
@@ -363,6 +365,8 @@ pub struct AskDictationResult {
     sources: Vec<crate::web_search::AnswerSource>,
     /// Plan `ask-web-search`: for `NeedsLiveInfo`, why the web was not used.
     live_search: Option<LiveSearchState>,
+    /// Plan `voice-commands`: the command's outcome (only for `VoiceCommand`).
+    voice_command: Option<crate::voice_commands::CommandOutcome>,
 }
 
 #[derive(Clone, Debug)]
@@ -377,6 +381,7 @@ pub(crate) struct AskDictationResultMetadata {
     may_be_out_of_date: bool,
     sources: Vec<crate::web_search::AnswerSource>,
     live_search: Option<LiveSearchState>,
+    voice_command: Option<crate::voice_commands::CommandOutcome>,
 }
 
 impl AskDictationResultMetadata {
@@ -392,6 +397,17 @@ impl AskDictationResultMetadata {
             may_be_out_of_date: false,
             sources: Vec::new(),
             live_search: None,
+            voice_command: None,
+        }
+    }
+
+    /// Plan `voice-commands`: a spoken command's outcome.
+    fn voice_command(outcome: crate::voice_commands::CommandOutcome) -> Self {
+        Self {
+            output: AskResultOutput::VoiceCommand,
+            actual_placement: None,
+            voice_command: Some(outcome),
+            ..Self::popup(false, false)
         }
     }
 
@@ -433,6 +449,7 @@ impl AskDictationResultMetadata {
             may_be_out_of_date: false,
             sources: Vec::new(),
             live_search: None,
+            voice_command: None,
         }
     }
 
@@ -467,6 +484,7 @@ impl AskDictationResultMetadata {
             may_be_out_of_date: false,
             sources: Vec::new(),
             live_search: None,
+            voice_command: None,
         }
     }
 }
@@ -492,11 +510,17 @@ impl AskDictationResult {
             may_be_out_of_date: metadata.may_be_out_of_date,
             sources: metadata.sources,
             live_search: metadata.live_search,
+            voice_command: metadata.voice_command,
         }
     }
 
     pub(crate) fn should_show_window(&self) -> bool {
-        self.output != AskResultOutput::InsertedText
+        // Plan `voice-commands`: a command that ran shows only in the pill.
+        let command_done = self
+            .voice_command
+            .as_ref()
+            .is_some_and(|outcome| outcome.status == crate::voice_commands::CommandStatus::Done);
+        self.output != AskResultOutput::InsertedText && !command_done
     }
 }
 
@@ -979,6 +1003,14 @@ async fn send_ask_chat(
 
 /// Plan `ask-translate-and-live-questions`: classifies an open question with the active AI preset
 /// (keywords if that fails) and logs the decision and its reason, never the question.
+/// Plan `voice-commands`: the AI configuration for the command check, or `None` without one.
+async fn command_llm_config(config: &storage::AppConfig) -> Option<crate::llm::LlmConfig> {
+    let api_key = resolve_llm_config_secret(config, &SystemCredentialVault).ok()?;
+    crate::llm::builtin::llm_config(config.active_ai_preset(), api_key)
+        .await
+        .ok()
+}
+
 async fn check_live_question(
     config: &storage::AppConfig,
     client: &reqwest::Client,
@@ -1753,6 +1785,24 @@ pub async fn stop_ask_dictation(
             .unwrap_or_else(|e| e.into_inner())
             .clone();
         let (question, answer_language) = route_question(&app, &config, question, &heard);
+        // Plan `voice-commands`: "open Safari" is carried out, not answered. Never with a
+        // selection (that is about the text).
+        if config.voice_commands_enabled && !used_selected_text {
+            let command_started = std::time::Instant::now();
+            let outcome = crate::voice_commands::run(&app, &client, &question, || {
+                command_llm_config(&config)
+            })
+            .await;
+            if let Some(outcome) = outcome {
+                ai_elapsed = Some(command_started.elapsed());
+                return Ok(AskDictationResult::new(
+                    question,
+                    String::new(),
+                    VoiceIntentKind::Command,
+                    AskDictationResultMetadata::voice_command(outcome),
+                ));
+            }
+        }
         let voice_intent = route_ask_intent(
             &question,
             used_selected_text,

@@ -1180,6 +1180,9 @@ pub struct AppConfig {
     /// Plan `auto-update`: check GitHub for a new version at start and every few hours, download
     /// it in the background and ask to restart. On by default; off means only Check for updates.
     pub auto_update: bool,
+    /// Plan `voice-commands`: the Ask shortcut also carries out simple spoken commands
+    /// ("open Safari"). Off by default.
+    pub voice_commands_enabled: bool,
 }
 
 impl Default for AppConfig {
@@ -1231,6 +1234,7 @@ impl Default for AppConfig {
             shortcut_tour_prompt_dismissed: false,
             measure_typing_speed: true,
             web_search: crate::web_search::WebSearchConfig::default(),
+            voice_commands_enabled: false,
         }
     }
 }

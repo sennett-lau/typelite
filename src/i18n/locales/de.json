@@ -1231,5 +1231,28 @@
     "restart": "Neu starten zum Aktualisieren",
     "failed": "Das Update hat nicht funktioniert: {{message}}",
     "disabled": "Der Entwicklungs-Build aktualisiert sich nicht selbst."
+  },
+  "voiceCommands": {
+    "setting": "Sprachbefehle",
+    "settingHint": "Sag bei „Frag alles“ einen Befehl wie „öffne Safari“ oder „wechsle zu Slack“, um eine App zu öffnen, nach vorn zu holen, auszublenden oder zu beenden. Vor dem Beenden wird nachgefragt.",
+    "pill": {
+      "open_app": "{{target}} wird geöffnet",
+      "switch_to": "Wechsel zu {{target}}",
+      "hide_app": "{{target}} wird ausgeblendet",
+      "quit_app": "{{target}} wird beendet",
+      "open_url": "{{target}} wird geöffnet",
+      "open_folder": "{{target}} wird geöffnet",
+      "run_shortcut": "{{target}} wird ausgeführt"
+    },
+    "noApp": "Keine App namens „{{target}}“.",
+    "noShortcut": "Kein Kurzbefehl namens „{{target}}“.",
+    "noFolder": "Typelite kann nur Downloads, Schreibtisch, Dokumente oder Programme öffnen.",
+    "ambiguous": "Mehrere Apps passen zu „{{target}}“: {{candidates}}. Sag den vollen Namen.",
+    "notRunning": "{{target}} läuft nicht.",
+    "invalidUrl": "„{{target}}“ ist keine Webadresse, die Typelite öffnen kann.",
+    "failed": "macOS hat den Befehl nicht ausgeführt.",
+    "confirmQuit": "{{target}} beenden? Ungesicherte Arbeit kann zum Sichern abgefragt werden.",
+    "confirmQuitButton": "{{target}} beenden",
+    "cancel": "Abbrechen"
   }
 }

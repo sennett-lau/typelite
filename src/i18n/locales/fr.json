@@ -1231,5 +1231,28 @@
     "restart": "Redémarrer pour mettre à jour",
     "failed": "La mise à jour n’a pas fonctionné : {{message}}",
     "disabled": "La version de développement ne se met pas à jour elle-même."
+  },
+  "voiceCommands": {
+    "setting": "Commandes vocales",
+    "settingHint": "Avec Demander n’importe quoi, dites une commande comme « ouvre Safari » ou « passe à Slack » pour ouvrir, afficher, masquer ou quitter une app. Quitter demande d’abord confirmation.",
+    "pill": {
+      "open_app": "Ouverture de {{target}}",
+      "switch_to": "Passage à {{target}}",
+      "hide_app": "Masquage de {{target}}",
+      "quit_app": "Fermeture de {{target}}",
+      "open_url": "Ouverture de {{target}}",
+      "open_folder": "Ouverture de {{target}}",
+      "run_shortcut": "Exécution de {{target}}"
+    },
+    "noApp": "Aucune app nommée « {{target}} ».",
+    "noShortcut": "Aucun raccourci nommé « {{target}} ».",
+    "noFolder": "Typelite ne peut ouvrir que Téléchargements, Bureau, Documents ou Applications.",
+    "ambiguous": "Plusieurs apps correspondent à « {{target}} » : {{candidates}}. Dites le nom complet.",
+    "notRunning": "{{target}} n’est pas ouverte.",
+    "invalidUrl": "« {{target}} » n’est pas une adresse web que Typelite peut ouvrir.",
+    "failed": "macOS n’a pas exécuté la commande.",
+    "confirmQuit": "Quitter {{target}} ? Le travail non enregistré peut vous être signalé.",
+    "confirmQuitButton": "Quitter {{target}}",
+    "cancel": "Annuler"
   }
 }

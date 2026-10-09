@@ -1231,5 +1231,28 @@
     "restart": "重新啟動以更新",
     "failed": "更新沒有完成：{{message}}",
     "disabled": "開發版本不會自行更新。"
+  },
+  "voiceCommands": {
+    "setting": "語音指令",
+    "settingHint": "使用「隨便問」時，說出「打開 Safari」或「切換到 Slack」等指令，即可打開、切換、隱藏或結束應用程式。結束前會先確認。",
+    "pill": {
+      "open_app": "正在打開 {{target}}",
+      "switch_to": "正在切換到 {{target}}",
+      "hide_app": "正在隱藏 {{target}}",
+      "quit_app": "正在結束 {{target}}",
+      "open_url": "正在打開 {{target}}",
+      "open_folder": "正在打開 {{target}}",
+      "run_shortcut": "正在執行 {{target}}"
+    },
+    "noApp": "沒有名為「{{target}}」的應用程式。",
+    "noShortcut": "沒有名為「{{target}}」的捷徑。",
+    "noFolder": "Typelite 只能打開「下載項目」「桌面」「文件」或「應用程式」檔案夾。",
+    "ambiguous": "有多個應用程式符合「{{target}}」：{{candidates}}。請說出完整名稱。",
+    "notRunning": "{{target}} 未在執行。",
+    "invalidUrl": "「{{target}}」不是 Typelite 可以打開的網址。",
+    "failed": "macOS 未能執行這個指令。",
+    "confirmQuit": "要結束 {{target}} 嗎？未儲存的內容可能會提示你儲存。",
+    "confirmQuitButton": "結束 {{target}}",
+    "cancel": "取消"
   }
 }

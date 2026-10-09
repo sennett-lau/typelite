@@ -409,6 +409,10 @@ fn append_voice_operation_prompt(
         VoiceIntentKind::Search => prompt.push_str(
             "\nSearch routing must bypass the language model. Return no generated content.",
         ),
+        // Plan `voice-commands`: commands never reach the polish prompt.
+        VoiceIntentKind::Command => prompt.push_str(
+            "\nCommand routing must bypass the language model. Return no generated content.",
+        ),
     }
 }
 

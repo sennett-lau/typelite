@@ -13,6 +13,7 @@ import {
   panelWidth,
 } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
+import { VoiceCommandBody } from './VoiceCommandBody'
 
 /** What the panel shows: an Ask result, or an error message. */
 export type AskPanelContent =
@@ -398,8 +399,9 @@ export function AskAnswerPanel({
   const question =
     content.kind === 'error' ? (
       <b>{t('askPanel.errorTitle')}</b>
-    ) : output === 'openedSearch' ? (
-      // A site search never shows the spoken query (it can be private); only the provider.
+    ) : output === 'openedSearch' || output === 'voiceCommand' ? (
+      // A site search or a command never shows the spoken words (they can be private); only
+      // what Typelite did.
       <b>{t('ask.title')}</b>
     ) : (
       <>
@@ -471,6 +473,9 @@ export function AskAnswerPanel({
         </button>
       </>
     )
+  } else if (output === 'voiceCommand' && result?.voiceCommand) {
+    // Plan `voice-commands`.
+    body = <VoiceCommandBody outcome={result.voiceCommand} />
   } else if (output === 'openedSearch') {
     body = <div className="ask-glass-answer">{text}</div>
   } else {

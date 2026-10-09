@@ -1231,5 +1231,28 @@
     "restart": "再起動してアップデート",
     "failed": "アップデートできませんでした：{{message}}",
     "disabled": "開発ビルドは自動でアップデートされません。"
+  },
+  "voiceCommands": {
+    "setting": "音声コマンド",
+    "settingHint": "「なんでも質問」で「Safari を開いて」「Slack に切り替えて」などと話すと、アプリを開く・切り替える・隠す・終了することができます。終了の前には確認します。",
+    "pill": {
+      "open_app": "{{target}} を開いています",
+      "switch_to": "{{target}} に切り替えています",
+      "hide_app": "{{target}} を隠しています",
+      "quit_app": "{{target}} を終了しています",
+      "open_url": "{{target}} を開いています",
+      "open_folder": "{{target}} を開いています",
+      "run_shortcut": "{{target}} を実行しています"
+    },
+    "noApp": "「{{target}}」という名前のアプリはありません。",
+    "noShortcut": "「{{target}}」という名前のショートカットはありません。",
+    "noFolder": "Typelite が開けるのは「ダウンロード」「デスクトップ」「書類」「アプリケーション」だけです。",
+    "ambiguous": "「{{target}}」に一致するアプリが複数あります：{{candidates}}。正式な名前で話してください。",
+    "notRunning": "{{target}} は起動していません。",
+    "invalidUrl": "「{{target}}」は Typelite が開ける Web アドレスではありません。",
+    "failed": "macOS がコマンドを実行しませんでした。",
+    "confirmQuit": "{{target}} を終了しますか？保存していない作業がある場合は保存を求められることがあります。",
+    "confirmQuitButton": "{{target}} を終了",
+    "cancel": "キャンセル"
   }
 }
