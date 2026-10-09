@@ -2455,6 +2455,20 @@ body,
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* Plan `ask-panel-select-text`: the page sets `user-select: none` on body; the answer and the
+ * source titles, links and snippets can be highlighted with the mouse. */
+.ask-glass-answer,
+.ask-source-host,
+.ask-source-title,
+.ask-source-snippet {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+.ask-glass-answer ::selection,
+.ask-source-card ::selection {
+  background: color-mix(in srgb, #0a84ff 45%, transparent);
+}
 .ask-glass-note {
   margin: 0 14px;
   color: #ffd60a;

@@ -69,7 +69,9 @@
     "sourceOpened": "已開啟來源 {{n}}",
     "sourceLinkCopied": "已複製來源 {{n}} 的連結",
     "copySourceLink": "複製來源 {{n}} 的連結",
-    "openSource": "開啟來源 {{n}}"
+    "openSource": "開啟來源 {{n}}",
+    "copySelection": "複製所選內容",
+    "selectionCopied": "已複製所選內容"
   },
   "errors": {
     "stt_timeout": "語音服務在 {{details}} 內沒有響應。請確認服務正在執行，或換用更快的服務。",

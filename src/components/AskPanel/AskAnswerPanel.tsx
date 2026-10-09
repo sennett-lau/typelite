@@ -13,6 +13,7 @@ import {
   panelWidth,
 } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
+import { textToCopy, useSelectionWithin } from './selection'
 
 /** What the panel shows: an Ask result, or an error message. */
 export type AskPanelContent =
@@ -240,7 +241,11 @@ export function AskSourcesColumn({
               className={`ask-source-card${highlighted === source.number ? ' is-highlighted' : ''}`}
               data-testid={`ask-source-${source.number}`}
               data-source-number={source.number}
-              onClick={() => open(source)}
+              onClick={() => {
+                // Plan `ask-panel-select-text`: a drag that highlights a title is not a click.
+                if (document.getSelection()?.toString().trim()) return
+                open(source)
+              }}
             >
               <span className="ask-source-site">
                 <SiteMark url={source.url} />
@@ -378,12 +383,27 @@ export function AskAnswerPanel({
     setHighlighted(n)
   }, [])
 
-  // Only the couldn't-replace result has a copy button, and its text is already on the
-  // clipboard; pressing it copies again.
+  // Plan `ask-panel-select-text`: the panel is never key, so ⌘C goes to the user's app, not
+  // here. A highlight inside the panel shows "Copy selection", which copies through the app.
+  const panelRef = useRef<HTMLElement | null>(null)
+  const selected = useSelectionWithin(panelRef)
+  const [selectionCopied, setSelectionCopied] = useState(false)
+  useEffect(() => setSelectionCopied(false), [selected])
+
+  // The couldn't-replace result's button: its text is already on the clipboard; pressing it
+  // copies again (only the highlighted part when there is one).
   const copy = useCallback(() => {
-    if (!text) return
-    copyAskText(text).catch(() => {})
-  }, [text])
+    const value = textToCopy(selected, text)
+    if (!value) return
+    copyAskText(value).catch(() => {})
+  }, [selected, text])
+
+  const copySelection = useCallback(() => {
+    if (!selected) return
+    copyAskText(selected)
+      .then(() => setSelectionCopied(true))
+      .catch(() => {})
+  }, [selected])
 
   const insert = useCallback(() => {
     if (!text || inserting) return
@@ -502,7 +522,10 @@ export function AskAnswerPanel({
       aria-label={t('askPanel.label')}
       data-testid="ask-floating-note"
       className="ask-glass"
-      ref={sectionRef}
+      ref={(element: HTMLElement | null) => {
+        sectionRef.current = element
+        panelRef.current = element
+      }}
       initial={false}
       animate={{ width }}
       transition={transition}
@@ -550,6 +573,17 @@ export function AskAnswerPanel({
           <span className="ask-glass-hint">
             <KeyCap name="Escape" className="" /> {t('askPanel.escToClose')}
           </span>
+          {selected && !couldNotReplace && (
+            <button
+              type="button"
+              className="ask-glass-button"
+              onClick={copySelection}
+              data-testid="ask-panel-copy-selection"
+            >
+              {t(selectionCopied ? 'askPanel.selectionCopied' : 'askPanel.copySelection')}
+              {selectionCopied && <Check size={12} aria-hidden="true" />}
+            </button>
+          )}
           {actions}
         </div>
       </div>
