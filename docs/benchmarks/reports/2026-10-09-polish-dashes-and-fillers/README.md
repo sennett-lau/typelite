@@ -81,6 +81,62 @@ condition") are rewordings with the same meaning.
    next to the Cantonese one (the 4B model does not generalise from a single Cantonese example).
 3. Add "let me think" and "hmm" to the English list.
 
+## Round 2: general rules instead of word lists
+
+The listed fillers and correction markers did not move Chinese, so rule 2 was rewritten as
+general, language-independent rules (any language: drop hesitation, stalling and thinking-aloud
+words anywhere, judged by meaning; after a self-correction keep only the final version), with
+no word list and four short examples in English, Cantonese and Mandarin, one of them the
+"No"/"sorry" counter-example. The Cantonese preset (v4) says the same in general terms.
+
+Same setup as above (bundled llama-server, `Qwen3-4B-Instruct-2507-Q4_K_M.gguf`, temperature
+0.3, one warm-up pass, 3 runs), run one revision after the other on 2026-10-09:
+
+- main: `origin/main` c96ec25; previous: PR #81 at f5977aa (listed fillers); new: this commit.
+- Corpus: the same 24 inputs plus 4 in languages with no example in the prompt: fr1 (euh ×2),
+  fr2 ("à Pierre non pardon à Marie"), es1 ("bueno o sea …"), es2 ("a las tres no perdón a las
+  cuatro"). 84 answers per revision.
+- Counting is automatic this time: a corpus `fillers` entry still in the final text counts once
+  per occurrence (so 即係 twice in yue2 counts 2), a `keep` entry missing counts as removed. The
+  totals are therefore not comparable with round 1. Meaning changes are read by hand.
+- Raw answers: `round2-main.json`, `round2-prev.json`, `round2-new.json`.
+
+| Measure (lower is better) | main | previous (lists) | new (general) |
+|---|---:|---:|---:|
+| Fillers left, English (en1–en10, 30 answers) | 3 | 1 | 3 |
+| Fillers left, Chinese (cmn, yue, 24 answers) | 21 | 27 | 25 |
+| Fillers left, French + Spanish (no examples, 12 answers) | 9 | 9 | 6 |
+| Meaningful words removed (ce1–ce6) | 0 | 0 | 0 |
+| Clause dashes in final text (raw answer) | 0 (0) | 0 (3) | 0 (0) |
+| Meaning changes | 6 | 3 | 0 |
+| Latency median / mean / p90, ms | 638 / 677 / 927 | 753 / 753 / 972 | 826 / 893 / 1297 |
+
+Per input, new against previous:
+
+- Better: es2 self-correction now applied in all 3 runs ("La reunión es a las cuatro…"); main
+  and previous wrote "a las tres, no a las cuatro", which says the opposite (meaning change ×3).
+  en8 "Hmm, let me think" is gone in all 3 runs (previous kept "let me think" ×3). yue3 嗯 is
+  removed in 2 of 3 runs (previous 0 of 3). yue1 keeps Cantonese 我哋 (previous wrote 我們).
+- Worse: en7 "basically" is back in all 3 runs, as on main (previous removed it).
+- Unchanged in every revision: leading 那个 (cmn1), 就是说 (cmn3), 即係 ×2 (yue2), 呃 (yue1),
+  the yue4 "三點鐘唔係唔好意思四點鐘" correction (both times kept), "bueno, o sea" (es1) and the
+  leading "So" (en1). fr1 "euh" and the fr2 correction are right in every revision.
+- main's yue4 is translated into Simplified Mandarin in all 3 runs (meaning changes, and why its
+  Chinese filler count looks lower).
+
+Latency: the revisions ran one after another and the machine got slower during the session:
+a single re-run of main straight after the new revision had a median of 879 ms, and of new
+828 ms. The system prompts of previous and new are the same length (11.9k characters), so the
+difference between columns is drift, not the prompt.
+
+What did not help (probes, 1 run each, not in the table): a closing "[FINAL_CHECK]" reminder
+at the end of the prompt; rewording the [CHINESE_SCRIPT] "keep every … word exactly as spoken"
+sentence; naming a leading 那个 in rule 2 with its own example. Removing the [CHINESE_SCRIPT]
+section altogether did drop 那个 and 就是说, but the model then translated Cantonese into
+Mandarin, so it is not an option. With this 4B model the Chinese stalling words that are also
+ordinary words (那个 "that", 就是 "that is", 即係, 然后 "then") stay under both list and general
+rules; pure sounds (呃, 嗯) go only sometimes.
+
 ## Reproduce
 
 ```sh

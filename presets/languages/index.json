@@ -4,7 +4,7 @@
     {
       "id": "cantonese-hong-kong",
       "name": "Cantonese (Hong Kong) 廣東話",
-      "version": 3,
+      "version": 4,
       "format": 1,
       "tier": "official",
       "languages": [
@@ -22,8 +22,8 @@
       ],
       "model_hint": "Best with a speech model that writes Cantonese as spoken, such as Qwen3-ASR; whisper turns it into written Chinese first.",
       "path": "cantonese-hong-kong/preset.md",
-      "bytes": 3082,
-      "sha256": "b179371f1c6b943e18d863a99b4328479551fd3ec254b6084b8f269b25c6fb8f"
+      "bytes": 3072,
+      "sha256": "f1c0d1f3f82f7b7991133d0d529be3977c7578286d600fc83bce80302bb7e9f2"
     },
     {
       "id": "english",

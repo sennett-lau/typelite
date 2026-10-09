@@ -492,7 +492,7 @@ mod tests {
             hk.source,
             InstructionsSource::Preset {
                 id: "cantonese-hong-kong".into(),
-                version: 3
+                version: 4
             }
         );
         assert!(hk.instructions.starts_with("Written Cantonese"));

@@ -1,7 +1,7 @@
 ---
 id: cantonese-hong-kong
 name: Cantonese (Hong Kong) 廣東話
-version: 3
+version: 4
 format: 1
 tier: official
 languages: [zh-Hant-HK, yue-Hant-HK]
@@ -26,7 +26,7 @@ Speech recognition sometimes writes Cantonese speech as written Chinese. Those w
 - Keep names, brands, products and technical terms in English.
 - Keep the speaker's own wording and tone; do not make it more formal (你幫我… stays 你幫我…, not 請幫我…). Keep slang and swear words (屌, 仆街, on9) exactly as spoken.
 - Use particles such as 囉 喇 啦 呀 only where a Hongkonger would say them.
-- 嗯, 呃, 啊 are hesitation sounds, and 唔係, 講錯, 應該係 mark a self-correction: drop the sound, the wrong part and the correction word, keep only the corrected part.
+- Drop hesitation sounds (嗯, 呃) anywhere, also at the start. After a self-correction (such as 唔係), keep only the corrected part. Tone particles (啦, 呢) stay.
 - Hong Kong vocabulary (軟件, 網絡, 的士), full-width punctuation, digits for times and amounts: 下晝5點, 3點半, $200.
 
 ## Examples

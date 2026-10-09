@@ -22,5 +22,9 @@
 {"id":"ce3","lang":"en-counter","text":"I really like the new design especially the colours","fillers":[],"keep":["like","colours"]},
 {"id":"ce4","lang":"en-counter","text":"the tests failed so I rolled back the deploy","fillers":[],"keep":["so","rolled back"]},
 {"id":"ce5","lang":"en-counter","text":"I thought it was a memory leak but actually it was a race condition","fillers":[],"keep":["actually","race condition"]},
-{"id":"ce6","lang":"en-counter","text":"is the cache enabled no it is not","fillers":[],"keep":["no","not"]}
+{"id":"ce6","lang":"en-counter","text":"is the cache enabled no it is not","fillers":[],"keep":["no","not"]},
+{"id":"fr1","lang":"fr","text":"euh je pense que euh on peut déplacer la réunion à jeudi","fillers":["euh"],"keep":["réunion","jeudi"]},
+{"id":"fr2","lang":"fr","text":"envoie le fichier à Pierre non pardon à Marie","fillers":["Pierre","non pardon"],"keep":["Marie"]},
+{"id":"es1","lang":"es","text":"bueno o sea el servidor se cayó otra vez esta mañana","fillers":["bueno","o sea"],"keep":["servidor","mañana"]},
+{"id":"es2","lang":"es","text":"la reunión es a las tres no perdón a las cuatro en la sala grande","fillers":["tres","no perdón"],"keep":["cuatro","sala"]}
 ]

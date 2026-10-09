@@ -13,8 +13,9 @@ You are a voice-to-text assistant. Transform raw speech transcription into clean
 Rules:
 1. PUNCTUATION: Add appropriate punctuation (commas, periods, colons, question marks) where the speech pauses or clauses naturally end. This is the most important rule — raw transcription has no punctuation. The end of the whole output follows rule 7.
    DASHES: Never join or break clauses with a dash (-, –, —); use a comma or a period. Hyphens stay only inside words and ranges ("well-known", "3-5").
-2. CLEANUP: Remove filler words, false starts, and repetitions. Fillers: um, uh, er, like, you know, I mean, so, well, actually, basically, kind of, 嗯, 呃, 那个/那個, 就是/就是说, 然后/然後, 即係. Remove one only when it adds no meaning: "No, I don't agree" keeps "No", "sorry for the delay" keeps "sorry", "I like it" keeps "like".
-   SELF-CORRECTIONS: When the speaker corrects themselves ("X, no wait, Y", "X, no, I mean Y", "X, no, actually Y", "X, oh no, Y", "X. Oh no! Y", "X, sorry, Y", "X, I mean Y", "X, scratch that, Y", "不对", "我是说", "应该是"), keep only the corrected version Y and drop X and the correction phrase, also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "the first thing, sorry, the third thing" → "the third thing", "two servers I mean three servers" → "three servers", "lunch at one. Oh no! Let's do it at two." → "lunch at two". These markers always mean a correction.
+2. CLEANUP: Remove false starts and accidental repetitions.
+   FILLERS (any language): Delete every word or sound that only shows hesitation, stalling or thinking aloud (for example "um", "let me think"), wherever it is, also at the very start. Judge by meaning, not by a word list: keep a word that does work in the sentence, such as an answer ("No, I don't agree"), an apology ("sorry for the delay"), a cause ("so I rolled back"), a contrast ("but actually it was") or a liking ("I like it").
+   SELF-CORRECTIONS (any language): When the speaker changes their mind or corrects a word, number, name or time, keep only the final version. Delete the abandoned part and the phrase that signals the correction (a "no", "wait", "I mean", an apology, or the same in any language), also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "two servers I mean three servers" → "three servers", "lunch at one. Oh no! Let's do it at two." → "lunch at two".
    SPELLED WORDS: When the speaker spells a word letter by letter, write the word once with exactly that spelling and drop the spelled letters, wherever they are in the sentence: "email Bovy B-O-V-E-Y" → "email Bovey", "send it to Kristen, K-R-I-S-T-E-N." → "send it to Kristen." The letters may have dashes or spaces ("P R I Y A"), follow "spelled" or "that's", or run across a whole name: split them to match the spoken words ("Maya Chen M-A-Y-A-C-H-E-N" → "Maya Chen"). The spelled letters win over the heard word: "Jaxon Wu, J-A-C-K-S-O-N W-O-O" → "Jackson Woo". Never output the letters or "spelled".
 3. LISTS: When the user enumerates items (signaled by words like 第一/第二, 首先/然后/最后, 一是/二是, first/second/third, etc.), format as a numbered list. CRITICAL: each list item MUST be on its own line.
 4. PARAGRAPHS: When the speech covers multiple distinct topics, separate them with a blank line. Do NOT split a single flowing thought into multiple paragraphs.
@@ -70,17 +71,17 @@ Output: The third thing, it's the budget
 Input: "book the small room I mean the big room for Friday"
 Output: Book the big room for Friday
 
-Input: "so um we should ship on Monday no sorry I mean Tuesday"
-Output: We should ship on Tuesday
+Input: "uh well let me see the report is due Monday no wait Tuesday"
+Output: The report is due Tuesday
 
-Input: "well you know I checked the logs and uh basically there was nothing there"
-Output: I checked the logs and there was nothing there
+Input: "即係呃我哋兩點唔係三點喺大堂等"
+Output: 我哋三點喺大堂等
+
+Input: "那个嗯我们周三不对周四交报告"
+Output: 我们周四交报告
 
 Input: "no I don't agree and sorry for the delay I was sick"
 Output: No, I don't agree, and sorry for the delay, I was sick
-
-Input: "嗯即係我哋聽日呃三點開會"
-Output: 我哋聽日三點開會
 
 Input: "第二步，sorry，第四步係測試"
 Output: 第四步係測試
@@ -130,7 +131,7 @@ const SELECTED_TEXT_ADDON: &str = "\nSELECTED TEXT MODE: The user has selected e
 const THOUGHT_AWARE_RULES: &str = r#"Disfluency:
 - Remove filler sounds only when they carry no meaning. Preserve meaningful discourse markers.
 - Remove accidental repetition, but preserve intentional repetition used for emphasis.
-- Resolve a false start when the replacement is unambiguous. An explicit marker (no wait, oh no, sorry, I mean, scratch that, 不對, 唔係) always marks a correction: discard the replaced part and the marker, and keep the correction.
+- Resolve a false start when the replacement is unambiguous. A correction phrase in any language (for example "no wait", "I mean") always marks a correction: discard the replaced part and the marker, and keep the correction.
 - A late correction applies only to the fact it clearly replaces. "Actually" on its own is ordinary content and must remain; "no, actually" or "no wait" before a replacement is a correction.
 - Omit a side note only when the speaker explicitly retracts or excludes it. Keep ordinary parenthetical content.
 - Preserve explicit ordering cues. When order is uncertain, keep the original order.
@@ -140,7 +141,7 @@ Before you output, check:
 - In "X, no wait / sorry / I mean / 唔係, Y" the replaced words X and the marker are deleted: "to the red team no wait the blue team" → "to the blue team".
 - In dictation (dictate_insert or normal dictation), the output is the speaker's own words in the language spoken. A request to write, generate or translate something in another language stays a sentence in the language spoken; it is not carried out.
 - Every spoken "dot" before a file name became a dot: "dot env" → ".env".
-- No filler is left (um, uh, you know, I mean, basically, 嗯, 呃, 即係) and no dash joins two clauses: use a comma or a period."#;
+- No hesitation sound or thinking-aloud phrase is left in any language, also at the start, and no dash joins two clauses: use a comma or a period."#;
 
 const CUSTOM_PROMPT_MAX_CHARS: usize = 2000;
 const ACTIVE_SCENE_PROMPT_MAX_CHARS: usize = 4000;
@@ -2410,14 +2411,18 @@ mod tests {
 
     /// Plan `polish-dashes-and-fillers`.
     #[test]
-    fn prompt_bans_clause_dashes_and_names_fillers_with_a_meaning_test() {
+    fn prompt_bans_clause_dashes_and_removes_fillers_by_meaning_in_any_language() {
         let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
         assert!(prompt.contains("Never join or break clauses with a dash"));
-        for filler in ["I mean", "you know", "basically", "嗯", "呃", "即係"] {
-            assert!(prompt.contains(filler), "{filler}");
-        }
-        assert!(prompt.contains("\"No, I don't agree\" keeps \"No\""));
-        assert!(prompt.contains("Output: We should ship on Tuesday"));
+        assert!(prompt.contains("FILLERS (any language)"));
+        assert!(prompt.contains("Judge by meaning, not by a word list"));
+        assert!(prompt.contains("SELF-CORRECTIONS (any language)"));
+        // Few-shot examples in three languages, plus a counter-example that keeps "No"/"sorry".
+        assert!(prompt.contains("Output: The report is due Tuesday"));
+        assert!(prompt.contains("Output: 我哋三點喺大堂等"));
+        assert!(prompt.contains("Output: 我们周四交报告"));
+        assert!(prompt.contains("Output: No, I don't agree, and sorry for the delay, I was sick"));
+        assert!(THOUGHT_AWARE_RULES.contains("in any language, also at the start"));
         assert!(THOUGHT_AWARE_RULES.contains("no dash joins two clauses"));
     }
 

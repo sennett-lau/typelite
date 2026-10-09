@@ -6,12 +6,20 @@ What the prompt says and what the code changes after it. Back to [index](index.m
 
 - Rule 1 gains **DASHES**: never join or break clauses with a dash; use a comma or a period.
   Hyphens stay inside words and ranges.
-- Rule 2 names the fillers and gives the meaning test with three counter-examples ("No, I don't
-  agree", "sorry for the delay", "I like it"). The self-correction markers include
-  "X, no, I mean Y".
-- New examples: a correction with "no sorry I mean", English fillers around plain content, a
-  sentence where "No" and "sorry" are meaningful, and Cantonese 嗯 即係 呃.
-- The thought-aware check list ends with "no filler is left and no dash joins two clauses".
+- Rule 2 has general rules for any language, with no word list. FILLERS: delete words or sounds
+  that only show hesitation, stalling or thinking aloud, anywhere, also at the start; judge by
+  meaning, with counter-examples (an answer "No", an apology, a cause "so", a contrast
+  "actually", a liking "like"). SELF-CORRECTIONS: when the speaker changes their mind about a
+  word, number, name or time, keep only the final version and drop the abandoned part and the
+  correction phrase.
+- New examples in three languages: English hesitation plus "no wait", Cantonese 即係 呃 plus a
+  唔係 correction, Mandarin 那个 嗯 plus a 不对 correction, and an English counter-example where
+  "No" and "sorry" are meaningful.
+- The thought-aware rules name no marker list; the check list ends with "no hesitation sound or
+  thinking-aloud phrase is left in any language, also at the start, and no dash joins two
+  clauses".
+- The Cantonese preset (version 4) says the same in general terms and keeps the tone particles
+  啦 and 呢.
 - The English language preset says to join clauses with commas and periods, not dashes.
 
 ## Dash clean-up (`src-tauri/src/llm/dashes.rs`)
