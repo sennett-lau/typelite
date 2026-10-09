@@ -47,6 +47,9 @@ pub const PILL_BOTTOM_GAP: f64 = 16.0;
 const DEFAULT_PILL_HEIGHT: f64 = 32.0;
 /// How often the cursor is checked against the panel while it is open (click-through).
 const CURSOR_POLL: std::time::Duration = std::time::Duration::from_millis(30);
+/// Plan `ask-panel-select-text`: how long Insert waits after the panel gives key back, so the
+/// window server has moved keyboard focus to the user's app before ⌘V is sent.
+const KEY_RETURN_SETTLE: std::time::Duration = std::time::Duration::from_millis(120);
 /// Room around the panel's reported rectangle that still catches clicks, so its edge and the
 /// first frames of a size change never drop a click on the panel itself.
 pub const HIT_SLOP: f64 = 4.0;
@@ -528,6 +531,9 @@ pub fn close(app: &tauri::AppHandle) -> bool {
     };
     let was_open = state.close();
     if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
+        // Plan `ask-panel-select-text`: give key back first, so keyboard focus is in the
+        // user's app before a new run reads its highlight or pastes.
+        crate::overlay_window::set_key(&window, false);
         let _ = window.hide();
         if was_open {
             let _ = window.emit(PANEL_CLOSED_EVENT, ());
@@ -549,6 +555,19 @@ pub fn is_open(app: &tauri::AppHandle) -> bool {
 pub fn set_ask_cursor(app: tauri::AppHandle, pointer: bool) {
     if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
         crate::overlay_window::set_cursor(&window, pointer);
+    }
+}
+
+/// Plan `ask-panel-select-text`: the page asks for key when the user presses in its text or
+/// highlights some, so ⌘C reaches the page. Typelite is never activated (non-activating panel).
+#[tauri::command]
+pub fn focus_ask_panel(app: tauri::AppHandle) {
+    if !is_open(&app) {
+        return;
+    }
+    if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
+        let key = crate::overlay_window::set_key(&window, true);
+        tracing::debug!("Ask panel: key for copy ({key})");
     }
 }
 
@@ -588,8 +607,9 @@ pub fn set_ask_panel_hit_rect(app: tauri::AppHandle, x: f64, y: f64, width: f64,
     });
 }
 
-/// The panel's Copy button. The page is never focused, so it cannot use the browser clipboard;
-/// the text goes on the clipboard here and stays there (the user asked for it).
+/// The panel's Copy buttons and ⌘C on a highlight (plan `ask-panel-select-text`). Typelite is
+/// never the active app, so the page does not use the browser clipboard or the Edit menu; the
+/// text goes on the clipboard here and stays there (the user asked for it).
 #[tauri::command]
 pub async fn copy_ask_text(text: String) -> Result<(), String> {
     if text.trim().is_empty() {
@@ -617,6 +637,13 @@ pub async fn copy_ask_text(text: String) -> Result<(), String> {
 pub async fn insert_ask_text(app: tauri::AppHandle, text: String) -> Result<(), String> {
     if text.trim().is_empty() {
         return Err("Nothing to insert".to_string());
+    }
+    // Plan `ask-panel-select-text`: if the panel took key for ⌘C, give it back so ⌘V reaches
+    // the user's app, and let the window server settle.
+    if let Some(window) = app.get_webview_window(ASK_WINDOW_LABEL) {
+        if crate::overlay_window::set_key(&window, false) {
+            tokio::time::sleep(KEY_RETURN_SETTLE).await;
+        }
     }
     let paste = crate::output::clipboard::ClipboardOutput::new();
     let result = crate::output::TextOutput::type_text(&paste, &text)

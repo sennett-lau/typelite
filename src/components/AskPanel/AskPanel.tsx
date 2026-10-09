@@ -273,7 +273,8 @@ export function AskPanel({ embedded = false, showHeader = true, title = 'Ask' }:
     void beginDictation()
   }, [beginDictation, dictationState, finishDictation])
 
-  const answer = result?.answer ?? ''
+  // Plan `ask-read-pages`: an unconfirmed web answer has no text; say so instead of nothing.
+  const answer = result?.unconfirmed ? t('askPanel.unconfirmed') : (result?.answer ?? '')
   const needsLiveInfo = !error && result?.output === 'needsLiveInfo'
 
   // Plan `ask-translate-and-live-questions`: "Answer anyway" on a live question answers from the

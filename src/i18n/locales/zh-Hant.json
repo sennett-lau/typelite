@@ -61,6 +61,7 @@
     "couldNotReplace": "此應用不允許替換，結果已在剪貼簿上。",
     "tryReplacingAgain": "再次嘗試替換",
     "errorTitle": "出了點問題",
+    "unconfirmed": "無法從搜尋結果中確認答案。請查看來源。",
     "sources": "來源",
     "sourcesCount_one": "{{count}} 個來源",
     "sourcesCount_other": "{{count}} 個來源",
@@ -69,7 +70,9 @@
     "sourceOpened": "已開啟來源 {{n}}",
     "sourceLinkCopied": "已複製來源 {{n}} 的連結",
     "copySourceLink": "複製來源 {{n}} 的連結",
-    "openSource": "開啟來源 {{n}}"
+    "openSource": "開啟來源 {{n}}",
+    "translatedTo": "已翻譯成{{language}}",
+    "translation": "翻譯"
   },
   "errors": {
     "stt_timeout": "語音服務在 {{details}} 內沒有響應。請確認服務正在執行，或換用更快的服務。",
@@ -459,8 +462,8 @@
     "askAnything": "Ask Anything",
     "askAnythingDesc": "語音提問，一次回答。不帶聊天曆史。",
     "tryAsk": "試用 Ask",
-    "selectedTextContext": "Ask/潤色可讀取選中文本",
-    "selectedTextContextDesc": "用於對選中文本提問、總結、改寫或翻譯。會增加 AI 用量。",
+    "selectedTextContext": "聽寫時讀取選中文本",
+    "selectedTextContextDesc": "聽寫會讀取選中的文字並作為上下文傳給 AI，可以對它說「改短一點」。會增加 AI 用量。提問和翻譯總會讀取選中文字。",
     "targetLanguage": "翻譯為",
     "aboutDescription": "開源 AI 語音輸入工具。說話即寫作 — 即時將語音轉化為潤色文本。",
     "openSource": "開源",

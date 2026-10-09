@@ -10,6 +10,10 @@ now pointing to Settings.
 
 Status: building — 2026-10-02
 
+Superseded in part by [`ask-read-pages`](../2026-10-08-ask-read-pages/index.md): upcoming-event
+answers no longer use the literal extraction; the result pages are read and the answer's dates
+are checked instead.
+
 This plan replaces the "Later: web search" section and the "no web search" non-goal of plan
 `ask-translate-and-live-questions`: the default is a self-hosted SearXNG, not a hosted service.
 
