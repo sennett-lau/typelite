@@ -47,6 +47,7 @@ vi.mock('../../../lib/tauri', () => ({
   setAskPanelHitRect: vi.fn(),
   askPanelLimits: vi.fn(() => Promise.resolve({ maxWidth: 1008, maxHeight: 443 })),
   copyAskText: vi.fn(),
+  focusAskPanel: vi.fn(() => Promise.resolve()),
   insertAskText: vi.fn(),
   answerAskAnyway: vi.fn(),
   startAskDictation: vi.fn(),

@@ -8,6 +8,7 @@ import type { AskDictationResult } from '../../../lib/tauri'
 
 vi.mock('../../../lib/tauri', () => ({
   copyAskText: vi.fn(),
+  focusAskPanel: vi.fn(() => Promise.resolve()),
   insertAskText: vi.fn(),
   openAskSource: vi.fn(() => Promise.resolve()),
   openSettingsPane: vi.fn(() => Promise.resolve()),

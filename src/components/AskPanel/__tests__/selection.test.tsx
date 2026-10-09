@@ -3,11 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import globalsCss from '../../../styles/globals.css?raw'
 import i18n from '../../../i18n'
 import { AskAnswerPanel, AskSourcesColumn } from '../AskAnswerPanel'
-import { selectedTextWithin, textToCopy } from '../selection'
-import { copyAskText, openAskSource } from '../../../lib/tauri'
+import { isCopyShortcut, isSelectAllShortcut, selectedTextWithin, textToCopy } from '../selection'
+import { copyAskText, focusAskPanel, openAskSource } from '../../../lib/tauri'
 
 vi.mock('../../../lib/tauri', () => ({
   copyAskText: vi.fn(),
+  focusAskPanel: vi.fn(() => Promise.resolve()),
   insertAskText: vi.fn(),
   openAskSource: vi.fn(() => Promise.resolve()),
   openSettingsPane: vi.fn(() => Promise.resolve()),
@@ -100,13 +101,56 @@ describe('selectable answer', () => {
     expect(rule?.[1]).toContain('user-select: text')
   })
 
-  it('a highlight in an answer adds no button (⌘C copies it)', () => {
+  it('a highlight makes the panel key; ⌘C copies just the highlight', () => {
     render(<AskAnswerPanel content={content()} onClose={vi.fn()} onAnswerAnyway={vi.fn()} />)
     select(screen.getByTestId('ask-panel-answer'), ANSWER.indexOf('same effect'), 11)
-    expect(screen.queryAllByRole('button').map((b) => b.textContent)).not.toContain(
-      'Copy selection',
+    expect(focusAskPanel).toHaveBeenCalled()
+    expect(copyAskText).not.toHaveBeenCalled()
+
+    const event = new KeyboardEvent('keydown', { key: 'c', metaKey: true, cancelable: true })
+    document.dispatchEvent(event)
+    expect(copyAskText).toHaveBeenCalledWith('same effect')
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('⌘C without a highlight in the panel, or C alone, copies nothing', () => {
+    render(<AskAnswerPanel content={content()} onClose={vi.fn()} onAnswerAnyway={vi.fn()} />)
+    const outside = document.createElement('p')
+    outside.textContent = 'outside'
+    document.body.append(outside)
+    select(outside, 0, 7)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', metaKey: true }))
+    select(screen.getByTestId('ask-panel-answer'), 0, 7)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'c' }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'c', metaKey: true, shiftKey: true }),
     )
     expect(copyAskText).not.toHaveBeenCalled()
+    outside.remove()
+  })
+
+  it('⌘A highlights the whole answer', () => {
+    render(<AskAnswerPanel content={content()} onClose={vi.fn()} onAnswerAnyway={vi.fn()} />)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true }))
+    expect(document.getSelection()?.toString()).toBe(ANSWER)
+  })
+
+  it('a press in the text makes the panel key; a press on a button does not', () => {
+    render(<AskAnswerPanel content={content()} onClose={vi.fn()} onAnswerAnyway={vi.fn()} />)
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Close (Esc)' }))
+    expect(focusAskPanel).not.toHaveBeenCalled()
+    fireEvent.mouseDown(screen.getByTestId('ask-panel-answer'))
+    expect(focusAskPanel).toHaveBeenCalledTimes(1)
+  })
+
+  it('recognises only plain ⌘C and ⌘A', () => {
+    const key = (init: KeyboardEventInit) => new KeyboardEvent('keydown', init)
+    expect(isCopyShortcut(key({ key: 'c', metaKey: true }))).toBe(true)
+    expect(isCopyShortcut(key({ key: 'C', metaKey: true }))).toBe(true)
+    expect(isCopyShortcut(key({ key: 'c', ctrlKey: true }))).toBe(false)
+    expect(isCopyShortcut(key({ key: 'c', metaKey: true, altKey: true }))).toBe(false)
+    expect(isSelectAllShortcut(key({ key: 'a', metaKey: true }))).toBe(true)
+    expect(isSelectAllShortcut(key({ key: 'a' }))).toBe(false)
   })
 
   it('the could-not-replace Copy button copies the highlight, else the whole answer', () => {

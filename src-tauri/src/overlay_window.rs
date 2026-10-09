@@ -255,6 +255,44 @@ pub fn set_cursor(window: &tauri::WebviewWindow, pointer: bool) {
     let _ = (window, pointer);
 }
 
+/// Plan `ask-panel-select-text`: makes an overlay panel the key window (`key`), or gives key
+/// back (`!key`), without ever activating Typelite. A non-activating `NSPanel` may be key while
+/// another app stays active: key presses (⌘C) then reach its web view, while the user's app
+/// stays frontmost. Giving key back orders the panel out and in again, so the window server
+/// returns keyboard focus to the active app's window. Returns whether the panel was key before
+/// the call (`!key`) or is key after it (`key`). Waits for the main thread (up to 500 ms);
+/// safe to call on it. Only a swapped panel is made key; a plain window ("kept as a window")
+/// is left alone. Does nothing off macOS.
+pub fn set_key(window: &tauri::WebviewWindow, key: bool) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let target = window.clone();
+        let job = move || {
+            let result = target
+                .ns_window()
+                // SAFETY: the live NSWindow of this window, on the main thread.
+                .map(|ns_window| unsafe { mac::set_key(ns_window.cast(), key) })
+                .unwrap_or(false);
+            let _ = sender.send(result);
+        };
+        // SAFETY: a plain libc query.
+        if unsafe { mac::pthread_main_np() } != 0 {
+            job();
+        } else if window.run_on_main_thread(job).is_err() {
+            return false;
+        }
+        receiver
+            .recv_timeout(std::time::Duration::from_millis(500))
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (window, key);
+        false
+    }
+}
+
 /// Tells the overlay's web view the mouse moved far outside it, so WebKit drops its `:hover`
 /// state. Call it before the window starts ignoring the mouse: from then on WebKit gets no exit
 /// event and would keep the last element hovered. Does nothing off macOS.
@@ -848,6 +886,53 @@ mod mac {
     #[link(name = "CoreFoundation", kind = "framework")]
     extern "C" {
         static kCFBooleanTrue: *const c_void;
+    }
+
+    extern "C" {
+        pub(super) fn pthread_main_np() -> i32;
+    }
+
+    /// Sets the `focusable` variable that `canBecomeKeyWindow` answers from (Tauri's and our
+    /// panel class share it).
+    unsafe fn set_focusable_ivar(window: &AnyObject, focusable: bool) {
+        if let Some(ivar) = window.class().instance_variable(FOCUSABLE_IVAR) {
+            // SAFETY: the variable is a `Bool` (see `is_focusable`); main thread only.
+            unsafe { *ivar.load_ptr::<Bool>(window) = Bool::new(focusable) };
+        }
+    }
+
+    /// `super::set_key` on macOS.
+    ///
+    /// # Safety
+    /// Main thread; `ns_window` is a live NSWindow.
+    pub(super) unsafe fn set_key(ns_window: *mut AnyObject, key: bool) -> bool {
+        // SAFETY: the caller passes a live NSWindow and runs on the main thread.
+        let Some(window) = (unsafe { ns_window.as_ref() }) else {
+            return false;
+        };
+        unsafe {
+            if key {
+                let is_panel: Bool = msg_send![window, isKindOfClass: ns_panel()];
+                if !is_panel.as_bool() {
+                    return false;
+                }
+                set_focusable_ivar(window, true);
+                let _: () = msg_send![window, makeKeyWindow];
+                let now: Bool = msg_send![window, isKeyWindow];
+                now.as_bool()
+            } else {
+                set_focusable_ivar(window, false);
+                let was: Bool = msg_send![window, isKeyWindow];
+                if was.as_bool() {
+                    let visible: Bool = msg_send![window, isVisible];
+                    let _: () = msg_send![window, orderOut: std::ptr::null_mut::<AnyObject>()];
+                    if visible.as_bool() {
+                        let _: () = msg_send![window, orderFrontRegardless];
+                    }
+                }
+                was.as_bool()
+            }
+        }
     }
 
     /// Plan `ask-hover`: sets the hand or arrow cursor. macOS shows only the active app's cursor

@@ -2,7 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { AlertTriangle, Check, ChevronRight, ExternalLink, Link2, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
+import {
+  copyAskText,
+  focusAskPanel,
+  insertAskText,
+  openAskSource,
+  openSettingsPane,
+} from '../../lib/tauri'
 import type { AskDictationResult, AskPanelLimits, AskSource } from '../../lib/tauri'
 import {
   FALLBACK_LIMITS,
@@ -13,7 +19,14 @@ import {
   panelWidth,
 } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
-import { textToCopy, useSelectionWithin } from './selection'
+import {
+  isCopyShortcut,
+  isSelectAllShortcut,
+  pressStartsSelection,
+  selectedTextWithin,
+  textToCopy,
+  useSelectionWithin,
+} from './selection'
 
 /** What the panel shows: an Ask result, or an error message. */
 export type AskPanelContent =
@@ -384,8 +397,34 @@ export function AskAnswerPanel({
   }, [])
 
   // Plan `ask-panel-select-text`: text in the panel can be highlighted and copied with ⌘C.
+  // The panel is key only after a press in its text or a highlight in it (Typelite is never
+  // activated), and ⌘C copies through the app: the Edit menu's Copy is not ours to use while
+  // another app is active.
   const panelRef = useRef<HTMLElement | null>(null)
   const selected = useSelectionWithin(panelRef)
+  useEffect(() => {
+    if (selected) focusAskPanel().catch(() => {})
+  }, [selected])
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isCopyShortcut(event)) {
+        const value = selectedTextWithin(panelRef.current, document.getSelection())
+        if (!value) return
+        event.preventDefault()
+        copyAskText(value).catch(() => {})
+      } else if (isSelectAllShortcut(event)) {
+        const answer = panelRef.current?.querySelector('.ask-glass-answer')
+        if (!answer) return
+        event.preventDefault()
+        document.getSelection()?.selectAllChildren(answer)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+  const onPanelMouseDown = useCallback((event: React.MouseEvent) => {
+    if (pressStartsSelection(event.target)) focusAskPanel().catch(() => {})
+  }, [])
 
   // The couldn't-replace result's button: its text is already on the clipboard; pressing it
   // copies again (only the highlighted part when there is one).
@@ -512,6 +551,7 @@ export function AskAnswerPanel({
       aria-label={t('askPanel.label')}
       data-testid="ask-floating-note"
       className="ask-glass"
+      onMouseDown={onPanelMouseDown}
       ref={(element: HTMLElement | null) => {
         sectionRef.current = element
         panelRef.current = element
