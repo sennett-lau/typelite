@@ -1,0 +1,482 @@
+{
+ "base-ctx256": {
+  "summary": {
+   "check_cpu_ms_p50": 11.057,
+   "check_ms_max": 47.316540999999994,
+   "check_ms_p50": 28.420707999999998,
+   "check_ms_p90": 36.9835,
+   "false_reject_rate": 0.11111111111111116,
+   "load_ms": 137,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 256,
+    "prompt": "{name}.",
+    "sensitivity": "Normal",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 166.765625,
+   "rss_mb_before_load": 9.234375,
+   "rss_mb_peak": 180.84375,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.18254629726579133,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "24/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.6189999999999998,
+   "idle_cpu_percent_of_realtime": 0.004365,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.676584
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Daniel",
+    "text": "Hey Sam.",
+    "heard": [
+     " Hason."
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Reed (English (US))",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace him."
+    ]
+   }
+  ]
+ },
+ "base-ctxfull": {
+  "summary": {
+   "check_cpu_ms_p50": 11.911,
+   "check_ms_max": 125.70766599999999,
+   "check_ms_p50": 78.468875,
+   "check_ms_p90": 92.772334,
+   "false_reject_rate": 0.03703703703703709,
+   "load_ms": 117,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 0,
+    "prompt": "{name}.",
+    "sensitivity": "Normal",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 168.734375,
+   "rss_mb_before_load": 9.203125,
+   "rss_mb_peak": 183.015625,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.19833588116627923,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "26/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.663,
+   "idle_cpu_percent_of_realtime": 0.004438333333333333,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.70825
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace Sam."
+    ]
+   }
+  ]
+ },
+ "base-fullprompt": {
+  "summary": {
+   "check_cpu_ms_p50": 12.097,
+   "check_ms_max": 136.132166,
+   "check_ms_p50": 37.28625,
+   "check_ms_p90": 46.198084,
+   "false_reject_rate": 0.33333333333333337,
+   "load_ms": 267,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 512,
+    "prompt": "Hey {name}.",
+    "sensitivity": "Normal",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 168.1875,
+   "rss_mb_before_load": 9.203125,
+   "rss_mb_peak": 179.71875,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.1879030287800417,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "18/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.653,
+   "idle_cpu_percent_of_realtime": 0.004421666666666667,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.659834
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Samantha",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like to?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Daniel",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Karen",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the where the life"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Moira",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Rishi",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Tessa",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Reed (English (US))",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Shelley (English (US))",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace him."
+    ]
+   }
+  ]
+ },
+ "base-high": {
+  "summary": {
+   "check_cpu_ms_p50": 11.465,
+   "check_ms_max": 117.156375,
+   "check_ms_p50": 37.545375,
+   "check_ms_p90": 50.591249999999995,
+   "false_reject_rate": 0.03703703703703709,
+   "load_ms": 109,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 512,
+    "prompt": "{name}.",
+    "sensitivity": "High",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 167.6875,
+   "rss_mb_before_load": 9.203125,
+   "rss_mb_peak": 183.203125,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.19728882653096838,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "26/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.552,
+   "idle_cpu_percent_of_realtime": 0.004253333333333334,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.551125
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace him."
+    ]
+   }
+  ]
+ },
+ "base-low": {
+  "summary": {
+   "check_cpu_ms_p50": 11.190999999999999,
+   "check_ms_max": 69.13912499999999,
+   "check_ms_p50": 35.922999999999995,
+   "check_ms_p90": 45.180875,
+   "false_reject_rate": 0.03703703703703709,
+   "load_ms": 219,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 512,
+    "prompt": "{name}.",
+    "sensitivity": "Low",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 167.984375,
+   "rss_mb_before_load": 9.1875,
+   "rss_mb_peak": 181.203125,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.1835626382984664,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "26/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.655,
+   "idle_cpu_percent_of_realtime": 0.004425,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.8093329999999996
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace him."
+    ]
+   }
+  ]
+ },
+ "base-noprompt": {
+  "summary": {
+   "check_cpu_ms_p50": 12.011000000000001,
+   "check_ms_max": 73.335542,
+   "check_ms_p50": 38.857457999999994,
+   "check_ms_p90": 50.218332999999994,
+   "false_reject_rate": 0.14814814814814814,
+   "load_ms": 129,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 512,
+    "prompt": null,
+    "sensitivity": "Normal",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 167.015625,
+   "rss_mb_before_load": 9.21875,
+   "rss_mb_peak": 179.078125,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.2021778736414466,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "23/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.6510000000000002,
+   "idle_cpu_percent_of_realtime": 0.004418333333333333,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.652875
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Daniel",
+    "text": "Hey Sam.",
+    "heard": [
+     " Hayson"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Reed (English (US))",
+    "text": "Hey Sam.",
+    "heard": [
+     " HSM"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Shelley (English (US))",
+    "text": "Hey Sam.",
+    "heard": [
+     " HSM"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace him."
+    ]
+   }
+  ]
+ },
+ "base-normal": {
+  "summary": {
+   "check_cpu_ms_p50": 12.024999999999999,
+   "check_ms_max": 172.74225,
+   "check_ms_p50": 36.725750000000005,
+   "check_ms_p90": 51.372208,
+   "false_reject_rate": 0.03703703703703709,
+   "load_ms": 157,
+   "model": "ggml-base-q5_1.bin",
+   "options": {
+    "audio_ctx": 512,
+    "prompt": "{name}.",
+    "sensitivity": "Normal",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 167.984375,
+   "rss_mb_before_load": 9.1875,
+   "rss_mb_peak": 183.625,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.1834202388680641,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "26/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.549,
+   "idle_cpu_percent_of_realtime": 0.004248333333333333,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.549667
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Peace him."
+    ]
+   }
+  ]
+ },
+ "tiny-normal": {
+  "summary": {
+   "check_cpu_ms_p50": 12.373000000000001,
+   "check_ms_max": 128.33825,
+   "check_ms_p50": 27.71875,
+   "check_ms_p90": 36.207917,
+   "false_reject_rate": 0.18518518518518523,
+   "load_ms": 121,
+   "model": "ggml-tiny-q5_1.bin",
+   "options": {
+    "audio_ctx": 512,
+    "prompt": "{name}.",
+    "sensitivity": "Normal",
+    "threads": 4
+   },
+   "other_false_accepts": "0/47",
+   "rss_mb_after_load": 122.96875,
+   "rss_mb_before_load": 9.171875,
+   "rss_mb_peak": 141.15625,
+   "talk_checks": 9,
+   "talk_cpu_percent_of_realtime": 0.1755366155005968,
+   "talk_false_wakes": 0,
+   "talk_seconds": 71.62950000000001,
+   "wake_accepted": "22/27"
+  },
+  "idle": {
+   "idle_candidates": 0,
+   "idle_cpu_ms": 2.6359999999999997,
+   "idle_cpu_percent_of_realtime": 0.004393333333333332,
+   "idle_seconds": 60,
+   "idle_wall_ms": 2.6384580000000004
+  },
+  "errors": [
+   {
+    "label": "wake",
+    "voice": "Reed (English (US))",
+    "text": "Hey Sam.",
+    "heard": [
+     " Peace, Sam. Peace, Sam. Peace, Sam. Peace"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Reed (English (US))",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Shelley (English (US))",
+    "text": "Hey Sam, what's the weather like today?",
+    "heard": [
+     " Sam. What's the weather like?"
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Tingting",
+    "text": "嘿 Sam",
+    "heard": [
+     " Please Sam."
+    ]
+   },
+   {
+    "label": "wake",
+    "voice": "Sinji",
+    "text": "嘿 Sam",
+    "heard": [
+     " He's him."
+    ]
+   }
+  ]
+ }
+}

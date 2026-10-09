@@ -570,7 +570,27 @@
     "polishStyleCleanDetail": "Default",
     "polishStyleStructuredDetail": "Lists",
     "polishStyleProfessionalDetail": "Formal",
-    "search": "Search"
+    "search": "Search",
+    "handsFree": {
+      "title": "Hands-free",
+      "enable": "Hands-free mode",
+      "enableHelp": "Say “Hey {{name}}”, then your request. While this is on the microphone stays open, so macOS shows its microphone indicator. Nothing is sent anywhere before the wake phrase.",
+      "wakeName": "Wake name",
+      "wakeNameHelp": "The name you say after “Hey”",
+      "sensitivity": "Sensitivity",
+      "sensitivityHelp": "Higher wakes more easily, but may wake by mistake",
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "needsModel": "Hands-free needs a small speech model ({{size}} MB).",
+      "download": "Download",
+      "downloading": "Downloading the wake model… {{percent}}%",
+      "downloadFailed": "The download failed. Try again.",
+      "cancel": "Cancel",
+      "listening": "Listening for “Hey {{name}}”",
+      "micError": "Could not open the microphone.",
+      "requests": "After “Hey {{name}}”, ask a question, say “translate …”, or say “type …” to write into the app. Recording stops when you pause."
+    }
   },
   "contextFamilies": {
     "email": "Email",

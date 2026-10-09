@@ -570,7 +570,27 @@
     "polishStyleCleanDetail": "Predeterminado",
     "polishStyleStructuredDetail": "Listas",
     "polishStyleProfessionalDetail": "Formal",
-    "search": "Búsqueda"
+    "search": "Búsqueda",
+    "handsFree": {
+      "title": "Manos libres",
+      "enable": "Modo manos libres",
+      "enableHelp": "Di «Hey {{name}}» y luego tu petición. Mientras esté activado, el micrófono permanece abierto, así que macOS muestra su indicador de micrófono. No se envía nada antes de la frase de activación.",
+      "wakeName": "Nombre de activación",
+      "wakeNameHelp": "El nombre que dices después de «Hey»",
+      "sensitivity": "Sensibilidad",
+      "sensitivityHelp": "Más alta se activa con más facilidad, pero puede activarse por error",
+      "low": "Baja",
+      "normal": "Normal",
+      "high": "Alta",
+      "needsModel": "El modo manos libres necesita un pequeño modelo de voz ({{size}} MB).",
+      "download": "Descargar",
+      "downloading": "Descargando el modelo de activación… {{percent}} %",
+      "downloadFailed": "La descarga falló. Inténtalo de nuevo.",
+      "cancel": "Cancelar",
+      "listening": "Escuchando «Hey {{name}}»",
+      "micError": "No se pudo abrir el micrófono.",
+      "requests": "Después de «Hey {{name}}», haz una pregunta, di «translate …» o di «type …» para escribir en la app. La grabación se detiene cuando haces una pausa."
+    }
   },
   "contextFamilies": {
     "email": "Correo",

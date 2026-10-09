@@ -38,7 +38,8 @@ SOFTWARE.
 
 ## Speech models
 
-Whisper model files downloaded by Quick setup come from the whisper.cpp Hugging Face repository
+Whisper model files downloaded by Quick setup and by Hands-free mode (the base model used for
+the wake phrase) come from the whisper.cpp Hugging Face repository
 and are released by OpenAI under the MIT License.
 
 ## AI models

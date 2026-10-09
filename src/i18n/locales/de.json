@@ -570,7 +570,27 @@
     "polishStyleCleanDetail": "Standard",
     "polishStyleStructuredDetail": "Listen",
     "polishStyleProfessionalDetail": "Formell",
-    "search": "Suche"
+    "search": "Suche",
+    "handsFree": {
+      "title": "Freihändig",
+      "enable": "Freihändiger Modus",
+      "enableHelp": "Sag „Hey {{name}}“ und dann deine Anfrage. Solange das an ist, bleibt das Mikrofon offen, daher zeigt macOS die Mikrofonanzeige. Vor dem Aktivierungswort wird nichts gesendet.",
+      "wakeName": "Aktivierungsname",
+      "wakeNameHelp": "Der Name, den du nach „Hey“ sagst",
+      "sensitivity": "Empfindlichkeit",
+      "sensitivityHelp": "Höher reagiert leichter, kann aber versehentlich auslösen",
+      "low": "Niedrig",
+      "normal": "Normal",
+      "high": "Hoch",
+      "needsModel": "Der freihändige Modus braucht ein kleines Sprachmodell ({{size}} MB).",
+      "download": "Laden",
+      "downloading": "Aktivierungsmodell wird geladen … {{percent}} %",
+      "downloadFailed": "Der Download ist fehlgeschlagen. Versuch es noch einmal.",
+      "cancel": "Abbrechen",
+      "listening": "Wartet auf „Hey {{name}}“",
+      "micError": "Das Mikrofon konnte nicht geöffnet werden.",
+      "requests": "Nach „Hey {{name}}“ stell eine Frage, sag „translate …“ oder sag „type …“, um in die App zu schreiben. Die Aufnahme endet, wenn du eine Pause machst."
+    }
   },
   "contextFamilies": {
     "email": "E-Mail",

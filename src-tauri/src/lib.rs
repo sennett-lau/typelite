@@ -6,6 +6,7 @@ pub mod copy_pill;
 pub mod credentials;
 pub mod dictionary_io;
 pub mod error;
+pub mod hands_free;
 pub mod hotkey;
 #[cfg(target_os = "linux")]
 mod linux_x11;
@@ -1229,6 +1230,9 @@ pub fn run() {
             // Plan `auto-update`: the update status and the automatic checks.
             updates::start(&app_handle);
             app.manage(commands::ask::AskDictationState::default());
+            // Plan `hands-free-mode`: the wake-phrase listener (started below, when it is on).
+            app.manage(hands_free::runtime::HandsFreeState::default());
+            app.manage(commands::hands_free::HandsFreeSetupState::default());
             app.manage(ask_panel::AskPanelState::default());
             app.manage(commands::audio::MicMonitorState::default());
             app.manage(HotkeyModeCache(Arc::new(Mutex::new(
@@ -1326,6 +1330,11 @@ pub fn run() {
                                 }
                             }
                         });
+                    }
+                    "hands_free" => {
+                        tauri::async_runtime::spawn(hands_free::runtime::toggle_from_tray(
+                            app.clone(),
+                        ));
                     }
                     "settings" => {
                         if let Some(window) = app.get_webview_window("main") {
@@ -1458,6 +1467,15 @@ pub fn run() {
                 pipeline.pre_warm().await;
             });
 
+            // Plan `hands-free-mode`: start listening if Hands-free mode is on. Off the setup
+            // thread: opening the microphone and loading the wake model take a moment.
+            {
+                let handle = app_handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    commands::hands_free::apply_saved(&handle).await;
+                });
+            }
+
             let startup_args = std::env::args().collect::<Vec<_>>();
             if let Some(action) = parse_cli_action(&startup_args) {
                 dispatch_cli_action(&app_handle, action);
@@ -1471,6 +1489,9 @@ pub fn run() {
             abort_recording,
             copy_offer_to_clipboard,
             dismiss_copy_offer,
+            commands::hands_free::get_hands_free_status,
+            commands::hands_free::download_hands_free_model,
+            commands::hands_free::cancel_hands_free_model_download,
             commands::ask::ask_anything,
             commands::ask::start_ask_dictation,
             commands::ask::stop_ask_dictation,
@@ -1600,6 +1621,11 @@ pub fn run() {
                 if let Some(stats) = _app.try_state::<speed_stats::SpeedStats>() {
                     stats.finish();
                     stats.save();
+                }
+                // Plan `hands-free-mode`: release the microphone and free the wake model (same
+                // Metal reason as below).
+                if let Some(hands_free) = _app.try_state::<hands_free::runtime::HandsFreeState>() {
+                    hands_free.stop();
                 }
                 // Plan `quick-speech-setup`: free the built-in speech model before exit, or GGML's
                 // Metal cleanup aborts the process.
