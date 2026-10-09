@@ -2,7 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { AlertTriangle, Check, ChevronRight, ExternalLink, Link2, Loader2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { copyAskText, insertAskText, openAskSource, openSettingsPane } from '../../lib/tauri'
+import {
+  copyAskText,
+  focusAskPanel,
+  insertAskText,
+  openAskSource,
+  openSettingsPane,
+} from '../../lib/tauri'
 import type { AskDictationResult, AskPanelLimits, AskSource } from '../../lib/tauri'
 import {
   FALLBACK_LIMITS,
@@ -14,6 +20,14 @@ import {
 } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
 import { targetLanguageLabel } from '../../lib/constants'
+import {
+  isCopyShortcut,
+  isSelectAllShortcut,
+  pressStartsSelection,
+  selectedTextWithin,
+  textToCopy,
+  useSelectionWithin,
+} from './selection'
 
 /** What the panel shows: an Ask result, or an error message. */
 export type AskPanelContent =
@@ -241,7 +255,11 @@ export function AskSourcesColumn({
               className={`ask-source-card${highlighted === source.number ? ' is-highlighted' : ''}`}
               data-testid={`ask-source-${source.number}`}
               data-source-number={source.number}
-              onClick={() => open(source)}
+              onClick={() => {
+                // Plan `ask-panel-select-text`: a drag that highlights a title is not a click.
+                if (document.getSelection()?.toString().trim()) return
+                open(source)
+              }}
             >
               <span className="ask-source-site">
                 <SiteMark url={source.url} />
@@ -382,19 +400,51 @@ export function AskAnswerPanel({
     setHighlighted(n)
   }, [])
 
-  // Only the couldn't-replace result has a copy button, and its text is already on the
-  // clipboard; pressing it copies again.
+  // Plan `ask-panel-select-text`: text in the panel can be highlighted and copied with ⌘C.
+  // The panel is key only after a press in its text or a highlight in it (Typelite is never
+  // activated), and ⌘C copies through the app: the Edit menu's Copy is not ours to use while
+  // another app is active.
+  const panelRef = useRef<HTMLElement | null>(null)
+  const selected = useSelectionWithin(panelRef)
+  useEffect(() => {
+    if (selected) focusAskPanel().catch(() => {})
+  }, [selected])
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isCopyShortcut(event)) {
+        const value = selectedTextWithin(panelRef.current, document.getSelection())
+        if (!value) return
+        event.preventDefault()
+        copyAskText(value).catch(() => {})
+      } else if (isSelectAllShortcut(event)) {
+        const answer = panelRef.current?.querySelector('.ask-glass-answer')
+        if (!answer) return
+        event.preventDefault()
+        document.getSelection()?.selectAllChildren(answer)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+  const onPanelMouseDown = useCallback((event: React.MouseEvent) => {
+    if (pressStartsSelection(event.target)) focusAskPanel().catch(() => {})
+  }, [])
+
+  // The couldn't-replace result's button: its text is already on the clipboard; pressing it
+  // copies again (only the highlighted part when there is one).
   const copy = useCallback(() => {
-    if (!text) return
-    copyAskText(text).catch(() => {})
-  }, [text])
+    const value = textToCopy(selected, text)
+    if (!value) return
+    copyAskText(value).catch(() => {})
+  }, [selected, text])
 
   const copyTranslation = useCallback(() => {
-    if (!text) return
-    copyAskText(text)
+    const value = textToCopy(selected, text)
+    if (!value) return
+    copyAskText(value)
       .then(() => setCopiedNow(true))
       .catch(() => {})
-  }, [text])
+  }, [selected, text])
 
   const insert = useCallback(() => {
     if (!text || inserting) return
@@ -564,7 +614,11 @@ export function AskAnswerPanel({
       aria-label={t('askPanel.label')}
       data-testid="ask-floating-note"
       className="ask-glass"
-      ref={sectionRef}
+      onMouseDown={onPanelMouseDown}
+      ref={(element: HTMLElement | null) => {
+        sectionRef.current = element
+        panelRef.current = element
+      }}
       initial={false}
       animate={{ width }}
       transition={transition}

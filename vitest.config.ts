@@ -8,5 +8,7 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     maxWorkers: 4,
     setupFiles: ['src/test-setup.ts'],
+    // Plan `ask-panel-select-text`: a test reads globals.css (?raw) to check selectable styles.
+    css: { include: [/globals\.css/] },
   },
 })

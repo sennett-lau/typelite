@@ -842,6 +842,14 @@ export async function closeAskPanel(): Promise<void> {
   return invoke('close_ask_panel')
 }
 
+/**
+ * Plan `ask-panel-select-text`: makes the panel the key window (Typelite stays in the
+ * background), so ⌘C reaches the page.
+ */
+export async function focusAskPanel(): Promise<void> {
+  return invoke('focus_ask_panel')
+}
+
 /** Reports the panel's height; the window keeps its bottom edge above the pill. */
 export async function resizeAskPanel(width: number, height: number): Promise<void> {
   return invoke('resize_ask_panel', { width, height })
