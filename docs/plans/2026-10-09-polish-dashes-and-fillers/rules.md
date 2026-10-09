@@ -6,7 +6,9 @@ What the prompt says and what the code changes after it. Back to [index](index.m
 
 - Rule 1 gains **DASHES**: inside a sentence, never join or break clauses with a dash; use a
   comma or a period. Hyphens stay inside words and ranges. The rule says it does not change
-  rule 3 (lists), because without that the model wrote enumerations as one line.
+  rule 3 (lists), because without that the model wrote enumerations as one line. For the same
+  reason the examples' heading says only a single sentence stays on one line, and one Chinese
+  example turns 先/然后/最后 into numbered lines.
 - Rule 2 has general rules for any language, with no word list. FILLERS: delete words or sounds
   that only show hesitation, stalling or thinking aloud, anywhere, also at the start; judge by
   meaning, with counter-examples (an answer "No", an apology, a cause "so", a contrast
