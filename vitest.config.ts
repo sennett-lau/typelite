@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
     maxWorkers: 4,
     setupFiles: ['src/test-setup.ts'],
     // Plan `ask-panel-select-text`: a test reads globals.css (?raw) to check selectable styles.

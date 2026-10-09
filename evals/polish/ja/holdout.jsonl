@@ -1,0 +1,2 @@
+{"id":"ja-h01","input":"えーとバージョン二点一にアップデートしてください","expected":"バージョン2.1にアップデートしてください","must_contain":["2.1"],"must_not_contain":["えーと"],"tags":["filler","numbers"],"split":"holdout"}
+{"id":"ja-h02","input":"会議は月曜日いや火曜日にしましょう","expected":"会議は火曜日にしましょう","must_contain":["火曜日"],"must_not_contain":["月曜日"],"tags":["self-correction"],"split":"holdout"}

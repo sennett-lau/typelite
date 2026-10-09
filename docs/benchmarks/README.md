@@ -13,6 +13,7 @@ with its decision; it does not change the application-overhead baseline.
 | [Baseline data](baseline.json) | Raw samples and provenance, usable with the benchmark runner's `--compare`. |
 | [Methodology](methodology.md) | Workloads, timing boundaries, statistics and limitations. |
 | [Report template](REPORT_TEMPLATE.md) | Standard report for each performance PR. |
+| [Language evaluations](reports/2026-10-09-language-evals/README.md) | First polish and speech quality baseline per language (`evals/`). |
 | [Built-in Chinese variants](reports/2026-10-09-builtin-chinese-variants/README.md) | Cantonese output comes from the Hong Kong language's instructions, not the models. |
 | [Whisper encoder window](reports/2026-10-05-whisper-audio-ctx/README.md) | Built-in speech about twice as fast on short dictations. |
 | [Chosen microphone](reports/2026-10-06-mic-device-cache/README.md) | Recording starts about 0.28 s sooner with a mic chosen in Settings. |

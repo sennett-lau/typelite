@@ -38,7 +38,8 @@
     "presets:index": "node scripts/language-presets.mjs",
     "presets:check": "node scripts/language-presets.mjs --check",
     "docs:cards": "node scripts/docs-cards.mjs",
-    "docs:check": "node scripts/docs-cards.mjs --check"
+    "docs:check": "node scripts/docs-cards.mjs --check && node scripts/evals/cli.mjs check",
+    "eval": "node scripts/evals/cli.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.11.0",

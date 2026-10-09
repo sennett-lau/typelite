@@ -1,0 +1,8 @@
+{"id":"ja-001","input":"えーと明日の会議は三時からです","expected":"明日の会議は三時からです","accept":["明日の会議は3時からです"],"must_contain":["明日","会議"],"must_not_contain":["えーと"],"tags":["filler"],"split":"dev"}
+{"id":"ja-002","input":"資料は田中さんに送ってください違う佐藤さんに送ってください","expected":"資料は佐藤さんに送ってください","must_contain":["佐藤"],"must_not_contain":["田中"],"tags":["self-correction"],"split":"dev"}
+{"id":"ja-003","input":"あのー売上が十二点五パーセント増えました","expected":"売上が12.5%増えました","accept":["売上が12.5パーセント増えました"],"must_contain":["12.5"],"must_not_contain":["あのー"],"tags":["filler","numbers"],"split":"dev"}
+{"id":"ja-004","input":"今日のタスクは三つあります一つ目はテスト二つ目はレビュー三つ目はリリースです","expected":"今日のタスクは三つあります。\n1. テスト\n2. レビュー\n3. リリース","accept":["今日のタスクは三つあります：\n1. テスト\n2. レビュー\n3. リリース"],"tags":["list","newline"],"split":"dev"}
+{"id":"ja-005","input":"このバグはもう直りましたか","expected":"このバグはもう直りましたか？","accept":["このバグはもう直りましたか。"],"must_contain":["バグ"],"tags":["punctuation"],"split":"dev"}
+{"id":"ja-006","input":"昨日サーバーが落ちました今朝復旧しました","expected":"昨日サーバーが落ちました。今朝復旧しました。","accept":["昨日サーバーが落ちましたが、今朝復旧しました。"],"tags":["punctuation"],"split":"dev"}
+{"id":"ja-007","input":"このprojectのdeadlineは来週の金曜日です","expected":"このprojectのdeadlineは来週の金曜日です","must_contain":["project","deadline"],"tags":["mixed-language","keep-meaning"],"split":"dev"}
+{"id":"ja-008","input":"いいえそれは違うと思います","expected":"いいえ、それは違うと思います","must_contain":["いいえ","違う"],"tags":["keep-meaning"],"split":"dev","notes":"A meaningful 'no' and 違う as content."}

@@ -1,0 +1,10 @@
+{"id":"yue-h01","input":"呃聽日嘅會改咗去三點","expected":"聽日嘅會改咗去三點","accept":["聽日嘅會改咗去3點"],"must_contain":["聽日","改咗"],"must_not_contain":["呃"],"tags":["filler","dialect"],"split":"holdout"}
+{"id":"yue-h02","input":"send俾John唔係唔好意思send俾Amy","expected":"send俾Amy","accept":["Send俾Amy"],"must_contain":["Amy"],"must_not_contain":["John"],"tags":["self-correction","mixed-language"],"split":"holdout"}
+{"id":"yue-h03","input":"佢話份合約要改多兩樣嘢第一係價錢第二係交貨日期","expected":"佢話份合約要改多兩樣嘢：\n1. 價錢\n2. 交貨日期","tags":["list","newline","dialect"],"split":"holdout"}
+{"id":"yue-h04","input":"部機嘅記憶體用咗百分之八十五點五要搵人睇下","expected":"部機嘅記憶體用咗85.5%，要搵人睇下","must_contain":["85.5"],"tags":["numbers","punctuation"],"split":"holdout"}
+{"id":"yue-h05","input":"我唔係唔鍾意佢只係覺得佢太嘈","expected":"我唔係唔鍾意佢，只係覺得佢太嘈","must_contain":["唔係唔鍾意","太嘈"],"tags":["keep-meaning","dialect"],"split":"holdout"}
+{"id":"yue-h06","input":"你搞掂未呀我哋等緊你","expected":"你搞掂未呀？我哋等緊你","must_contain":["搞掂未","等緊"],"tags":["punctuation","dialect"],"split":"holdout"}
+{"id":"yue-h07","input":"嗯個meeting room book咗未","expected":"個meeting room book咗未？","must_contain":["meeting room","book咗"],"must_not_contain":["嗯"],"tags":["filler","mixed-language","punctuation"],"split":"holdout"}
+{"id":"yue-h08","input":"呢度啲嘢好貴我哋去第二度食啦","expected":"呢度啲嘢好貴，我哋去第二度食啦","must_contain":["啲嘢","第二度"],"must_not_contain":["这里","這裡","东西","東西"],"tags":["dialect","punctuation"],"split":"holdout"}
+{"id":"yue-h09","input":"多謝你幫手個網站而家快咗好多另外下個禮拜我放假","expected":"多謝你幫手，個網站而家快咗好多。\n\n另外，下個禮拜我放假","accept":["多謝你幫手，個網站而家快咗好多。另外，下個禮拜我放假"],"tags":["newline","punctuation"],"split":"holdout"}
+{"id":"yue-h10","input":"个server又死咗我哋要重新开过","expected":"个server又死咗，我哋要重新开过","must_contain":["server","死咗"],"tags":["script","dialect"],"split":"holdout","notes":"Simplified Cantonese input stays Simplified with script 'preserve'."}

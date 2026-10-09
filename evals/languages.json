@@ -1,0 +1,34 @@
+{
+  "en": {
+    "name": "English",
+    "unit": "word",
+    "fillers": ["um", "uh", "uhm", "umm", "erm", "er", "hmm", "mm"]
+  },
+  "yue": {
+    "name": "Cantonese (Hong Kong)",
+    "unit": "char",
+    "dialect": "yue",
+    "fillers": ["呃", "嗯", "誒"]
+  },
+  "zh-Hans": {
+    "name": "Mandarin (Simplified Chinese)",
+    "unit": "char",
+    "dialect": "cmn",
+    "fillers": ["呃", "嗯", "额"]
+  },
+  "fr": {
+    "name": "French",
+    "unit": "word",
+    "fillers": ["euh", "heu", "hum"]
+  },
+  "es": {
+    "name": "Spanish",
+    "unit": "word",
+    "fillers": ["eh", "em", "ehm", "mmm"]
+  },
+  "ja": {
+    "name": "Japanese",
+    "unit": "char",
+    "fillers": ["えーと", "えっと", "あのー", "えー"]
+  }
+}
