@@ -1,0 +1,28 @@
+{"id":"zh-001","input":"那个我们明天的会议就是要讨论一下预算的问题","expected":"我们明天的会议要讨论一下预算的问题","must_contain":["明天","预算"],"tags":["filler"],"split":"dev","notes":"From PR #81 polish-fillers corpus (cmn1)."}
+{"id":"zh-002","input":"然后然后我们再看一下那个测试结果","expected":"然后我们再看一下测试结果","accept":["然后我们再看一下那个测试结果"],"must_contain":["测试结果"],"must_not_contain":["然后然后"],"tags":["filler"],"split":"dev","notes":"From PR #81 (cmn2)."}
+{"id":"zh-003","input":"就是说这个功能嗯下周之前要上线","expected":"这个功能下周之前要上线","must_contain":["下周","上线"],"must_not_contain":["嗯"],"tags":["filler"],"split":"dev","notes":"From PR #81 (cmn3)."}
+{"id":"zh-004","input":"把文件发给小王不对发给小李","expected":"把文件发给小李","must_contain":["小李"],"must_not_contain":["小王","不对"],"tags":["self-correction"],"split":"dev","notes":"From PR #81 (cmn4)."}
+{"id":"zh-005","input":"我觉得这个方案还不错就是价格有点贵","expected":"我觉得这个方案还不错，就是价格有点贵","must_contain":["就是价格"],"tags":["keep-meaning","punctuation"],"split":"dev","notes":"Same as the prompt's example (PR #82 m01). 就是 here means 'it's just that' and must stay."}
+{"id":"zh-006","input":"明天下午三点我们在会议室开会请大家准时参加","expected":"明天下午三点我们在会议室开会，请大家准时参加","accept":["明天下午3点我们在会议室开会，请大家准时参加。","明天下午3点我们在会议室开会，请大家准时参加"],"must_contain":["会议室","准时"],"tags":["punctuation"],"split":"dev","notes":"From PR #82 (m02)."}
+{"id":"zh-007","input":"嗯那个我今天很忙没空吃饭","expected":"我今天很忙，没空吃饭","must_contain":["没空"],"must_not_contain":["嗯","唔得閒","冇"],"tags":["filler","dialect"],"split":"dev","notes":"From PR #82 (m04). Mandarin must not turn into Cantonese."}
+{"id":"zh-008","input":"你能不能帮我看一下这个问题是怎么回事","expected":"你能不能帮我看一下这个问题是怎么回事？","must_contain":["能不能","怎么回事"],"tags":["punctuation"],"split":"dev","notes":"From PR #82 (m05)."}
+{"id":"zh-009","input":"我明天要跟老板讨论一下这个project的deadline","expected":"我明天要跟老板讨论一下这个project的deadline","must_contain":["project","deadline"],"tags":["mixed-language","keep-meaning"],"split":"dev","notes":"From PR #82 (x01). English words stay English."}
+{"id":"zh-010","input":"你先把email发给我我看完再confirm","expected":"你先把email发给我，我看完再confirm","must_contain":["email","confirm"],"tags":["mixed-language","punctuation"],"split":"dev","notes":"From PR #82 (x02)."}
+{"id":"zh-011","input":"这个月的增长率是百分之十二点五比上个月高了两个点","expected":"这个月的增长率是12.5%，比上个月高了两个点","accept":["这个月的增长率是12.5%，比上个月高了2个点"],"must_contain":["12.5"],"tags":["numbers","punctuation"],"split":"dev"}
+{"id":"zh-012","input":"请把版本号改成三点零点一然后重新打包","expected":"请把版本号改成3.0.1，然后重新打包","must_contain":["3.0.1"],"tags":["numbers"],"split":"dev"}
+{"id":"zh-013","input":"嗯这个手机的价格是两千九百九十九元","expected":"这个手机的价格是2999元","accept":["这个手机的价格是两千九百九十九元"],"must_not_contain":["嗯"],"tags":["numbers","filler"],"split":"dev"}
+{"id":"zh-014","input":"首先我们需要买牛奶然后要去洗衣服最后记得写代码","expected":"1. 买牛奶\n2. 去洗衣服\n3. 记得写代码","accept":["首先我们需要：\n1. 买牛奶\n2. 去洗衣服\n3. 记得写代码"],"tags":["list","newline"],"split":"dev","notes":"The prompt's own example; a sanity check."}
+{"id":"zh-015","input":"这次复盘有三点第一是沟通不够第二是测试太晚第三是需求经常变","expected":"这次复盘有三点：\n1. 沟通不够\n2. 测试太晚\n3. 需求经常变","tags":["list","newline"],"split":"dev"}
+{"id":"zh-016","input":"会议改到周三不对是周四下午","expected":"会议改到周四下午","must_contain":["周四"],"must_not_contain":["周三","不对"],"tags":["self-correction"],"split":"dev"}
+{"id":"zh-017","input":"我们订五个人的位子我是说六个人","expected":"我们订六个人的位子","accept":["我们订6个人的位子"],"must_not_contain":["五个","我是说"],"tags":["self-correction"],"split":"dev"}
+{"id":"zh-018","input":"不对这个数据有问题我们得重新算","expected":"不对，这个数据有问题，我们得重新算","must_contain":["不对","重新算"],"tags":["keep-meaning","punctuation"],"split":"dev","notes":"A leading 不对 ('that's wrong') is content: nothing came before it to correct."}
+{"id":"zh-019","input":"他刚才说这份报告明天才可以给我们","expected":"他刚才说这份报告明天才可以给我们","must_contain":["刚才","明天才"],"must_not_contain":["佢","頭先","头先"],"tags":["keep-meaning","dialect"],"split":"dev","notes":"From PR #82 (m03)."}
+{"id":"zh-020","input":"今天的发布很顺利用户反馈也不错另外下周一记得交周报","expected":"今天的发布很顺利，用户反馈也不错。\n\n另外，下周一记得交周报","accept":["今天的发布很顺利，用户反馈也不错。另外，下周一记得交周报"],"tags":["newline","punctuation"],"split":"dev"}
+{"id":"zh-021","input":"这个这个bug我们我们昨天已经修好了","expected":"这个bug我们昨天已经修好了","must_contain":["bug","修好"],"must_not_contain":["这个这个","我们我们"],"tags":["filler"],"split":"dev"}
+{"id":"zh-022","input":"呃服务器的内存占用大概是百分之九十我们要扩容","expected":"服务器的内存占用大概是90%，我们要扩容","accept":["服务器的内存占用大概是百分之九十，我们要扩容"],"must_contain":["扩容"],"must_not_contain":["呃"],"tags":["filler","numbers"],"split":"dev"}
+{"id":"zh-023","input":"请大家把文件名改成report点pdf","expected":"请大家把文件名改成report.pdf","must_contain":["report.pdf"],"tags":["keep-meaning","mixed-language"],"split":"dev"}
+{"id":"zh-024","input":"我们已经把文件发给客户了他们还没有回复","expected":"我们已经把文件发给客户了，他们还没有回复","must_contain":["还没有回复"],"tags":["punctuation","script"],"split":"dev","notes":"From PR #82 (m06). Simplified input stays Simplified."}
+{"id":"zh-025","input":"这个feature下个礼拜可以上线吗","expected":"这个feature下个礼拜可以上线吗？","must_contain":["feature","礼拜"],"tags":["mixed-language","punctuation"],"split":"dev","notes":"From PR #82 (x03)."}
+{"id":"zh-026","input":"就是说我们需要在下周之前完成所有的测试","expected":"我们需要在下周之前完成所有的测试","must_contain":["下周之前","测试"],"must_not_contain":["就是说"],"tags":["filler"],"split":"dev","notes":"From PR #82 (m08)."}
+{"id":"zh-027","input":"现在的情况是我们没有足够的时间去做这件事","expected":"现在的情况是，我们没有足够的时间去做这件事","must_contain":["没有足够的时间"],"must_not_contain":["冇","而家"],"tags":["punctuation","dialect"],"split":"dev","notes":"From PR #82 (m10)."}
+{"id":"zh-028","input":"她不在家你晚一点再给她打电话吧","expected":"她不在家，你晚一点再给她打电话吧","must_contain":["不在家","晚一点"],"tags":["punctuation"],"split":"dev","notes":"From PR #82 (m09)."}

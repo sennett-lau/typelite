@@ -80,12 +80,18 @@ MIT. Keep the required copyright and permission notices in `LICENSE` and
 
 - Offline gate: `cd src-tauri && cargo test --lib`, `cargo fmt --check`, `npx vitest run`,
   `npx tsc --noEmit`, `npx eslint src/`, `npx prettier --check src`, `npm run docs:check`
-  (language guides and generated doc tables, plans `docs-structure`, `model-guides`),
+  (language guides and generated doc tables, plans `docs-structure`, `model-guides`, and the
+  `evals/` dataset check, plan `language-evals`),
   `node scripts/language-presets.mjs --check`.
 - End-to-end against real servers: `bash scripts/e2e.sh` (whisper.cpp + an OpenAI-compatible
   chat server; set `TYPELITE_E2E_AI_URL` etc., see `src-tauri/tests/e2e_services.rs`). Speech
   audio is synthesised with macOS `say`. Built-in AI: `bash scripts/build-llama-server.sh`, then
   set `TYPELITE_E2E_LLAMA_MODEL` to a Qwen3 GGUF file.
+- Polish and speech quality per language (plan `language-evals`): `npm run eval -- polish
+  --llama-model <gguf>` and `npm run eval -- speech --whisper-model <bin>` run the dataset in
+  `evals/` through the app's code and compare with `evals/baselines/`. Before adding cases or
+  changing the polish prompt, follow `evals/AGENTS.md` (never tune on holdout, never copy case
+  text into the prompt).
 - The app logs to `~/Library/Logs/Typelite/typelite.log` (timings, sizes, errors; never dictated
   text). Each speech request logs endpoint, status and duration; `[Pipeline Timing]` lines give
   the per-step breakdown. Ask the user for this file when debugging a report.

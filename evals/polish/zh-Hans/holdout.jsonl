@@ -1,0 +1,10 @@
+{"id":"zh-h01","input":"嗯那个下午的会取消了","expected":"下午的会取消了","must_contain":["取消"],"must_not_contain":["嗯"],"tags":["filler"],"split":"holdout"}
+{"id":"zh-h02","input":"报销单交给财务不对交给行政","expected":"报销单交给行政","must_contain":["行政"],"must_not_contain":["财务","不对"],"tags":["self-correction"],"split":"holdout"}
+{"id":"zh-h03","input":"新版本的启动时间从三点五秒降到了一点二秒","expected":"新版本的启动时间从3.5秒降到了1.2秒","must_contain":["3.5","1.2"],"tags":["numbers"],"split":"holdout"}
+{"id":"zh-h04","input":"上线前要做三件事一是回归测试二是更新文档三是通知客户","expected":"上线前要做三件事：\n1. 回归测试\n2. 更新文档\n3. 通知客户","tags":["list","newline"],"split":"holdout"}
+{"id":"zh-h05","input":"我们开个meeting讨论一下预算吧","expected":"我们开个meeting讨论一下预算吧","must_contain":["meeting","预算"],"tags":["mixed-language","keep-meaning"],"split":"holdout","notes":"From PR #82 (x04)."}
+{"id":"zh-h06","input":"这个周末天气很好我想去公园散步","expected":"这个周末天气很好，我想去公园散步","must_contain":["散步"],"must_not_contain":["行下","呢個","呢个"],"tags":["punctuation","dialect"],"split":"holdout","notes":"From PR #82 (m07)."}
+{"id":"zh-h07","input":"你什么时候有空我们约个时间聊一下","expected":"你什么时候有空？我们约个时间聊一下","must_contain":["什么时候"],"tags":["punctuation"],"split":"holdout"}
+{"id":"zh-h08","input":"然后呢我们那个那个预算就是说已经超了","expected":"我们的预算已经超了","accept":["我们那个预算已经超了","然后我们的预算已经超了"],"must_contain":["预算","超了"],"must_not_contain":["那个那个","就是说"],"tags":["filler"],"split":"holdout"}
+{"id":"zh-h09","input":"请帮我update一下这个report","expected":"请帮我update一下这个report","must_contain":["update","report"],"tags":["mixed-language","keep-meaning"],"split":"holdout","notes":"From PR #82 (x05)."}
+{"id":"zh-h10","input":"项目进展顺利另外提醒一下周五下午公司停电","expected":"项目进展顺利。\n\n另外提醒一下，周五下午公司停电","accept":["项目进展顺利。另外提醒一下，周五下午公司停电"],"tags":["newline","punctuation"],"split":"holdout"}

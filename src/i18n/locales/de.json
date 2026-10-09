@@ -61,6 +61,7 @@
     "couldNotReplace": "Diese App hat das Ersetzen nicht zugelassen. Das Ergebnis ist in deiner Zwischenablage.",
     "tryReplacingAgain": "Erneut ersetzen",
     "errorTitle": "Etwas ist schiefgelaufen",
+    "unconfirmed": "Aus den Suchergebnissen ließ sich keine Antwort bestätigen. Sieh dir die Quellen an.",
     "sources": "Quellen",
     "sourcesCount_one": "{{count}} Quelle",
     "sourcesCount_other": "{{count}} Quellen",
@@ -69,7 +70,9 @@
     "sourceOpened": "Quelle {{n}} geöffnet",
     "sourceLinkCopied": "Link von Quelle {{n}} kopiert",
     "copySourceLink": "Link von Quelle {{n}} kopieren",
-    "openSource": "Quelle {{n}} öffnen"
+    "openSource": "Quelle {{n}} öffnen",
+    "translatedTo": "Übersetzung: {{language}}",
+    "translation": "Übersetzung"
   },
   "errors": {
     "stt_timeout": "Der Sprachserver hat nicht innerhalb von {{details}} geantwortet. Prüfe, ob er läuft, oder versuche einen schnelleren Server.",
@@ -459,8 +462,8 @@
     "askAnything": "Frag alles",
     "askAnythingDesc": "Sprachfrage, einmalige Antwort. Kein Chatverlauf.",
     "tryAsk": "Fragen ausprobieren",
-    "selectedTextContext": "Ausgewählten Text für Fragen/Überarbeitung nutzen",
-    "selectedTextContextDesc": "Lässt Fragen und Überarbeitung ausgewählten Text zusammenfassen, umschreiben oder übersetzen. Verbraucht mehr KI-Tokens.",
+    "selectedTextContext": "Ausgewählten Text beim Diktieren nutzen",
+    "selectedTextContextDesc": "Diktieren liest die Markierung und sendet sie als Kontext an die KI, sodass du darüber etwa „kürzer machen“ sagen kannst. Verbraucht mehr KI-Tokens. Fragen und Übersetzen lesen die Markierung immer.",
     "targetLanguage": "Übersetzen in",
     "aboutDescription": "Open-Source-Werkzeug für KI-Spracheingabe. Sprechen statt schreiben – deine Stimme wird in Echtzeit zu überarbeitetem Text.",
     "openSource": "Open Source",

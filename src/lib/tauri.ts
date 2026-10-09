@@ -617,6 +617,9 @@ export type AskResultOutput =
   // Plan `ask-translate-and-live-questions`: the question needs live information; the panel offers
   // Answer anyway.
   | 'needsLiveInfo'
+  // Plan `translate-selection-panel`: the highlight's translation, shown in the panel with Copy
+  // and Replace the highlight.
+  | 'translation'
 
 export interface AskDictationResult {
   question: string
@@ -635,6 +638,13 @@ export interface AskDictationResult {
   sources?: AskSource[]
   /** Plan `ask-web-search`: for `needsLiveInfo`, why the web was not used. */
   liveSearch?: LiveSearchState | null
+  /**
+   * Plan `ask-read-pages`: the web search worked, but no answer could be confirmed from it.
+   * `answer` is empty; the panel says so and shows `sources`.
+   */
+  unconfirmed?: boolean
+  /** Plan `translate-selection-panel`: for `translation`, the language code it went into. */
+  translationTarget?: string | null
 }
 
 /** Plan `ask-web-search`: one web page under an answer; `number` is its `[n]` in the answer. */
@@ -830,6 +840,14 @@ export const ASK_PANEL_CLOSED_EVENT = 'ask:panel_closed'
 /** The panel's ✕ button. */
 export async function closeAskPanel(): Promise<void> {
   return invoke('close_ask_panel')
+}
+
+/**
+ * Plan `ask-panel-select-text`: makes the panel the key window (Typelite stays in the
+ * background), so ⌘C reaches the page.
+ */
+export async function focusAskPanel(): Promise<void> {
+  return invoke('focus_ask_panel')
 }
 
 /** Reports the panel's height; the window keeps its bottom edge above the pill. */

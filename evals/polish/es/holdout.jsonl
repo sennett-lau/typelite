@@ -1,0 +1,2 @@
+{"id":"es-h01","input":"mándaselo a Carlos no espera a Lucía","expected":"Mándaselo a Lucía","must_contain":["Lucía"],"must_not_contain":["Carlos","espera"],"tags":["self-correction"],"split":"holdout"}
+{"id":"es-h02","input":"cuándo es la próxima reunión","expected":"¿Cuándo es la próxima reunión?","must_contain":["reunión"],"tags":["punctuation"],"split":"holdout"}

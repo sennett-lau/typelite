@@ -1,0 +1,135 @@
+{
+  "kind": "speech",
+  "model": "ggml-large-v3-turbo-q5_0.bin",
+  "updated": "2026-10-09",
+  "git_rev": "c96ec25+dirty",
+  "prompt_sha256": "fe2ff72ebb773ba9880012f455cd7fc0e355e7d7bca4d9940246ba7136763efd",
+  "samples": 1,
+  "settings": {
+    "split": "all",
+    "n": 1,
+    "langs": "all"
+  },
+  "cases": {
+    "sp-en-001": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "I think this plan is pretty good, but the price is a little high."
+    },
+    "sp-en-002": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "We have a meeting at 3 tomorrow afternoon in the conference room."
+    },
+    "sp-en-003": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "Can you take a look at this problem and tell me what happened?"
+    },
+    "sp-en-004": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "We already sent the file to the client, but they have not replied yet."
+    },
+    "sp-en-005": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "The weather is nice this weekend, so I want to walk in the park."
+    },
+    "sp-en-006": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "Set the timeout to 5.5 seconds and upgrade to version 2.1."
+    },
+    "sp-en-007": {
+      "pass_rate": 1,
+      "error": 0.125,
+      "output": "Please send the invoice to Sayabhan before Friday."
+    },
+    "sp-en-008": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "The deploy failed because the database migration timed out."
+    },
+    "sp-yue-001": {
+      "pass_rate": 0,
+      "error": 0.2,
+      "output": "我今日好忙,不得閒吃飯。"
+    },
+    "sp-yue-002": {
+      "pass_rate": 0,
+      "error": 0.6,
+      "output": "他剛才說份報告明天才可以給我們。"
+    },
+    "sp-yue-003": {
+      "pass_rate": 0,
+      "error": 0.455,
+      "output": "你看下這個問題是否這樣。"
+    },
+    "sp-yue-004": {
+      "pass_rate": 0,
+      "error": 0.438,
+      "output": "我們已經將文件發了給下,他們還未覆。"
+    },
+    "sp-yue-005": {
+      "pass_rate": 0,
+      "error": 0.2,
+      "output": "這個週末天氣很好,我想去公園逛下。"
+    },
+    "sp-yue-006": {
+      "pass_rate": 0,
+      "error": 0.615,
+      "output": "他不在家裡,你遲些再打給他啦。"
+    },
+    "sp-yue-007": {
+      "pass_rate": 0,
+      "error": 0.455,
+      "output": "現在沒有足夠時間做這件事。"
+    },
+    "sp-yue-008": {
+      "pass_rate": 0,
+      "error": 0.529,
+      "output": "你可不可以幫我看看,為什麼這部電腦開不了?"
+    },
+    "sp-zh-001": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我觉得这个方案还不错,就是价格有点贵。"
+    },
+    "sp-zh-002": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "明天下午三点我们在会议室开会,请大家准时参加。"
+    },
+    "sp-zh-003": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "他刚才说这份报告明天才可以给我们。"
+    },
+    "sp-zh-004": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "你能不能帮我看一下这个问题是怎么回事?"
+    },
+    "sp-zh-005": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我们已经把文件发给客户了,他们还没有回复。"
+    },
+    "sp-zh-006": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我明天要跟老板讨论一下这个project的deadline"
+    },
+    "sp-zh-007": {
+      "pass_rate": 1,
+      "error": 0,
+      "output": "这个feature下个礼拜可以上线吗?"
+    },
+    "sp-zh-008": {
+      "pass_rate": 1,
+      "error": 0.133,
+      "output": "他不在家,你晚一点再给他打电话吧。"
+    }
+  }
+}

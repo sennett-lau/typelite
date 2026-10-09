@@ -61,6 +61,7 @@
     "couldNotReplace": "This app didn't allow the replacement. The result is on your clipboard.",
     "tryReplacingAgain": "Try replacing again",
     "errorTitle": "Something went wrong",
+    "unconfirmed": "Couldn’t confirm an answer from the search results. Check the sources.",
     "sources": "Sources",
     "sourcesCount_one": "{{count}} source",
     "sourcesCount_other": "{{count}} sources",
@@ -69,7 +70,9 @@
     "sourceOpened": "Source {{n}} opened",
     "sourceLinkCopied": "Link of source {{n}} copied",
     "copySourceLink": "Copy link of source {{n}}",
-    "openSource": "Open source {{n}}"
+    "openSource": "Open source {{n}}",
+    "translatedTo": "Translated to {{language}}",
+    "translation": "Translation"
   },
   "errors": {
     "stt_timeout": "The speech server did not answer within {{details}}. Check that it is running, or try a faster server.",
@@ -459,8 +462,8 @@
     "askAnything": "Ask Anything",
     "askAnythingDesc": "Voice question, one-shot answer. No chat history.",
     "tryAsk": "Try Ask",
-    "selectedTextContext": "Use selected text in Ask/polish",
-    "selectedTextContextDesc": "Lets Ask and polish summarize, rewrite, or translate selected text. Uses more AI tokens.",
+    "selectedTextContext": "Use selected text when dictating",
+    "selectedTextContextDesc": "Dictate reads the highlight and sends it to the AI as context, so you can say “make this shorter” over it. Uses more AI tokens. Ask and Translate always read the highlight.",
     "targetLanguage": "Translate to",
     "aboutDescription": "Open-source AI voice input tool. Speak to write — turn your voice into polished text in real time.",
     "openSource": "Open Source",

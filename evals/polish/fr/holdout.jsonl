@@ -1,0 +1,2 @@
+{"id":"fr-h01","input":"euh la livraison est prévue mardi non mercredi","expected":"La livraison est prévue mercredi","must_contain":["mercredi"],"must_not_contain":["mardi","euh"],"tags":["filler","self-correction"],"split":"holdout"}
+{"id":"fr-h02","input":"mets à jour la version deux point quatre et relance le build","expected":"Mets à jour la version 2.4 et relance le build","must_contain":["2.4"],"tags":["numbers"],"split":"holdout"}
