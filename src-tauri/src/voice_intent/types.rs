@@ -195,7 +195,11 @@ impl VoiceIntent {
             }
             VoiceIntentKind::Search => VoiceOutputPlacement::OpenUrl,
         };
-        if placement != required_placement {
+        // Plan `translate-selection-panel`: an Ask translation of a highlight shows in the Ask
+        // panel instead of replacing it; the Translate shortcut still replaces it.
+        let panel_translation = kind == VoiceIntentKind::TranslateSelection
+            && placement == VoiceOutputPlacement::PopupAnswer;
+        if placement != required_placement && !panel_translation {
             return Err(VoiceIntentError::InvalidPlacement);
         }
 

@@ -19,6 +19,7 @@ import {
   panelWidth,
 } from './liveSearch'
 import { KeyCap } from '../ui/KeyCap'
+import { targetLanguageLabel } from '../../lib/constants'
 import {
   isCopyShortcut,
   isSelectAllShortcut,
@@ -368,6 +369,8 @@ export function AskAnswerPanel({
   const { t } = useTranslation()
   const [inserting, setInserting] = useState(false)
   const [insertFailed, setInsertFailed] = useState(false)
+  // Plan `translate-selection-panel`: the Copy button of a translation shows a check once used.
+  const [copiedNow, setCopiedNow] = useState(false)
 
   const result = content.kind === 'result' ? content.result : null
   const output = result?.output ?? null
@@ -386,6 +389,7 @@ export function AskAnswerPanel({
 
   useEffect(() => {
     setInsertFailed(false)
+    setCopiedNow(false)
     setSourcesOpen(false)
     setHighlighted(null)
     // The parent builds a new `content` object on each render; reset only for a new message.
@@ -434,6 +438,14 @@ export function AskAnswerPanel({
     copyAskText(value).catch(() => {})
   }, [selected, text])
 
+  const copyTranslation = useCallback(() => {
+    const value = textToCopy(selected, text)
+    if (!value) return
+    copyAskText(value)
+      .then(() => setCopiedNow(true))
+      .catch(() => {})
+  }, [selected, text])
+
   const insert = useCallback(() => {
     if (!text || inserting) return
     setInserting(true)
@@ -447,6 +459,15 @@ export function AskAnswerPanel({
   const question =
     content.kind === 'error' ? (
       <b>{t('askPanel.errorTitle')}</b>
+    ) : output === 'translation' ? (
+      // Plan `translate-selection-panel`: the target language, not the spoken instruction.
+      <b>
+        {result?.translationTarget
+          ? t('askPanel.translatedTo', {
+              language: targetLanguageLabel(result.translationTarget, t),
+            })
+          : t('askPanel.translation')}
+      </b>
     ) : output === 'openedSearch' ? (
       // A site search never shows the spoken query (it can be private); only the provider.
       <b>{t('ask.title')}</b>
@@ -520,13 +541,55 @@ export function AskAnswerPanel({
         </button>
       </>
     )
+  } else if (output === 'translation') {
+    // Plan `translate-selection-panel`: the highlight stays as it is; the user may copy the
+    // translation or put it in place of the highlight (the panel never took focus, so the
+    // highlight is still selected in the app).
+    body = (
+      <div className="ask-glass-answer" data-testid="ask-panel-translation">
+        {text}
+      </div>
+    )
+    actions = (
+      <>
+        <button
+          type="button"
+          className="ask-glass-button"
+          onClick={insert}
+          disabled={inserting}
+          data-testid="ask-panel-replace"
+        >
+          {inserting && <Loader2 size={12} className="animate-spin" aria-hidden="true" />}
+          {t('askPanel.replaceHighlight')}
+        </button>
+        <button
+          type="button"
+          className="ask-glass-button ask-glass-button-primary"
+          onClick={copyTranslation}
+          data-testid="ask-panel-copy"
+        >
+          {t(copiedNow ? 'askPanel.copied' : 'askPanel.copy')}
+          {copiedNow && <Check size={12} aria-hidden="true" />}
+        </button>
+      </>
+    )
   } else if (output === 'openedSearch') {
     body = <div className="ask-glass-answer">{text}</div>
   } else {
     body = (
       <>
         <div className="ask-glass-answer" data-testid="ask-panel-answer">
-          <AnswerText text={text} sources={sources} onCite={showSource} onHover={setHighlighted} />
+          {result?.unconfirmed ? (
+            // Plan `ask-read-pages`: the search worked but its answer was not confirmed.
+            <span data-testid="ask-panel-unconfirmed">{t('askPanel.unconfirmed')}</span>
+          ) : (
+            <AnswerText
+              text={text}
+              sources={sources}
+              onCite={showSource}
+              onHover={setHighlighted}
+            />
+          )}
         </div>
         {result?.mayBeOutOfDate && (
           <p className="ask-glass-note text-white/55">{t('ask.outOfDateNote')}</p>

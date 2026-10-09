@@ -76,6 +76,10 @@ pub enum AskResultOutput {
     /// could not look it up (no search provider, or the search failed; see `live_search`). The
     /// panel offers "Answer anyway" (see `answer_ask_anyway`) and Close; `answer` is empty.
     NeedsLiveInfo,
+    /// Plan `translate-selection-panel`: the translation of the highlight, shown in the panel
+    /// (into `translation_target`). The highlight is unchanged; the panel offers Copy and
+    /// Replace the highlight.
+    Translation,
 }
 
 /// Plan `ask-web-search`: why a live question was not answered from the web.
@@ -363,6 +367,11 @@ pub struct AskDictationResult {
     sources: Vec<crate::web_search::AnswerSource>,
     /// Plan `ask-web-search`: for `NeedsLiveInfo`, why the web was not used.
     live_search: Option<LiveSearchState>,
+    /// Plan `ask-read-pages`: the web search worked but its answer could not be confirmed from
+    /// the sources. `answer` is empty; the panel says so and shows `sources`.
+    unconfirmed: bool,
+    /// Plan `translate-selection-panel`: for `Translation`, the language code it went into.
+    translation_target: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -377,6 +386,7 @@ pub(crate) struct AskDictationResultMetadata {
     may_be_out_of_date: bool,
     sources: Vec<crate::web_search::AnswerSource>,
     live_search: Option<LiveSearchState>,
+    unconfirmed: bool,
 }
 
 impl AskDictationResultMetadata {
@@ -392,6 +402,7 @@ impl AskDictationResultMetadata {
             may_be_out_of_date: false,
             sources: Vec::new(),
             live_search: None,
+            unconfirmed: false,
         }
     }
 
@@ -410,6 +421,15 @@ impl AskDictationResultMetadata {
         Self {
             sources,
             ..Self::popup(false, false)
+        }
+    }
+
+    /// Plan `ask-read-pages`: the search worked, but no answer could be confirmed from it. The
+    /// panel shows the sources instead of a dead end.
+    fn web_unconfirmed(sources: Vec<crate::web_search::AnswerSource>) -> Self {
+        Self {
+            unconfirmed: true,
+            ..Self::web_answer(sources)
         }
     }
 
@@ -433,6 +453,7 @@ impl AskDictationResultMetadata {
             may_be_out_of_date: false,
             sources: Vec::new(),
             live_search: None,
+            unconfirmed: false,
         }
     }
 
@@ -442,6 +463,16 @@ impl AskDictationResultMetadata {
     fn from_draft_execution(
         execution: &crate::voice_intent::executor::VoiceExecutionResult,
     ) -> Self {
+        // Plan `translate-selection-panel`: a translation meant for the panel.
+        if execution.requested_placement == crate::voice_intent::VoiceOutputPlacement::PopupAnswer
+            && execution.actual_placement
+                == Some(crate::voice_intent::VoiceOutputPlacement::PopupAnswer)
+        {
+            return Self {
+                output: AskResultOutput::Translation,
+                ..Self::popup(true, false)
+            };
+        }
         let output = if execution.status
             == crate::voice_intent::executor::VoiceExecutionStatus::Completed
             && matches!(
@@ -467,6 +498,7 @@ impl AskDictationResultMetadata {
             may_be_out_of_date: false,
             sources: Vec::new(),
             live_search: None,
+            unconfirmed: false,
         }
     }
 }
@@ -492,7 +524,15 @@ impl AskDictationResult {
             may_be_out_of_date: metadata.may_be_out_of_date,
             sources: metadata.sources,
             live_search: metadata.live_search,
+            unconfirmed: metadata.unconfirmed,
+            translation_target: None,
         }
+    }
+
+    /// Plan `translate-selection-panel`: notes the language a panel translation went into.
+    pub(crate) fn with_translation_target(mut self, target: String) -> Self {
+        self.translation_target = Some(target);
+        self
     }
 
     pub(crate) fn should_show_window(&self) -> bool {
@@ -643,6 +683,18 @@ fn sanitize_selected_text_for_ask(selected_text: &str) -> Option<SanitizedSelect
         text: trimmed.chars().take(ASK_MAX_SELECTED_TEXT_CHARS).collect(),
         truncated: original_chars > ASK_MAX_SELECTED_TEXT_CHARS,
     })
+}
+
+/// Plan `translate-selection-panel`: the language an Ask translation went into, as the pipeline
+/// chose it (`request_translation`): the language named in `question`, else the active
+/// translation language.
+fn panel_translation_target(question: &str, config: &storage::AppConfig) -> String {
+    crate::voice_intent::language::resolve_selection_translation_target(
+        question,
+        &config.translation.active_target,
+        &config.translation.targets,
+    )
+    .0
 }
 
 pub fn route_ask_intent(
@@ -1019,6 +1071,20 @@ async fn check_live_question(
 struct WebAnswer {
     answer: String,
     sources: Vec<crate::web_search::AnswerSource>,
+    /// Plan `ask-read-pages`: false when the answer could not be confirmed from the sources;
+    /// `answer` is then empty and `sources` holds every result.
+    confirmed: bool,
+}
+
+impl WebAnswer {
+    /// The search worked, but the answer could not be confirmed: every result as a source.
+    fn unconfirmed(results: &[crate::web_search::SearchResult]) -> Self {
+        Self {
+            answer: String::new(),
+            sources: crate::web_search::answer_sources("", results),
+            confirmed: false,
+        }
+    }
 }
 
 /// Plan `ask-web-search`: why `answer_from_web` gave no answer.
@@ -1032,18 +1098,20 @@ enum WebAnswerError {
 /// Plan `ask-web-search`: enough room for three short sentences with citations.
 const WEB_ANSWER_TOKEN_LIMIT: u32 = 220;
 
-/// The chat body that answers `question` from `results` with the active AI preset.
+/// The chat body that answers `question` from `results` (and the passages read from their
+/// pages, plan `ask-read-pages`) with the active AI preset.
 fn build_web_answer_body(
     config: &storage::AppConfig,
     question: &str,
     results: &[crate::web_search::SearchResult],
+    pages: &[String],
     today: &str,
     language: Option<&str>,
 ) -> serde_json::Value {
     let preset = config.active_ai_preset();
     crate::llm::protocol::build_chat_body(
         &preset.model,
-        crate::web_search::answer_messages(question, results, today, language),
+        crate::web_search::answer_messages_with_pages(question, results, pages, today, language),
         WEB_ANSWER_TOKEN_LIMIT,
         0.2,
         false,
@@ -1099,12 +1167,12 @@ async fn answer_from_web(
         language,
     )
     .await;
-    let _ = app.emit(ASK_STAGE_EVENT, "thinking");
     // The sidebar's Search dot (plan `searxng-setup`): whether a real search worked.
     let _ = app.emit(SEARCH_RESULT_EVENT, outcome.is_ok());
     let outcome = match outcome {
         Ok(outcome) => outcome,
         Err(error) => {
+            let _ = app.emit(ASK_STAGE_EVENT, "thinking");
             tracing::warn!("Ask web search failed ({})", error.code());
             return Err(WebAnswerError::Search(LiveSearchState::Failed));
         }
@@ -1116,8 +1184,39 @@ async fn answer_from_web(
         outcome.elapsed.as_millis()
     );
     if outcome.results.is_empty() {
+        let _ = app.emit(ASK_STAGE_EVENT, "thinking");
         return Err(WebAnswerError::Search(LiveSearchState::NoResults));
     }
+    // Plan `ask-read-pages`: read the top result pages (still "Searching the web…") and keep the
+    // passages that fit the question, so the answer does not rest on snippets alone.
+    let read_started = std::time::Instant::now();
+    let pages = crate::web_search::pages::fetch_pages(client, &outcome.results).await;
+    let passages = crate::web_search::pages::select_passages(
+        &pages,
+        &outcome.results,
+        question,
+        query,
+        local_date,
+        upcoming,
+    );
+    tracing::info!(
+        "Ask page read: pages={} of {} passages={} chars={} ({} ms)",
+        pages.iter().filter(|blocks| !blocks.is_empty()).count(),
+        outcome
+            .results
+            .len()
+            .min(crate::web_search::pages::MAX_PAGES),
+        passages
+            .iter()
+            .filter(|passage| !passage.is_empty())
+            .count(),
+        passages
+            .iter()
+            .map(|passage| passage.chars().count())
+            .sum::<usize>(),
+        read_started.elapsed().as_millis()
+    );
+    let _ = app.emit(ASK_STAGE_EVENT, "thinking");
     let started = std::time::Instant::now();
     let (config, api_key) = resolved_ai_config(config)
         .await
@@ -1130,43 +1229,17 @@ async fn answer_from_web(
     // Written out ("Wednesday 30 September 2026"): a small model copies an ISO date's format
     // into its answer and then gets dates wrong.
     let today = local_date.format("%A %-d %B %Y").to_string();
-    // For upcoming schedules, copy evidence first. Dates and the final answer are checked
-    // and rendered by the app; a small model otherwise invents race dates from page metadata.
-    if upcoming {
-        let preset = config.active_ai_preset();
-        let body = crate::llm::protocol::build_chat_body(
-            &preset.model,
-            crate::web_search::schedule::messages(question, &outcome.results),
-            640,
-            0.0,
-            false,
-            &preset.extra_request_fields,
-        );
-        let extraction = send_ask_chat(client, &config, &api_key, &body)
-            .await
-            .map_err(WebAnswerError::Ai)?;
-        let (answer, why) = crate::web_search::schedule::answer_with_rejections(
-            &extraction,
-            &outcome.results,
-            local_date,
-        );
-        let Some(answer) = answer else {
-            tracing::info!("Ask web answer: no supported upcoming event ({why:?})");
-            return Err(WebAnswerError::Search(LiveSearchState::NoResults));
-        };
-        let sources = crate::web_search::answer_sources(&answer, &outcome.results);
-        tracing::info!(
-            "Ask web answer: {} sources ({} ms)",
-            sources.len(),
-            started.elapsed().as_millis()
-        );
-        return Ok(WebAnswer { answer, sources });
-    }
     // Plan `language-routing-everywhere`: the routed language decides the answer's language,
     // and its preset says how to write it.
     let answer_language = routed.map(|routed| routed.code.as_str()).or(language);
-    let mut body =
-        build_web_answer_body(&config, question, &outcome.results, &today, answer_language);
+    let mut body = build_web_answer_body(
+        &config,
+        question,
+        &outcome.results,
+        &passages,
+        &today,
+        answer_language,
+    );
     if let Some(routed) = routed {
         if let Some(system) = body
             .pointer("/messages/0/content")
@@ -1189,8 +1262,10 @@ async fn answer_from_web(
             .await
             .map_err(WebAnswerError::Ai)?;
         if crate::web_search::repeats_question(&answer, question) {
-            tracing::info!("Ask web answer: the AI repeated the question again");
-            return Err(WebAnswerError::Search(LiveSearchState::NoResults));
+            tracing::info!(
+                "Ask web answer: the AI repeated the question again; showing the sources"
+            );
+            return Ok(WebAnswer::unconfirmed(&outcome.results));
         }
     }
     if crate::web_search::echoes_results(&answer) {
@@ -1215,13 +1290,30 @@ async fn answer_from_web(
     if let Some(script) = script {
         answer = crate::stt::chinese_script::convert(&answer, script);
     }
+    // Plan `ask-read-pages`: every explicit date in the answer must be in the text the AI was
+    // given (and, for an upcoming question, not before today). Otherwise show the sources with
+    // "couldn't confirm" rather than a date the sources do not back.
+    let evidence = crate::web_search::pages::evidence_text(&outcome.results, &passages, local_date);
+    let unsupported =
+        crate::web_search::pages::unsupported_dates(&answer, &evidence, local_date, upcoming);
+    if unsupported > 0 {
+        tracing::info!(
+            "Ask web answer: {unsupported} dates not backed by the sources; showing the sources ({} ms)",
+            started.elapsed().as_millis()
+        );
+        return Ok(WebAnswer::unconfirmed(&outcome.results));
+    }
     let sources = crate::web_search::answer_sources(&answer, &outcome.results);
     tracing::info!(
         "Ask web answer: {} sources ({} ms)",
         sources.len(),
         started.elapsed().as_millis()
     );
-    Ok(WebAnswer { answer, sources })
+    Ok(WebAnswer {
+        answer,
+        sources,
+        confirmed: true,
+    })
 }
 
 /// Plan `ask-web-search`: the Ask panel's source links open in the browser. Only links of the
@@ -1349,7 +1441,13 @@ pub(crate) async fn start_reserved_ask_dictation(
         let recording_context = app
             .state::<crate::app_detector::ContextDetectorHandle>()
             .snapshot_for_recording_enabled(config.context_adaptation_enabled);
-        let selected_text = if include_selected_text && config.selected_text_enabled {
+        // Plan `translate-selection-panel`: Ask always reads the highlight (the setting only
+        // covers Dictate). `include_selected_text` is false for the in-app Ask window.
+        let selected_text = if include_selected_text
+            && crate::selection::should_capture_selection(
+                VoiceMode::Ask,
+                config.selected_text_enabled,
+            ) {
             tokio::task::block_in_place(crate::selection::capture_selected_text)
         } else {
             None
@@ -1796,7 +1894,10 @@ pub async fn stop_ask_dictation(
                 | VoiceIntentKind::TranslateSelection
         ) {
             failure_code = "llm_failed";
-            pastes = true;
+            // Plan `translate-selection-panel`: an Ask translation goes to the panel, not the app.
+            let for_panel =
+                voice_intent.placement == crate::voice_intent::VoiceOutputPlacement::PopupAnswer;
+            pastes = !for_panel;
             let draft_started = std::time::Instant::now();
             let draft = app
                 .state::<crate::pipeline::PipelineHandle>()
@@ -1821,12 +1922,17 @@ pub async fn stop_ask_dictation(
                 *timing = crate::pipeline::config_for_run_timing(timing, used_preset).into_owned();
             }
             let draft = draft?;
-            return Ok(AskDictationResult::new(
+            let result = AskDictationResult::new(
                 question,
                 draft.text,
                 voice_intent.kind,
                 AskDictationResultMetadata::from_draft_execution(&draft.execution),
-            ));
+            );
+            if result.output == AskResultOutput::Translation {
+                let target = panel_translation_target(&result.question, &config);
+                return Ok(result.with_translation_target(target));
+            }
+            return Ok(result);
         }
 
         failure_code = "llm_failed";
@@ -1854,11 +1960,16 @@ pub async fn stop_ask_dictation(
                     {
                         Ok(web) => {
                             ai_elapsed = Some(ai_started.elapsed());
+                            let metadata = if web.confirmed {
+                                AskDictationResultMetadata::web_answer(web.sources)
+                            } else {
+                                AskDictationResultMetadata::web_unconfirmed(web.sources)
+                            };
                             return Ok(AskDictationResult::new(
                                 question,
                                 web.answer,
                                 voice_intent.kind,
-                                AskDictationResultMetadata::web_answer(web.sources),
+                                metadata,
                             ));
                         }
                         Err(WebAnswerError::Ai(message)) => {
@@ -2100,17 +2211,25 @@ mod tests {
     }
 
     #[test]
-    fn ask_translate_this_into_a_language_replaces_the_selection() {
+    fn ask_translation_of_a_highlight_shows_in_the_panel() {
+        // Plan `translate-selection-panel`.
         let flags = crate::voice_intent::VoiceRoutingFlags::default();
         for question in [
             "translate this to French",
+            "Translate to English.",
             "translate this into Traditional Chinese",
             "把這段翻譯成台灣中文",
+            "翻译一下",
         ] {
             let route = route_ask_intent(question, true, None, flags);
             assert_eq!(
                 route.kind,
                 VoiceIntentKind::TranslateSelection,
+                "{question}"
+            );
+            assert_eq!(
+                route.placement,
+                crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
                 "{question}"
             );
         }
@@ -2124,10 +2243,10 @@ mod tests {
             VoiceIntentKind::AskSelection
         );
 
-        let replaced = crate::voice_intent::executor::VoiceExecutionResult {
+        let shown = crate::voice_intent::executor::VoiceExecutionResult {
             intent_kind: VoiceIntentKind::TranslateSelection,
-            requested_placement: crate::voice_intent::VoiceOutputPlacement::ReplaceSelection,
-            actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::ReplaceSelection),
+            requested_placement: crate::voice_intent::VoiceOutputPlacement::PopupAnswer,
+            actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::PopupAnswer),
             status: crate::voice_intent::executor::VoiceExecutionStatus::Completed,
             fallback_reason: None,
         };
@@ -2135,28 +2254,29 @@ mod tests {
             "translate this to French".to_string(),
             "Bonjour".to_string(),
             VoiceIntentKind::TranslateSelection,
-            AskDictationResultMetadata::from_draft_execution(&replaced),
-        );
-        assert!(!result.should_show_window());
-
-        let lost = crate::voice_intent::executor::VoiceExecutionResult {
-            actual_placement: None,
-            status: crate::voice_intent::executor::VoiceExecutionStatus::CopiedFallback,
-            fallback_reason: Some(
-                crate::voice_intent::executor::VoiceExecutionFallbackReason::SelectionLost,
-            ),
-            ..replaced
-        };
-        let result = AskDictationResult::new(
-            "translate this to French".to_string(),
-            "Bonjour".to_string(),
-            VoiceIntentKind::TranslateSelection,
-            AskDictationResultMetadata::from_draft_execution(&lost),
-        );
+            AskDictationResultMetadata::from_draft_execution(&shown),
+        )
+        .with_translation_target("fr".to_string());
         assert!(result.should_show_window());
         let value = serde_json::to_value(&result).unwrap();
-        assert_eq!(value["output"], "copiedFallback");
+        assert_eq!(value["output"], "translation");
         assert_eq!(value["usedSelectedText"], true);
+        assert_eq!(value["translationTarget"], "fr");
+    }
+
+    #[test]
+    fn panel_translation_target_is_the_named_language_else_the_active_one() {
+        let mut config = storage::AppConfig::default();
+        config.translation.active_target = "ja".to_string();
+        assert_eq!(
+            panel_translation_target("translate to English", &config),
+            "en"
+        );
+        assert_eq!(
+            panel_translation_target("翻譯成廣東話", &config),
+            "zh-Hant-HK"
+        );
+        assert_eq!(panel_translation_target("translate this", &config), "ja");
     }
 
     #[test]
@@ -2271,6 +2391,7 @@ mod tests {
         let value = serde_json::to_value(&result).unwrap();
         assert_eq!(value["output"], "popupAnswer");
         assert_eq!(value["mayBeOutOfDate"], false);
+        assert_eq!(value["unconfirmed"], false);
         assert!(value["liveSearch"].is_null());
         assert_eq!(
             value["sources"][0]["url"],
@@ -2303,6 +2424,7 @@ mod tests {
             &config,
             "where is the next F1 race",
             &results,
+            &["Round 19 | Singapore Grand Prix | 11 October 2026".to_string()],
             "Tuesday, 2026-09-29",
             Some("en"),
         );
@@ -2314,6 +2436,7 @@ mod tests {
         assert!(user.contains(
             "<search_results>\n[1] Next race\nURL: https://news.example/moved\nPage published (not an event date): 2026-09-26"
         ));
+        assert!(user.contains("\nPage text:\nRound 19 | Singapore Grand Prix | 11 October 2026"));
     }
 
     #[test]

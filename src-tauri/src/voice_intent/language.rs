@@ -282,6 +282,147 @@ pub fn resolve_selection_translation_target(
     }
 }
 
+/// Plan `translate-selection-panel`: whether an Ask instruction about a highlight asks for its
+/// translation ("translate to English", "translate this", "what does this say in Japanese",
+/// "翻译成英文", "翻譯一下", "英語に翻訳して"). The translation then shows in the Ask panel.
+///
+/// The instruction must start with a translate verb, after optional openings ("please",
+/// "can you", "请", "帮我把这段"), so "don't translate this" or "why is this translated so
+/// badly" stay questions. When it names no language Typelite knows, it must be only the verb
+/// ("translate this", "翻译一下"): "translate this to Klingon" names a language Typelite cannot
+/// map, so it is not quietly translated into the default language; it stays an Ask answer.
+pub fn is_selection_translation_request(utterance: &str) -> bool {
+    let names_language = !find_names(utterance).is_empty();
+    let lower = utterance.trim().to_lowercase();
+    let text: String = lower.split_whitespace().collect::<Vec<_>>().join(" ");
+    let text = text.trim_matches(|c: char| c.is_ascii_punctuation() || "，。！？：、 ".contains(c));
+
+    // English: "please translate this to English", "what does this say in Japanese".
+    let mut rest = text;
+    for _ in 0..4 {
+        match ENGLISH_OPENINGS
+            .iter()
+            .find(|lead| rest.starts_with(**lead))
+        {
+            Some(lead) => rest = rest[lead.len()..].trim_start_matches([' ', ',']),
+            None => break,
+        }
+    }
+    if let Some(after) = rest.strip_prefix("translate") {
+        if after.is_empty() || after.starts_with(' ') {
+            return names_language || is_bare_object(after, ENGLISH_BARE_OBJECTS);
+        }
+    }
+    if names_language && ENGLISH_SAY_IN.iter().any(|lead| rest.starts_with(lead)) {
+        return true;
+    }
+
+    // Chinese and Japanese: "请帮我把这段翻译成英文", "翻譯一下", "英語に翻訳して".
+    let mut rest = text;
+    for _ in 0..4 {
+        rest = rest.trim_start_matches(|c: char| c.is_whitespace() || "，,：:".contains(c));
+        match CHINESE_OPENINGS
+            .iter()
+            .find(|lead| rest.starts_with(**lead))
+        {
+            Some(lead) => rest = &rest[lead.len()..],
+            None => break,
+        }
+    }
+    for verb in ["翻译", "翻譯"] {
+        if let Some(after) = rest.strip_prefix(verb) {
+            return names_language || is_bare_object(after, CHINESE_BARE_OBJECTS);
+        }
+    }
+    // Japanese puts the verb last: "英語に翻訳して", "翻訳して".
+    if text.contains("翻訳") {
+        return names_language || text.starts_with("翻訳");
+    }
+    false
+}
+
+/// Openings before an English instruction; they can stack ("hey, can you please").
+const ENGLISH_OPENINGS: &[&str] = &[
+    "please",
+    "can you",
+    "could you",
+    "would you",
+    "will you",
+    "hey",
+    // "okay" before "ok", which is its prefix.
+    "okay",
+    "ok",
+    "now",
+];
+
+/// "What does this say in Japanese": a translation only when a known language follows.
+const ENGLISH_SAY_IN: &[&str] = &[
+    "what does this say in ",
+    "what does it say in ",
+    "what is this in ",
+    "what's this in ",
+    "say this in ",
+    "how do you say this in ",
+];
+
+/// What may follow a bare "translate" when no language is named.
+const ENGLISH_BARE_OBJECTS: &[&str] = &[
+    "this",
+    "it",
+    "that",
+    "the selection",
+    "the highlight",
+    "the text",
+    "this text",
+    "this for me",
+    "it for me",
+    "for me",
+    "please",
+    "this please",
+    "it please",
+];
+
+/// Openings before a Chinese instruction ("请", "帮我", "把这段"); they can stack.
+const CHINESE_OPENINGS: &[&str] = &[
+    "请",
+    "請",
+    "帮我",
+    "幫我",
+    "麻烦",
+    "麻煩",
+    "可以",
+    "能不能",
+    "把这段",
+    "把這段",
+    "把这个",
+    "把這個",
+    "将这段",
+    "將這段",
+    "把它",
+    "把",
+];
+
+/// What may follow a bare "翻译" when no language is named.
+const CHINESE_BARE_OBJECTS: &[&str] = &[
+    "一下",
+    "下",
+    "这段",
+    "這段",
+    "这个",
+    "這個",
+    "它",
+    "吧",
+    "一下吧",
+    "一下这段",
+    "一下這段",
+];
+
+/// Whether `after` (what follows the verb) is empty or only a plain object like "this".
+fn is_bare_object(after: &str, objects: &[&str]) -> bool {
+    let after = after.trim_matches(|c: char| c.is_whitespace() || c.is_ascii_punctuation());
+    after.is_empty() || objects.contains(&after)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -385,5 +526,53 @@ mod tests {
             resolve_selection_translation_target("", "en", &chosen),
             ("en".to_string(), TargetSource::Active)
         );
+    }
+
+    #[test]
+    fn translation_requests_on_a_highlight_are_recognised() {
+        for utterance in [
+            "Translate to English.",
+            "translate this into Japanese",
+            "Please translate this to French",
+            "Can you translate it into Traditional Chinese?",
+            "translate",
+            "Translate this.",
+            "translate this for me",
+            "What does this say in English?",
+            "翻译成英文",
+            "请帮我把这段翻译成日文",
+            "翻譯一下",
+            "幫我翻譯成廣東話",
+            "翻译",
+            "英語に翻訳して",
+            "翻訳して",
+        ] {
+            assert!(
+                is_selection_translation_request(utterance),
+                "{utterance} should be a translation request"
+            );
+        }
+    }
+
+    #[test]
+    fn questions_and_unknown_languages_are_not_translation_requests() {
+        for utterance in [
+            "Don't translate this",
+            "Why is this translated so badly?",
+            "What does this mean?",
+            "Summarise this",
+            "translate this to Klingon",
+            "translate this into a pirate voice",
+            "make this shorter",
+            "这段是什么意思",
+            "翻译成火星文",
+            "What does this say?",
+            "",
+        ] {
+            assert!(
+                !is_selection_translation_request(utterance),
+                "{utterance} should not be a translation request"
+            );
+        }
     }
 }
