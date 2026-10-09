@@ -12,7 +12,7 @@ You are a voice-to-text assistant. Transform raw speech transcription into clean
 
 Rules:
 1. PUNCTUATION: Add appropriate punctuation (commas, periods, colons, question marks) where the speech pauses or clauses naturally end. This is the most important rule — raw transcription has no punctuation. The end of the whole output follows rule 7.
-   DASHES: Never join or break clauses with a dash (-, –, —); use a comma or a period. Hyphens stay only inside words and ranges ("well-known", "3-5").
+   DASHES: Inside a sentence, never join or break clauses with a dash (-, –, —); use a comma or a period. Hyphens stay only inside words and ranges ("well-known", "3-5"). This does not change rule 3: enumerated items still become a numbered list, one item per line.
 2. CLEANUP: Remove false starts and accidental repetitions.
    FILLERS (any language): Delete every word or sound that only shows hesitation, stalling or thinking aloud (for example "um", "let me think"), wherever it is, also at the very start. Judge by meaning, not by a word list: keep a word that does work in the sentence, such as an answer ("No, I don't agree"), an apology ("sorry for the delay"), a cause ("so I rolled back"), a contrast ("but actually it was") or a liking ("I like it").
    SELF-CORRECTIONS (any language): When the speaker changes their mind or corrects a word, number, name or time, keep only the final version. Delete the abandoned part and the phrase that signals the correction (a "no", "wait", "I mean", an apology, or the same in any language), also when the transcript has no punctuation around it. The correction often repeats the same words and changes one part: "two servers I mean three servers" → "three servers", "lunch at one. Oh no! Let's do it at two." → "lunch at two".
@@ -2440,7 +2440,8 @@ mod tests {
     #[test]
     fn prompt_bans_clause_dashes_and_removes_fillers_by_meaning_in_any_language() {
         let prompt = build_system_prompt(AppType::General, &[], "", "preserve", false, "", false);
-        assert!(prompt.contains("Never join or break clauses with a dash"));
+        assert!(prompt.contains("never join or break clauses with a dash"));
+        assert!(prompt.contains("This does not change rule 3"));
         assert!(prompt.contains("FILLERS (any language)"));
         assert!(prompt.contains("Judge by meaning, not by a word list"));
         assert!(prompt.contains("SELF-CORRECTIONS (any language)"));

@@ -4,8 +4,9 @@ What the prompt says and what the code changes after it. Back to [index](index.m
 
 ## Prompt (`src-tauri/src/llm/prompt.rs`)
 
-- Rule 1 gains **DASHES**: never join or break clauses with a dash; use a comma or a period.
-  Hyphens stay inside words and ranges.
+- Rule 1 gains **DASHES**: inside a sentence, never join or break clauses with a dash; use a
+  comma or a period. Hyphens stay inside words and ranges. The rule says it does not change
+  rule 3 (lists), because without that the model wrote enumerations as one line.
 - Rule 2 has general rules for any language, with no word list. FILLERS: delete words or sounds
   that only show hesitation, stalling or thinking aloud, anywhere, also at the start; judge by
   meaning, with counter-examples (an answer "No", an apology, a cause "so", a contrast
@@ -37,3 +38,19 @@ number or symbol, and a dash at a line end.
 It runs in `prompt::clean_dictation_output` together with the final-period rule, on the
 same operations. While streaming, `FinalPeriodStream` shows text already cleaned and holds back
 a trailing run of spaces, dashes and periods until the next character arrives.
+
+## Hesitation sounds (`src-tauri/src/llm/hesitations.rs`)
+
+Runs first in `clean_dictation_output`. It removes a small closed set of sounds that are never
+words: um, uh, uhm, erm, hm (with repeated last letters: ummm, hmmm), euh, ehm, äh, ähm, öhm,
+嗯 and 呃. Words with meaning (so, like, well, 那个, 就是, 即係) stay the prompt's job.
+
+- Only a standalone sound: at the start, or after a space or punctuation, and before a space,
+  punctuation or the end. Never inside a word ("umbrella"), in code spans, URLs, paths or file
+  names ("um.txt"), and never 嗯 or 呃 directly after another Chinese character.
+- Left out on purpose: "er" (German "he"), "eh" (German "anyway", Spanish "hey"), "mm"
+  (agreement), and 啊 and 呀 (sentence particles).
+- The comma or ellipsis after the sound goes with it; a sound at a sentence end takes the comma
+  before it; a capitalised sound at a sentence start passes its capital to the next word.
+- While streaming, `stable_prefix` holds back the last word and any sound before it, so the
+  shown text is always a prefix of the final cleaned answer.
