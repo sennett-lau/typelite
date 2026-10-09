@@ -62,6 +62,9 @@ models/
 *.db
 *.sqlite
 
+# Evaluation clips made by `npm run eval -- synth` (plan `language-evals`)
+evals/speech/*/audio/synthetic/
+
 # Scratch
 /output/
 .worktrees/
