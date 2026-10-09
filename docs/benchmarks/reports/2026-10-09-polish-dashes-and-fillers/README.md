@@ -17,7 +17,7 @@ dashes without removing words that carry meaning.
   from PR #82, extended so that `{"text", "output"}` returns the answer after the app's
   clean-up: `plain_spaces` and then `strip_unspoken_final_period` (before) or
   `clean_dictation_output` (after), family General.
-- Corpus (`benchmarks/polish-fillers/corpus.json`): 24 typed transcripts, no audio. 10 English
+- Corpus (`benchmarks/polish-fillers/corpus.json`, since removed; its cases are now in `evals/`): 24 typed transcripts, no audio. 10 English
   with fillers, self-corrections or dash-prone asides; 4 Cantonese (呃, 即係, 嗯, a 唔係…唔好意思
   correction); 4 Mandarin (那个, 就是, 然后, 不对); 6 English counter-examples where "No",
   "sorry", "like", "so", "actually" and "no" carry meaning.
@@ -148,6 +148,11 @@ llama-server --model Qwen3-4B-Instruct-2507-Q4_K_M.gguf --alias qwen3-4b --host 
 cd benchmarks/polish-fillers   # run.py reads corpus.json from the working folder
 python3 run.py <path>/benchmark_polish_prompt before 3   # then "after" with the PR build
 ```
+
+The runner and corpus were removed when the evaluation suite (`evals/`) landed; the cases live
+on there (see `notes: "From PR #81 ..."`), and the follow-up measurement is in
+[2026-10-09-polish-hesitation-sounds](../2026-10-09-polish-hesitation-sounds/README.md). To rerun
+this exact script, check out commit a25318e.
 
 Raw results: `before.json` and `after.json` in this folder (`raw` is the model answer, `final`
 the text the app would paste).

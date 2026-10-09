@@ -984,10 +984,11 @@ pub fn plain_spaces(text: &str) -> String {
     text.replace(['\u{202f}', '\u{a0}'], " ")
 }
 
-/// Deterministic clean-up of a dictation answer: clause dashes become commas
-/// (plan `polish-dashes-and-fillers`), then rule 7's final period goes.
+/// Deterministic clean-up of a dictation answer (plan `polish-dashes-and-fillers`): standalone
+/// hesitation sounds go, clause dashes become commas, then rule 7's final period goes.
 pub fn clean_dictation_output(output: &str, raw_transcript: &str, family: ContextFamily) -> String {
-    let output = super::dashes::clause_dashes_to_commas(output);
+    let output = super::hesitations::remove_hesitation_sounds(output);
+    let output = super::dashes::clause_dashes_to_commas(&output);
     strip_unspoken_final_period(&output, raw_transcript, family)
 }
 
@@ -1028,7 +1029,8 @@ pub fn strip_unspoken_final_period(
 
 /// Streams an answer that `clean_dictation_output` cleans at the end. A trailing run of
 /// periods, dashes and spaces is held back until more text arrives, because it may be the
-/// final period that gets removed or a clause dash that becomes a comma. The text before it is
+/// final period that gets removed or a clause dash that becomes a comma; so is the last word,
+/// which may be a hesitation sound (`hesitations::stable_prefix`). The text before it is
 /// shown already cleaned; `dashes` keeps that a prefix of the cleaned whole answer.
 #[derive(Debug, Default)]
 pub struct FinalPeriodStream {
@@ -1039,8 +1041,9 @@ pub struct FinalPeriodStream {
 impl FinalPeriodStream {
     /// The new text that can be shown, given the whole answer received so far.
     pub fn visible(&mut self, received: &str) -> String {
-        let safe = received.trim_end_matches(super::dashes::is_pending_tail);
-        let cleaned = super::dashes::clause_dashes_to_commas(safe);
+        let safe = super::hesitations::stable_prefix(received, super::dashes::is_pending_tail);
+        let cleaned = super::hesitations::remove_hesitation_sounds(safe);
+        let cleaned = super::dashes::clause_dashes_to_commas(&cleaned);
         if cleaned.len() <= self.shown {
             return String::new();
         }
@@ -2413,6 +2416,24 @@ mod tests {
         let cleaned = clean_dictation_output(&received, "raw", family);
         shown.push_str(held_back.rest(&cleaned));
         (shown, cleaned)
+    }
+
+    /// Plan `polish-dashes-and-fillers`: hesitation sounds go while streaming too.
+    #[test]
+    fn streaming_removes_hesitation_sounds_like_the_final_clean_up() {
+        for chunks in [
+            &["U", "m", ", so we", " could, uh", ", move it - ", "maybe."][..],
+            &["Um", "brella", " is here, um", "."][..],
+            &["呃", "，我哋", "聽日，嗯", "，開會。"][..],
+        ] {
+            let (shown, cleaned) = stream(chunks, ContextFamily::WorkChat);
+            assert_eq!(shown, cleaned, "{chunks:?}");
+        }
+        let (shown, _) = stream(
+            &["Um", ", so we could, uh, move it - maybe."],
+            ContextFamily::WorkChat,
+        );
+        assert_eq!(shown, "So we could, move it, maybe");
     }
 
     /// Plan `polish-dashes-and-fillers`.
