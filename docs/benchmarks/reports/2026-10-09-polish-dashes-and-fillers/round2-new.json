@@ -1,0 +1,761 @@
+{
+ "label": "new",
+ "rows": [
+  {
+   "id": "en1",
+   "lang": "en",
+   "rep": 0,
+   "input": "um so I was thinking we could uh move the meeting to Thursday",
+   "raw": "So I was thinking we could move the meeting to Thursday.",
+   "final": "So I was thinking we could move the meeting to Thursday",
+   "ms": 827
+  },
+  {
+   "id": "en2",
+   "lang": "en",
+   "rep": 0,
+   "input": "I mean the build is broken again and I don't know why",
+   "raw": "The build is broken again, and I don't know why.",
+   "final": "The build is broken again, and I don't know why",
+   "ms": 702
+  },
+  {
+   "id": "en3",
+   "lang": "en",
+   "rep": 0,
+   "input": "send it to John no sorry send it to Mary",
+   "raw": "Send it to Mary.",
+   "final": "Send it to Mary",
+   "ms": 419
+  },
+  {
+   "id": "en4",
+   "lang": "en",
+   "rep": 0,
+   "input": "the deadline is Friday no wait Monday",
+   "raw": "The deadline is Monday.",
+   "final": "The deadline is Monday",
+   "ms": 496
+  },
+  {
+   "id": "en5",
+   "lang": "en",
+   "rep": 0,
+   "input": "I checked the logs you know and there was nothing there",
+   "raw": "I checked the logs, and there was nothing there.",
+   "final": "I checked the logs, and there was nothing there",
+   "ms": 668
+  },
+  {
+   "id": "en6",
+   "lang": "en",
+   "rep": 0,
+   "input": "the new plan the one we talked about yesterday is ready for review",
+   "raw": "The new plan, the one we talked about yesterday, is ready for review",
+   "final": "The new plan, the one we talked about yesterday, is ready for review",
+   "ms": 2544
+  },
+  {
+   "id": "en7",
+   "lang": "en",
+   "rep": 0,
+   "input": "we need three things basically more tests better docs and a release date",
+   "raw": "We need three things basically: more tests, better docs, and a release date.",
+   "final": "We need three things basically: more tests, better docs, and a release date",
+   "ms": 1533
+  },
+  {
+   "id": "en8",
+   "lang": "en",
+   "rep": 0,
+   "input": "hmm let me think the server crashed at like two in the morning",
+   "raw": "The server crashed at two in the morning.",
+   "final": "The server crashed at two in the morning",
+   "ms": 1039
+  },
+  {
+   "id": "en9",
+   "lang": "en",
+   "rep": 0,
+   "input": "can you uh can you review my pull request today",
+   "raw": "Can you review my pull request today?",
+   "final": "Can you review my pull request today?",
+   "ms": 591
+  },
+  {
+   "id": "en10",
+   "lang": "en",
+   "rep": 0,
+   "input": "it works on my machine but on staging it doesn't which is weird",
+   "raw": "It works on my machine but doesn't on staging, which is weird.",
+   "final": "It works on my machine but doesn't on staging, which is weird",
+   "ms": 718
+  },
+  {
+   "id": "yue1",
+   "lang": "yue",
+   "rep": 0,
+   "input": "呃我哋聽日開會之前要搞掂份報告",
+   "raw": "呃，我哋聽日開會之前要搞掂份報告",
+   "final": "呃，我哋聽日開會之前要搞掂份報告",
+   "ms": 1357
+  },
+  {
+   "id": "yue2",
+   "lang": "yue",
+   "rep": 0,
+   "input": "即係話個server又死咗即係我哋要重新開過",
+   "raw": "即係話個server又死咗，即係我哋要重新開過",
+   "final": "即係話個server又死咗，即係我哋要重新開過",
+   "ms": 1247
+  },
+  {
+   "id": "yue3",
+   "lang": "yue",
+   "rep": 0,
+   "input": "嗯我想問下你得唔得閒星期五食飯",
+   "raw": "我想問下你得唔得閒星期五食飯",
+   "final": "我想問下你得唔得閒星期五食飯",
+   "ms": 679
+  },
+  {
+   "id": "yue4",
+   "lang": "yue",
+   "rep": 0,
+   "input": "三點鐘唔係唔好意思四點鐘喺會議室等",
+   "raw": "三點鐘唔係，唔好意思，四點鐘喺會議室等",
+   "final": "三點鐘唔係，唔好意思，四點鐘喺會議室等",
+   "ms": 976
+  },
+  {
+   "id": "cmn1",
+   "lang": "cmn",
+   "rep": 0,
+   "input": "那个我们明天的会议就是要讨论一下预算的问题",
+   "raw": "那个，我们明天的会议就是要讨论一下预算的问题",
+   "final": "那个，我们明天的会议就是要讨论一下预算的问题",
+   "ms": 1297
+  },
+  {
+   "id": "cmn2",
+   "lang": "cmn",
+   "rep": 0,
+   "input": "然后然后我们再看一下那个测试结果",
+   "raw": "然后我们再看一下那个测试结果",
+   "final": "然后我们再看一下那个测试结果",
+   "ms": 713
+  },
+  {
+   "id": "cmn3",
+   "lang": "cmn",
+   "rep": 0,
+   "input": "就是说这个功能嗯下周之前要上线",
+   "raw": "就是说这个功能下周之前要上线。",
+   "final": "就是说这个功能下周之前要上线",
+   "ms": 915
+  },
+  {
+   "id": "cmn4",
+   "lang": "cmn",
+   "rep": 0,
+   "input": "把文件发给小王不对发给小李",
+   "raw": "把文件发给小李",
+   "final": "把文件发给小李",
+   "ms": 487
+  },
+  {
+   "id": "ce1",
+   "lang": "en-counter",
+   "rep": 0,
+   "input": "No I don't think we should ship this today",
+   "raw": "No, I don't think we should ship this today",
+   "final": "No, I don't think we should ship this today",
+   "ms": 1049
+  },
+  {
+   "id": "ce2",
+   "lang": "en-counter",
+   "rep": 0,
+   "input": "I'm sorry for the late reply I was out sick yesterday",
+   "raw": "I'm sorry for the late reply, I was out sick yesterday.",
+   "final": "I'm sorry for the late reply, I was out sick yesterday",
+   "ms": 912
+  },
+  {
+   "id": "ce3",
+   "lang": "en-counter",
+   "rep": 0,
+   "input": "I really like the new design especially the colours",
+   "raw": "I really like the new design, especially the colours.",
+   "final": "I really like the new design, especially the colours",
+   "ms": 723
+  },
+  {
+   "id": "ce4",
+   "lang": "en-counter",
+   "rep": 0,
+   "input": "the tests failed so I rolled back the deploy",
+   "raw": "The tests failed, so I rolled back the deploy.",
+   "final": "The tests failed, so I rolled back the deploy",
+   "ms": 706
+  },
+  {
+   "id": "ce5",
+   "lang": "en-counter",
+   "rep": 0,
+   "input": "I thought it was a memory leak but actually it was a race condition",
+   "raw": "I thought it was a memory leak, but actually it was a race condition.",
+   "final": "I thought it was a memory leak, but actually it was a race condition",
+   "ms": 857
+  },
+  {
+   "id": "ce6",
+   "lang": "en-counter",
+   "rep": 0,
+   "input": "is the cache enabled no it is not",
+   "raw": "Is the cache enabled? No, it is not.",
+   "final": "Is the cache enabled? No, it is not.",
+   "ms": 698
+  },
+  {
+   "id": "fr1",
+   "lang": "fr",
+   "rep": 0,
+   "input": "euh je pense que euh on peut déplacer la réunion à jeudi",
+   "raw": "Je pense que on peut déplacer la réunion à jeudi.",
+   "final": "Je pense que on peut déplacer la réunion à jeudi",
+   "ms": 825
+  },
+  {
+   "id": "fr2",
+   "lang": "fr",
+   "rep": 0,
+   "input": "envoie le fichier à Pierre non pardon à Marie",
+   "raw": "Envoie le fichier à Marie",
+   "final": "Envoie le fichier à Marie",
+   "ms": 474
+  },
+  {
+   "id": "es1",
+   "lang": "es",
+   "rep": 0,
+   "input": "bueno o sea el servidor se cayó otra vez esta mañana",
+   "raw": "Bueno, o sea, el servidor se cayó otra vez esta mañana.",
+   "final": "Bueno, o sea, el servidor se cayó otra vez esta mañana",
+   "ms": 1069
+  },
+  {
+   "id": "es2",
+   "lang": "es",
+   "rep": 0,
+   "input": "la reunión es a las tres no perdón a las cuatro en la sala grande",
+   "raw": "La reunión es a las cuatro en la sala grande.",
+   "final": "La reunión es a las cuatro en la sala grande",
+   "ms": 779
+  },
+  {
+   "id": "en1",
+   "lang": "en",
+   "rep": 1,
+   "input": "um so I was thinking we could uh move the meeting to Thursday",
+   "raw": "So I was thinking we could move the meeting to Thursday.",
+   "final": "So I was thinking we could move the meeting to Thursday",
+   "ms": 684
+  },
+  {
+   "id": "en2",
+   "lang": "en",
+   "rep": 1,
+   "input": "I mean the build is broken again and I don't know why",
+   "raw": "The build is broken again, and I don't know why.",
+   "final": "The build is broken again, and I don't know why",
+   "ms": 759
+  },
+  {
+   "id": "en3",
+   "lang": "en",
+   "rep": 1,
+   "input": "send it to John no sorry send it to Mary",
+   "raw": "Send it to Mary.",
+   "final": "Send it to Mary",
+   "ms": 413
+  },
+  {
+   "id": "en4",
+   "lang": "en",
+   "rep": 1,
+   "input": "the deadline is Friday no wait Monday",
+   "raw": "The deadline is Monday.",
+   "final": "The deadline is Monday",
+   "ms": 433
+  },
+  {
+   "id": "en5",
+   "lang": "en",
+   "rep": 1,
+   "input": "I checked the logs you know and there was nothing there",
+   "raw": "I checked the logs, and there was nothing there.",
+   "final": "I checked the logs, and there was nothing there",
+   "ms": 752
+  },
+  {
+   "id": "en6",
+   "lang": "en",
+   "rep": 1,
+   "input": "the new plan the one we talked about yesterday is ready for review",
+   "raw": "The new plan, the one we talked about yesterday, is ready for review",
+   "final": "The new plan, the one we talked about yesterday, is ready for review",
+   "ms": 820
+  },
+  {
+   "id": "en7",
+   "lang": "en",
+   "rep": 1,
+   "input": "we need three things basically more tests better docs and a release date",
+   "raw": "We need three things basically: more tests, better docs, and a release date.",
+   "final": "We need three things basically: more tests, better docs, and a release date",
+   "ms": 891
+  },
+  {
+   "id": "en8",
+   "lang": "en",
+   "rep": 1,
+   "input": "hmm let me think the server crashed at like two in the morning",
+   "raw": "The server crashed at two in the morning.",
+   "final": "The server crashed at two in the morning",
+   "ms": 590
+  },
+  {
+   "id": "en9",
+   "lang": "en",
+   "rep": 1,
+   "input": "can you uh can you review my pull request today",
+   "raw": "Can you review my pull request today?",
+   "final": "Can you review my pull request today?",
+   "ms": 532
+  },
+  {
+   "id": "en10",
+   "lang": "en",
+   "rep": 1,
+   "input": "it works on my machine but on staging it doesn't which is weird",
+   "raw": "It works on my machine but doesn't on staging, which is weird.",
+   "final": "It works on my machine but doesn't on staging, which is weird",
+   "ms": 832
+  },
+  {
+   "id": "yue1",
+   "lang": "yue",
+   "rep": 1,
+   "input": "呃我哋聽日開會之前要搞掂份報告",
+   "raw": "呃，我哋聽日開會之前要搞掂份報告",
+   "final": "呃，我哋聽日開會之前要搞掂份報告",
+   "ms": 1446
+  },
+  {
+   "id": "yue2",
+   "lang": "yue",
+   "rep": 1,
+   "input": "即係話個server又死咗即係我哋要重新開過",
+   "raw": "即係話個server又死咗，即係我哋要重新開過",
+   "final": "即係話個server又死咗，即係我哋要重新開過",
+   "ms": 1077
+  },
+  {
+   "id": "yue3",
+   "lang": "yue",
+   "rep": 1,
+   "input": "嗯我想問下你得唔得閒星期五食飯",
+   "raw": "我想問下你得唔得閒星期五食飯",
+   "final": "我想問下你得唔得閒星期五食飯",
+   "ms": 778
+  },
+  {
+   "id": "yue4",
+   "lang": "yue",
+   "rep": 1,
+   "input": "三點鐘唔係唔好意思四點鐘喺會議室等",
+   "raw": "三點鐘唔係，唔好意思，四點鐘喺會議室等",
+   "final": "三點鐘唔係，唔好意思，四點鐘喺會議室等",
+   "ms": 1100
+  },
+  {
+   "id": "cmn1",
+   "lang": "cmn",
+   "rep": 1,
+   "input": "那个我们明天的会议就是要讨论一下预算的问题",
+   "raw": "那个我们明天的会议就是要讨论一下预算的问题",
+   "final": "那个我们明天的会议就是要讨论一下预算的问题",
+   "ms": 1104
+  },
+  {
+   "id": "cmn2",
+   "lang": "cmn",
+   "rep": 1,
+   "input": "然后然后我们再看一下那个测试结果",
+   "raw": "然后我们再看一下那个测试结果",
+   "final": "然后我们再看一下那个测试结果",
+   "ms": 584
+  },
+  {
+   "id": "cmn3",
+   "lang": "cmn",
+   "rep": 1,
+   "input": "就是说这个功能嗯下周之前要上线",
+   "raw": "就是说这个功能下周之前要上线。",
+   "final": "就是说这个功能下周之前要上线",
+   "ms": 643
+  },
+  {
+   "id": "cmn4",
+   "lang": "cmn",
+   "rep": 1,
+   "input": "把文件发给小王不对发给小李",
+   "raw": "把文件发给小李",
+   "final": "把文件发给小李",
+   "ms": 468
+  },
+  {
+   "id": "ce1",
+   "lang": "en-counter",
+   "rep": 1,
+   "input": "No I don't think we should ship this today",
+   "raw": "No, I don't think we should ship this today.",
+   "final": "No, I don't think we should ship this today",
+   "ms": 1222
+  },
+  {
+   "id": "ce2",
+   "lang": "en-counter",
+   "rep": 1,
+   "input": "I'm sorry for the late reply I was out sick yesterday",
+   "raw": "I'm sorry for the late reply, I was out sick yesterday.",
+   "final": "I'm sorry for the late reply, I was out sick yesterday",
+   "ms": 823
+  },
+  {
+   "id": "ce3",
+   "lang": "en-counter",
+   "rep": 1,
+   "input": "I really like the new design especially the colours",
+   "raw": "I really like the new design, especially the colours.",
+   "final": "I really like the new design, especially the colours",
+   "ms": 1343
+  },
+  {
+   "id": "ce4",
+   "lang": "en-counter",
+   "rep": 1,
+   "input": "the tests failed so I rolled back the deploy",
+   "raw": "The tests failed, so I rolled back the deploy.",
+   "final": "The tests failed, so I rolled back the deploy",
+   "ms": 934
+  },
+  {
+   "id": "ce5",
+   "lang": "en-counter",
+   "rep": 1,
+   "input": "I thought it was a memory leak but actually it was a race condition",
+   "raw": "I thought it was a memory leak, but actually it was a race condition.",
+   "final": "I thought it was a memory leak, but actually it was a race condition",
+   "ms": 1439
+  },
+  {
+   "id": "ce6",
+   "lang": "en-counter",
+   "rep": 1,
+   "input": "is the cache enabled no it is not",
+   "raw": "Is the cache enabled? No, it is not.",
+   "final": "Is the cache enabled? No, it is not.",
+   "ms": 1675
+  },
+  {
+   "id": "fr1",
+   "lang": "fr",
+   "rep": 1,
+   "input": "euh je pense que euh on peut déplacer la réunion à jeudi",
+   "raw": "Je pense que on peut déplacer la réunion à jeudi.",
+   "final": "Je pense que on peut déplacer la réunion à jeudi",
+   "ms": 1047
+  },
+  {
+   "id": "fr2",
+   "lang": "fr",
+   "rep": 1,
+   "input": "envoie le fichier à Pierre non pardon à Marie",
+   "raw": "Envoie le fichier à Marie",
+   "final": "Envoie le fichier à Marie",
+   "ms": 592
+  },
+  {
+   "id": "es1",
+   "lang": "es",
+   "rep": 1,
+   "input": "bueno o sea el servidor se cayó otra vez esta mañana",
+   "raw": "Bueno, o sea, el servidor se cayó otra vez esta mañana.",
+   "final": "Bueno, o sea, el servidor se cayó otra vez esta mañana",
+   "ms": 987
+  },
+  {
+   "id": "es2",
+   "lang": "es",
+   "rep": 1,
+   "input": "la reunión es a las tres no perdón a las cuatro en la sala grande",
+   "raw": "La reunión es a las cuatro en la sala grande.",
+   "final": "La reunión es a las cuatro en la sala grande",
+   "ms": 844
+  },
+  {
+   "id": "en1",
+   "lang": "en",
+   "rep": 2,
+   "input": "um so I was thinking we could uh move the meeting to Thursday",
+   "raw": "So I was thinking we could move the meeting to Thursday.",
+   "final": "So I was thinking we could move the meeting to Thursday",
+   "ms": 1032
+  },
+  {
+   "id": "en2",
+   "lang": "en",
+   "rep": 2,
+   "input": "I mean the build is broken again and I don't know why",
+   "raw": "The build is broken again, and I don't know why.",
+   "final": "The build is broken again, and I don't know why",
+   "ms": 856
+  },
+  {
+   "id": "en3",
+   "lang": "en",
+   "rep": 2,
+   "input": "send it to John no sorry send it to Mary",
+   "raw": "Send it to Mary.",
+   "final": "Send it to Mary",
+   "ms": 421
+  },
+  {
+   "id": "en4",
+   "lang": "en",
+   "rep": 2,
+   "input": "the deadline is Friday no wait Monday",
+   "raw": "The deadline is Monday.",
+   "final": "The deadline is Monday",
+   "ms": 435
+  },
+  {
+   "id": "en5",
+   "lang": "en",
+   "rep": 2,
+   "input": "I checked the logs you know and there was nothing there",
+   "raw": "I checked the logs, and there was nothing there.",
+   "final": "I checked the logs, and there was nothing there",
+   "ms": 719
+  },
+  {
+   "id": "en6",
+   "lang": "en",
+   "rep": 2,
+   "input": "the new plan the one we talked about yesterday is ready for review",
+   "raw": "The new plan, the one we talked about yesterday, is ready for review",
+   "final": "The new plan, the one we talked about yesterday, is ready for review",
+   "ms": 919
+  },
+  {
+   "id": "en7",
+   "lang": "en",
+   "rep": 2,
+   "input": "we need three things basically more tests better docs and a release date",
+   "raw": "We need three things basically: more tests, better docs, and a release date.",
+   "final": "We need three things basically: more tests, better docs, and a release date",
+   "ms": 906
+  },
+  {
+   "id": "en8",
+   "lang": "en",
+   "rep": 2,
+   "input": "hmm let me think the server crashed at like two in the morning",
+   "raw": "The server crashed at two in the morning.",
+   "final": "The server crashed at two in the morning",
+   "ms": 631
+  },
+  {
+   "id": "en9",
+   "lang": "en",
+   "rep": 2,
+   "input": "can you uh can you review my pull request today",
+   "raw": "Can you review my pull request today?",
+   "final": "Can you review my pull request today?",
+   "ms": 571
+  },
+  {
+   "id": "en10",
+   "lang": "en",
+   "rep": 2,
+   "input": "it works on my machine but on staging it doesn't which is weird",
+   "raw": "It works on my machine but doesn't on staging, which is weird.",
+   "final": "It works on my machine but doesn't on staging, which is weird",
+   "ms": 1120
+  },
+  {
+   "id": "yue1",
+   "lang": "yue",
+   "rep": 2,
+   "input": "呃我哋聽日開會之前要搞掂份報告",
+   "raw": "呃，我哋聽日開會之前要搞掂份報告",
+   "final": "呃，我哋聽日開會之前要搞掂份報告",
+   "ms": 1510
+  },
+  {
+   "id": "yue2",
+   "lang": "yue",
+   "rep": 2,
+   "input": "即係話個server又死咗即係我哋要重新開過",
+   "raw": "即係話個server又死咗，即係我哋要重新開過",
+   "final": "即係話個server又死咗，即係我哋要重新開過",
+   "ms": 1193
+  },
+  {
+   "id": "yue3",
+   "lang": "yue",
+   "rep": 2,
+   "input": "嗯我想問下你得唔得閒星期五食飯",
+   "raw": "嗯，我想問下你得唔得閒星期五食飯？",
+   "final": "嗯，我想問下你得唔得閒星期五食飯？",
+   "ms": 922
+  },
+  {
+   "id": "yue4",
+   "lang": "yue",
+   "rep": 2,
+   "input": "三點鐘唔係唔好意思四點鐘喺會議室等",
+   "raw": "三點鐘唔係，唔好意思，四點鐘喺會議室等",
+   "final": "三點鐘唔係，唔好意思，四點鐘喺會議室等",
+   "ms": 1053
+  },
+  {
+   "id": "cmn1",
+   "lang": "cmn",
+   "rep": 2,
+   "input": "那个我们明天的会议就是要讨论一下预算的问题",
+   "raw": "那个，我们明天的会议就是要讨论一下预算的问题",
+   "final": "那个，我们明天的会议就是要讨论一下预算的问题",
+   "ms": 1257
+  },
+  {
+   "id": "cmn2",
+   "lang": "cmn",
+   "rep": 2,
+   "input": "然后然后我们再看一下那个测试结果",
+   "raw": "然后我们再看一下那个测试结果",
+   "final": "然后我们再看一下那个测试结果",
+   "ms": 656
+  },
+  {
+   "id": "cmn3",
+   "lang": "cmn",
+   "rep": 2,
+   "input": "就是说这个功能嗯下周之前要上线",
+   "raw": "就是说这个功能下周之前要上线。",
+   "final": "就是说这个功能下周之前要上线",
+   "ms": 754
+  },
+  {
+   "id": "cmn4",
+   "lang": "cmn",
+   "rep": 2,
+   "input": "把文件发给小王不对发给小李",
+   "raw": "把文件发给小李",
+   "final": "把文件发给小李",
+   "ms": 534
+  },
+  {
+   "id": "ce1",
+   "lang": "en-counter",
+   "rep": 2,
+   "input": "No I don't think we should ship this today",
+   "raw": "No, I don't think we should ship this today",
+   "final": "No, I don't think we should ship this today",
+   "ms": 1245
+  },
+  {
+   "id": "ce2",
+   "lang": "en-counter",
+   "rep": 2,
+   "input": "I'm sorry for the late reply I was out sick yesterday",
+   "raw": "I'm sorry for the late reply, I was out sick yesterday.",
+   "final": "I'm sorry for the late reply, I was out sick yesterday",
+   "ms": 823
+  },
+  {
+   "id": "ce3",
+   "lang": "en-counter",
+   "rep": 2,
+   "input": "I really like the new design especially the colours",
+   "raw": "I really like the new design, especially the colours.",
+   "final": "I really like the new design, especially the colours",
+   "ms": 766
+  },
+  {
+   "id": "ce4",
+   "lang": "en-counter",
+   "rep": 2,
+   "input": "the tests failed so I rolled back the deploy",
+   "raw": "The tests failed, so I rolled back the deploy.",
+   "final": "The tests failed, so I rolled back the deploy",
+   "ms": 761
+  },
+  {
+   "id": "ce5",
+   "lang": "en-counter",
+   "rep": 2,
+   "input": "I thought it was a memory leak but actually it was a race condition",
+   "raw": "I thought it was a memory leak, but actually it was a race condition.",
+   "final": "I thought it was a memory leak, but actually it was a race condition",
+   "ms": 987
+  },
+  {
+   "id": "ce6",
+   "lang": "en-counter",
+   "rep": 2,
+   "input": "is the cache enabled no it is not",
+   "raw": "Is the cache enabled? No, it is not.",
+   "final": "Is the cache enabled? No, it is not.",
+   "ms": 781
+  },
+  {
+   "id": "fr1",
+   "lang": "fr",
+   "rep": 2,
+   "input": "euh je pense que euh on peut déplacer la réunion à jeudi",
+   "raw": "Je pense que on peut déplacer la réunion à jeudi.",
+   "final": "Je pense que on peut déplacer la réunion à jeudi",
+   "ms": 958
+  },
+  {
+   "id": "fr2",
+   "lang": "fr",
+   "rep": 2,
+   "input": "envoie le fichier à Pierre non pardon à Marie",
+   "raw": "Envoie le fichier à Marie",
+   "final": "Envoie le fichier à Marie",
+   "ms": 478
+  },
+  {
+   "id": "es1",
+   "lang": "es",
+   "rep": 2,
+   "input": "bueno o sea el servidor se cayó otra vez esta mañana",
+   "raw": "Bueno, o sea, el servidor se cayó otra vez esta mañana.",
+   "final": "Bueno, o sea, el servidor se cayó otra vez esta mañana",
+   "ms": 1629
+  },
+  {
+   "id": "es2",
+   "lang": "es",
+   "rep": 2,
+   "input": "la reunión es a las tres no perdón a las cuatro en la sala grande",
+   "raw": "La reunión es a las cuatro en la sala grande.",
+   "final": "La reunión es a las cuatro en la sala grande",
+   "ms": 945
+  }
+ ]
+}

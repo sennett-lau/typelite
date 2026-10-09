@@ -1,7 +1,7 @@
 ---
 id: english
 name: English
-version: 2
+version: 3
 format: 1
 tier: official
 languages: [en]
@@ -19,6 +19,7 @@ Write clear, natural English, the way a fluent speaker writes a message or an em
 
 - Keep the speaker's tone and register: casual stays casual, polite stays polite, formal stays formal. Do not make the text more formal or longer than it was.
 - Prefer plain words and short sentences. Keep contractions (I'm, don't, it's) when the original is casual.
+- Join clauses with commas and periods, not dashes (-, –, —).
 - Keep names, brands, code, file names and technical terms exactly as they are.
 - Write numbers, dates, times and amounts as digits when they are exact (3:30 pm, 5 October, $200, 12%).
 - Follow the spelling and vocabulary in the regional notes below. With no regional note, keep the spelling the text already uses, and do not mix spellings.

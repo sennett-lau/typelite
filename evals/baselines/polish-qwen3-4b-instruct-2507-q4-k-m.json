@@ -2,8 +2,8 @@
   "kind": "polish",
   "model": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
   "updated": "2026-10-09",
-  "git_rev": "c96ec25+dirty",
-  "prompt_sha256": "fe2ff72ebb773ba9880012f455cd7fc0e355e7d7bca4d9940246ba7136763efd",
+  "git_rev": "410eb54+dirty",
+  "prompt_sha256": "a2fc71f32b29cb89a243c181e3d91d48a675b07102e84ddb247ea2376118ead7",
   "samples": 3,
   "settings": {
     "split": "all",
@@ -39,9 +39,9 @@
       "output": "I checked the logs, and there was nothing there"
     },
     "en-006": {
-      "pass_rate": 0.667,
-      "error": 0.056,
-      "output": "Hmm, let me think—the server crashed at two in the morning"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "The server crashed at two in the morning"
     },
     "en-007": {
       "pass_rate": 1,
@@ -74,13 +74,13 @@
       "output": "We grew about 20 percent last quarter, and revenue hit 3.2 million dollars"
     },
     "en-013": {
-      "pass_rate": 0,
-      "error": 0.167,
-      "output": "Please upgrade node to version 22.1.1 and then rerun the tests"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "Please upgrade node to version 22.11 and then rerun the tests"
     },
     "en-014": {
-      "pass_rate": 0,
-      "error": 0.125,
+      "pass_rate": 0.333,
+      "error": 0.083,
       "output": "The meeting is at 3:30, not four"
     },
     "en-015": {
@@ -141,7 +141,7 @@
     "en-026": {
       "pass_rate": 1,
       "error": 0,
-      "output": "I'm sorry for the late reply; I was out sick yesterday"
+      "output": "I'm sorry for the late reply, I was out sick yesterday"
     },
     "en-027": {
       "pass_rate": 0,
@@ -191,7 +191,7 @@
     "en-h04": {
       "pass_rate": 1,
       "error": 0,
-      "output": "Three priorities this week:  \n1. Fix the crash  \n2. Ship the onboarding  \n3. Write the blog post"
+      "output": "Three priorities this week:\n1. Fix the crash\n2. Ship the onboarding\n3. Write the blog post"
     },
     "en-h05": {
       "pass_rate": 1,
@@ -215,8 +215,8 @@
     },
     "en-h09": {
       "pass_rate": 1,
-      "error": 0,
-      "output": "Thanks for the feedback. The layout looks great. Now, one more thing: can you send me the invoice by Monday?"
+      "error": 0.15,
+      "output": "Thanks for the feedback. The layout looks great. Now, can you send me the invoice by Monday?"
     },
     "en-h10": {
       "pass_rate": 0,
@@ -236,17 +236,17 @@
     "es-003": {
       "pass_rate": 1,
       "error": 0,
-      "output": "Puedes enviarme el informe antes del viernes"
+      "output": "Puedes enviarme el informe antes del viernes?"
     },
     "es-004": {
       "pass_rate": 0,
-      "error": 0.125,
-      "output": "Eh, las ventas subieron un 12.5 por ciento"
+      "error": 0,
+      "output": "Las ventas subieron un 12.5 por ciento"
     },
     "es-005": {
       "pass_rate": 0,
-      "error": 0.357,
-      "output": "1. arreglar el error  \n2. actualizar la documentación  \n3. avisar al cliente"
+      "error": 0.286,
+      "output": "Tenemos que hacer tres cosas primero arreglar el error segundo actualizar la documentación y tercero avisar al cliente"
     },
     "es-006": {
       "pass_rate": 1,
@@ -291,12 +291,12 @@
     "fr-004": {
       "pass_rate": 0,
       "error": 0.222,
-      "output": "Bon ben du coup, on se voit demain à dix heures"
+      "output": "Bon ben, du coup, on se voit demain à dix heures"
     },
     "fr-005": {
-      "pass_rate": 0,
-      "error": 0.308,
-      "output": "1. Des tests  \n2. De la doc  \n3. Une date de sortie"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "Il faut trois choses :  \n1. Des tests  \n2. De la doc  \n3. Une date de sortie"
     },
     "fr-006": {
       "pass_rate": 1,
@@ -306,7 +306,7 @@
     "fr-007": {
       "pass_rate": 1,
       "error": 0.071,
-      "output": "Le serveur a planté hier soir on a redémarré ce matin tout fonctionne"
+      "output": "Le serveur a planté hier soir, on a redémarré ce matin, tout fonctionne"
     },
     "fr-008": {
       "pass_rate": 1,
@@ -314,9 +314,9 @@
       "output": "Non je ne suis pas d'accord avec cette proposition"
     },
     "fr-h01": {
-      "pass_rate": 0,
-      "error": 0.2,
-      "output": "La livraison est prévue mardi"
+      "pass_rate": 0.667,
+      "error": 0.067,
+      "output": "La livraison est prévue mercredi"
     },
     "fr-h02": {
       "pass_rate": 0,
@@ -329,9 +329,9 @@
       "output": "明天的会议是三时开始"
     },
     "ja-002": {
-      "pass_rate": 0,
-      "error": 0.667,
-      "output": "资料送佐藤先生"
+      "pass_rate": 0.333,
+      "error": 0.533,
+      "output": "資料は佐藤さんに送ってください"
     },
     "ja-003": {
       "pass_rate": 0,
@@ -341,12 +341,12 @@
     "ja-004": {
       "pass_rate": 1,
       "error": 0,
-      "output": "今日のタスクは三つあります。  \n1. テスト  \n2. レビュー  \n3. リリース"
+      "output": "今日のタスクは三つあります：\n1. テスト\n2. レビュー\n3. リリース"
     },
     "ja-005": {
-      "pass_rate": 0,
-      "error": 1,
-      "output": "这个bug已经修复了吗？"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "このバグはもう直りましたか"
     },
     "ja-006": {
       "pass_rate": 0,
@@ -359,24 +359,24 @@
       "output": "这个项目的截止日期是下周的周五"
     },
     "ja-008": {
-      "pass_rate": 0,
-      "error": 1,
-      "output": "不，我认为那不一样"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "いいえそれは違うと思います"
     },
     "ja-h01": {
       "pass_rate": 0,
-      "error": 0.3,
-      "output": "えーとバージョン二点一にアップデートしてください"
+      "error": 0.9,
+      "output": "升级到版本 2.1"
     },
     "ja-h02": {
-      "pass_rate": 0.667,
-      "error": 0.306,
-      "output": "会议在周二举行吧"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "会議は火曜日にしましょう"
     },
     "yue-001": {
-      "pass_rate": 0,
-      "error": 0.143,
-      "output": "呃，我們聽日開會之前要搞掂份報告"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我哋聽日開會之前要搞掂份報告"
     },
     "yue-002": {
       "pass_rate": 1,
@@ -384,14 +384,14 @@
       "output": "即係話個server又死咗，即係我哋要重新開過"
     },
     "yue-003": {
-      "pass_rate": 0,
-      "error": 0.071,
-      "output": "嗯，我想問下你得唔得閒星期五食飯？"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我想問下你得唔得閒星期五食飯"
     },
     "yue-004": {
       "pass_rate": 0,
-      "error": 1.5,
-      "output": "三点钟不好意思，四点钟在会议室等"
+      "error": 1.125,
+      "output": "三點鐘唔係，唔好意思，四點鐘喺會議室等"
     },
     "yue-005": {
       "pass_rate": 1,
@@ -419,9 +419,9 @@
       "output": "我頭先已經send咗個file俾你喇，你睇下係咪啱啦"
     },
     "yue-010": {
-      "pass_rate": 0,
-      "error": 0.4,
-      "output": "這個project的截止日期是下個禮拜五，我們要加快啲"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "呢個project個deadline係下個禮拜五，我哋要加快啲"
     },
     "yue-011": {
       "pass_rate": 0,
@@ -441,12 +441,12 @@
     "yue-014": {
       "pass_rate": 1,
       "error": 0,
-      "output": "今次會議有三樣嘢要傾：  \n1. 預算  \n2. 人手  \n3. 時間表"
+      "output": "今次會議有三樣嘢要傾：\n1. 預算\n2. 人手\n3. 時間表"
     },
     "yue-015": {
       "pass_rate": 1,
       "error": 0,
-      "output": "1. 打開設定  \n2. 揀私隱  \n3. 撳重新開機"
+      "output": "首先打開設定，然後揀私隱，最後撳重新開機"
     },
     "yue-016": {
       "pass_rate": 1,
@@ -456,7 +456,7 @@
     "yue-017": {
       "pass_rate": 1,
       "error": 0,
-      "output": "唔係我，唔想去，係我真係冇時間"
+      "output": "唔係我唔想去，係我真係冇時間"
     },
     "yue-018": {
       "pass_rate": 0,
@@ -465,7 +465,7 @@
     },
     "yue-019": {
       "pass_rate": 0,
-      "error": 0.471,
+      "error": 0.235,
       "output": "我哋約咗Peter喺中環食lunch"
     },
     "yue-020": {
@@ -484,19 +484,19 @@
       "output": "現在我沒有足夠時間做這件事"
     },
     "yue-023": {
-      "pass_rate": 0,
-      "error": 0.091,
-      "output": "我們聽日上晝十點半開會"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我哋聽日上晝十點半開會"
     },
     "yue-024": {
       "pass_rate": 0,
-      "error": 0.182,
-      "output": "呃，那個file你放咗喺邊？"
+      "error": 0.091,
+      "output": "那個file你放咗喺邊？"
     },
     "yue-025": {
-      "pass_rate": 0,
-      "error": 0.471,
-      "output": "我觉得这个方案很好，但价格贵了一些"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "我觉得呢个方案几好，但系个价钱贵咗啲"
     },
     "yue-026": {
       "pass_rate": 1,
@@ -524,19 +524,19 @@
       "output": "我想book兩個位，唔係三個位，七點半"
     },
     "yue-h01": {
-      "pass_rate": 0,
-      "error": 0.111,
-      "output": "呃，聽日嘅會改咗去三點"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "聽日嘅會改咗去三點"
     },
     "yue-h02": {
       "pass_rate": 0,
       "error": 1.875,
-      "output": "Send 俾 John 不係唔好意思，send 俾 Amy"
+      "output": "Send俾John唔係唔好意思send俾Amy"
     },
     "yue-h03": {
       "pass_rate": 1,
       "error": 0,
-      "output": "佢話份合約要改多兩樣嘢：  \n1. 價錢  \n2. 交貨日期"
+      "output": "佢話份合約要改多兩樣嘢：\n1. 價錢\n2. 交貨日期"
     },
     "yue-h04": {
       "pass_rate": 0,
@@ -545,8 +545,8 @@
     },
     "yue-h05": {
       "pass_rate": 1,
-      "error": 0.048,
-      "output": "我唔係唔鍾意佢，隻係覺得佢太嘈"
+      "error": 0,
+      "output": "我唔係唔鍾意佢，只係覺得佢太嘈"
     },
     "yue-h06": {
       "pass_rate": 0,
@@ -554,9 +554,9 @@
       "output": "你搞掂未呀，我哋等緊你"
     },
     "yue-h07": {
-      "pass_rate": 0,
-      "error": 0.111,
-      "output": "嗯個meeting room book咗未"
+      "pass_rate": 0.333,
+      "error": 0.185,
+      "output": "個meeting room 书咗未"
     },
     "yue-h08": {
       "pass_rate": 1,
@@ -584,8 +584,8 @@
       "output": "然后我们再看一下那个测试结果"
     },
     "zh-003": {
-      "pass_rate": 0.333,
-      "error": 0.242,
+      "pass_rate": 0,
+      "error": 0.273,
       "output": "就是说这个功能下周之前要上线"
     },
     "zh-004": {
@@ -619,9 +619,9 @@
       "output": "我明天要跟老板讨论一下这个project的deadline"
     },
     "zh-010": {
-      "pass_rate": 1,
-      "error": 0,
-      "output": "你先把email发给我，我看完再confirm"
+      "pass_rate": 0,
+      "error": 0.545,
+      "output": "你先把邮件发给我，我看完再确认"
     },
     "zh-011": {
       "pass_rate": 1,
@@ -631,7 +631,7 @@
     "zh-012": {
       "pass_rate": 1,
       "error": 0,
-      "output": "请把版本号改成3.0.1然后重新打包"
+      "output": "请把版本号改成 3.0.1 然后重新打包"
     },
     "zh-013": {
       "pass_rate": 1,
@@ -641,12 +641,12 @@
     "zh-014": {
       "pass_rate": 1,
       "error": 0,
-      "output": "1. 买牛奶  \n2. 去洗衣服  \n3. 记得写代码"
+      "output": "首先我们需要：\n1. 买牛奶\n2. 去洗衣服\n3. 记得写代码"
     },
     "zh-015": {
       "pass_rate": 1,
       "error": 0,
-      "output": "这次复盘有三点：  \n1. 沟通不够  \n2. 测试太晚  \n3. 需求经常变"
+      "output": "这次复盘有三点：\n1. 沟通不够\n2. 测试太晚\n3. 需求经常变"
     },
     "zh-016": {
       "pass_rate": 1,
@@ -714,9 +714,9 @@
       "output": "她不在家，你晚一点再给她打电话吧"
     },
     "zh-h01": {
-      "pass_rate": 0.667,
-      "error": 0.095,
-      "output": "那个下午的会取消了"
+      "pass_rate": 1,
+      "error": 0,
+      "output": "下午的会取消了"
     },
     "zh-h02": {
       "pass_rate": 1,
@@ -749,9 +749,9 @@
       "output": "你什么时候有空，我们约个时间聊一下？"
     },
     "zh-h08": {
-      "pass_rate": 1,
-      "error": 0.182,
-      "output": "然后我们那个预算已经超了"
+      "pass_rate": 0,
+      "error": 0.273,
+      "output": "然后呢，我们那个预算已经超了"
     },
     "zh-h09": {
       "pass_rate": 0,

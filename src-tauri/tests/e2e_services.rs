@@ -242,6 +242,39 @@ async fn polish_removes_fillers_and_applies_self_corrections() {
     assert!(words.contains("design review"), "lost content: {text:?}");
 }
 
+/// Plan `polish-dashes-and-fillers`: "no, I mean" corrections, fillers and clause dashes.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "needs a running AI server; see scripts/e2e.sh"]
+async fn polish_drops_fillers_and_dashes_but_keeps_meaningful_words() {
+    let req = dictation_request(
+        "so um I mean we should send it on Friday no I mean Saturday and you know basically the client is happy",
+    );
+    let (text, took) = polish(&req).await;
+    println!("polish (fillers): {took:?} -> {text:?}");
+    let words = format!(" {} ", normalised(&text));
+    assert!(words.contains("saturday"), "{text:?}");
+    assert!(!words.contains("friday"), "{text:?}");
+    for filler in [" um ", " i mean ", " you know ", " basically "] {
+        assert!(!words.contains(filler), "kept filler {filler:?}: {text:?}");
+    }
+    for dash in [" - ", " – ", " — "] {
+        assert!(!text.contains(dash), "clause dash: {text:?}");
+    }
+
+    let req = dictation_request("no I don't agree and sorry for the delay I was sick");
+    let (text, took) = polish(&req).await;
+    println!("polish (meaningful no/sorry): {took:?} -> {text:?}");
+    let words = format!(" {} ", normalised(&text));
+    assert!(
+        words.starts_with(" no "),
+        "dropped a meaningful no: {text:?}"
+    );
+    assert!(
+        words.contains(" sorry "),
+        "dropped a meaningful sorry: {text:?}"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "needs a running AI server; see scripts/e2e.sh"]
 async fn polish_keeps_the_language_of_the_dictation() {
