@@ -5,7 +5,7 @@
 //! - The program ships inside the app bundle next to the main executable (a Tauri external
 //!   binary, built by `scripts/build-llama-server.sh`). Without it Built-in AI reports
 //!   [`ServerError::BinaryMissing`]; the rest of the app works.
-//! - It listens on 127.0.0.1 on a free port, with every layer on the GPU, a 4096-token context,
+//! - It listens on 127.0.0.1 on a free port, with every layer on the GPU, an 8192-token context,
 //!   one request slot, thinking off (`--reasoning off`) and no web UI. Each start gets a new
 //!   random API key (passed in the environment, not on the command line), so other programs
 //!   and web pages cannot use it.
@@ -34,8 +34,10 @@ use super::LlmConfig;
 
 /// The program's name inside `Typelite.app/Contents/MacOS/`.
 pub const SERVER_BINARY_NAME: &str = "llama-server";
-/// Context size in tokens: a dictation, the polish prompt and the answer fit easily.
-pub const CONTEXT_TOKENS: u32 = 4096;
+/// Context size in tokens. The prompt and the answer share it: the polish prompt with a language
+/// preset is about 3,300 tokens, so 4096 left too little room and cut long answers short
+/// (1.1.3). 8192 holds a long dictation and its answer; it costs about 0.6 GB more memory.
+pub const CONTEXT_TOKENS: u32 = 8192;
 /// Long enough for the first start, which compiles the Metal shaders.
 pub const STARTUP_TIMEOUT: Duration = Duration::from_secs(240);
 const HEALTH_POLL: Duration = Duration::from_millis(250);
@@ -857,7 +859,7 @@ mod tests {
             "--host 127.0.0.1",
             "--port 5555",
             "--n-gpu-layers 999",
-            "--ctx-size 4096",
+            "--ctx-size 8192",
             "--reasoning off",
             "--no-webui",
             "--offline",

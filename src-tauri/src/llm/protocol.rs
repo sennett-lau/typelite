@@ -15,6 +15,8 @@ pub struct StreamEvent {
     pub reasoning: Option<String>,
     pub error: Option<String>,
     pub done: bool,
+    /// The server stopped the answer at its length limit (`finish_reason: "length"`).
+    pub cut_off: bool,
 }
 
 /// Incremental decoder for the provider's newline-delimited SSE data lines.
@@ -167,9 +169,22 @@ pub fn parse_stream_event(body: &Value) -> StreamEvent {
     StreamEvent {
         text: delta["content"].as_str().map(str::to_string),
         reasoning: delta["reasoning_content"].as_str().map(str::to_string),
+        cut_off: was_cut_off(body),
         ..StreamEvent::default()
     }
 }
+
+/// True when the server stopped the answer at a length limit (`finish_reason: "length"`): the
+/// requested `max_tokens`, or a full context (the prompt and the answer share it, so a server
+/// with a small context cuts long answers short). Such an answer is missing its end.
+pub fn was_cut_off(body: &Value) -> bool {
+    body["choices"][0]["finish_reason"].as_str() == Some("length")
+}
+
+/// The error for an answer [`was_cut_off`]: polish fails, and the transcript is pasted whole.
+pub const CUT_OFF_MESSAGE: &str = "The AI's answer was cut off: the AI server ran out of room \
+     (its context is full). The transcript was pasted instead. Give the server a larger context, \
+     for example llama-server -c 8192.";
 
 #[cfg(test)]
 mod tests {
@@ -214,6 +229,26 @@ mod tests {
         }
         let byte_chunks: Vec<_> = bytes.chunks(1).collect();
         assert_eq!(decode_chunks(&byte_chunks), expected);
+    }
+
+    #[test]
+    fn an_answer_stopped_at_the_length_limit_counts_as_cut_off() {
+        let full = json!({"choices": [{"message": {"content": "佢話份合約要改多兩樣嘢"}, "finish_reason": "stop"}]});
+        let cut = json!({"choices": [{"message": {"content": "佢話份合約要改多兩"}, "finish_reason": "length"}]});
+        assert!(!was_cut_off(&full));
+        assert!(was_cut_off(&cut));
+        assert!(!was_cut_off(
+            &json!({"choices": [{"message": {"content": "x"}}]})
+        ));
+
+        let events = decode_chunks(&[
+            b"data: {\"choices\":[{\"delta\":{\"content\":\"\xe4\xbd\xa2\"}}]}\n\n",
+            b"data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}]}\n\ndata: [DONE]\n",
+        ]);
+        assert_eq!(events.len(), 3);
+        assert!(!events[0].cut_off);
+        assert!(events[1].cut_off);
+        assert!(CUT_OFF_MESSAGE.contains("transcript was pasted"));
     }
 
     #[test]

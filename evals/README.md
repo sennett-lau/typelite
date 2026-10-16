@@ -57,6 +57,11 @@ evals/
   baselines/<kind>-<model>.json
 ```
 
+With `--presets`, each language in `--languages` uses its preset from `presets/languages/`, as an
+app that downloaded it does (its instructions and routing hints), instead of the built-in
+instructions. Use it to measure what users of a preset get: `npm run eval -- polish --lang yue
+--languages en,zh-Hant-HK --presets …`.
+
 ## Polish cases
 
 One JSON object per line:

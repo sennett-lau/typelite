@@ -121,7 +121,10 @@ async fn ai_config() -> Result<(LlmConfig, bool), BoxError> {
     ))
 }
 
-/// The user's language list: `TYPELITE_EVAL_LANGUAGES` or the app's default.
+/// The user's language list: `TYPELITE_EVAL_LANGUAGES` or the app's default. With
+/// `TYPELITE_EVAL_PRESETS=1` each language uses its preset from `presets/languages/`, as in an
+/// app that downloaded it from the library (its instructions and routing hints), instead of the
+/// built-in instructions.
 fn app_config() -> AppConfig {
     let mut config = AppConfig::default();
     if let Some(list) = env("TYPELITE_EVAL_LANGUAGES") {
@@ -131,13 +134,55 @@ fn app_config() -> AppConfig {
             .filter(|code| !code.is_empty())
             .collect();
     }
+    if env("TYPELITE_EVAL_PRESETS").is_some() {
+        use_library_presets(&mut config);
+    }
     config
+}
+
+/// The preset store [`use_library_presets`] filled, for routing.
+static PRESET_STORE: std::sync::OnceLock<typelite_lib::llm::language_library::store::LibraryStore> =
+    std::sync::OnceLock::new();
+
+fn use_library_presets(config: &mut AppConfig) {
+    use typelite_lib::llm::language_library::{find_presets_for, parse_index, store::LibraryStore};
+    use typelite_lib::storage::{LibraryPresetRef, TranslationLanguageSettings};
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../presets/languages");
+    let index = std::fs::read(root.join("index.json"))
+        .map_err(|error| error.to_string())
+        .and_then(|bytes| parse_index(&bytes))
+        .expect("presets/languages/index.json");
+    let dir = std::env::temp_dir().join(format!("typelite-eval-presets-{}", std::process::id()));
+    let store = LibraryStore::new(dir);
+    for code in config.translation.targets.clone() {
+        let (matches, _) = find_presets_for(&index.presets, &code);
+        let Some(entry) = matches.first().and_then(|m| index.entry(&m.id)) else {
+            continue;
+        };
+        let bytes = std::fs::read(root.join(&entry.id).join("preset.md")).expect("preset.md");
+        let sha256 = store
+            .store_preset(&entry.id, &bytes)
+            .expect("store the preset");
+        eprintln!("eval: {code} uses preset {} v{}", entry.id, entry.version);
+        config.translation.languages.insert(
+            code,
+            TranslationLanguageSettings {
+                library_preset: Some(LibraryPresetRef {
+                    id: entry.id.clone(),
+                    version: entry.version,
+                    sha256,
+                }),
+                ..TranslationLanguageSettings::default()
+            },
+        );
+    }
+    let _ = PRESET_STORE.set(store);
 }
 
 /// A plain dictation with default settings, as `pipeline.rs` builds it.
 fn dictation_request(config: &AppConfig, raw_text: &str) -> (PolishRequest, Option<String>) {
     use typelite_lib::llm::language_router::{language_profiles, route};
-    let mut profiles = language_profiles(config, None);
+    let mut profiles = language_profiles(config, PRESET_STORE.get());
     let routed = route(&profiles, raw_text, None)
         .index()
         .map(|index| profiles.swap_remove(index));

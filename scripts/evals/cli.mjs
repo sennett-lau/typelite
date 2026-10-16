@@ -10,6 +10,7 @@
 //   --llama-model <gguf>  (built-in AI)    --ai-url <url> --ai-model <name>  (any OpenAI-compatible)
 //   --whisper-model <ggml .bin> (built-in speech)  --speech-url <url> --speech-model <name>
 //   --languages en,zh-Hant-HK  (the user's language list for polish routing; default: the app's)
+//   --presets  (those languages use their presets from presets/languages/, as downloaded ones)
 //   --baseline <file>|none  --save-baseline  --out <dir>
 // TYPELITE_EVAL_* environment variables work as well (see src-tauri/examples/eval_run.rs).
 import { createHash } from 'node:crypto'
@@ -36,7 +37,7 @@ function parseArgs(argv) {
     const key = rest[i]
     if (!key.startsWith('--')) throw new Error(`unexpected argument ${key}`)
     const name = key.slice(2)
-    if (name === 'save-baseline' || name === 'force') options[name] = true
+    if (name === 'save-baseline' || name === 'force' || name === 'presets') options[name] = true
     else options[name] = rest[++i]
   }
   return { command, options }
@@ -205,6 +206,7 @@ function polish(options) {
   if (options['ai-url']) env.TYPELITE_EVAL_AI_URL = options['ai-url']
   if (options['ai-model']) env.TYPELITE_EVAL_AI_MODEL = options['ai-model']
   if (options.languages) env.TYPELITE_EVAL_LANGUAGES = options.languages
+  if (options.presets) env.TYPELITE_EVAL_PRESETS = '1'
   const model = llama
     ? basename(llama)
     : (options['ai-model'] ?? process.env.TYPELITE_EVAL_AI_MODEL ?? 'server')

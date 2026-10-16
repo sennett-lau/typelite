@@ -221,6 +221,14 @@ impl LlmProvider for OpenAiProvider {
                     if let Some(error) = event.error {
                         return Err(AppError::Config(error));
                     }
+                    if event.cut_off {
+                        // Never paste half an answer; the pipeline pastes the transcript.
+                        tracing::warn!(
+                            "LLM answer cut off at the length limit after {} chars",
+                            full_text.chars().count()
+                        );
+                        return Err(AppError::Config(protocol::CUT_OFF_MESSAGE.to_string()));
+                    }
                     if let Some(content) = event.text {
                         if !content.is_empty() {
                             let content = prompt::plain_spaces(&content);
@@ -274,6 +282,14 @@ impl LlmProvider for OpenAiProvider {
             // Non-streaming mode
             let v: serde_json::Value = response.json().await?;
             let text = protocol::response_text(&v);
+            if protocol::was_cut_off(&v) {
+                // Never paste half an answer; the pipeline pastes the transcript.
+                tracing::warn!(
+                    "LLM answer cut off at the length limit after {} chars",
+                    text.chars().count()
+                );
+                return Err(AppError::Config(protocol::CUT_OFF_MESSAGE.to_string()));
+            }
 
             if text.is_empty() {
                 // Log only the size: the response may carry reasoning text about the dictation.
