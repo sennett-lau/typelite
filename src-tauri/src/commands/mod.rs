@@ -5,6 +5,7 @@ pub mod audio;
 pub mod config;
 pub mod credentials;
 pub mod dictionary;
+pub mod hands_free;
 pub mod language_presets;
 pub mod language_setup;
 pub mod llm;

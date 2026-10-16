@@ -110,6 +110,9 @@ struct AskDictationStateInner {
     /// Plan `ask-web-search`: the source links of the answer on screen. The panel may open only
     /// these.
     source_links: Vec<String>,
+    /// Plan `hands-free-mode`: this run was started by the wake phrase, so its request is routed
+    /// by meaning ("type …" dictates) before Ask's own routing.
+    hands_free: bool,
 }
 
 impl AskDictationState {
@@ -137,7 +140,13 @@ impl AskDictationState {
         }
         guard.starting = true;
         guard.stop_after_start = false;
+        guard.hands_free = false;
         true
+    }
+
+    /// Plan `hands-free-mode`: marks the run just reserved as started by the wake phrase.
+    pub(crate) fn mark_hands_free(&self) {
+        self.0.lock().unwrap_or_else(|e| e.into_inner()).hands_free = true;
     }
 
     fn clear_starting(&self) {
@@ -454,6 +463,20 @@ impl AskDictationResultMetadata {
             sources: Vec::new(),
             live_search: None,
             unconfirmed: false,
+        }
+    }
+
+    /// Plan `hands-free-mode`: a "type …" request dictated into the focused app. Without AI
+    /// polish there is no execution report; the text went out like a plain dictation.
+    fn dictated(execution: Option<&crate::voice_intent::executor::VoiceExecutionResult>) -> Self {
+        match execution {
+            Some(execution) => Self::from_draft_execution(execution),
+            None => Self {
+                output: AskResultOutput::InsertedText,
+                requested_placement: crate::voice_intent::VoiceOutputPlacement::InsertAtCursor,
+                actual_placement: Some(crate::voice_intent::VoiceOutputPlacement::InsertAtCursor),
+                ..Self::popup(false, false)
+            },
         }
     }
 
@@ -1755,7 +1778,7 @@ pub async fn stop_ask_dictation(
 ) -> Result<AskDictationResult, String> {
     // Plan `speed-board`: Speed board timing starts when stop is pressed.
     let stop_at = std::time::Instant::now();
-    let (mut session, cancel) = {
+    let (mut session, cancel, hands_free) = {
         let mut guard = state.0.lock().unwrap_or_else(|e| e.into_inner());
         if guard.processing {
             return Err("Ask is already processing".to_string());
@@ -1768,7 +1791,7 @@ pub async fn stop_ask_dictation(
         guard.processing = true;
         let cancel = Arc::new(Notify::new());
         guard.processing_cancel = Some(cancel.clone());
-        (session, cancel)
+        (session, cancel, std::mem::take(&mut guard.hands_free))
     };
     let upload_probe = session.upload_probe.clone();
     let mut transcript_at: Option<std::time::Instant> = None;
@@ -1851,6 +1874,39 @@ pub async fn stop_ask_dictation(
             .unwrap_or_else(|e| e.into_inner())
             .clone();
         let (question, answer_language) = route_question(&app, &config, question, &heard);
+        // Plan `hands-free-mode`: a request after the wake phrase is routed by meaning first.
+        if hands_free {
+            match crate::hands_free::routing::route(&question) {
+                crate::hands_free::routing::HandsFreeRoute::Dictate(text) => {
+                    failure_code = "llm_failed";
+                    pastes = true;
+                    let started = std::time::Instant::now();
+                    let dictated = app
+                        .state::<crate::pipeline::PipelineHandle>()
+                        .run_hands_free_dictation(&config, &session.recording_context, &text)
+                        .await;
+                    ai_elapsed = Some(started.elapsed());
+                    let execution = dictated?;
+                    return Ok(AskDictationResult::new(
+                        question,
+                        execution.text,
+                        VoiceIntentKind::DictateInsert,
+                        AskDictationResultMetadata::dictated(execution.execution.as_ref()),
+                    ));
+                }
+                crate::hands_free::routing::HandsFreeRoute::VoiceCommand(command) => {
+                    if crate::hands_free::routing::run_voice_command(&app, &command) {
+                        return Ok(AskDictationResult::new(
+                            question,
+                            String::new(),
+                            VoiceIntentKind::DictateInsert,
+                            AskDictationResultMetadata::dictated(None),
+                        ));
+                    }
+                }
+                crate::hands_free::routing::HandsFreeRoute::Ask => {}
+            }
+        }
         let voice_intent = route_ask_intent(
             &question,
             used_selected_text,

@@ -469,6 +469,33 @@ export async function cancelSpeechSetup(): Promise<boolean> {
   return invoke('cancel_speech_setup')
 }
 
+/** Plan `hands-free-mode`: the listener's state, as `hands_free::runtime::ListenerStatus`. */
+export type HandsFreeListener = 'off' | 'needsModel' | 'listening' | 'micError'
+
+/** Result of `get_hands_free_status`. */
+export interface HandsFreeStatus {
+  listener: HandsFreeListener
+  modelInstalled: boolean
+  modelSizeBytes: number
+  setup: SpeechSetupStatus
+}
+
+/** Event with the wake model download's `SpeechSetupStatus`. */
+export const HANDS_FREE_SETUP_EVENT = 'hands-free:setup'
+
+export async function getHandsFreeStatus(): Promise<HandsFreeStatus> {
+  return invoke('get_hands_free_status')
+}
+
+/** Downloads the wake model in the backend; progress arrives as `HANDS_FREE_SETUP_EVENT`. */
+export async function downloadHandsFreeModel(): Promise<void> {
+  return invoke('download_hands_free_model')
+}
+
+export async function cancelHandsFreeModelDownload(): Promise<boolean> {
+  return invoke('cancel_hands_free_model_download')
+}
+
 export async function listSpeechModels(): Promise<SpeechModelInfo[]> {
   return invoke('list_speech_models')
 }

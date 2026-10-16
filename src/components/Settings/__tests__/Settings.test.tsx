@@ -100,6 +100,22 @@ function emitTauriEvent(name: string, payload: unknown) {
 }
 
 vi.mock('../../../lib/tauri', () => ({
+  HANDS_FREE_SETUP_EVENT: 'hands-free:setup',
+  getHandsFreeStatus: vi.fn().mockResolvedValue({
+    listener: 'off',
+    modelInstalled: false,
+    modelSizeBytes: 59707625,
+    setup: {
+      modelId: null,
+      phase: 'idle',
+      downloadedBytes: 0,
+      totalBytes: 0,
+      bytesPerSecond: 0,
+      error: null,
+    },
+  }),
+  downloadHandsFreeModel: vi.fn().mockResolvedValue(undefined),
+  cancelHandsFreeModelDownload: vi.fn().mockResolvedValue(true),
   getConfig: vi.fn().mockResolvedValue(null),
   getLanguageLibraryStatus: vi.fn().mockResolvedValue({ latest: {}, updates: {} }),
   loadLanguagePreset: vi.fn().mockResolvedValue(null),

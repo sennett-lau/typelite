@@ -1189,6 +1189,8 @@ pub struct AppConfig {
     /// Plan `language-model-suggestions`: the suggested setup (its id, such as `cantonese`)
     /// whose Home card the user hid with "Don't show again".
     pub dismissed_language_setup: Option<String>,
+    /// Plan `hands-free-mode`: wake phrase ("Hey Sam") instead of a shortcut. Off by default.
+    pub hands_free: crate::hands_free::HandsFreeConfig,
 }
 
 impl Default for AppConfig {
@@ -1242,6 +1244,7 @@ impl Default for AppConfig {
             web_search: crate::web_search::WebSearchConfig::default(),
             spoken_languages: None,
             dismissed_language_setup: None,
+            hands_free: crate::hands_free::HandsFreeConfig::default(),
         }
     }
 }
@@ -1750,6 +1753,7 @@ impl AppConfig {
 
     pub(crate) fn normalize_values(&mut self) {
         self.normalize_presets();
+        self.hands_free.normalize();
         self.polish_style = normalize_polish_style(&self.polish_style).to_string();
         self.polish_custom_prompt = sanitize_polish_custom_prompt(&self.polish_custom_prompt);
         self.polish_chinese_script =

@@ -20,6 +20,7 @@ import { ShortcutBindingList } from './ShortcutBindingList'
 import { SwitchLanguageShortcut } from './SwitchLanguageShortcut'
 import { switchLanguageVariants } from '../../lib/switchLanguage'
 import { MicrophonePicker } from './MicrophonePicker'
+import { HandsFreeSettings } from './HandsFreeSettings'
 import { UI_LANGUAGES } from '../../i18n/languages'
 import { MAX_TRANSLATION_TARGETS, targetLanguageLabel } from '../../lib/constants'
 
@@ -316,6 +317,8 @@ export function GeneralPane() {
           />
         </Row>
       </Group>
+
+      <HandsFreeSettings />
 
       <Group label={t('settings.generalPane.output')}>
         <Row

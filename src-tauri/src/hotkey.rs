@@ -985,7 +985,7 @@ fn recording_shortcut_action(
     }
 }
 
-async fn stop_ask_shortcut(handle: tauri::AppHandle) {
+pub(crate) async fn stop_ask_shortcut(handle: tauri::AppHandle) {
     if !handle
         .state::<commands::ask::AskDictationState>()
         .is_recording()
@@ -1010,9 +1010,23 @@ async fn stop_ask_shortcut(handle: tauri::AppHandle) {
 }
 
 fn start_ask_shortcut(handle: tauri::AppHandle) {
+    start_ask(handle, false);
+}
+
+/// Plan `hands-free-mode`: starts Ask after the wake phrase, exactly like the Ask shortcut, but
+/// marked so the request is routed by meaning (`hands_free::routing`) when it stops.
+pub(crate) fn start_ask_hands_free(handle: tauri::AppHandle) {
+    start_ask(handle, true);
+}
+
+fn start_ask(handle: tauri::AppHandle, hands_free: bool) {
     let did_reserve_start = {
         let ask_state = handle.state::<commands::ask::AskDictationState>();
-        ask_state.try_begin_starting()
+        let reserved = ask_state.try_begin_starting();
+        if reserved && hands_free {
+            ask_state.mark_hands_free();
+        }
+        reserved
     };
     if !did_reserve_start {
         return;

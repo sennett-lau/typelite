@@ -1,6 +1,6 @@
 use crate::pipeline;
 use std::sync::Mutex;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 
@@ -14,6 +14,8 @@ struct TrayLabels {
     hide_window: &'static str,
     start_recording: &'static str,
     stop_recording: &'static str,
+    /// Plan `hands-free-mode`: the on/off item.
+    hands_free: &'static str,
     settings: &'static str,
     about: &'static str,
     quit: &'static str,
@@ -26,6 +28,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "隱藏視窗",
             start_recording: "開始錄音",
             stop_recording: "停止錄音",
+            hands_free: "免提模式",
             settings: "設定",
             about: "關於 Typelite",
             quit: "結束",
@@ -35,6 +38,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "Ocultar ventana",
             start_recording: "Empezar a grabar",
             stop_recording: "Detener grabación",
+            hands_free: "Modo manos libres",
             settings: "Ajustes",
             about: "Acerca de Typelite",
             quit: "Salir",
@@ -44,6 +48,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "Masquer la fenêtre",
             start_recording: "Démarrer l’enregistrement",
             stop_recording: "Arrêter l’enregistrement",
+            hands_free: "Mode mains libres",
             settings: "Réglages",
             about: "À propos de Typelite",
             quit: "Quitter",
@@ -53,6 +58,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "Fenster ausblenden",
             start_recording: "Aufnahme starten",
             stop_recording: "Aufnahme beenden",
+            hands_free: "Freihändiger Modus",
             settings: "Einstellungen",
             about: "Über Typelite",
             quit: "Beenden",
@@ -62,6 +68,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "ウインドウを隠す",
             start_recording: "録音を開始",
             stop_recording: "録音を停止",
+            hands_free: "ハンズフリーモード",
             settings: "設定",
             about: "Typelite について",
             quit: "終了",
@@ -71,6 +78,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "隐藏窗口",
             start_recording: "开始录音",
             stop_recording: "停止录音",
+            hands_free: "免提模式",
             settings: "设置",
             about: "关于 Typelite",
             quit: "退出",
@@ -80,6 +88,7 @@ fn get_tray_labels(lang: &str) -> TrayLabels {
             hide_window: "Hide Window",
             start_recording: "Start Recording",
             stop_recording: "Stop Recording",
+            hands_free: "Hands-free Mode",
             settings: "Settings",
             about: "About Typelite",
             quit: "Quit",
@@ -91,6 +100,18 @@ fn app_config_value(app: &tauri::AppHandle) -> Option<serde_json::Value> {
     app.store("settings.json")
         .ok()
         .and_then(|store| store.get("app_config"))
+}
+
+/// Plan `hands-free-mode`: whether Hands-free mode is on, for the tray's check mark.
+fn hands_free_enabled(app: &tauri::AppHandle) -> bool {
+    app_config_value(app)
+        .and_then(|config| {
+            config
+                .get("hands_free")
+                .and_then(|value| value.get("enabled"))
+                .and_then(|value| value.as_bool())
+        })
+        .unwrap_or(false)
 }
 
 fn tray_language(app: &tauri::AppHandle) -> String {
@@ -136,6 +157,14 @@ pub fn build_tray_menu(
         true,
         None::<&str>,
     )?;
+    let hands_free = CheckMenuItem::with_id(
+        app,
+        "hands_free",
+        labels.hands_free,
+        true,
+        hands_free_enabled(app),
+        None::<&str>,
+    )?;
     let sep2 = PredefinedMenuItem::separator(app)?;
     let settings = MenuItem::with_id(app, "settings", labels.settings, true, None::<&str>)?;
     let sep3 = PredefinedMenuItem::separator(app)?;
@@ -145,7 +174,15 @@ pub fn build_tray_menu(
     let menu = Menu::with_items(
         app,
         &[
-            &show_hide, &sep1, &record, &sep2, &settings, &sep3, &about, &quit,
+            &show_hide,
+            &sep1,
+            &record,
+            &hands_free,
+            &sep2,
+            &settings,
+            &sep3,
+            &about,
+            &quit,
         ],
     )?;
     Ok(menu)
@@ -183,6 +220,7 @@ mod tests {
             let labels = get_tray_labels(lang);
             assert!(!labels.show_window.is_empty());
             assert!(!labels.settings.is_empty());
+            assert!(!labels.hands_free.is_empty());
             assert!(!labels.quit.is_empty());
         }
     }
